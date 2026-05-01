@@ -1,0 +1,162 @@
+[
+  {
+    "id": 1,
+    "topic": "Linear & Logistic Regression",
+    "card_id": "01-A",
+    "slug": "linear-logistic-regression",
+    "series": "Family 01 — Linear Models · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 2,
+    "topic": "Ridge, Lasso & ElasticNet",
+    "card_id": "01-B",
+    "slug": "ridge-lasso-elasticnet",
+    "series": "Family 01 — Linear Models · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 3,
+    "topic": "Support Vector Machines",
+    "card_id": "01-C",
+    "slug": "support-vector-machines",
+    "series": "Family 01 — Linear Models · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 4,
+    "topic": "K-Nearest Neighbors",
+    "card_id": "02-A",
+    "slug": "k-nearest-neighbors",
+    "series": "Family 02 — Instance-Based · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 5,
+    "topic": "Naive Bayes",
+    "card_id": "03-A",
+    "slug": "naive-bayes",
+    "series": "Family 03 — Probabilistic · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 6,
+    "topic": "Decision Trees",
+    "card_id": "04-A",
+    "slug": "decision-trees",
+    "series": "Family 04 — Tree-Based · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 7,
+    "topic": "Random Forest",
+    "card_id": "04-B",
+    "slug": "random-forest",
+    "series": "Family 04 — Tree-Based · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 8,
+    "topic": "XGBoost",
+    "card_id": "04-C",
+    "slug": "xgboost",
+    "series": "Family 04 — Tree-Based · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 9,
+    "topic": "CatBoost",
+    "card_id": "04-E",
+    "slug": "catboost",
+    "series": "Family 04 — Tree-Based · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 10,
+    "topic": "Feedforward Neural Networks",
+    "card_id": "05-A",
+    "slug": "feedforward-neural-networks",
+    "series": "Family 05 — Neural Networks · supervised-learning-models.html",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 11,
+    "topic": "Gradient Descent",
+    "card_id": "standalone",
+    "slug": "gradient-descent",
+    "series": "Concept Exploration",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 12,
+    "topic": "Backpropagation",
+    "card_id": "standalone",
+    "slug": "backpropagation",
+    "series": "Concept Exploration",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 13,
+    "topic": "Attention Mechanism & Transformers",
+    "card_id": "standalone",
+    "slug": "attention-transformers",
+    "series": "Concept Exploration",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 14,
+    "topic": "Retrieval Augmented Generation (RAG)",
+    "card_id": "standalone",
+    "slug": "retrieval-augmented-generation",
+    "series": "Concept Exploration",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 15,
+    "topic": "LangGraph — State Machines for AI Agents",
+    "card_id": "standalone",
+    "slug": "langgraph-state-machines",
+    "series": "Agentic AI",
+    "category": "agentic-ai"
+  },
+  {
+    "id": 16,
+    "topic": "ReAct Agent Pattern",
+    "card_id": "standalone",
+    "slug": "react-agent-pattern",
+    "series": "Agentic AI",
+    "category": "agentic-ai"
+  },
+  {
+    "id": 17,
+    "topic": "Embedding Models & Vector Search",
+    "card_id": "standalone",
+    "slug": "embedding-models-vector-search",
+    "series": "Concept Exploration",
+    "category": "concept-exploration"
+  },
+  {
+    "id": 18,
+    "topic": "Prompt Engineering for Production",
+    "card_id": "standalone",
+    "slug": "prompt-engineering-production",
+    "series": "Agentic AI",
+    "category": "agentic-ai"
+  },
+  {
+    "id": 19,
+    "topic": "Agentic AI in Real Production",
+    "card_id": "standalone",
+    "slug": "agentic-ai-production",
+    "series": "Agentic AI",
+    "category": "agentic-ai"
+  },
+  {
+    "id": 20,
+    "topic": "Multi-Agent Systems — When and Why",
+    "card_id": "standalone",
+    "slug": "multi-agent-systems",
+    "series": "Agentic AI",
+    "category": "agentic-ai"
+  }
+]
