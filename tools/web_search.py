@@ -65,17 +65,3 @@ def web_search(query: str, max_results: int = 5) -> list[dict]:
     except Exception as e:
         print(f"[web_search] ERROR: {e}")
         return []
-
-
-
-
-
-
-
-
-
-
-
-
-
-
