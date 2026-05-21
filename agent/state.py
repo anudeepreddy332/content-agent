@@ -53,3 +53,6 @@ class AgentState(TypedDict):
     total_tokens: int
     total_cost_usd: float
     latency_ms: dict            # {draft, retrieve, verify, reflect, html_gen, git}
+
+    # Error log
+    error_log: list[str]
