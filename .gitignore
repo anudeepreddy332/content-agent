@@ -123,6 +123,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
 .idea/
 
 # Spyder project settings
@@ -152,3 +153,5 @@ cython_debug/
 # Project-specific
 kb/chroma_db/
 outputs/runs/
+outputs/articles/
+*.html
