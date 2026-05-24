@@ -1,11 +1,13 @@
 import sys
 import json
+import os
 import uuid
 from pathlib import Path
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agent.graph import build_graph
+from main import _write_telemetry
+
 
 def smoke_test():
     initial_state = {
@@ -35,9 +37,11 @@ def smoke_test():
         "error_log": [],
     }
 
+    os.environ["HITL_AUTO_APPROVE"] = "1"
+
     graph = build_graph()
     result = graph.invoke(initial_state)
-
+    _write_telemetry(result)
     failures = []
 
     if not result.get("draft_markdown"):
@@ -58,6 +62,30 @@ def smoke_test():
     if not telemetry_path.exists():
         failures.append(f"telemetry not written to {telemetry_path}")
 
+    # Check HTML output is clean
+    html_output = result.get("html_output", "")
+    if not html_output:
+        failures.append("html_output is None — html_gen_node produced nothing")
+    else:
+        expected_replaced = [
+            "{{META_DESCRIPTION}}", "{{SERIES_LABEL}}", "{{BREADCRUMB_SECTION}}",
+            "{{READ_TIME}}", "{{DIFFICULTY}}", "{{TOPIC_SHORT}}", "{{SOURCES}}",
+            "{{TOPIC}}", "{{SLUG}}",
+        ]
+        still_present = [p for p in expected_replaced if p in html_output]
+        if still_present:
+            failures.append(f"HTML has unreplaced placeholders: {still_present}")
+
+    filename = result.get("html_filename")
+    if filename:
+        file_path = Path("outputs/articles") / filename
+        if file_path.exists():
+            content = file_path.read_text(encoding="utf-8")
+            if len(content) < 100:
+                failures.append(f"HTML file {filename} exists but is too short ({len(content)} chars)")
+        else:
+            failures.append(f"HTML file {filename} not found on disk")
+
     if failures:
         print("SMOKE FAIL:")
         for f in failures:
@@ -73,12 +101,3 @@ def smoke_test():
 
 if __name__ == "__main__":
     smoke_test()
-
-
-
-
-
-
-
-
-

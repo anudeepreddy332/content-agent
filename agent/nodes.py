@@ -43,6 +43,9 @@ from config import (
     DEEPSEEK_OUTPUT_COST_PER_M,
 )
 from observability.logger import get_logger
+import html as html_module
+import re
+import datetime
 
 VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text()
 REFLECT_SYSTEM = Path("prompts/reflect_system.md").read_text()
@@ -310,6 +313,58 @@ def _build_source_context(web_sources: list, kb_results: list) -> str:
         parts.append(f"[KB] {k['source']}\n{k['text'][:200]}")
     return "\n\n".join(parts) if parts else "No sources available."
 
+def _build_citations(grounding_report: list, web_sources: list) -> str:
+    """
+    Builds the <ol> HTML block for the sources section of the article,
+    Called by html_gen_node - output is HTML, not plain text.
+
+    Priority order:
+        1. grounding_report entries with status "verified" or "weak", deduped by URL
+        2. If none, fall back to top-3 web_sources by score
+        3. If web_sources also empty, return a single fallback <li>
+    """
+    import urllib.parse
+
+    def _domain(url: str) -> str:
+        try:
+            parsed = urllib.parse.urlparse(url)
+            domain = parsed.netloc.replace("www.", "")
+            return domain if domain else url
+        except Exception:
+            return url
+
+    seen_urls: set[str] = set()
+    items: list[str] = []
+
+    for entry in grounding_report:
+        if entry.get("status") not in ("verified", "weak"):
+            continue
+        url = entry.get("source_url")
+        if not url or url in seen_urls:
+            continue
+        seen_urls.add(url)
+        items.append(
+            f'<li><a href="{url}" target="_blank" rel="noopener noreferrer">'
+            f'{_domain(url)}</a></li>'
+        )
+    if not items:
+        sorted_sources = sorted(web_sources, key=lambda s: s.get("score", 0), reverse=True)
+        for s in sorted_sources[:3]:
+            url = s.get("url", "")
+            if not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            title = s.get("title") or _domain(url)
+            items.append(
+                f'<li><a href="{url}" target="_blank" rel="noopener noreferrer">'
+                f'{title}</a></li>'
+            )
+
+    if not items:
+        return "<li>Sources retrieved via Tavily web search.</li>"
+
+    return "\n                    ".join(items)
+
 
 
 # NODE: verify_node
@@ -520,51 +575,274 @@ def reflect_node(state: AgentState) -> dict:
 
 def hitl_node(state: AgentState) -> dict:
     """
-    STUB: Full implementation on Day 26.
-    Displays draft + grounding report to user. Waits for approve/reject/feedback.
-
-    For now: auto-approves so you can test the full graph end-to-end.
+    Interactive HITL gate. Displays draft + grounding report + reflection.
+    User inputs: a (approve), r (reject), f (feedback -> types it).
     """
-    print("\n[hitl_node] STUB — auto-approving draft")
-    print(f"\n{'═'*60}")
-    print(f"DRAFT PREVIEW: {state['topic']}")
-    print(f"{'═'*60}")
-    print(state.get("draft_markdown", "")[:800])
-    print(f"\n... (truncated for stub) ...")
-    print(f"{'═'*60}\n")
-    return {
-        "hitl_status": "approved",
-        "hitl_feedback": None,
-    }
+    if os.environ.get("HITL_AUTO_APPROVE") == "1":
+        return {"hitl_status": "approved", "hitl_feedback": None}
+
+
+
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+
+    console = Console()
+    console.print(Panel(f"[bold]DRAFT REVIEW — {state['topic']}[/bold]", style="orange1"))
+    console.print(state["draft_markdown"])
+
+    # Grounding table
+    table = Table(title="Source Grounding Report")
+    table.add_column("Claim", max_width=60)
+    table.add_column("Status")
+    table.add_column("Confidence")
+    table.add_column("Source")
+    for r in state.get("grounding_report", []):
+        status_color = {"verified": "green", "weak": "yellow", "unverified": "red"}.get(
+            r.get("status", ""), "white")
+        table.add_row(
+            r.get("claim", "")[:60],
+            f"[{status_color}]{r.get('status', '')}[/{status_color}]",
+            f"{r.get('confidence', 0):.2f}",
+            r.get("source_url", "none") or "none",
+        )
+    console.print(table)
+
+    console.print(f"\n[bold]Reflection:[/bold] {state['reflection_score']}/10 — {state['reflection_notes']}")
+    console.print(f"[bold]Grounding score:[/bold] {state['grounding_score']:.2f}")
+    if state.get("error_log"):
+        console.print(f"[yellow]Warnings:[/yellow] {'; '.join(state['error_log'])}")
+
+    while True:
+        choice = input("\n[a]pprove / [r]eject / [f]eedback: ").strip().lower()
+        if choice == 'a':
+            return {"hitl_status": "approved", "hitl_feedback": None}
+        elif choice == 'r':
+            return {"hitl_status": "rejected", "hitl_feedback": None}
+        elif choice == 'f':
+            feedback = input("Feedback: ").strip()
+            if feedback:
+                return {"hitl_status": "feedback", "hitl_feedback": feedback}
+        else:
+            print("Enter a, r, or f.")
+
+
+def _render_problem_framing(raw: str) -> str:
+    paragraphs = [p.strip() for p in raw.strip().split("\n\n") if p.strip()]
+    if not paragraphs:
+        return f"<p>{html_module.escape(raw.strip())}</p>"
+    return "\n".join(f"<p>{html_module.escape(p)}</p>" for p in paragraphs)
+
+
+def _render_code_snippets(raw: str) -> str:
+    pattern = re.compile(r'```(\w*)\n(.*?)```', re.DOTALL)
+    matches = pattern.findall(raw)
+
+    if not matches:
+        escaped = html_module.escape(raw.strip())
+        return (
+            '<div class="sl-code-block">'
+            '<div class="sl-code-header"><span class="sl-code-lang">text</span></div>'
+            f'<pre><code>{escaped}</code></pre>'
+            '</div>'
+        )
+
+    blocks = []
+    for lang, content in matches:
+        lang = lang.strip() or "text"
+        escaped = html_module.escape(content.strip())
+        blocks.append(
+            f'<div class="sl-code-block">'
+            f'<div class="sl-code-header"><span class="sl-code-lang">{lang}</span></div>'
+            f'<pre><code class="language-{lang}">{escaped}</code></pre>'
+            f'</div>'
+        )
+    return "\n\n".join(blocks)
+
+
+def _render_takeaways(raw: str) -> str:
+    lines = raw.strip().splitlines()
+    items = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        line = re.sub(r'^[\-\*\•]\s+', '', line)
+        line = re.sub(r'^\d+\.\s+', '', line)
+        if line:
+            items.append(f"<li>{html_module.escape(line)}</li>")
+    if not items:
+        return "<ul><li>No takeaways generated.</li></ul>"
+    return "<ul>\n" + "\n".join(items) + "\n</ul>"
+
+
+def _render_technical_dive_via_llm(topic: str, technical_dive: str, client, run_id: str) -> tuple[str, int, float]:
+    prompt = f"""Convert this technical section into clean HTML for an article about: {topic}
+
+RULES:
+- Use <h3> for subsections
+- Use <p> for paragraphs
+- Use <code> for inline code (never backticks in output)
+- Use <strong> for emphasis
+- Use <div class="callout callout-info"> for important notes/warnings (both classes required)
+- Use <ul><li> for lists
+- Do NOT wrap output in any container div
+- Do NOT include DOCTYPE, html, head, or body tags
+- Return ONLY the HTML. No preamble. No markdown fences.
+
+Content to convert:
+{technical_dive}"""
+
+    response = client.chat.completions.create(
+        model=DEEPSEEK_MODEL,
+        messages=[
+            {"role": "system", "content": "You are an HTML conversion engine. Return only valid HTML elements, no markdown, no fences, no preamble."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.1,
+        max_tokens=3000,
+    )
+
+    rendered = response.choices[0].message.content.strip()
+    if rendered.startswith("```"):
+        rendered = re.sub(r'^```\w*\n?', '', rendered)
+        rendered = re.sub(r'\n?```$', '', rendered)
+        rendered = rendered.strip()
+
+    return rendered, response.usage.total_tokens, _cost(response.usage)
+
+
 
 # NODE: html_gen_node
 
 def html_gen_node(state: AgentState) -> dict:
-    """
-    STUB: Full implementation on Day 25.
-    Generates themachinist.org-compliant HTML from draft_sections.
-
-    For now: writes a minimal placeholder HTML file to outputs/.
-    """
     log = get_logger("html_gen_node")
-    slug = state.get("slug", "draft")
-    filename = f"{slug}.html"
-    placeholder = f"<!-- HTML stub for {state['topic']} — Day 25 implementation -->"
+    t_start = time.time()
 
-    out_path = Path("outputs") / filename
+    if state.get("total_cost_usd", 0) >= COST_GATE_USD:
+        log.warning("html_gen.cost_gate_hit", run_id=state["run_id"])
+        return {"html_output": None, "html_filename": None,
+                "latency_ms": {**state.get("latency_ms", {}), "html_gen": 0}}
+
+    template_raw = Path("prompts/html_template.md").read_text(encoding='utf-8')
+
+    if "```html" in template_raw:
+        template = template_raw.split("```html", 1)[1]
+        template = template.split("```", 1)[0].strip()
+    else:
+        template = template_raw.strip()
+
+
+
+    client = _get_client()
+    draft = state.get("draft_sections", {})
+    topic = state["topic"]
+    run_id = state["run_id"]
+
+    # Python renders 3 sections deterministically (no LLM, no tokens)
+    problem_framing_html = _render_problem_framing(
+        draft.get("problem_framing", "No problem framing available.")
+    )
+    code_snippets_html = _render_code_snippets(draft.get("code_snippets", ""))
+    takeaways_html = _render_takeaways(draft.get("takeaways", ""))
+
+    # LLM renders only technical_dive (mixed prose/headings/callouts — genuinely complex)
+    log.info("html_gen.technical_dive_start", run_id=run_id)
+    technical_dive_html, td_tokens, td_cost = _render_technical_dive_via_llm(
+        topic=topic,
+        technical_dive=draft.get("technical_dive", ""),
+        client=client,
+        run_id=run_id,
+    )
+
+    citations_html = _build_citations(
+        state.get("grounding_report", []),
+        state.get("web_sources", []),
+    )
+
+    topic_short = topic.lower()
+
+    word_count = len(state.get("draft_markdown", "").split())
+    read_time = str(max(5, word_count // 200))
+
+    series_context = state.get("series_context", "Learning Log")
+    if "·" in series_context:
+        series_label = series_context.split("·")[0].strip()
+    else:
+        series_label = series_context
+    breadcrumb_section = series_label
+
+    # Meta description: first 155 chars of problem_framing, ending at a sentence boundary
+    raw_pf = draft.get("problem_framing", "")
+    meta_desc = raw_pf[:155]
+    if len(raw_pf) > 155 and "." in meta_desc:
+        meta_desc = meta_desc[:meta_desc.rfind(".") + 1]
+    meta_desc = html_module.escape(meta_desc)
+
+    # Substitute all placeholders — order matters for ones that appear multiple times
+
+    html = template
+    html = html.replace("{{TOPIC}}", html_module.escape(topic))
+    html = html.replace("{{TOPIC_SHORT}}", html_module.escape(topic_short))
+    html = html.replace("{{SLUG}}", state["slug"])
+    html = html.replace("{{META_DESCRIPTION}}", meta_desc)
+    html = html.replace("{{SERIES_LABEL}}", html_module.escape(series_label))
+    html = html.replace("{{BREADCRUMB_SECTION}}", html_module.escape(breadcrumb_section))
+    html = html.replace("{{DIFFICULTY}}", "Intermediate")
+    html = html.replace("{{READ_TIME}}", read_time)
+    html = html.replace("{{PROBLEM_FRAMING}}", problem_framing_html)
+    html = html.replace("{{TECHNICAL_DIVE}}", technical_dive_html)
+    html = html.replace("{{CODE_SNIPPETS}}", code_snippets_html)
+    html = html.replace("{{TAKEAWAYS}}", takeaways_html)
+    html = html.replace("{{SOURCES}}", citations_html)
+
+
+
+    # Validate
+    errors = []
+    if "<!DOCTYPE html>" not in html:
+        errors.append("Missing DOCTYPE")
+    if 'id="main"' not in html:
+        errors.append('Missing id="main"')
+    if "<h1>" not in html:
+        errors.append("Missing h1")
+    remaining = re.findall(r'\{\{[A-Z_]+\}\}', html)
+    if remaining:
+        errors.append(f"Unreplaced placeholders: {remaining}")
+
+    latency = int((time.time() - t_start) * 1000)
+
+    base_filename = f"{state['slug']}.html"
+    out_path = Path("outputs/articles") / base_filename
+    if out_path.exists():
+        # Append first 6 chars of run_id to make it unique
+        suffix = state["run_id"].split("-")[-1][:6]
+        filename = f"{state['slug']}-{suffix}.html"
+    else:
+        filename = base_filename
+
+    out_path = Path("outputs/articles") / filename
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(placeholder, encoding="utf-8")
+    out_path.write_text(html, encoding="utf-8")
 
     existing_latency = state.get("latency_ms", {})
-    existing_latency["html_gen"] = 0
+    existing_latency["html_gen"] = latency
 
-    log.info("html_gen.stub", run_id=state["run_id"], path=str(out_path), note="placeholder — Day 25 implementation")
+    error_log = state.get("error_log", [])
+    if errors:
+        error_log.append(f"[html_gen] Validation warnings: {errors}")
 
+    log.info("html_gen.complete", run_id=run_id, filename=filename,
+             validation_errors=errors, latency_ms=latency,
+             td_tokens=td_tokens, td_cost=round(td_cost, 5))
 
     return {
-        "html_output": placeholder,
+        "html_output": html,
         "html_filename": filename,
+        "total_tokens": state.get("total_tokens", 0) + td_tokens,
+        "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
         "latency_ms": existing_latency,
+        "error_log": error_log,
     }
 
 
@@ -572,63 +850,146 @@ def html_gen_node(state: AgentState) -> dict:
 
 def git_node(state: AgentState) -> dict:
     """
-    STUB: Full implementation on Day 26.
-    Creates feature branch, pushes HTML, diffs vs main, merges or tags.
+    Push the generated HTML to themachinist-website repo via feature branch.
 
-    For now: logs what it would do without touching any repo.
+    Workflow:
+        1. Write HTML to ../themachinist-website/<slug>.html
+        2. Create and checkout feature/article-<slug>
+        3. Commit with standardized message
+        4. Diff vs main — if only new file, merge; if existing files changed, tag first
+        5. Keep last 5 tags, delete feature branch after merge
+        6. Set git_status to "merged", "tagged_and_merged", or "failed"
+
+    Every git operation is wrapped in try/except. Failure does NOT crash the
+    pipeline — the article HTML is already saved in outputs/articles/.
     """
+    import git
+    from git.exc import GitCommandError
+    from config import THEMACHINIST_REPO_PATH
+
+
     log = get_logger("git_node")
+    t_start = time.time()
+
     slug = state.get("slug", "draft")
     branch = f"feature/article-{slug}"
+    filename = state.get("html_filename")
+    html_content = state.get("html_output")
+    topic = state.get("topic", slug)
+
     existing_latency = state.get("latency_ms", {})
     existing_latency["git"] = 0
+    error_log = state.get("error_log", [])
 
-    log.info("git.stub", run_id=state["run_id"], branch=branch, file=state.get("html_filename"),
-             note="no-op — Day 26 implementation")
-
-    import json
-    from pathlib import Path
-
-    def _write_telemetry(state: AgentState, extra: dict = None) -> None:
-        """Write telemetry results to outputs/runs/<run_id>.json."""
-        import datetime
-        run_id = state.get("run_id", "unknown")
-        out_path = Path(f"outputs/runs/{run_id}.json")
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-
-        record = {
-            "run_id": run_id,
-            "topic": state.get("topic"),
-            "slug": state.get("slug"),
-            "timestamp": datetime.datetime.utcnow().isoformat(),
-            "iterations": state.get("iterations", 0),
-            "reflection_score": state.get("reflection_score"),
-            "grounding_score": state.get("grounding_score"),
-            "hitl_status": state.get("hitl_status"),
-            "git_status": extra.get("git_status") if extra else state.get("git_status"),
-            "total_tokens": state.get("total_tokens", 0),
-            "total_cost_usd": round(state.get("total_cost_usd", 0), 5),
-            "latency_ms": state.get("latency_ms", {}),
-            "error_log": state.get("error_log", []),
-            "claims_verified": sum(1 for r in state.get("grounding_report", [])
-                                   if r.get("status") == "verified"),
-            "claims_weak": sum(1 for r in state.get("grounding_report", [])
-                               if r.get("status") == "weak"),
-            "claims_unverified": sum(1 for r in state.get("grounding_report", [])
-                                     if r.get("status") == "unverified"),
+    # Validate
+    if not html_content or not filename:
+        log.error("git.missing_content", run_id=state["run_id"])
+        error_log.append("[git_node] No HTML content or filename — nothing to push")
+        return {
+            "branch_name": branch,
+            "git_status": "failed",
+            "latency_ms": existing_latency,
+            "error_log": error_log,
         }
-        out_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
 
+    repo_path = Path(THEMACHINIST_REPO_PATH).resolve()
+    if not repo_path.exists():
+        log.error("git.repo_not_found", run_id=state["run_id"], path=str(repo_path))
+        error_log.append(f"[git_node] Repo not found at {repo_path}")
+        return {
+            "branch_name": branch,
+            "git_status": "failed",
+            "latency_ms": existing_latency,
+            "error_log": error_log,
+        }
 
-    result =  {
+    git_status = "failed"
+    repo = None
+    original_branch = "main"
+
+    try:
+        repo = git.Repo(str(repo_path))
+        original_branch = repo.active_branch.name
+
+        # 1. Write html to the website repo
+        dest_path = repo_path/filename
+        dest_path.write_text(html_content, encoding='utf-8')
+
+        # 2. Create and checkout feature branch
+        if branch in repo.heads:
+            repo.delete_head(branch, force=True)
+
+        new_branch = repo.create_head(branch)
+        new_branch.checkout()
+
+        # 3. Stage and commit
+        repo.index.add([filename])
+        commit_msg = f"feat: add {topic} article [content-agent]"
+        commit = repo.index.commit(commit_msg)
+
+        # 4. Diff vs main to decide merge strategy
+        main_commit = repo.commit("main")
+        diff_index = main_commit.diff(commit)
+
+        changed_files = [d.b_path for d in diff_index if d.change_type in ("M", "D", "R")]
+        new_files = [d.b_path for d in diff_index if d.change_type == "A"]
+
+        # 5. Merge or tag-then-merge
+        if changed_files:
+            date_str = datetime.datetime.utcnow().strftime("%Y%m%d")
+            tag_name = f"v-{date_str}-{slug}"
+            existing_tag_names = [t.name for t in repo.tags]
+            if tag_name in existing_tag_names:
+                repo.delete_tag(tag_name)
+
+            repo.create_tag(tag_name, ref=main_commit, message=f"Pre-merge state before {branch}")
+            # Keep last 5 tags only
+            tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime if t.commit else 0, reverse=True)
+            for old_tag in tags[5:]:
+                repo.delete_tag(old_tag)
+
+            repo.heads.main.checkout()
+            repo.git.merge(branch, no_ff=True)
+            git_status = "tagged_and_merged"
+
+        else:
+            repo.heads.main.checkout()
+            repo.git.merge(branch, no_ff=True)
+            git_status = "merged"
+
+        # 6. Delete the feature branch
+        repo.delete_head(branch, force=True)
+
+        log.info("git.success", run_id=state["run_id"], branch=branch,
+             status=git_status, changed_files=len(changed_files),
+             new_files=len(new_files))
+
+    except GitCommandError as e:
+        log.error("git.command_error", run_id=state["run_id"], error=str(e))
+        error_log.append(f"[git_node] Git command failed: {e}")
+
+    except Exception as e:
+        log.error("git.unexpected_error", run_id=state["run_id"], error=str(e))
+        error_log.append(f"[git_node] Unexpected error: {e}")
+
+    finally:
+        # Restore original branch if we have a repo reference
+        if repo is not None:
+            try:
+                if repo.active_branch.name != original_branch:
+                    repo.heads[original_branch].checkout()
+            except Exception:
+                pass
+
+    latency = int((time.time() - t_start) * 1000)
+    existing_latency["git"] = latency
+    return {
         "branch_name": branch,
-        "git_status": "not_started",
+        "git_status": git_status,
         "latency_ms": existing_latency,
+        "error_log": error_log,
     }
 
-    _write_telemetry({**state, **result})
-
-    return result
 
 
 # EDGE FUNCTIONS (routing logic)
