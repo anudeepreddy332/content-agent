@@ -357,7 +357,7 @@
             <h2>What is {{TOPIC_SHORT}} and why does it matter?</h2>
 
             <div class="sl-definition">
-                <p>{{PROBLEM_FRAMING}}</p>
+                {{PROBLEM_FRAMING}}
             </div>
 
             <hr class="sl-hr">
@@ -366,28 +366,13 @@
             <h2>How it works</h2>
 
             {{TECHNICAL_DIVE}}
-            <!-- html_gen_node: render technical_dive as paragraphs.
-                 Wrap any inline math or notation in <code> tags.
-                 Use <h3> for any subsections within the dive.
-                 Use .callout.callout-info for any "Note" or "Warning" asides.
-                 Example inline math: w = w - lr * grad → <code>w = w - lr * grad</code> -->
-
+           
             <hr class="sl-hr">
 
             <!-- ── Section 3: Code ── -->
             <h2>In practice</h2>
 
             {{CODE_SNIPPETS}}
-            <!-- html_gen_node: render each code block from code_snippets as a .sl-code-block.
-                 Detect the language label from the markdown fence (```python → "Python").
-                 Preserve all whitespace and indentation exactly.
-                 Structure for each block:
-                 <div class="sl-code-block">
-                     <div class="sl-code-label">Python</div>
-                     <pre><code>...code here...</code></pre>
-                 </div>
-                 If multiple code blocks exist, render each one separately with a <p> of
-                 explanatory text between them if the draft provides it. -->
 
             <hr class="sl-hr">
 
@@ -397,14 +382,7 @@
             <div class="callout callout-key">
                 <div class="callout-label">What you now know</div>
                 {{TAKEAWAYS}}
-                <!-- html_gen_node: render takeaways as a <ul> inside the callout div.
-                     Each bullet from draft_sections['takeaways'] becomes a <li>.
-                     Split on newline. Do not add a <p> wrapper — put <ul> directly.
-                     Example:
-                     <ul>
-                         <li>Gradient descent requires a differentiable loss function.</li>
-                         <li>Learning rate is the most important hyperparameter to tune first.</li>
-                     </ul> -->
+
             </div>
 
             <!-- ── Sources ── -->
@@ -412,12 +390,7 @@
                 <div class="sl-sources-label">Sources</div>
                 <ol>
                     {{SOURCES}}
-                    <!-- html_gen_node: render verified sources from grounding_report.
-                         Only include sources with status "verified" or "weak" — skip "unverified".
-                         Deduplicate by URL. Format each as:
-                         <li><a href="{{source_url}}" target="_blank" rel="noopener noreferrer">{{title or domain}}</a></li>
-                         If no verified sources exist, render:
-                         <li>Sources retrieved via Tavily web search.</li> -->
+
                 </ol>
             </div>
 

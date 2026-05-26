@@ -371,10 +371,7 @@ def _build_citations(grounding_report: list, web_sources: list) -> str:
 
 def verify_node(state: AgentState) -> dict:
     """
-    STUB: Full implementation on Day 24.
     Extracts factual claims from draft and scores each against retrieved sources.
-
-    For now: passes through with a neutral grounding score so the graph runs end-to-end.
     """
     log = get_logger("verify_node")
     t_start = time.time()
@@ -484,11 +481,8 @@ def _format_grounding_summary(grounding_report: list) -> str:
 
 def reflect_node(state: AgentState) -> dict:
     """
-       STUB: Full implementation on Day 24.
-       Self-evaluates draft on structure, depth, grounding. Scores 1-10.
-
-       For now: passes with score 8 so route_after_reflect sends to hitl.
-       """
+    Self-evaluates draft on structure, depth, grounding. Scores 1-10.
+    """
     log = get_logger("reflect_node")
     t_start = time.time()
 
@@ -642,7 +636,7 @@ def _render_code_snippets(raw: str) -> str:
         escaped = html_module.escape(raw.strip())
         return (
             '<div class="sl-code-block">'
-            '<div class="sl-code-header"><span class="sl-code-lang">text</span></div>'
+            '<div class="sl-code-label">TEXT</div>'
             f'<pre><code>{escaped}</code></pre>'
             '</div>'
         )
@@ -653,7 +647,7 @@ def _render_code_snippets(raw: str) -> str:
         escaped = html_module.escape(content.strip())
         blocks.append(
             f'<div class="sl-code-block">'
-            f'<div class="sl-code-header"><span class="sl-code-lang">{lang}</span></div>'
+            f'<div class="sl-code-label">{lang.upper()}</div>'
             f'<pre><code class="language-{lang}">{escaped}</code></pre>'
             f'</div>'
         )
