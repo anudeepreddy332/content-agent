@@ -126,4 +126,6 @@ def run(topic, card_id, series, auto):
         f"Grounding: {result['grounding_score']:.2f} | "
         f"Git: {result.get('git_status', 'n/a')}"
     )
+    click.echo(f"RUN_ID={result['run_id']}")
+
 
