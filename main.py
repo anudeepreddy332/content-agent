@@ -22,7 +22,6 @@ import uuid
 import json
 from pathlib import Path
 from agent.graph import build_graph
-from agent.state import AgentState
 
 
 def _write_telemetry(state: dict):
@@ -129,3 +128,5 @@ def run(topic, card_id, series, auto):
     click.echo(f"RUN_ID={result['run_id']}")
 
 
+if __name__ == "__main__":
+    cli()

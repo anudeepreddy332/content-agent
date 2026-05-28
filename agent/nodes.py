@@ -308,9 +308,9 @@ def _build_source_context(web_sources: list, kb_results: list) -> str:
     """Format sources into a compact string for the verify prompt."""
     parts = []
     for s in web_sources[:5]:
-        parts.append(f"[WEB] {s['url']}\n{s['content'][:200]}")
-    for k in kb_results[:3]:
-        parts.append(f"[KB] {k['source']}\n{k['text'][:200]}")
+        parts.append(f"[WEB] {s['url']}\n{s['content'][:500]}")
+    for k in kb_results[:5]:
+        parts.append(f"[KB] {k['source']}\n{k['text'][:800]}")
     return "\n\n".join(parts) if parts else "No sources available."
 
 def _build_citations(grounding_report: list, web_sources: list) -> str:
@@ -731,6 +731,7 @@ def html_gen_node(state: AgentState) -> dict:
     client = _get_client()
     draft = state.get("draft_sections", {})
     topic = state["topic"]
+    topic_raw = topic
     run_id = state["run_id"]
 
     # Python renders 3 sections deterministically (no LLM, no tokens)
@@ -791,6 +792,16 @@ def html_gen_node(state: AgentState) -> dict:
     html = html.replace("{{SOURCES}}", citations_html)
 
 
+    # Fix HTML entities inside the LD+JSON block — JSON must not contain &amp; etc.
+    import re
+    def _fix_ldjson(match):
+        return match.group(0).replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+    html = re.sub(
+        r'<script type="application/ld\+json">.*?</script>',
+        _fix_ldjson,
+        html,
+        flags=re.DOTALL
+    )
 
     # Validate
     errors = []
@@ -874,6 +885,18 @@ def git_node(state: AgentState) -> dict:
     existing_latency = state.get("latency_ms", {})
     existing_latency["git"] = 0
     error_log = state.get("error_log", [])
+
+    # Dry-run guard — if GIT_PUSH_ENABLED is not "true", log intent and skip
+    git_push_enabled = os.environ.get("GIT_PUSH_ENABLED", "false").lower() == "true"
+    if not git_push_enabled:
+        log.info("git.dry_run", run_id=state["run_id"], branch=branch,
+                 note="GIT_PUSH_ENABLED is not true — skipping git operations")
+        return {
+            "branch_name": branch,
+            "git_status": "dry_run",
+            "latency_ms": existing_latency,
+            "error_log": error_log,
+        }
 
     # Validate
     if not html_content or not filename:

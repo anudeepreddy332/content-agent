@@ -155,3 +155,5 @@ kb/chroma_db/
 outputs/runs/
 outputs/articles/
 *.html
+
+docs/

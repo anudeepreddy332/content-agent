@@ -102,13 +102,3 @@ def save_to_kb(text: str, source: str, metadata: dict | None = None) -> bool:
     except Exception as e:
         print(f"[save_to_kb] ERROR: {e}")
         return False
-
-
-
-
-
-
-
-
-
-

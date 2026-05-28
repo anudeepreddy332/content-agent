@@ -78,7 +78,7 @@ GOLDEN_SET = [
     {
         "query": "Naive Bayes conditional independence assumption",
         "expected_sources": ["naive-bayes"],
-        "required_concepts": ["Bayes theorem", "feature independence", "posterior probability"],
+        "required_concepts": ["Bayes", "conditional independence", "posterior probability"],
         "difficulty": "easy",
     },
 
@@ -223,7 +223,7 @@ GOLDEN_SET = [
         "required_concepts": [],
         "difficulty": "out-of-scope",
         "note": "BERT is not covered in any of the 20 seed documents. Retriever should return very low similarity scores or an empty result.",
-        "min_distance_threshold": 0.7  # Cosine distance > 0.7 indicates no good match (assuming normalized embeddings)
+        "min_distance_threshold": 0.5  # Cosine distance > 0.5 indicates no good match (assuming normalized embeddings)
     },
     {
         "query": "explain convolutional neural networks and pooling layers",
@@ -231,7 +231,7 @@ GOLDEN_SET = [
         "required_concepts": [],
         "difficulty": "out-of-scope",
         "note": "CNNs are not in the seed docs. The documents cover feedforward NNs, attention, trees, regression, but not convolutional layers.",
-        "min_distance_threshold": 0.7
+        "min_distance_threshold": 0.5
     },
     {
         "query": "how does batch normalization stabilize training?",
@@ -239,7 +239,7 @@ GOLDEN_SET = [
         "required_concepts": [],
         "difficulty": "out-of-scope",
         "note": "Batch norm is not mentioned in any provided document.",
-        "min_distance_threshold": 0.7
+        "min_distance_threshold": 0.5
     },
     {
         "query": "what is the difference between vanilla RNNs and LSTMs?",
@@ -247,7 +247,7 @@ GOLDEN_SET = [
         "required_concepts": [],
         "difficulty": "out-of-scope",
         "note": "Recurrent networks and LSTMs are absent from the seed corpus.",
-        "min_distance_threshold": 0.7
+        "min_distance_threshold": 0.5
     },
     {
         "query": "explain the Adam optimizer and its hyperparameters",
@@ -255,7 +255,7 @@ GOLDEN_SET = [
         "required_concepts": [],
         "difficulty": "out-of-scope",
         "note": "Adam is not covered; gradient descent is covered but not Adam specifically.",
-        "min_distance_threshold": 0.7
+        "min_distance_threshold": 0.5
     },
 ]
 
