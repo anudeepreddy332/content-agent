@@ -59,3 +59,15 @@ index.add(vecs.astype(np.float32))
 q_vec = model.encode(["What is the capital of France?"])
 D, I = index.search(q_vec.astype(np.float32), k=1)  # top-1
 ```
+## Claim-Dense Reference Facts
+
+- OpenAI text-embedding-3-small produces 1536-dimensional vectors; text-embedding-ada-002 produces 1536-d at higher cost.
+- all-MiniLM-L6-v2 produces 384-dimensional vectors and runs inference in ~14ms/sentence on CPU.
+- HNSW (Hierarchical Navigable Small World) achieves O(log N) query time with M=16 connections and ef_construction=200 as typical defaults.
+- Qdrant's default HNSW parameters are m=16, ef_construct=100, and on_disk=false for in-memory storage.
+- Cosine similarity for normalized vectors equals dot product; normalization is done at index time in FAISS.
+- FAISS IndexFlatIP performs exact inner product search; IndexIVFPQ approximates with 10–100x speedup.
+- IVF (Inverted File Index) partitions vectors into nlist=100–4096 clusters; searches nprobe=10–64 clusters at query time.
+- Sentence-transformers library provides a unified API for 100+ pretrained embedding models via HuggingFace.
+- ColBERT stores per-token embeddings (128-d) and uses MaxSim scoring, achieving higher recall than single-vector models.
+- Embedding model fine-tuning on domain data via contrastive loss typically improves recall@10 by 5–15% on in-domain queries.

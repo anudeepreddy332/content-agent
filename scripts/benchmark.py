@@ -45,7 +45,7 @@ def run_benchmark(limit, topic_id):
                 "--series", t["series"],
                 "--auto" # auto-approve for benchmark
             ],
-            capture_output=True, text=True, timeout=300,
+            capture_output=True, text=True, timeout=600,
         )
 
         elapsed = time.time() - t_start

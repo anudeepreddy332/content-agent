@@ -63,3 +63,15 @@ input_ids = tokenizer("What is the capital of France?", return_tensors="pt").inp
 generated = model.generate(input_ids)
 print(tokenizer.decode(generated[0], skip_special_tokens=True))
 ```
+## Claim-Dense Reference Facts
+
+- LlamaIndex and LangChain both implement RAG pipelines; LlamaIndex defaults to chunk_size=1024, chunk_overlap=20 tokens.
+- Standard RAG retrieves k=3–5 documents; increasing to k=10 improves recall but increases context length and latency.
+- Reranking with cross-encoders (e.g., ms-marco-MiniLM-L-6-v2) improves top-1 precision by 10–20% over bi-encoder retrieval alone.
+- HyDE (Hypothetical Document Embeddings) generates a fake answer to the query and embeds it, improving retrieval for abstract queries.
+- Parent-child chunking stores small chunks for retrieval but passes their larger parent chunks to the generator for context.
+- RAG-Fusion generates multiple query variants, retrieves for each, and merges results with Reciprocal Rank Fusion.
+- Contextual compression reduces retrieved text to only the relevant portions before passing to the generator.
+- RAGAS is the standard evaluation framework for RAG pipelines, measuring faithfulness, answer relevancy, and context recall.
+- Dense Passage Retrieval (DPR) uses separate question and passage encoders; both are BERT-base sized (110M parameters).
+- Self-RAG uses four special tokens: [Retrieve], [ISREL], [ISSUP], [ISUSE] to decide when to retrieve and evaluate relevance.

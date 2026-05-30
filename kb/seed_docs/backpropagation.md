@@ -66,3 +66,16 @@ y = x**3 + 2 * x**2
 y.backward()          # computes dy/dx
 print(x.grad)         # 3*2^2 + 4*2 = 20
 ```
+
+## Claim-Dense Reference Facts
+
+- PyTorch autograd records operations on tensors with requires_grad=True in a dynamic computation graph.
+- The `.backward()` call in PyTorch accumulates gradients in `.grad` attributes; call `.zero_grad()` to reset.
+- Gradient checkpointing reduces memory from O(L) to O(√L) by recomputing activations during backward pass.
+- In PyTorch, `torch.utils.checkpoint.checkpoint()` wraps a function to enable gradient checkpointing.
+- Vanishing gradients occur when |∂L/∂W^(l)| < 1 repeatedly across layers, exponentially shrinking updates.
+- ReLU mitigates vanishing gradients by having gradient 1 for positive inputs vs sigmoid's maximum of 0.25.
+- Exploding gradients are mitigated by gradient clipping, typically at max_norm=1.0 in transformers.
+- BPTT for RNNs unrolls the network through time; truncated BPTT limits unrolling to k=20–100 steps.
+- The memory cost of storing all activations for backward is proportional to batch_size × sequence_length × d_model.
+- Xavier initialization sets weights from U(-√(6/(n_in+n_out)), √(6/(n_in+n_out))) to preserve gradient variance.

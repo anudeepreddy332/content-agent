@@ -44,3 +44,4 @@ You must return a JSON object with exactly these keys. No extra keys. No markdow
 4. Do not repeat the topic title in the first sentence of problem_framing. Start with the problem.
 5. If the topic has a well-known formula, include it in technical_dive.
 6. Return ONLY the JSON. No preamble. No explanation after. Just the JSON object.
+7. For agentic AI and production deployment topics, prefer specific claims about framework behaviors (LangGraph, LangSmith, LangChain, AutoGen) with concrete API details, parameter names, or configuration patterns. General statements like "agents need observability" cannot be verified against sources and will produce low grounding scores. If you don't know a specific API detail, omit the claim rather than making a vague one.

@@ -279,6 +279,10 @@ def retrieve_node(state: AgentState) -> dict:
                 seen_urls.add(r["url"])
                 web_sources.append(r)
 
+    # Sort by Tavily relevance score descending, then keep top 10
+    web_sources.sort(key=lambda x: x.get("score", 0), reverse=True)
+    web_sources = web_sources[:10]
+
     # KB query — use topic + first 100 chars of problem_framing for richer context
     problem_framing_preview = state.get("draft_sections", {}).get("problem_framing", "")[:100]
     kb_query = f"{topic} {problem_framing_preview}".strip()

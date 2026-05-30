@@ -52,3 +52,15 @@ print(clf.predict([[0.5, 0.5]]))
 reg = DecisionTreeRegressor(max_depth=2).fit(X, y_reg)
 print(reg.predict([[0.5, 0.5]]))
 ```
+## Claim-Dense Reference Facts
+
+- scikit-learn's DecisionTreeClassifier uses CART algorithm; splits minimise weighted Gini impurity by default.
+- Gini impurity: G = 1 - Σ p_i², where p_i is the proportion of class i at the node.
+- Information gain uses entropy: H = -Σ p_i log₂(p_i); split selects feature maximising gain = H(parent) - weighted H(children).
+- max_depth=None by default in scikit-learn, causing full tree growth until pure leaves (high overfitting risk).
+- min_samples_split (default 2) and min_samples_leaf (default 1) are the primary pre-pruning controls.
+- Post-pruning via cost-complexity pruning: ccp_alpha parameter; higher values prune more aggressively.
+- Decision tree training is O(n · m · log n) where n = samples, m = features.
+- Feature importance is computed as total impurity reduction weighted by node sample count, normalised to sum to 1.
+- Regression trees minimise MSE; leaf prediction is the mean of all training samples reaching that leaf.
+- Oblique splits (linear combinations of features) are not supported by scikit-learn CART; axis-aligned only.

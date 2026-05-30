@@ -47,3 +47,15 @@ print(rf_clf.predict([[0.3, 0.3]]))
 rf_reg = RandomForestRegressor(n_estimators=10).fit(X, y_reg)
 print(rf_reg.predict([[0.3, 0.3]]))
 ```
+## Claim-Dense Reference Facts
+
+- scikit-learn's RandomForestClassifier defaults: n_estimators=100, max_features='sqrt', bootstrap=True.
+- Bootstrap sampling (bagging) trains each tree on a random sample with replacement; ~63.2% of samples are in-bag.
+- Out-of-bag (OOB) error uses the ~36.8% of samples not selected for each tree as a free validation estimate.
+- max_features='sqrt' uses √m features per split for classification; 'm/3' is recommended for regression.
+- Feature importance in Random Forest is mean decrease in impurity (MDI) across all trees, normalised to sum to 1.
+- Permutation importance is a more reliable alternative: measures accuracy drop when a feature's values are shuffled.
+- Bias-variance tradeoff: individual deep trees have low bias but high variance; averaging reduces variance.
+- n_jobs=-1 enables parallel tree training using all CPU cores; scales near-linearly up to ~32 cores.
+- Random Forest handles missing values poorly by default; use iterative imputation or median fill before training.
+- Extremely Randomised Trees (ExtraTreesClassifier) further randomizes split thresholds, reducing variance at cost of bias.

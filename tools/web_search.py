@@ -13,10 +13,40 @@ Why Tavily over raw Google:
 import os
 from dotenv import load_dotenv
 from tavily import TavilyClient
+import hashlib
+import json
+from pathlib import Path
+
+
 
 load_dotenv()
 
+CACHE_DIR = Path("outputs/tavily_cache")
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+CACHE_TTL_DAYS = 7      # cached results valid for 7 days
+
 _client = None
+
+def _cache_key(query: str, max_results: int) -> str:
+    return hashlib.md5(f"{query}: {max_results}".encode()).hexdigest()
+
+
+def _load_cache(key: str) -> list | None:
+    path = CACHE_DIR / f"{key}.json"
+    if not path.exists():
+        return None
+    import datetime
+    age_days = (datetime.datetime.now() - datetime.datetime.fromtimestamp(path.stat().st_mtime)).days
+    if age_days > CACHE_TTL_DAYS:
+        path.unlink()
+        return None
+    return json.loads(path.read_text())
+
+
+def _save_cache(key: str, results: list) -> None:
+    path = CACHE_DIR / f"{key}.json"
+    path.write_text(json.dumps(results))
+
 
 def _get_client() -> TavilyClient:
     global _client
@@ -41,6 +71,11 @@ def web_search(query: str, max_results: int = 5) -> list[dict]:
         Content is extracted full text, not just a snippet.
         Score is Tavily's relevance score (0.0–1.0).
     """
+    key = _cache_key(query, max_results)
+    cached = _load_cache(key)
+    if cached is not None:
+        return cached
+
     client = _get_client()
 
     try:
@@ -59,6 +94,7 @@ def web_search(query: str, max_results: int = 5) -> list[dict]:
                 "content": r.get("content", ""),
                 "score": r.get("score", 0.0),
             })
+        _save_cache(key, results)
 
         return results
 

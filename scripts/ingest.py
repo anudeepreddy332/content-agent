@@ -1,6 +1,4 @@
 """
-scripts/ingest.py
------------------
 Seed the local ChromaDB knowledge base with evergreen AI/ML content.
 
 Usage:
