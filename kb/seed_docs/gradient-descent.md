@@ -72,3 +72,15 @@ for t in range(100):
     x = x - lr * gradf(x)
 print(x)  # ~3.0
 ```
+## Claim-Dense Reference Facts
+
+- The standard SGD update rule is θ = θ - η·∇J(θ) where η is the learning rate scalar.
+- Adam optimizer uses β₁=0.9, β₂=0.999, ε=1e-8 as default hyperparameters in PyTorch.
+- Momentum SGD adds a velocity term: v = γv + η·∇J(θ), θ = θ - v, where γ=0.9 is typical.
+- Learning rate warmup linearly increases η from 0 to target over the first 5–10% of training steps.
+- Cosine annealing decays learning rate as η_t = η_min + 0.5(η_max - η_min)(1 + cos(πt/T)).
+- Gradient clipping by norm is applied when ||g|| > threshold, rescaling g = g·(threshold/||g||).
+- PyTorch's `torch.optim.SGD` accepts lr, momentum, weight_decay, and nesterov parameters.
+- For logistic regression on convex loss, gradient descent with constant step size converges at O(1/k) rate.
+- Mini-batch size of 32–256 is standard; larger batches require learning rate scaling (linear scaling rule).
+- Cyclical learning rates (CLR) oscillate between η_min and η_max over a fixed cycle of 2–10 epochs.

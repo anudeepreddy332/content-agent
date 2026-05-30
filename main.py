@@ -22,7 +22,6 @@ import uuid
 import json
 from pathlib import Path
 from agent.graph import build_graph
-from agent.state import AgentState
 
 
 def _write_telemetry(state: dict):
@@ -126,4 +125,8 @@ def run(topic, card_id, series, auto):
         f"Grounding: {result['grounding_score']:.2f} | "
         f"Git: {result.get('git_status', 'n/a')}"
     )
+    click.echo(f"RUN_ID={result['run_id']}")
 
+
+if __name__ == "__main__":
+    cli()

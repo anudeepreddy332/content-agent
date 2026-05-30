@@ -1,0 +1,1114 @@
+{
+  "recall@1": 0.933,
+  "recall@3": 1.0,
+  "recall@5": 1.0,
+  "concept_hit_rate": 0.867,
+  "out_of_scope_rejection_rate": 1.0,
+  "per_query": [
+    {
+      "query": "how gradient descent updates weights",
+      "difficulty": "easy",
+      "expected_sources": [
+        "gradient-descent"
+      ],
+      "retrieved_sources": [
+        "gradient-descent",
+        "gradient-descent",
+        "backpropagation",
+        "backpropagation",
+        "feedforward-neural-networks"
+      ],
+      "retrieved_distances": [
+        0.394,
+        0.4615,
+        0.5055,
+        0.5282,
+        0.5353
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "learning rate",
+        "loss",
+        "gradient"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "query key value in self-attention",
+      "difficulty": "easy",
+      "expected_sources": [
+        "attention-transformers"
+      ],
+      "retrieved_sources": [
+        "attention-transformers",
+        "attention-transformers",
+        "retrieval-augmented-generation",
+        "retrieval-augmented-generation",
+        "retrieval-augmented-generation"
+      ],
+      "retrieved_distances": [
+        0.6095,
+        0.6983,
+        0.7068,
+        0.718,
+        0.7255
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "query",
+        "key",
+        "value"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "difference between lasso and ridge regression",
+      "difficulty": "easy",
+      "expected_sources": [
+        "ridge-lasso-elasticnet"
+      ],
+      "retrieved_sources": [
+        "ridge-lasso-elasticnet",
+        "ridge-lasso-elasticnet",
+        "ridge-lasso-elasticnet",
+        "support-vector-machines",
+        "linear-logistic-regression"
+      ],
+      "retrieved_distances": [
+        0.3789,
+        0.3913,
+        0.5178,
+        0.672,
+        0.7028
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "L1",
+        "L2",
+        "sparsity"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "what is CatBoost categorical feature handling",
+      "difficulty": "easy",
+      "expected_sources": [
+        "catboost"
+      ],
+      "retrieved_sources": [
+        "catboost",
+        "catboost",
+        "catboost",
+        "naive-bayes",
+        "xgboost"
+      ],
+      "retrieved_distances": [
+        0.3085,
+        0.5109,
+        0.6175,
+        0.6247,
+        0.6667
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "target statistics",
+        "ordered boosting",
+        "permutation"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "ReAct agent pattern reasoning and acting",
+      "difficulty": "easy",
+      "expected_sources": [
+        "react-agent-pattern"
+      ],
+      "retrieved_sources": [
+        "react-agent-pattern",
+        "react-agent-pattern",
+        "multi-agent-systems",
+        "react-agent-pattern",
+        "multi-agent-systems"
+      ],
+      "retrieved_distances": [
+        0.3351,
+        0.4248,
+        0.5374,
+        0.5535,
+        0.5742
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "thought",
+        "action",
+        "observation"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "k nearest neighbors algorithm basics",
+      "difficulty": "easy",
+      "expected_sources": [
+        "k-nearest-neighbors"
+      ],
+      "retrieved_sources": [
+        "k-nearest-neighbors",
+        "k-nearest-neighbors",
+        "embedding-models-vector-search",
+        "k-nearest-neighbors",
+        "support-vector-machines"
+      ],
+      "retrieved_distances": [
+        0.3638,
+        0.4396,
+        0.6264,
+        0.6631,
+        0.7438
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "distance metric",
+        "majority vote",
+        "lazy learning"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "XGBoost regularization parameters",
+      "difficulty": "easy",
+      "expected_sources": [
+        "xgboost"
+      ],
+      "retrieved_sources": [
+        "xgboost",
+        "xgboost",
+        "catboost",
+        "naive-bayes",
+        "feedforward-neural-networks"
+      ],
+      "retrieved_distances": [
+        0.5801,
+        0.5818,
+        0.6928,
+        0.7085,
+        0.7277
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "gamma",
+        "lambda",
+        "leaf weight"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "what is a feedforward neural network",
+      "difficulty": "easy",
+      "expected_sources": [
+        "feedforward-neural-networks"
+      ],
+      "retrieved_sources": [
+        "feedforward-neural-networks",
+        "backpropagation",
+        "feedforward-neural-networks",
+        "feedforward-neural-networks",
+        "xgboost"
+      ],
+      "retrieved_distances": [
+        0.3501,
+        0.4612,
+        0.5523,
+        0.6117,
+        0.6201
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "hidden layer",
+        "activation function",
+        "backpropagation"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "support vector machine margin maximization",
+      "difficulty": "easy",
+      "expected_sources": [
+        "support-vector-machines"
+      ],
+      "retrieved_sources": [
+        "support-vector-machines",
+        "support-vector-machines",
+        "support-vector-machines",
+        "gradient-descent",
+        "support-vector-machines"
+      ],
+      "retrieved_distances": [
+        0.3112,
+        0.5502,
+        0.5822,
+        0.6038,
+        0.6708
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "hyperplane",
+        "support vectors",
+        "kernel trick"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "Naive Bayes conditional independence assumption",
+      "difficulty": "easy",
+      "expected_sources": [
+        "naive-bayes"
+      ],
+      "retrieved_sources": [
+        "naive-bayes",
+        "naive-bayes",
+        "linear-logistic-regression",
+        "naive-bayes",
+        "decision-trees"
+      ],
+      "retrieved_distances": [
+        0.3396,
+        0.5411,
+        0.7824,
+        0.7942,
+        0.8097
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "Bayes",
+        "conditional independence"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "vanishing gradient problem in deep networks",
+      "difficulty": "medium",
+      "expected_sources": [
+        "backpropagation",
+        "gradient-descent"
+      ],
+      "retrieved_sources": [
+        "backpropagation",
+        "feedforward-neural-networks",
+        "gradient-descent",
+        "backpropagation",
+        "gradient-descent"
+      ],
+      "retrieved_distances": [
+        0.5547,
+        0.5623,
+        0.6022,
+        0.6079,
+        0.6117
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "gradient",
+        "deep",
+        "layer",
+        "chain rule"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "why random forests reduce overfitting compared to a single decision tree",
+      "difficulty": "medium",
+      "expected_sources": [
+        "random-forest",
+        "decision-trees"
+      ],
+      "retrieved_sources": [
+        "random-forest",
+        "random-forest",
+        "decision-trees",
+        "catboost",
+        "random-forest"
+      ],
+      "retrieved_distances": [
+        0.3978,
+        0.4785,
+        0.507,
+        0.5546,
+        0.5624
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "ensemble",
+        "variance",
+        "bootstrap"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "how to deploy LLM agents with reliability and cost control",
+      "difficulty": "medium",
+      "expected_sources": [
+        "agentic-ai-production"
+      ],
+      "retrieved_sources": [
+        "multi-agent-systems",
+        "agentic-ai-production",
+        "agentic-ai-production",
+        "agentic-ai-production",
+        "multi-agent-systems"
+      ],
+      "retrieved_distances": [
+        0.5361,
+        0.5544,
+        0.5633,
+        0.5683,
+        0.5845
+      ],
+      "recall_at_k": {
+        "recall@1": false,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "step budget",
+        "cost bound",
+        "observability",
+        "guardrails"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "logistic regression probability estimation formula",
+      "difficulty": "medium",
+      "expected_sources": [
+        "linear-logistic-regression"
+      ],
+      "retrieved_sources": [
+        "linear-logistic-regression",
+        "linear-logistic-regression",
+        "naive-bayes",
+        "linear-logistic-regression",
+        "naive-bayes"
+      ],
+      "retrieved_distances": [
+        0.4491,
+        0.5225,
+        0.6927,
+        0.704,
+        0.7083
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "sigmoid",
+        "log-odds",
+        "maximum likelihood"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "LangGraph for cyclic agent workflows",
+      "difficulty": "medium",
+      "expected_sources": [
+        "langgraph-state-machines"
+      ],
+      "retrieved_sources": [
+        "langgraph-state-machines",
+        "multi-agent-systems",
+        "langgraph-state-machines",
+        "agentic-ai-production",
+        "langgraph-state-machines"
+      ],
+      "retrieved_distances": [
+        0.2921,
+        0.4841,
+        0.5112,
+        0.5174,
+        0.5183
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "state machine",
+        "conditional edges",
+        "checkpointing",
+        "human-in-the-loop"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "prompt engineering best practices for production",
+      "difficulty": "medium",
+      "expected_sources": [
+        "prompt-engineering-production"
+      ],
+      "retrieved_sources": [
+        "prompt-engineering-production",
+        "prompt-engineering-production",
+        "agentic-ai-production",
+        "agentic-ai-production",
+        "prompt-engineering-production"
+      ],
+      "retrieved_distances": [
+        0.5071,
+        0.5284,
+        0.665,
+        0.6686,
+        0.6962
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "versioning",
+        "monitoring",
+        "A/B testing",
+        "guardrails"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "when to use multi-agent systems vs single agent",
+      "difficulty": "medium",
+      "expected_sources": [
+        "multi-agent-systems"
+      ],
+      "retrieved_sources": [
+        "multi-agent-systems",
+        "multi-agent-systems",
+        "agentic-ai-production",
+        "multi-agent-systems",
+        "agentic-ai-production"
+      ],
+      "retrieved_distances": [
+        0.3659,
+        0.4778,
+        0.5313,
+        0.5603,
+        0.6022
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "specialization",
+        "coordination",
+        "Dec-POMDP",
+        "debate"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "elastic net combining L1 and L2 penalties",
+      "difficulty": "medium",
+      "expected_sources": [
+        "ridge-lasso-elasticnet"
+      ],
+      "retrieved_sources": [
+        "ridge-lasso-elasticnet",
+        "ridge-lasso-elasticnet",
+        "ridge-lasso-elasticnet",
+        "xgboost",
+        "backpropagation"
+      ],
+      "retrieved_distances": [
+        0.5032,
+        0.637,
+        0.6508,
+        0.7,
+        0.7472
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "ElasticNet",
+        "l1_ratio",
+        "grouping effect"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "how RAG reduces hallucination in LLMs",
+      "difficulty": "medium",
+      "expected_sources": [
+        "retrieval-augmented-generation"
+      ],
+      "retrieved_sources": [
+        "retrieval-augmented-generation",
+        "react-agent-pattern",
+        "react-agent-pattern",
+        "langgraph-state-machines",
+        "attention-transformers"
+      ],
+      "retrieved_distances": [
+        0.7961,
+        0.8348,
+        0.8815,
+        0.8851,
+        0.9199
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "non-parametric memory",
+        "grounding",
+        "retriever",
+        "generator"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "embedding vectors for semantic search",
+      "difficulty": "medium",
+      "expected_sources": [
+        "embedding-models-vector-search"
+      ],
+      "retrieved_sources": [
+        "embedding-models-vector-search",
+        "embedding-models-vector-search",
+        "embedding-models-vector-search",
+        "retrieval-augmented-generation",
+        "retrieval-augmented-generation"
+      ],
+      "retrieved_distances": [
+        0.3154,
+        0.4189,
+        0.4775,
+        0.5814,
+        0.5843
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "cosine similarity",
+        "ANN index",
+        "HNSW"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "my neural net is deep but gradients become tiny \u2014 which algorithm computes them and how do I avoid this?",
+      "difficulty": "hard",
+      "expected_sources": [
+        "backpropagation",
+        "gradient-descent"
+      ],
+      "retrieved_sources": [
+        "backpropagation",
+        "feedforward-neural-networks",
+        "backpropagation",
+        "backpropagation",
+        "feedforward-neural-networks"
+      ],
+      "retrieved_distances": [
+        0.4423,
+        0.4547,
+        0.4746,
+        0.4749,
+        0.4968
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "chain rule",
+        "activation function",
+        "ReLU"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "tree ensemble that uses gradient and hessian and can handle missing values automatically",
+      "difficulty": "hard",
+      "expected_sources": [
+        "xgboost"
+      ],
+      "retrieved_sources": [
+        "xgboost",
+        "decision-trees",
+        "xgboost",
+        "decision-trees",
+        "catboost"
+      ],
+      "retrieved_distances": [
+        0.5634,
+        0.5722,
+        0.5916,
+        0.5945,
+        0.5961
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "default direction"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "I want to classify text with many features but features are not independent \u2014 is there a fast probabilistic model that still works well?",
+      "difficulty": "hard",
+      "expected_sources": [
+        "naive-bayes"
+      ],
+      "retrieved_sources": [
+        "naive-bayes",
+        "naive-bayes",
+        "embedding-models-vector-search",
+        "retrieval-augmented-generation",
+        "k-nearest-neighbors"
+      ],
+      "retrieved_distances": [
+        0.5679,
+        0.6179,
+        0.6455,
+        0.6547,
+        0.6939
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "conditional independence",
+        "spam filtering",
+        "multinomial"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "what happens to the decision boundary when you increase k in k-NN from 1 to a large number?",
+      "difficulty": "hard",
+      "expected_sources": [
+        "k-nearest-neighbors"
+      ],
+      "retrieved_sources": [
+        "k-nearest-neighbors",
+        "decision-trees",
+        "k-nearest-neighbors",
+        "decision-trees",
+        "decision-trees"
+      ],
+      "retrieved_distances": [
+        0.5165,
+        0.5964,
+        0.6202,
+        0.7083,
+        0.7161
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "Voronoi",
+        "majority vote"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "compare the objective functions of ridge regression and support vector regression \u2014 how do they penalize coefficients differently?",
+      "difficulty": "hard",
+      "expected_sources": [
+        "ridge-lasso-elasticnet",
+        "support-vector-machines"
+      ],
+      "retrieved_sources": [
+        "ridge-lasso-elasticnet",
+        "ridge-lasso-elasticnet",
+        "support-vector-machines",
+        "ridge-lasso-elasticnet",
+        "support-vector-machines"
+      ],
+      "retrieved_distances": [
+        0.4036,
+        0.4535,
+        0.5454,
+        0.5463,
+        0.5533
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "L2 penalty",
+        "\u03b5-insensitive loss",
+        "slack variables",
+        "regularization"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "I need to build a chatbot that can look up company documents, but also remember conversation state and loop to ask follow-up questions. Which two frameworks should I combine?",
+      "difficulty": "hard",
+      "expected_sources": [
+        "retrieval-augmented-generation",
+        "langgraph-state-machines"
+      ],
+      "retrieved_sources": [
+        "multi-agent-systems",
+        "retrieval-augmented-generation",
+        "multi-agent-systems",
+        "langgraph-state-machines",
+        "langgraph-state-machines"
+      ],
+      "retrieved_distances": [
+        0.5722,
+        0.6343,
+        0.6838,
+        0.6899,
+        0.7093
+      ],
+      "recall_at_k": {
+        "recall@1": false,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "retrieval",
+        "state machine",
+        "checkpointing",
+        "tool use"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "how does CatBoost's ordered target encoding prevent leakage compared to regular target encoding?",
+      "difficulty": "hard",
+      "expected_sources": [
+        "catboost"
+      ],
+      "retrieved_sources": [
+        "catboost",
+        "catboost",
+        "catboost",
+        "retrieval-augmented-generation",
+        "xgboost"
+      ],
+      "retrieved_distances": [
+        0.4119,
+        0.6757,
+        0.7448,
+        0.7499,
+        0.805
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "permutation",
+        "lag",
+        "smoothing",
+        "overfitting"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "In the ReAct pattern, what is the risk if the model hallucinates an observation instead of executing a tool?",
+      "difficulty": "hard",
+      "expected_sources": [
+        "react-agent-pattern"
+      ],
+      "retrieved_sources": [
+        "react-agent-pattern",
+        "react-agent-pattern",
+        "react-agent-pattern",
+        "langgraph-state-machines",
+        "langgraph-state-machines"
+      ],
+      "retrieved_distances": [
+        0.5267,
+        0.6222,
+        0.6332,
+        0.7287,
+        0.731
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "fabricated observations",
+        "hallucination",
+        "action parsing",
+        "grounding"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "design a production prompt for sentiment analysis that includes JSON output, version control, and injection protection \u2014 what are the key engineering practices?",
+      "difficulty": "hard",
+      "expected_sources": [
+        "prompt-engineering-production"
+      ],
+      "retrieved_sources": [
+        "prompt-engineering-production",
+        "prompt-engineering-production",
+        "prompt-engineering-production",
+        "react-agent-pattern",
+        "agentic-ai-production"
+      ],
+      "retrieved_distances": [
+        0.4447,
+        0.5173,
+        0.5603,
+        0.6515,
+        0.6976
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "monitoring"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "when would you choose a linear model over a random forest even if the random forest has higher accuracy?",
+      "difficulty": "hard",
+      "expected_sources": [
+        "linear-logistic-regression",
+        "random-forest"
+      ],
+      "retrieved_sources": [
+        "random-forest",
+        "random-forest",
+        "decision-trees",
+        "catboost",
+        "random-forest"
+      ],
+      "retrieved_distances": [
+        0.4964,
+        0.5312,
+        0.591,
+        0.595,
+        0.6077
+      ],
+      "recall_at_k": {
+        "recall@1": true,
+        "recall@3": true,
+        "recall@5": true
+      },
+      "concepts_found": [
+        "interpretability",
+        "inference",
+        "coefficients",
+        "extrapolation"
+      ],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "what is the BERT architecture and how does masking work?",
+      "difficulty": "out-of-scope",
+      "expected_sources": [],
+      "retrieved_sources": [
+        "attention-transformers",
+        "attention-transformers",
+        "attention-transformers",
+        "retrieval-augmented-generation",
+        "embedding-models-vector-search"
+      ],
+      "retrieved_distances": [
+        0.6152,
+        0.6295,
+        0.6845,
+        0.7162,
+        0.7385
+      ],
+      "recall_at_k": {
+        "recall@1": null,
+        "recall@3": null,
+        "recall@5": null
+      },
+      "concepts_found": [],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "explain convolutional neural networks and pooling layers",
+      "difficulty": "out-of-scope",
+      "expected_sources": [],
+      "retrieved_sources": [
+        "feedforward-neural-networks",
+        "feedforward-neural-networks",
+        "feedforward-neural-networks",
+        "attention-transformers",
+        "backpropagation"
+      ],
+      "retrieved_distances": [
+        0.5243,
+        0.5462,
+        0.5715,
+        0.5818,
+        0.5923
+      ],
+      "recall_at_k": {
+        "recall@1": null,
+        "recall@3": null,
+        "recall@5": null
+      },
+      "concepts_found": [],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "how does batch normalization stabilize training?",
+      "difficulty": "out-of-scope",
+      "expected_sources": [],
+      "retrieved_sources": [
+        "feedforward-neural-networks",
+        "backpropagation",
+        "gradient-descent",
+        "backpropagation",
+        "gradient-descent"
+      ],
+      "retrieved_distances": [
+        0.6209,
+        0.6246,
+        0.6504,
+        0.6603,
+        0.6605
+      ],
+      "recall_at_k": {
+        "recall@1": null,
+        "recall@3": null,
+        "recall@5": null
+      },
+      "concepts_found": [],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "what is the difference between vanilla RNNs and LSTMs?",
+      "difficulty": "out-of-scope",
+      "expected_sources": [],
+      "retrieved_sources": [
+        "feedforward-neural-networks",
+        "attention-transformers",
+        "attention-transformers",
+        "backpropagation",
+        "attention-transformers"
+      ],
+      "retrieved_distances": [
+        0.6356,
+        0.6904,
+        0.7107,
+        0.7137,
+        0.7227
+      ],
+      "recall_at_k": {
+        "recall@1": null,
+        "recall@3": null,
+        "recall@5": null
+      },
+      "concepts_found": [],
+      "out_of_scope_violation": false
+    },
+    {
+      "query": "explain the Adam optimizer and its hyperparameters",
+      "difficulty": "out-of-scope",
+      "expected_sources": [],
+      "retrieved_sources": [
+        "k-nearest-neighbors",
+        "feedforward-neural-networks",
+        "attention-transformers",
+        "attention-transformers",
+        "backpropagation"
+      ],
+      "retrieved_distances": [
+        0.5435,
+        0.5439,
+        0.5643,
+        0.6047,
+        0.6066
+      ],
+      "recall_at_k": {
+        "recall@1": null,
+        "recall@3": null,
+        "recall@5": null
+      },
+      "concepts_found": [],
+      "out_of_scope_violation": false
+    }
+  ],
+  "total_queries": 35,
+  "in_domain_queries": 30,
+  "concept_eligible_queries": 30,
+  "out_of_scope_queries": 5
+}

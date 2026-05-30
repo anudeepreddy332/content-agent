@@ -17,7 +17,7 @@ import tiktoken
 import chromadb
 from chromadb.utils import embedding_functions
 from dotenv import load_dotenv
-
+from tools.query_kb import invalidate_bm25
 load_dotenv()
 
 
@@ -95,20 +95,10 @@ def save_to_kb(text: str, source: str, metadata: dict | None = None) -> bool:
             ids=ids,
             metadatas=metas,
         )
-
         print(f"[save_to_kb] Ingested {len(chunks)} chunks from: {source}")
+        invalidate_bm25()
         return True
 
     except Exception as e:
         print(f"[save_to_kb] ERROR: {e}")
         return False
-
-
-
-
-
-
-
-
-
-

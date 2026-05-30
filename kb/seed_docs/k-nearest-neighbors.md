@@ -44,3 +44,15 @@ print(clf.predict([[1.5]]))
 reg = KNeighborsRegressor(n_neighbors=2).fit(X, y_reg)
 print(reg.predict([[1.5]]))
 ```
+## Claim-Dense Reference Facts
+
+- scikit-learn's KNeighborsClassifier defaults to n_neighbors=5, metric='minkowski' with p=2 (Euclidean).
+- KD-tree query time is O(log N) for d < 20 dimensions; for d > 20, brute-force becomes competitive.
+- Ball tree handles high-dimensional data better than KD-tree; scikit-learn auto-selects via algorithm='auto'.
+- Weighted KNN uses w = 1/distance; uniform voting uses w = 1 for all k neighbors.
+- Optimal k is typically found via cross-validation; small k overfits, large k underfits (high bias).
+- For binary classification, k is chosen odd to avoid ties; for k=1, training accuracy is always 100%.
+- Curse of dimensionality: in d=100 dimensions, the ratio of max to min distance between points approaches 1.
+- Manhattan distance (L1) is preferred over Euclidean (L2) for high-dimensional sparse data like text.
+- Normalisation (MinMaxScaler or StandardScaler) is required before KNN; unnormalized features with large ranges dominate distance.
+- scikit-learn's BallTree and KDTree support leaf_size parameter (default 30) trading memory for query speed.

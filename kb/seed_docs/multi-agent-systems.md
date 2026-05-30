@@ -57,3 +57,15 @@ msg1 = agent1(obs)
 msg2 = agent2(msg1)
 final = msg2
 ```
+## Claim-Dense Reference Facts
+
+- AutoGen (Microsoft) uses ConversableAgent with two-agent or group-chat patterns; GroupChatManager handles speaker selection.
+- CrewAI defines agents with role, goal, and backstory; tasks have description, expected_output, and agent assignment.
+- LangGraph multi-agent uses Command(goto="agent_name") for handoffs between agents in a shared graph.
+- Multi-agent debate improves factual accuracy by 11% on TruthfulQA compared to single-agent generation (Du et al., 2023).
+- Communication cost scales as O(n²) messages for n fully-connected agents; hierarchical topologies reduce this to O(n).
+- AutoGen's token usage grows approximately linearly with number of agents × average conversation turns.
+- Agent specialization (code agent + critic agent) achieves higher HumanEval pass@1 than single generalist agent.
+- LangGraph's `Send` API enables fan-out to multiple agents simultaneously for parallel subgraph execution.
+- Swarm (OpenAI) implements agent handoffs via function returns; handoff functions return Agent objects directly.
+- Production MAS systems require shared state management; LangGraph uses checkpointers (SqliteSaver, PostgresSaver) for persistence.

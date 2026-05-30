@@ -66,3 +66,15 @@ class ProductionAgent:
             history.append({"action": action, "observation": obs})
         return "Time out"
 ```
+## Claim-Dense Reference Facts
+
+- LangGraph implements agent state as a TypedDict with reducers; `add_messages` is the built-in reducer for message lists.
+- LangSmith traces every LLM call, tool invocation, and chain step, storing latency, token counts, and inputs/outputs.
+- OpenAI function calling returns tool_calls as a list of {id, type, function: {name, arguments}} objects in the response.
+- Anthropic's tool_use content block returns {type, id, name, input} for each tool call in the assistant message.
+- Production agent step budgets are typically 5–15 steps for task completion; beyond 20 steps indicates planning failure.
+- LangChain's AgentExecutor accepts max_iterations and early_stopping_method="force" to enforce hard step limits.
+- Tenacity library implements exponential backoff with jitter: wait_exponential(multiplier=1, min=2, max=60).
+- Tool timeout enforcement requires asyncio.wait_for() with a timeout parameter; synchronous tools need threading.Timer.
+- LangSmith datasets enable regression testing by storing input/output pairs and evaluating new runs against stored expectations.
+- HITL in LangGraph is implemented via interrupt_before=["node_name"] in compile() and graph.update_state() to resume.

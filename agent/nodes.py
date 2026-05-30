@@ -279,6 +279,10 @@ def retrieve_node(state: AgentState) -> dict:
                 seen_urls.add(r["url"])
                 web_sources.append(r)
 
+    # Sort by Tavily relevance score descending, then keep top 10
+    web_sources.sort(key=lambda x: x.get("score", 0), reverse=True)
+    web_sources = web_sources[:10]
+
     # KB query — use topic + first 100 chars of problem_framing for richer context
     problem_framing_preview = state.get("draft_sections", {}).get("problem_framing", "")[:100]
     kb_query = f"{topic} {problem_framing_preview}".strip()
@@ -308,9 +312,9 @@ def _build_source_context(web_sources: list, kb_results: list) -> str:
     """Format sources into a compact string for the verify prompt."""
     parts = []
     for s in web_sources[:5]:
-        parts.append(f"[WEB] {s['url']}\n{s['content'][:200]}")
-    for k in kb_results[:3]:
-        parts.append(f"[KB] {k['source']}\n{k['text'][:200]}")
+        parts.append(f"[WEB] {s['url']}\n{s['content'][:500]}")
+    for k in kb_results[:5]:
+        parts.append(f"[KB] {k['source']}\n{k['text'][:800]}")
     return "\n\n".join(parts) if parts else "No sources available."
 
 def _build_citations(grounding_report: list, web_sources: list) -> str:
@@ -371,10 +375,7 @@ def _build_citations(grounding_report: list, web_sources: list) -> str:
 
 def verify_node(state: AgentState) -> dict:
     """
-    STUB: Full implementation on Day 24.
     Extracts factual claims from draft and scores each against retrieved sources.
-
-    For now: passes through with a neutral grounding score so the graph runs end-to-end.
     """
     log = get_logger("verify_node")
     t_start = time.time()
@@ -484,11 +485,8 @@ def _format_grounding_summary(grounding_report: list) -> str:
 
 def reflect_node(state: AgentState) -> dict:
     """
-       STUB: Full implementation on Day 24.
-       Self-evaluates draft on structure, depth, grounding. Scores 1-10.
-
-       For now: passes with score 8 so route_after_reflect sends to hitl.
-       """
+    Self-evaluates draft on structure, depth, grounding. Scores 1-10.
+    """
     log = get_logger("reflect_node")
     t_start = time.time()
 
@@ -642,7 +640,7 @@ def _render_code_snippets(raw: str) -> str:
         escaped = html_module.escape(raw.strip())
         return (
             '<div class="sl-code-block">'
-            '<div class="sl-code-header"><span class="sl-code-lang">text</span></div>'
+            '<div class="sl-code-label">TEXT</div>'
             f'<pre><code>{escaped}</code></pre>'
             '</div>'
         )
@@ -653,7 +651,7 @@ def _render_code_snippets(raw: str) -> str:
         escaped = html_module.escape(content.strip())
         blocks.append(
             f'<div class="sl-code-block">'
-            f'<div class="sl-code-header"><span class="sl-code-lang">{lang}</span></div>'
+            f'<div class="sl-code-label">{lang.upper()}</div>'
             f'<pre><code class="language-{lang}">{escaped}</code></pre>'
             f'</div>'
         )
@@ -737,6 +735,7 @@ def html_gen_node(state: AgentState) -> dict:
     client = _get_client()
     draft = state.get("draft_sections", {})
     topic = state["topic"]
+    topic_raw = topic
     run_id = state["run_id"]
 
     # Python renders 3 sections deterministically (no LLM, no tokens)
@@ -797,6 +796,16 @@ def html_gen_node(state: AgentState) -> dict:
     html = html.replace("{{SOURCES}}", citations_html)
 
 
+    # Fix HTML entities inside the LD+JSON block — JSON must not contain &amp; etc.
+    import re
+    def _fix_ldjson(match):
+        return match.group(0).replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+    html = re.sub(
+        r'<script type="application/ld\+json">.*?</script>',
+        _fix_ldjson,
+        html,
+        flags=re.DOTALL
+    )
 
     # Validate
     errors = []
@@ -880,6 +889,18 @@ def git_node(state: AgentState) -> dict:
     existing_latency = state.get("latency_ms", {})
     existing_latency["git"] = 0
     error_log = state.get("error_log", [])
+
+    # Dry-run guard — if GIT_PUSH_ENABLED is not "true", log intent and skip
+    git_push_enabled = os.environ.get("GIT_PUSH_ENABLED", "false").lower() == "true"
+    if not git_push_enabled:
+        log.info("git.dry_run", run_id=state["run_id"], branch=branch,
+                 note="GIT_PUSH_ENABLED is not true — skipping git operations")
+        return {
+            "branch_name": branch,
+            "git_status": "dry_run",
+            "latency_ms": existing_latency,
+            "error_log": error_log,
+        }
 
     # Validate
     if not html_content or not filename:

@@ -49,3 +49,25 @@ print(lin.coef_, lin.intercept_)
 log = LogisticRegression().fit(X, y_log)
 print(log.coef_, log.intercept_)
 ```
+## Claim-Dense Reference Facts
+
+- Scikit-learn `LinearRegression` uses scipy.linalg.lstsq (SVD‑based) by default; no regularization, intercept fitted unless `fit_intercept=False`.
+- Scikit-learn `LogisticRegression` defaults: penalty='l2', C=1.0, solver='lbfgs', max_iter=100, multi_class='auto'.
+- The logistic sigmoid function is σ(z) = 1 / (1 + e⁻ᶻ); its derivative is σ(z)(1−σ(z)).
+- Odds = p/(1−p); log‑odds = ln(odds); each unit increase in x multiplies odds by exp(β).
+- Logistic regression decision boundary: p=0.5 ↔ log‑odds=0 ↔ Xβ=0.
+- `LogisticRegression` solvers: 'lbfgs' (L2 only or no penalty), 'liblinear' (L1/L2, small datasets), 'saga' (L1/L2, elasticnet, large datasets).
+- ‘lbfgs’ solver handles multinomial loss; ‘liblinear’ only supports one‑vs‑rest.
+- For `penalty='elasticnet'`, set `l1_ratio` (0=ridge, 1=lasso) and `solver='saga'`.
+- C is inverse regularization strength: smaller C = stronger penalty; typical search range [0.001, 0.01, 0.1, 1, 10, 100].
+- LogisticRegression `class_weight='balanced'` adjusts weights inversely proportional to class frequencies.
+- Logistic regression predicts probabilities via `predict_proba()`; `predict()` returns the most likely class.
+- LinearRegression `score()` returns R² (coefficient of determination), bounded ≤ 1, can be negative for poorly fitting models.
+- Logistic regression typical evaluation: accuracy, precision, recall, F1, ROC‑AUC; `roc_auc_score(y_true, y_proba[:,1])`.
+- Assumptions for linear regression coefficient tests (t‑tests): errors normally distributed; without normality, use bootstrap confidence intervals.
+- Variance Inflation Factor (VIF) > 5–10 indicates multicollinearity among predictors.
+- For perfect separation in logistic regression, Firth’s penalized likelihood or adding a small L2 penalty (increasing C) can stabilize.
+- Scikit-learn `LinearRegression` does NOT natively handle missing values; pre‑impute with `SimpleImputer` or `IterativeImputer`.
+- Polynomial features can be generated with `sklearn.preprocessing.PolynomialFeatures(degree=2, include_bias=False)`.
+- Feature scaling (e.g., `StandardScaler`) is not required for linear regression but essential for regularized logistic regression.
+- The normal equation β̂ = (XᵀX)⁻¹Xᵀy is O(p³) in time; for p > 10k features, use SGD or mini‑batch methods.
