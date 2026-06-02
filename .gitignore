@@ -152,9 +152,11 @@ cython_debug/
 
 # Project-specific
 kb/chroma_db/
+kb/qdrant_data/
 outputs/runs/
 outputs/articles/
 outputs/tavily_cache/
 *.html
 
 docs/
+docker-compose.yml
