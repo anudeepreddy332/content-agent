@@ -1,9 +1,14 @@
 """
-ChromaDB local knowledge base query with BM25 hybrid retrieval.
+Qdrant-backed knowledge base query with BM25 hybrid retrieval.
+
+Replaces ChromaDB with Qdrant as the dense retrieval backend.
+Public interface is identical to the ChromaDB version:
+    query_kb(query, n_results) → list[dict]
+    invalidate_bm25()
 
 Retrieval strategy: two-stage fusion
-    1. Dense retrieval (ChromaDB cosine similarity) — captures semantic meaning
-    2. BM25 retrieval — captures exact term matches (critical for precise technical terms)
+    1. Dense retrieval via Qdrant (cosine similarity on all-MiniLM-L6-v2 embeddings)
+    2. BM25 retrieval over in-memory index rebuilt from Qdrant's stored payload
     3. Reciprocal Rank Fusion (k=60) — merges ranked lists without score normalization
 
 Why hybrid matters here:
@@ -17,96 +22,193 @@ Why RRF instead of score averaging:
     k=60 is standard — it prevents rank-1 from dominating the fusion.
 
 BM25 lifecycle:
-    Built lazily at first query from ChromaDB's stored documents.
-    Invalidated (set to None) by save_to_kb when new documents are added.
-    Rebuilt automatically on next query. Never persisted to disk — always rebuilt from source.
+    Built lazily from Qdrant's stored documents on first query.
+    Invalidated by save_to_kb when new documents are added.
+    Rebuilt automatically on next query. Never persisted to disk.
+
+Why Qdrant over ChromaDB:
+    - Runs in Docker — local dev environment matches production exactly
+    - Payload filtering — filter by topic, doc type, date without reloading all docs
+    - Scroll API — paginate large collections without loading everything into memory
+    - Concurrent writes are safe — ChromaDB's PersistentClient has known issues
 """
 
 import os
-import chromadb
-from chromadb.utils import embedding_functions
 from dotenv import load_dotenv
 
 load_dotenv()
 
-_collection = None
+# Qdrant client
+from qdrant_client import QdrantClient
+from sentence_transformers import SentenceTransformer
+
+
+# Module-level singletons
+_client: QdrantClient | None = None
+_encoder: SentenceTransformer | None = None
 _bm25 = None
-_bm25_docs = []
-_bm25_metas = []
+_bm25_docs: list[str] = []
+_bm25_metas: list[dict] = []
 
-def _get_collection():
-    global _collection
-    if _collection is None:
-        db_path = os.getenv("CHROMA_DB_PATH", "./kb/chroma_db")
-        collection_name = os.getenv("CHROMA_COLLECTION", "machinist_evergreen")
-
-        client = chromadb.PersistentClient(path=db_path)
-
-        # Local embedding model — free, fast, no API calls
-        ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"
-        )
-
-        # get_or_create: safe to call even if collection doesn't exist yet
-        _collection = client.get_or_create_collection(
-            name=collection_name,
-            embedding_function=ef,
-            metadata={"description": "Evergreen AI/ML concepts for themachinist.org"},
-        )
-
-    return _collection
+def _get_client() -> QdrantClient:
+    global _client
+    if _client is None:
+        url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        _client = QdrantClient(url=url)
+    return _client
 
 
-
-def _build_bm25():
+def _get_encoder() -> SentenceTransformer:
     """
-    Build BM25 index from all documents currently in ChromaDB.
+    Load all-MiniLM-L6-v2 once and reuse.
+    Same model used in save_to_kb.py (Must be in sync).
+    Embedding dimension: 384.
+    """
+    global _encoder
+    if _encoder is None:
+        _encoder = SentenceTransformer("all-MiniLM-L6-v2")
+    return _encoder
 
-    Why rebuild from ChromaDB instead of from disk?
-        ChromaDB is the source of truth — it may contain documents added via
-        save_to_kb (approved articles) that are not in seed_docs/. Building
-        from disk would miss those.
 
-    Failure modes:
-        - rank_bm25 not installed: raises ImportError — caught in query_kb
-        - ChromaDB empty: returns None — query_kb handles this gracefully
-        - ChromaDB fetch fails: raises, caught in query_kb
+def _collection_name() -> str:
+    return os.getenv("QDRANT_COLLECTION", "machinist_evergreen")
+
+
+def _collection_exists() -> bool:
+    """Return True if _collection exists and has at least one point."""
+    client = _get_client()
+    try:
+        info = client.get_collection(_collection_name())
+        return info.points_count > 0
+    except Exception:
+        return False
+
+
+def _count() -> int:
+    """Return total no. of points in the collection. 0 if collection is missing."""
+    client = _get_client()
+    try:
+        info = client.get_collection(_collection_name())
+        return info.points_count
+    except Exception:
+        return 0
+
+
+# BM25
+
+def _build_bm25() -> None:
+    """
+    Build BM25 index from all documents currently in Qdrant.
+
+    Uses Qdrant's scroll API to page through all points.
+    Scroll is the correct approach for full-collection reads —
+    it handles any collection size without loading everything at once.
+
+    Why not store the BM25 index on disk?
+        The index is a pure function of the stored documents.
+        Rebuilding is cheap at current collection size (~160 chunks).
+        Persisting adds complexity with no benefit until >10k chunks.
     """
     global _bm25, _bm25_docs, _bm25_metas
     from rank_bm25 import BM25Okapi
 
-    collection = _get_collection()
-    count = collection.count()
-    if count == 0:
+    client = _get_client()
+    collection = _collection_name()
+
+    if not _collection_exists():
         _bm25 = None
         _bm25_docs = []
         _bm25_metas = []
         return
 
-    # Fetch ALL documents from ChromaDB in one call
-    # Why not paginate? At 20 seed docs × ~8 chunks each = ~160 chunks.
-    # Even at 1000 chunks, this fits comfortably in memory.
-    # Revisit pagination only when collection exceeds ~10k chunks.
+    # Scroll through all points, page_size=100
+    # with_payload=True to get text and metadata
+    # with_vectors=False - we only need text for BM25
 
-    all_docs = collection.get(include=["documents", "metadatas"])
+    all_docs: list[str] = []
+    all_metas: list[dict] = []
+    offset = None
 
-    _bm25_docs = all_docs["documents"]
-    _bm25_metas = all_docs["metadatas"]
+    while True:
+        results, next_offset = client.scroll(
+            collection_name=collection,
+            limit=100,
+            offset=offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        for point in results:
+            payload = point.payload or {}
+            text = payload.get("text", "")
+            if text:
+                all_docs.append(text)
+                all_metas.append({
+                    "source": payload.get("source", "unknown"),
+                    "chunk_index": payload.get("chunk_index", 0),
+                })
+        if next_offset is None:
+            break
+        offset = next_offset
+
+
+    _bm25_docs = all_docs
+    _bm25_metas = all_metas
+
+    if not all_docs:
+        _bm25 = None
+        return
 
     # Tokenize
     # A proper tokenizer (spaCy, NLTK) would add latency with marginal gain here.
-    tokenized = [doc.lower().split() for doc in _bm25_docs]
+    tokenized = [doc.lower().split() for doc in all_docs]
     _bm25 = BM25Okapi(tokenized)
 
 
 
-def invalidate_bm25():
+def invalidate_bm25() -> None:
     """
     Called by save_to_kb after adding new documents.
-    Forces rebuild on next query.
+    Forces BM25 rebuild on next query.
     """
     global _bm25
     _bm25 = None
+
+
+
+def _bm25_query(query: str, n_results: int) -> list[dict]:
+    """
+    Run BM25 retrieval over the in-memory index.
+    Returns top-n results as {text, source, distance} dicts.
+    distance is set to 0.0 — BM25 doesn't produce distances, only scores.
+    """
+    global _bm25, _bm25_docs, _bm25_metas
+
+    if _bm25 is None:
+        _build_bm25()
+
+    if _bm25 is None:   # still None = collection empty
+        return []
+
+    tokenized_query = query.lower().split()
+    scores = _bm25.get_scores(tokenized_query)
+
+    # Get top-n indices by score
+    import numpy as np
+    top_indices = np.argsort(scores)[::-1][:n_results]
+
+    results = []
+    for idx in top_indices:
+        if scores[idx] == 0.0:
+            # BM25 score of 0 = no term overlap at all — not worth including
+            continue
+        results.append({
+            "text": _bm25_docs[idx],
+            "source": _bm25_metas[idx].get("source", "unknown"),
+            "distance": 0.0,
+        })
+
+    return results
+
 
 
 def _reciprocal_rank_fusion(
@@ -119,13 +221,13 @@ def _reciprocal_rank_fusion(
     Merge two ranked result lists using Reciprocal Rank Fusion.
 
     Args:
-        dense_results: Ranked list from ChromaDB (best first)
+        dense_results: Ranked list from Qdrant DB (best first)
         bm25_results:  Ranked list from BM25 (best first)
         k:             RRF damping constant (60 is standard)
         n:             Number of results to return
 
     How it works:
-        Each document gets score = sum of 1/(k + rank) across all rankers.
+        Each document gets score = sum of 1/(k + rank) across both rankers.
         Rank is 0-indexed. A document ranked #1 by dense and #3 by BM25 gets:
             1/(60+0) + 1/(60+2) = 0.01667 + 0.01613 = 0.03280
         A document ranked #1 by dense only gets:
@@ -168,94 +270,66 @@ def _reciprocal_rank_fusion(
 
     return output
 
-
-def _bm25_query(query: str, n_results: int) -> list[dict]:
-    """
-    Run BM25 retrieval over the in-memory index.
-    Returns top-n results as {text, source, distance} dicts.
-    distance is set to 0.0 — BM25 doesn't produce distances, only scores.
-    """
-    global _bm25, _bm25_docs, _bm25_metas
-
-    if _bm25 is None:
-        _build_bm25()
-
-    if _bm25 is None:   # still None = collection empty
-        return []
-
-    tokenized_query = query.lower().split()
-    scores = _bm25.get_scores(tokenized_query)
-
-    # Get top-n indices by score
-    import numpy as np
-    top_indices = np.argsort(scores)[::-1][:n_results]
-
-    results = []
-    for idx in top_indices:
-        if scores[idx] == 0.0:
-            # BM25 score of 0 = no term overlap at all — not worth including
-            continue
-        results.append({
-            "text": _bm25_docs[idx],
-            "source": _bm25_metas[idx].get("source", "unknown"),
-            "distance": 0.0,
-        })
-
-    return results
-
+# Public interface
 
 def query_kb(query: str, n_results: int = 5) -> list[dict]:
     """
-    Hybrid query: dense retrieval + BM25, fused via RRF.
+    Hybrid query: Qdrant dense + BM25, fused via RRF.
 
     Args:
-        query: Natural language query
+        query:     Natural language query string
         n_results: Number of results to return after fusion
 
     Returns:
         List of {text, source, distance, rrf_score} dicts, best first.
-        Returns empty list if KB has no documents.
+        Returns [] if collection is empty or Qdrant is unreachable.
 
     Failure modes:
-        - rank_bm25 not installed: falls back to dense-only, logs warning
-        - BM25 build fails: falls back to dense-only
+        - Qdrant not running: logs error, returns []
         - Collection empty: returns []
-        - ChromaDB query fails: returns [], logs error
+        - BM25 not installed: falls back to dense-only
+        - Encoder load fails: logs error, returns []
     """
-    collection = _get_collection()
-
-    # Guard: if KB is empty, return gracefully
-    if collection.count() == 0:
+    if not _collection_exists():
         return []
+    encoder = _get_encoder()
+    client = _get_client()
+    collection = _collection_name()
+    fetch_n = min(n_results * 2, _count())
 
-    # Dense retrieval
+
+    # Dense retrieval via Qdrant
 
     try:
-        dense_raw = collection.query(
-            query_texts=[query],
-            n_results=min(n_results * 2, collection.count()),   # fetch 2x, fusion trims to n
-            include=["documents", "metadatas", "distances"],
+        query_vector = encoder.encode(query).tolist()
+        search_results = client.search(
+            collection_name=collection,
+            query_vector=query_vector,
+            limit=fetch_n,
+            with_payload=True,
         )
-        dense_results = []
-        docs = dense_raw["documents"][0]
-        metas = dense_raw["metadatas"][0]
-        dists = dense_raw["distances"][0]
-
-        for doc, meta, dist in zip(docs, metas, dists):
+        dense_results: list[dict] = []
+        for hit in search_results:
+            payload = hit.payload or {}
+            # Qdrant returns score (cosine similarity, higher = better)
+            # Convert to distance convention (lower = better) for RRF compatibility:
+            # distance = 1 - score (cosine similarity ∈ [-1,1], distance ∈ [0,2])
+            distance = round(1.0 - hit.score, 4)
             dense_results.append({
-                "text": doc,
-                "source": meta.get("source", "unknown"),
-                "distance": round(dist, 4),
+                "text": payload.get("text", ""),
+                "source": payload.get("source", "unknown"),
+                "distance": distance,
             })
 
+
     except Exception as e:
-        print(f"[query_kb] Dense retrieval ERROR: {e}")
+        print(f"[query_kb] Qdrant search ERROR: {e}")
         return []
 
 
-    # BM 25 retrieval
+    # BM25 retrieval
     try:
-        bm25_results = _bm25_query(query, n_results=n_results * 2)
+        bm25_results = _bm25_query(query, n_results=fetch_n)
     except ImportError:
         print("[query_kb] WARNING: rank_bm25 not installed — falling back to dense-only")
         return dense_results[:n_results]

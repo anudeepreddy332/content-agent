@@ -1,14 +1,23 @@
 """
-tools/save_to_kb.py
--------------------
-Ingest approved articles back into ChromaDB.
-Called after HITL approval — this is how the KB self-improves.
+Ingest documents into Qdrant knowledge base.
 
-Chunking strategy:
-- 400-token chunks with 50-token overlap
-- Overlap prevents losing context at chunk boundaries
-  (a sentence split across a chunk boundary would lose its meaning otherwise)
-- tiktoken used for accurate token counting (not character counting)
+Replaces ChromaDB with Qdrant as the storage backend.
+Public interface is identical:
+    save_to_kb(text, source, metadata) → bool
+
+Chunking strategy: unchanged from Step 3
+    400-token chunks, 50-token overlap, tiktoken cl100k_base tokenizer.
+
+Embedding model: all-MiniLM-L6-v2 (384 dimensions)
+    Must stay in sync with query_kb.py — same model, same dimension.
+
+Collection creation:
+    Created automatically on first call if it doesn't exist.
+    Uses cosine distance — consistent with how all-MiniLM-L6-v2 was trained.
+
+Point IDs:
+    Qdrant requires integer or UUID point IDs.
+    Use uuid.uuid4() — no collision risk, no coordination needed.
 """
 
 import os
@@ -19,29 +28,60 @@ from chromadb.utils import embedding_functions
 from dotenv import load_dotenv
 from tools.query_kb import invalidate_bm25
 load_dotenv()
+from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client import QdrantClient
+from sentence_transformers import SentenceTransformer
 
+# Module level singletons
 
-_collection = None
+_client: QdrantClient | None = None
+_encoder: SentenceTransformer | None = None
 _tokenizer = tiktoken.get_encoding("cl100k_base")
 
 CHUNK_SIZE = 400    # tokens
 CHUNK_OVERLAP = 50  # tokens
 
-def _get_collection():
-    global _collection
-    if _collection is None:
-        db_path = os.getenv("CHROMA_DB_PATH", "./kb/chroma_db")
-        collection_name = os.getenv("CHROMA_COLLECTION", "machinist_evergreen")
+def _get_client() -> QdrantClient:
+    global _client
+    if _client is None:
+        url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        _client = QdrantClient(url=url)
 
-        client = chromadb.PersistentClient(path=db_path)
-        ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"
+    return _client
+
+
+def _get_encoder() -> SentenceTransformer:
+    global _encoder
+    if _encoder is None:
+        _encoder = SentenceTransformer("all-MiniLM-L6-v2")
+    return _encoder
+
+
+def _collection_name() -> str:
+    return os.getenv("QDRANT_COLLECTION", "machinist_evergreen")
+
+
+def _ensure_collection() -> None:
+    """
+    Create the Qdrant collection if it doesn't exist.
+    Safe to call on every ingest - no-ops if already exists.
+
+    Vector config:
+        size=384    — all-MiniLM-L6-v2 output dimension
+        distance=Cosine — correct for normalized sentence embeddings
+
+    """
+    client = _get_client()
+    collection = _collection_name()
+
+    existing = [c.name for c in client.get_collections().collections]
+    if collection not in existing:
+        client.create_collection(
+            collection_name=collection,
+            vectors_config=VectorParams(size=384, distance=Distance.COSINE),
         )
-        _collection = client.get_or_create_collection(
-            name=collection_name,
-            embedding_function=ef
-        )
-    return _collection
+        print(f"[save_to_kb] Created Qdrant collection: {collection}")
+
 
 
 def _chunk_text(text: str) -> list[str]:
@@ -64,40 +104,63 @@ def _chunk_text(text: str) -> list[str]:
 
 def save_to_kb(text: str, source: str, metadata: dict | None = None) -> bool:
     """
-    Chunk and ingest a text document into the KB.
+    Chunk and ingest a text document into the Qdrant.
 
     Args:
         text: Full text to ingest (markdown or plain text)
         source: Identifier for this document (e.g. filename or URL)
-        metadata: Optional dict of extra metadata stored alongside the chunk
+        metadata: Optional dict stored as Qdrant payload alongside each chunk
 
     Returns:
         True on success, False on failure.
+
+    What gets stored in each Qdrant point:
+        vector:  384-dim embedding of the chunk text
+        payload: {text, source, chunk_index, filename, type, ...metadata}
+
+    Failure modes:
+        - Qdrant not running: exception caught, returns False
+        - Empty text: returns False immediately
+        - Embedding failure: returns False
     """
-
-    collection = _get_collection()
     chunks = _chunk_text(text)
-
     if not chunks:
         print(f"[save_to_kb] No chunks produced for source: {source}")
         return False
 
-    base_meta = {"source": source}
-    if metadata:
-        base_meta.update(metadata)
-
     try:
-        ids = [f"{source}-chunk-{i}-{uuid.uuid4().hex[:6]}" for i in range(len(chunks))]
-        metas = [{**base_meta, "chunk_index": i} for i in range(len(chunks))]
+        _ensure_collection()
+        encoder = _get_encoder()
+        client = _get_client()
+        collection = _collection_name()
+        embeddings = encoder.encode(chunks, show_progress_bar=False)
 
-        collection.add(
-            documents=chunks,
-            ids=ids,
-            metadatas=metas,
-        )
+        base_payload = {"source": source}
+        if metadata:
+            base_payload.update(metadata)
+
+        points: list[PointStruct] = []
+        for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+            payload = {
+                **base_payload,
+                "text": chunk,
+                "chunk_index": i,
+            }
+            points.append(PointStruct(
+                id=str(uuid.uuid4()),
+                vector=embedding.tolist(),
+                payload=payload,
+            ))
+        # Upsert in batches of 100 to avoid request size limits
+        batch_size = 100
+        for batch_start in range(0, len(points), batch_size):
+            batch = points[batch_start:batch_start + batch_size]
+            client.upsert(collection_name=collection, points=batch)
+
         print(f"[save_to_kb] Ingested {len(chunks)} chunks from: {source}")
         invalidate_bm25()
         return True
+
 
     except Exception as e:
         print(f"[save_to_kb] ERROR: {e}")

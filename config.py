@@ -1,6 +1,4 @@
 """
-config.py
----------
 Central configuration for content-agent.
 Home for all tunable constants.
 
@@ -41,6 +39,14 @@ COST_GATE_USD = 0.10            # Abort run if total cost exceeds this
 CHROMA_DB_PATH = os.getenv("CHROMA_DB_PATH", "./kb/chroma_db")
 CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "machinist_evergreen")
 KB_N_RESULTS = 5            # How many KB chunks to retrieve per query
+
+# Qdrant – step 4 migration target
+# QDRANT_URL points to local docker during dev, Qdrant Cloud in production
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "machinist_evergreen")
+# Embedding dimension for all-MiniLM-L6-v2 — must match the model used in save_to_kb
+QDRANT_EMBEDDING_DIM = 384
+
 
 # Tavily
 TAVILY_MAX_RESULTS = 5      # Per query. 3 queries × 5 results = up to 15 sources (deduped)
