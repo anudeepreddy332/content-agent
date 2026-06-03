@@ -1,0 +1,78 @@
+{
+  "timestamp": "20260529_123623",
+  "total_runs": 1,
+  "successful": [
+    {
+      "id": 15,
+      "topic": "LangGraph \u2014 State Machines for AI Agents",
+      "status": "success",
+      "wall_time_s": 87.1,
+      "telemetry": {
+        "run_id": "1694c45c-498b-42c7-afd7-86e46707f836",
+        "topic": "LangGraph \u2014 State Machines for AI Agents",
+        "slug": "langgraph--state-machines-for-ai-agents",
+        "timestamp": "2026-05-29T07:07:49.625730",
+        "iterations": 2,
+        "reflection_score": 7,
+        "grounding_score": 0.603,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 20473,
+        "total_cost_usd": 0.01294,
+        "latency_ms": {
+          "draft": 12451,
+          "retrieve": 3338,
+          "verify": 14525,
+          "reflect": 3055,
+          "html_gen": 5325,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 20,
+        "claims_weak": 8,
+        "claims_unverified": 12
+      },
+      "stderr": null
+    }
+  ],
+  "failed": 0,
+  "mean_cost_usd": 0.01294,
+  "mean_grounding": 0.603,
+  "mean_reflection": 7.0,
+  "mean_wall_time_s": 87.1,
+  "mean_html_errors": 0.0,
+  "runs": [
+    {
+      "id": 15,
+      "topic": "LangGraph \u2014 State Machines for AI Agents",
+      "status": "success",
+      "wall_time_s": 87.1,
+      "telemetry": {
+        "run_id": "1694c45c-498b-42c7-afd7-86e46707f836",
+        "topic": "LangGraph \u2014 State Machines for AI Agents",
+        "slug": "langgraph--state-machines-for-ai-agents",
+        "timestamp": "2026-05-29T07:07:49.625730",
+        "iterations": 2,
+        "reflection_score": 7,
+        "grounding_score": 0.603,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 20473,
+        "total_cost_usd": 0.01294,
+        "latency_ms": {
+          "draft": 12451,
+          "retrieve": 3338,
+          "verify": 14525,
+          "reflect": 3055,
+          "html_gen": 5325,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 20,
+        "claims_weak": 8,
+        "claims_unverified": 12
+      },
+      "stderr": null
+    }
+  ]
+}

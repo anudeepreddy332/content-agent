@@ -1,0 +1,78 @@
+{
+  "timestamp": "20260529_121443",
+  "total_runs": 1,
+  "successful": [
+    {
+      "id": 10,
+      "topic": "Feedforward Neural Networks",
+      "status": "success",
+      "wall_time_s": 55.5,
+      "telemetry": {
+        "run_id": "562c4826-70d8-4b12-b359-5b000887d222",
+        "topic": "Feedforward Neural Networks",
+        "slug": "feedforward-neural-networks",
+        "timestamp": "2026-05-29T06:45:38.693384",
+        "iterations": 1,
+        "reflection_score": 7,
+        "grounding_score": 0.643,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 10945,
+        "total_cost_usd": 0.00677,
+        "latency_ms": {
+          "draft": 14395,
+          "retrieve": 18482,
+          "verify": 13250,
+          "reflect": 2594,
+          "html_gen": 5062,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 25,
+        "claims_weak": 0,
+        "claims_unverified": 10
+      },
+      "stderr": null
+    }
+  ],
+  "failed": 0,
+  "mean_cost_usd": 0.00677,
+  "mean_grounding": 0.643,
+  "mean_reflection": 7.0,
+  "mean_wall_time_s": 55.5,
+  "mean_html_errors": 0.0,
+  "runs": [
+    {
+      "id": 10,
+      "topic": "Feedforward Neural Networks",
+      "status": "success",
+      "wall_time_s": 55.5,
+      "telemetry": {
+        "run_id": "562c4826-70d8-4b12-b359-5b000887d222",
+        "topic": "Feedforward Neural Networks",
+        "slug": "feedforward-neural-networks",
+        "timestamp": "2026-05-29T06:45:38.693384",
+        "iterations": 1,
+        "reflection_score": 7,
+        "grounding_score": 0.643,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 10945,
+        "total_cost_usd": 0.00677,
+        "latency_ms": {
+          "draft": 14395,
+          "retrieve": 18482,
+          "verify": 13250,
+          "reflect": 2594,
+          "html_gen": 5062,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 25,
+        "claims_weak": 0,
+        "claims_unverified": 10
+      },
+      "stderr": null
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "timestamp": "20260530_120907",
+  "total_runs": 1,
+  "successful": [
+    {
+      "id": 20,
+      "topic": "Multi-Agent Systems \u2014 When and Why",
+      "status": "success",
+      "wall_time_s": 77.3,
+      "telemetry": {
+        "run_id": "fdd6d4e4-07dc-4e0b-b37d-193dd77d9c78",
+        "topic": "Multi-Agent Systems \u2014 When and Why",
+        "slug": "multi-agent-systems--when-and-why",
+        "timestamp": "2026-05-30T06:40:23.823562",
+        "iterations": 2,
+        "reflection_score": 7,
+        "grounding_score": 0.726,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 19209,
+        "total_cost_usd": 0.012,
+        "latency_ms": {
+          "draft": 11530,
+          "retrieve": 2886,
+          "verify": 12935,
+          "reflect": 2081,
+          "html_gen": 3275,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 24,
+        "claims_weak": 7,
+        "claims_unverified": 4
+      },
+      "stderr": null
+    }
+  ],
+  "failed": 0,
+  "mean_cost_usd": 0.012,
+  "mean_grounding": 0.726,
+  "mean_reflection": 7.0,
+  "mean_wall_time_s": 77.3,
+  "mean_html_errors": 0.0,
+  "runs": [
+    {
+      "id": 20,
+      "topic": "Multi-Agent Systems \u2014 When and Why",
+      "status": "success",
+      "wall_time_s": 77.3,
+      "telemetry": {
+        "run_id": "fdd6d4e4-07dc-4e0b-b37d-193dd77d9c78",
+        "topic": "Multi-Agent Systems \u2014 When and Why",
+        "slug": "multi-agent-systems--when-and-why",
+        "timestamp": "2026-05-30T06:40:23.823562",
+        "iterations": 2,
+        "reflection_score": 7,
+        "grounding_score": 0.726,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 19209,
+        "total_cost_usd": 0.012,
+        "latency_ms": {
+          "draft": 11530,
+          "retrieve": 2886,
+          "verify": 12935,
+          "reflect": 2081,
+          "html_gen": 3275,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 24,
+        "claims_weak": 7,
+        "claims_unverified": 4
+      },
+      "stderr": null
+    }
+  ]
+}
