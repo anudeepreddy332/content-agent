@@ -22,6 +22,7 @@ import uuid
 import json
 from pathlib import Path
 from agent.graph import build_graph
+from config import PROMPT_VERSION
 
 
 def _write_telemetry(state: dict):
@@ -35,6 +36,7 @@ def _write_telemetry(state: dict):
         "topic": state.get("topic"),
         "slug": state.get("slug"),
         "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+        "prompt_version": state.get("prompt_version", "unknown"),
         "iterations": state.get("iterations", 0),
         "reflection_score": state.get("reflection_score"),
         "grounding_score": state.get("grounding_score"),
@@ -104,6 +106,7 @@ def run(topic, card_id, series, auto):
         "branch_name": None,
         "git_status": None,
         "run_id": run_id,
+        "prompt_version": PROMPT_VERSION,
         "total_tokens": 0,
         "total_cost_usd": 0.0,
         "latency_ms": {},

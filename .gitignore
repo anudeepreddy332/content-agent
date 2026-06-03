@@ -1,5 +1,4 @@
-### Python template
-# Byte-compiled / optimized / DLL files
+
 __pycache__/
 *.py[cod]
 *$py.class
@@ -156,7 +155,10 @@ kb/qdrant_data/
 outputs/runs/
 outputs/articles/
 outputs/tavily_cache/
+outputs/.DS_Store
 *.html
-
+.DS_Store
 docs/
 docker-compose.yml
+kb/.DS_Store
+outputs/retrieval_eval.json

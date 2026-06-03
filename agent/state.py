@@ -50,6 +50,7 @@ class AgentState(TypedDict):
 
     # Telemetry
     run_id: str
+    prompt_version: str
     total_tokens: int
     total_cost_usd: float
     latency_ms: dict            # {draft, retrieve, verify, reflect, html_gen, git}

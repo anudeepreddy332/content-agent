@@ -116,7 +116,7 @@ def run_benchmark(limit, topic_id):
         "runs": results,
     }
 
-    out_path = Path(f"outputs/benchmark_{timestamp}.json")
+    out_path = Path(f"outputs/benchmark_results/benchmark_{timestamp}.json")
     out_path.write_text(json.dumps(aggregate, indent=2))
 
     print(f"\n{'═' * 60}")

@@ -58,13 +58,15 @@ def _get_client() -> TavilyClient:
     return _client
 
 
-def web_search(query: str, max_results: int = 5) -> list[dict]:
+def web_search(query: str, max_results: int = 5, force_refresh: bool = False) -> list[dict]:
     """
     Search the web via Tavily.
 
     Args:
         query: Search query string
         max_results: Number of results to return (default 5)
+        force_refresh: If True, bypass the file cache and fetch fresh results.
+                       Use when a prior pass returned suspiciously few results.
 
     Returns:
         List of {title, url, content, score} dicts.
@@ -72,9 +74,10 @@ def web_search(query: str, max_results: int = 5) -> list[dict]:
         Score is Tavily's relevance score (0.0–1.0).
     """
     key = _cache_key(query, max_results)
-    cached = _load_cache(key)
-    if cached is not None:
-        return cached
+    if not force_refresh:
+        cached = _load_cache(key)
+        if cached is not None:
+            return cached
 
     client = _get_client()
 

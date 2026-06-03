@@ -3,21 +3,11 @@ agent/nodes.py
 --------------
 All node and edge functions for the content-agent pipeline.
 
-Day 23 status:
-    COMPLETE: draft_node, retrieve_node
-    STUBBED:  verify_node, reflect_node, hitl_node, html_gen_node, git_node
-
 Each node signature: (state: AgentState) -> dict
     Nodes return ONLY the keys they update.
     LangGraph merges the return dict into the existing state.
-    Never return the full state — only your changes.
+    Never return the full state — only the changes.
 
-Vulnerabilities to watch:
-    - draft_node: DeepSeek may return malformed JSON. Handled with try/except + fallback.
-    - retrieve_node: Tavily may return 0 results on niche topics. KB may be empty.
-      Both are handled — node degrades gracefully, does not crash.
-    - draft_node loops back from hitl if feedback is given. On loop, iterations increments.
-      Max iterations enforced in route_after_reflect, not here.
 """
 
 import os
@@ -41,6 +31,7 @@ from config import (
     COST_GATE_USD,
     DEEPSEEK_INPUT_COST_PER_M,
     DEEPSEEK_OUTPUT_COST_PER_M,
+    PROMPT_VERSION,
 )
 from observability.logger import get_logger
 import html as html_module
@@ -279,6 +270,32 @@ def retrieve_node(state: AgentState) -> dict:
                 seen_urls.add(r["url"])
                 web_sources.append(r)
 
+    # Sparse source detection: if first pass returns < 3 sources, force a cache bypass.
+    # Root cause of the June 2 benchmark anomaly: retrieve latency was 84ms (Qdrant-only),
+    # meaning Tavily returned a stale empty cache hit instead of live results.
+    # A second pass with force_refresh=True overwrites that cache entry.
+
+    new_error_log = list(state.get("error_log", []))
+
+    if len(web_sources) < 3:
+        log.warning("retrieve.sparse_web_sources",
+                    run_id=state["run_id"],
+                    count=len(web_sources),
+                    action="forcing_refresh")
+
+        web_sources = []
+        seen_urls = set()
+        for query in queries:
+            results = web_search(query, max_results=5, force_refresh=True)
+            for r in results:
+                if r["url"] not in seen_urls:
+                    seen_urls.add(r["url"])
+                    web_sources.append(r)
+
+        new_error_log.append(
+            f"retrieve: web sources sparse on first pass, forced refresh — "
+            f"post-refresh count={len(web_sources)}"
+        )
     # Sort by Tavily relevance score descending, then keep top 10
     web_sources.sort(key=lambda x: x.get("score", 0), reverse=True)
     web_sources = web_sources[:10]
@@ -305,16 +322,34 @@ def retrieve_node(state: AgentState) -> dict:
         "web_sources": web_sources,
         "kb_results": kb_results,
         "latency_ms": existing_latency,
+        "error_log": new_error_log,
     }
 
 
 def _build_source_context(web_sources: list, kb_results: list) -> str:
-    """Format sources into a compact string for the verify prompt."""
+    """Format sources into a compact string for the verify prompt.
+
+    Truncation limits — do not change without re-running benchmark:
+      WEB_CHARS: Tavily content median is ~1923 chars (305-result sample).
+                 1500 chars covers ~78% of a typical result and the full
+                 lower quartile. 98% of results were cut at the old 500-char
+                 limit, which is why obvious claims were marked unverified.
+      KB_CHARS:  Seed docs average ~5294 chars. 800 chars covered only 15%
+                 of a doc (intro paragraph only). 2000 chars covers ~38%,
+                 reaching algorithm-level detail in all seed docs.
+      Context budget at these limits (worst-case, 5+5 sources):
+        source tokens  ~4375  |  total input ~5695  |  headroom 54k / 64k
+        cost delta per verify call: +$0.00074 (+14.3%)
+    """
+    # PHASE-1 EXPERIMENT: raised from 500 → 1500 (web) and 800 → 2000 (kb)
+    WEB_CHARS = 1500
+    KB_CHARS  = 2000
+
     parts = []
     for s in web_sources[:5]:
-        parts.append(f"[WEB] {s['url']}\n{s['content'][:500]}")
+        parts.append(f"[WEB] {s['url']}\n{s['content'][:WEB_CHARS]}")
     for k in kb_results[:5]:
-        parts.append(f"[KB] {k['source']}\n{k['text'][:800]}")
+        parts.append(f"[KB] {k['source']}\n{k['text'][:KB_CHARS]}")
     return "\n\n".join(parts) if parts else "No sources available."
 
 def _build_citations(grounding_report: list, web_sources: list) -> str:
