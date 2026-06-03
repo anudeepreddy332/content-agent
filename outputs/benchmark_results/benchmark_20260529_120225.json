@@ -1,0 +1,78 @@
+{
+  "timestamp": "20260529_120225",
+  "total_runs": 1,
+  "successful": [
+    {
+      "id": 19,
+      "topic": "Agentic AI in Real Production",
+      "status": "success",
+      "wall_time_s": 89.9,
+      "telemetry": {
+        "run_id": "adc05709-8ebb-4c2c-8581-78ad352ae7aa",
+        "topic": "Agentic AI in Real Production",
+        "slug": "agentic-ai-in-real-production",
+        "timestamp": "2026-05-29T06:33:54.536796",
+        "iterations": 2,
+        "reflection_score": 6,
+        "grounding_score": 0.255,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 18542,
+        "total_cost_usd": 0.01117,
+        "latency_ms": {
+          "draft": 15705,
+          "retrieve": 3051,
+          "verify": 10933,
+          "reflect": 2866,
+          "html_gen": 5461,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 3,
+        "claims_weak": 7,
+        "claims_unverified": 19
+      },
+      "stderr": null
+    }
+  ],
+  "failed": 0,
+  "mean_cost_usd": 0.01117,
+  "mean_grounding": 0.255,
+  "mean_reflection": 6.0,
+  "mean_wall_time_s": 89.9,
+  "mean_html_errors": 0.0,
+  "runs": [
+    {
+      "id": 19,
+      "topic": "Agentic AI in Real Production",
+      "status": "success",
+      "wall_time_s": 89.9,
+      "telemetry": {
+        "run_id": "adc05709-8ebb-4c2c-8581-78ad352ae7aa",
+        "topic": "Agentic AI in Real Production",
+        "slug": "agentic-ai-in-real-production",
+        "timestamp": "2026-05-29T06:33:54.536796",
+        "iterations": 2,
+        "reflection_score": 6,
+        "grounding_score": 0.255,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 18542,
+        "total_cost_usd": 0.01117,
+        "latency_ms": {
+          "draft": 15705,
+          "retrieve": 3051,
+          "verify": 10933,
+          "reflect": 2866,
+          "html_gen": 5461,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 3,
+        "claims_weak": 7,
+        "claims_unverified": 19
+      },
+      "stderr": null
+    }
+  ]
+}

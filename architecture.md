@@ -195,13 +195,14 @@ def verify_claim(claim: str, sources: list[dict]) -> dict:
 
 ## 5. KB Design
 
-- **Storage**: ChromaDB local, `/kb/chroma_db/`
+- **Storage**: Qdrant (Docker), `/kb/qdrant_data/` — run via `docker-compose up -d`
 - **Collection**: `machinist_evergreen`
+- - **Legacy**: ChromaDB data preserved at `/kb/chroma_db/` — retrieval baseline at `outputs/retrieval-baseline-chromadb/`
 - **Content**: AI/ML concepts that do not change — definitions, formulas, architectures, theory
 - **NOT in KB**: Recent events, model releases, benchmark results, paper findings (→ Tavily)
 - **Chunk size**: 400 tokens, 50-token overlap
-- **Embedding model**: `text-embedding-3-small` via DeepSeek-compatible endpoint, OR
-  `all-MiniLM-L6-v2` via sentence-transformers (local, free, fast — preferred for KB)
+- **Embedding model**: `all-MiniLM-L6-v2` via sentence-transformers (384-dim, local, free)
+- **Multi-format ingest**: `tools/document_ingest.py` — Docling-based parser for PDF, DOCX, PPTX, XLSX, MD, TXT, HTML
 - **Self-improvement**: Every HITL-approved article is ingested into KB post-publish
 - **Seed content**: `scripts/ingest.py` — point at `/kb/seed_docs/` folder of `.md` or `.txt` files
 
@@ -312,3 +313,16 @@ When OpenClaw is set up, the WhatsApp trigger maps directly to this CLI interfac
 Deterministic tasks (git operations, file I/O, HTML templating) → OpenClaw.
 Probabilistic tasks (drafting, reflection, grounding) → DeepSeek via this pipeline.
 No changes to the pipeline needed — only a new entry point wrapper.
+
+---
+
+## 12. Build Steps (Phase 4a)
+
+| Step | Branch | Status | Deliverable |
+|------|--------|--------|-------------|
+| 1 | feature/step1-logging-verify-reflect | ✓ merged | structlog, real verify_node, real reflect_node, smoke_test |
+| 2 | feature/step2-full-pipeline | ✓ merged | html_gen_node (Option B), git_node, main.py CLI |
+| 3 | feature/step3-evals-benchmark | ✓ merged | Prompt evals, retrieval eval (100% recall@3), 5-round benchmark, gate report |
+| 4 | feature/step4-qdrant-docling | ✓ merged | Qdrant migration, BM25+RRF, Docling ingest, retrieval_eval_qdrant |
+| 5 | feature/step5-api-fault-injection | in progress | FastAPI, failure injection (5 fault modes) |
+| 6 | — | planned | Docker, docker-compose app service, AWS |

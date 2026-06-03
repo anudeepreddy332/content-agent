@@ -1,0 +1,37 @@
+{
+  "timestamp": "20260528_050542",
+  "total_runs": 3,
+  "successful": [],
+  "failed": 3,
+  "mean_cost_usd": 0.0,
+  "mean_grounding": 0.0,
+  "mean_reflection": 0.0,
+  "mean_wall_time_s": 0.9,
+  "mean_html_errors": 0.0,
+  "runs": [
+    {
+      "id": 1,
+      "topic": "Linear & Logistic Regression",
+      "status": "success",
+      "wall_time_s": 1.1,
+      "telemetry": null,
+      "stderr": null
+    },
+    {
+      "id": 2,
+      "topic": "Ridge, Lasso & ElasticNet",
+      "status": "success",
+      "wall_time_s": 0.7,
+      "telemetry": null,
+      "stderr": null
+    },
+    {
+      "id": 3,
+      "topic": "Support Vector Machines",
+      "status": "success",
+      "wall_time_s": 0.8,
+      "telemetry": null,
+      "stderr": null
+    }
+  ]
+}

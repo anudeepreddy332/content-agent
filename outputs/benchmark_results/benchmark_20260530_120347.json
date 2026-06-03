@@ -1,0 +1,78 @@
+{
+  "timestamp": "20260530_120347",
+  "total_runs": 1,
+  "successful": [
+    {
+      "id": 15,
+      "topic": "LangGraph \u2014 State Machines for AI Agents",
+      "status": "success",
+      "wall_time_s": 67.6,
+      "telemetry": {
+        "run_id": "5c441310-540a-4ef6-9ed8-6b5f7fe28e0d",
+        "topic": "LangGraph \u2014 State Machines for AI Agents",
+        "slug": "langgraph--state-machines-for-ai-agents",
+        "timestamp": "2026-05-30T06:34:54.865892",
+        "iterations": 2,
+        "reflection_score": 7,
+        "grounding_score": 0.678,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 17407,
+        "total_cost_usd": 0.01008,
+        "latency_ms": {
+          "draft": 11293,
+          "retrieve": 3981,
+          "verify": 9090,
+          "reflect": 2324,
+          "html_gen": 3918,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 21,
+        "claims_weak": 1,
+        "claims_unverified": 7
+      },
+      "stderr": null
+    }
+  ],
+  "failed": 0,
+  "mean_cost_usd": 0.01008,
+  "mean_grounding": 0.678,
+  "mean_reflection": 7.0,
+  "mean_wall_time_s": 67.6,
+  "mean_html_errors": 0.0,
+  "runs": [
+    {
+      "id": 15,
+      "topic": "LangGraph \u2014 State Machines for AI Agents",
+      "status": "success",
+      "wall_time_s": 67.6,
+      "telemetry": {
+        "run_id": "5c441310-540a-4ef6-9ed8-6b5f7fe28e0d",
+        "topic": "LangGraph \u2014 State Machines for AI Agents",
+        "slug": "langgraph--state-machines-for-ai-agents",
+        "timestamp": "2026-05-30T06:34:54.865892",
+        "iterations": 2,
+        "reflection_score": 7,
+        "grounding_score": 0.678,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 17407,
+        "total_cost_usd": 0.01008,
+        "latency_ms": {
+          "draft": 11293,
+          "retrieve": 3981,
+          "verify": 9090,
+          "reflect": 2324,
+          "html_gen": 3918,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 21,
+        "claims_weak": 1,
+        "claims_unverified": 7
+      },
+      "stderr": null
+    }
+  ]
+}

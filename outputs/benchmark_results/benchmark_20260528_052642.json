@@ -1,0 +1,206 @@
+{
+  "timestamp": "20260528_052642",
+  "total_runs": 3,
+  "successful": [
+    {
+      "id": 1,
+      "topic": "Linear & Logistic Regression",
+      "status": "success",
+      "wall_time_s": 67.8,
+      "telemetry": {
+        "run_id": "da2eca71-4ff0-4625-9b14-459286aa243e",
+        "topic": "Linear & Logistic Regression",
+        "slug": "linear-and-logistic-regression",
+        "timestamp": "2026-05-28T05:27:49.165447",
+        "iterations": 2,
+        "reflection_score": 6,
+        "grounding_score": 0.472,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 14986,
+        "total_cost_usd": 0.00934,
+        "latency_ms": {
+          "draft": 11010,
+          "retrieve": 3172,
+          "verify": 11163,
+          "reflect": 2229,
+          "html_gen": 4214,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 13,
+        "claims_weak": 4,
+        "claims_unverified": 12
+      },
+      "stderr": null
+    },
+    {
+      "id": 2,
+      "topic": "Ridge, Lasso & ElasticNet",
+      "status": "success",
+      "wall_time_s": 79.1,
+      "telemetry": {
+        "run_id": "ec9028bf-8d9b-4c6d-9e90-9935bfda46fa",
+        "topic": "Ridge, Lasso & ElasticNet",
+        "slug": "ridge-lasso-and-elasticnet",
+        "timestamp": "2026-05-28T05:29:08.247871",
+        "iterations": 2,
+        "reflection_score": 7,
+        "grounding_score": 0.824,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 17646,
+        "total_cost_usd": 0.01139,
+        "latency_ms": {
+          "draft": 12063,
+          "retrieve": 3088,
+          "verify": 11142,
+          "reflect": 2269,
+          "html_gen": 4513,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 23,
+        "claims_weak": 3,
+        "claims_unverified": 1
+      },
+      "stderr": null
+    },
+    {
+      "id": 3,
+      "topic": "Support Vector Machines",
+      "status": "success",
+      "wall_time_s": 51.0,
+      "telemetry": {
+        "run_id": "bfb43fbe-91b7-4a2d-8ff1-d2e51367d689",
+        "topic": "Support Vector Machines",
+        "slug": "support-vector-machines",
+        "timestamp": "2026-05-28T05:29:59.293497",
+        "iterations": 1,
+        "reflection_score": 7,
+        "grounding_score": 0.889,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 9155,
+        "total_cost_usd": 0.00598,
+        "latency_ms": {
+          "draft": 11779,
+          "retrieve": 19464,
+          "verify": 11755,
+          "reflect": 1829,
+          "html_gen": 4614,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 27,
+        "claims_weak": 3,
+        "claims_unverified": 1
+      },
+      "stderr": null
+    }
+  ],
+  "failed": 0,
+  "mean_cost_usd": 0.0089,
+  "mean_grounding": 0.728,
+  "mean_reflection": 6.7,
+  "mean_wall_time_s": 66.0,
+  "mean_html_errors": 0.0,
+  "runs": [
+    {
+      "id": 1,
+      "topic": "Linear & Logistic Regression",
+      "status": "success",
+      "wall_time_s": 67.8,
+      "telemetry": {
+        "run_id": "da2eca71-4ff0-4625-9b14-459286aa243e",
+        "topic": "Linear & Logistic Regression",
+        "slug": "linear-and-logistic-regression",
+        "timestamp": "2026-05-28T05:27:49.165447",
+        "iterations": 2,
+        "reflection_score": 6,
+        "grounding_score": 0.472,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 14986,
+        "total_cost_usd": 0.00934,
+        "latency_ms": {
+          "draft": 11010,
+          "retrieve": 3172,
+          "verify": 11163,
+          "reflect": 2229,
+          "html_gen": 4214,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 13,
+        "claims_weak": 4,
+        "claims_unverified": 12
+      },
+      "stderr": null
+    },
+    {
+      "id": 2,
+      "topic": "Ridge, Lasso & ElasticNet",
+      "status": "success",
+      "wall_time_s": 79.1,
+      "telemetry": {
+        "run_id": "ec9028bf-8d9b-4c6d-9e90-9935bfda46fa",
+        "topic": "Ridge, Lasso & ElasticNet",
+        "slug": "ridge-lasso-and-elasticnet",
+        "timestamp": "2026-05-28T05:29:08.247871",
+        "iterations": 2,
+        "reflection_score": 7,
+        "grounding_score": 0.824,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 17646,
+        "total_cost_usd": 0.01139,
+        "latency_ms": {
+          "draft": 12063,
+          "retrieve": 3088,
+          "verify": 11142,
+          "reflect": 2269,
+          "html_gen": 4513,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 23,
+        "claims_weak": 3,
+        "claims_unverified": 1
+      },
+      "stderr": null
+    },
+    {
+      "id": 3,
+      "topic": "Support Vector Machines",
+      "status": "success",
+      "wall_time_s": 51.0,
+      "telemetry": {
+        "run_id": "bfb43fbe-91b7-4a2d-8ff1-d2e51367d689",
+        "topic": "Support Vector Machines",
+        "slug": "support-vector-machines",
+        "timestamp": "2026-05-28T05:29:59.293497",
+        "iterations": 1,
+        "reflection_score": 7,
+        "grounding_score": 0.889,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 9155,
+        "total_cost_usd": 0.00598,
+        "latency_ms": {
+          "draft": 11779,
+          "retrieve": 19464,
+          "verify": 11755,
+          "reflect": 1829,
+          "html_gen": 4614,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 27,
+        "claims_weak": 3,
+        "claims_unverified": 1
+      },
+      "stderr": null
+    }
+  ]
+}

@@ -21,6 +21,9 @@ Why Docling over pypdf/python-docx:
     Output is clean markdown — same format as existing seed docs.
 """
 from pathlib import Path
+import tiktoken
+
+_enc = tiktoken.get_encoding("cl100k_base")
 
 _converter = None
 
@@ -43,8 +46,7 @@ def _get_converter():
 
 def _chunk(text: str, source: str, fmt: str, chunk_size: int = 400, overlap: int = 50) -> list[dict]:
     """Token based chunking — same as save_to_kb."""
-    import tiktoken
-    enc = tiktoken.get_encoding("cl100k_base")
+    enc = _enc
     tokens = enc.encode(text)
     chunks: list[dict] = []
     start = 0
@@ -53,7 +55,7 @@ def _chunk(text: str, source: str, fmt: str, chunk_size: int = 400, overlap: int
         end = start + chunk_size
         chunk_text = enc.decode(tokens[start:end])
         chunks.append({
-            "text": text,
+            "text": chunk_text,
             "source": source,
             "format": fmt,
             "chunk_index": i,
