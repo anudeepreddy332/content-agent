@@ -50,6 +50,12 @@ QDRANT_EMBEDDING_DIM = 384
 
 # Tavily
 TAVILY_MAX_RESULTS = 5      # Per query. 3 queries × 5 results = up to 15 sources (deduped)
+TAVILY_MIN_AVG_SCORE = 0.5  # Force cache bypass if first-pass avg Tavily score is below this.
+                            # Tavily scores: 0.9+ = highly relevant, 0.5-0.7 = moderate,
+                            # <0.5 = low relevance. Cached results scoring below 0.5 indicate
+                            # stale or off-topic sources that will produce poor grounding.
+                            # Raise to 0.6 if stale-cache refreshes are too infrequent.
+                            # Lower to 0.4 if legitimate low-scoring topics are refreshing unnecessarily.
 
 # Git integration
 THEMACHINIST_REPO_PATH = os.getenv("THEMACHINIST_REPO_PATH", "/Users/anudeep/PycharmProjects/themachinist-website")

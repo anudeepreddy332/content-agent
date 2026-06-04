@@ -33,6 +33,7 @@ from config import (
     DEEPSEEK_INPUT_COST_PER_M,
     DEEPSEEK_OUTPUT_COST_PER_M,
     PROMPT_VERSION,
+    TAVILY_MIN_AVG_SCORE,
 )
 from observability.logger import get_logger
 import html as html_module
@@ -318,16 +319,31 @@ def retrieve_node(state: AgentState) -> dict:
                 seen_urls.add(r["url"])
                 web_sources.append(r)
 
-    # Sparse source detection: if first pass returns < 3 sources, force a cache bypass.
-    # Root cause of the June 2 benchmark anomaly: retrieve latency was 84ms (Qdrant-only),
-    # meaning Tavily returned a stale empty cache hit instead of live results.
-    # A second pass with force_refresh=True overwrites that cache entry.
+    # Source quality gate: force cache bypass if first-pass sources are sparse OR low-scoring.
+    # COUNT check (< 3): catches empty/near-empty returns.
+    # SCORE check (avg < TAVILY_MIN_AVG_SCORE): catches the stale-cache case where the
+    #   cache has entries (bypassing the count check) but they are off-topic or outdated.
+    #   Confirmed by benchmark 20260604: Topic 1 retrieve=118ms (cache hit), grounding=0.636;
+    #   Topics 2 & 3 retrieve=6000ms+ (live), grounding=0.86+.
+    # A second pass with force_refresh=True overwrites the cache entry with fresh results.
+
+    avg_score = (
+        sum(r.get("score", 0.0) for r in web_sources) / len(web_sources)
+        if web_sources else 0.0
+    )
+    needs_refresh = len(web_sources) < 3 or avg_score < TAVILY_MIN_AVG_SCORE
 
 
-    if len(web_sources) < 3:
-        log.warning("retrieve.sparse_web_sources",
+    if needs_refresh:
+        refresh_reason = (
+            f"count={len(web_sources)}" if len(web_sources) < 3
+            else f"avg_score={round(avg_score, 3)} < {TAVILY_MIN_AVG_SCORE}"
+        )
+        log.warning("retrieve.low_quality_sources",
                     run_id=state["run_id"],
                     count=len(web_sources),
+                    avg_score=round(avg_score, 3),
+                    reason=refresh_reason,
                     action="forcing_refresh")
 
         web_sources = []
@@ -349,8 +365,8 @@ def retrieve_node(state: AgentState) -> dict:
                     web_sources.append(r)
 
         new_error_log.append(
-            f"retrieve: web sources sparse on first pass, forced refresh — "
-            f"post-refresh count={len(web_sources)}"
+            f"retrieve: low quality sources on first pass ({refresh_reason}), "
+            f"forced refresh — post-refresh count={len(web_sources)}"
         )
     # Sort by Tavily relevance score descending, then keep top 10
     web_sources.sort(key=lambda x: x.get("score", 0), reverse=True)
