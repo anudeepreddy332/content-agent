@@ -14,8 +14,9 @@ import os
 import json
 import time
 from pathlib import Path
-from openai import OpenAI
+from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
 from dotenv import load_dotenv
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 load_dotenv()
 
 from agent.state import AgentState, DraftSections
@@ -51,10 +52,46 @@ def _get_client() -> OpenAI:
         base_url=DEEPSEEK_BASE_URL,
     )
 
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type((
+        RateLimitError,
+        APIConnectionError,
+        APITimeoutError,
+        InternalServerError,
+    )),
+    reraise=True,
+)
+
+def _llm_call(client: OpenAI, **kwargs):
+    """
+    Thin retry wrapper around client.chat.completions.create().
+
+    Retries up to 3 times on transient errors only:
+        RateLimitError     — 429, back off and retry
+        APIConnectionError — network failure, retry
+        APITimeoutError    — request timed out, retry
+        InternalServerError — 500, server-side transient, retry
+
+    Does NOT retry:
+        AuthenticationError — wrong API key, will never succeed
+        BadRequestError     — malformed prompt, will never succeed
+
+    reraise=True: after 3 failures the original exception propagates to
+    main.py's crash handler, which writes telemetry and re-raises.
+
+    Wait schedule: 2s → 4s → 8s (capped at 10s). Max total wait: ~14s.
+    """
+    return client.chat.completions.create(**kwargs)
+
+
+
 def _load_system_prompt() -> str:
     """Load draft system prompt from prompts/draft_system.md."""
     prompt_path = Path("prompts/draft_system.md")
-    if not prompt_path:
+    if not prompt_path.exists():
         raise FileNotFoundError(f"Draft system prompt not found at {prompt_path}")
 
     # Strip the comment header lines (lines starting with #) before the actual prompt
@@ -147,7 +184,8 @@ def draft_node(state: AgentState) -> dict:
         {"role": "user", "content": user_message},
     ]
 
-    response = client.chat.completions.create(
+    response = _llm_call(
+        client,
         model=DEEPSEEK_MODEL,
         messages=messages,
         temperature=DRAFT_TEMPERATURE,
@@ -263,8 +301,18 @@ def retrieve_node(state: AgentState) -> dict:
     seen_urls = set()
     web_sources = []
 
+    # Declare before the first loop so Tavily errors can be captured there too
+    new_error_log = list(state.get("error_log", []))
+
     for query in queries:
-        results = web_search(query, max_results=5)
+        try:
+            results = web_search(query, max_results=5)
+        except Exception as e:
+            new_error_log.append(f"[retrieve] Tavily error for query '{query[:50]}': {e}")
+            log.warning("retrieve.tavily_error",
+                        run_id=state["run_id"], query=query, error=str(e))
+            continue
+
         for r in results:
             if r["url"] not in seen_urls:
                 seen_urls.add(r["url"])
@@ -275,7 +323,6 @@ def retrieve_node(state: AgentState) -> dict:
     # meaning Tavily returned a stale empty cache hit instead of live results.
     # A second pass with force_refresh=True overwrites that cache entry.
 
-    new_error_log = list(state.get("error_log", []))
 
     if len(web_sources) < 3:
         log.warning("retrieve.sparse_web_sources",
@@ -286,7 +333,16 @@ def retrieve_node(state: AgentState) -> dict:
         web_sources = []
         seen_urls = set()
         for query in queries:
-            results = web_search(query, max_results=5, force_refresh=True)
+            try:
+                results = web_search(query, max_results=5, force_refresh=True)
+            except Exception as e:
+                new_error_log.append(
+                    f"[retrieve] Tavily force_refresh error for query '{query[:50]}': {e}"
+                )
+                log.warning("retrieve.tavily_refresh_error",
+                            run_id=state["run_id"], query=query, error=str(e))
+                continue
+
             for r in results:
                 if r["url"] not in seen_urls:
                     seen_urls.add(r["url"])
@@ -427,7 +483,8 @@ def verify_node(state: AgentState) -> dict:
 
     source_context = _build_source_context(state["web_sources"], state["kb_results"])
 
-    claim_response = client.chat.completions.create(
+    claim_response = _llm_call(
+        client,
         model=DEEPSEEK_MODEL,
         messages=[
             {"role": "system", "content": VERIFY_SYSTEM},
@@ -533,7 +590,8 @@ def reflect_node(state: AgentState) -> dict:
     client = _get_client()
     grounding_summary = _format_grounding_summary(state.get("grounding_report", []))
 
-    response = client.chat.completions.create(
+    response = _llm_call(
+        client,
         model=DEEPSEEK_MODEL,
         messages=[
             {
@@ -726,7 +784,8 @@ RULES:
 Content to convert:
 {technical_dive}"""
 
-    response = client.chat.completions.create(
+    response = _llm_call(
+        client,
         model=DEEPSEEK_MODEL,
         messages=[
             {"role": "system", "content": "You are an HTML conversion engine. Return only valid HTML elements, no markdown, no fences, no preamble."},

@@ -16,6 +16,7 @@ from tavily import TavilyClient
 import hashlib
 import json
 from pathlib import Path
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 
 
@@ -58,6 +59,30 @@ def _get_client() -> TavilyClient:
     return _client
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    reraise=True,
+)
+
+def _call_tavily(client: TavilyClient, query: str, max_results: int) -> dict:
+    """
+    Inner Tavily API call with tenacity retry.
+
+    Retries up to 3 times on any exception (network errors, timeouts, rate limits).
+    reraise=True: after 3 failures the original exception propagates to web_search,
+    which propagates it to retrieve_node, which logs it to error_log in state.
+
+    Wait schedule: 2s → 4s → 8s (capped at 10s).
+    """
+    return client.search(
+        query=query,
+        max_results=max_results,
+        include_raw_content=False,
+        search_depth="advanced",
+    )
+
+
 def web_search(query: str, max_results: int = 5, force_refresh: bool = False) -> list[dict]:
     """
     Search the web via Tavily.
@@ -70,8 +95,10 @@ def web_search(query: str, max_results: int = 5, force_refresh: bool = False) ->
 
     Returns:
         List of {title, url, content, score} dicts.
-        Content is extracted full text, not just a snippet.
-        Score is Tavily's relevance score (0.0–1.0).
+
+    Raises:
+        Exception: If all 3 Tavily retry attempts fail. Caller (retrieve_node)
+                   is expected to catch this and append to error_log.
     """
     key = _cache_key(query, max_results)
     if not force_refresh:
@@ -81,26 +108,17 @@ def web_search(query: str, max_results: int = 5, force_refresh: bool = False) ->
 
     client = _get_client()
 
-    try:
-        response = client.search(
-            query=query,
-            max_results=max_results,
-            include_raw_content=False,
-            search_depth="advanced",
-        )
+    response = _call_tavily(client, query, max_results)
 
-        results = []
-        for r in response.get("results", []):
-            results.append({
-                "title": r.get("title", ""),
-                "url": r.get("url", ""),
-                "content": r.get("content", ""),
-                "score": r.get("score", 0.0),
-            })
-        _save_cache(key, results)
+    results = []
 
-        return results
+    for r in response.get("results", []):
+        results.append({
+            "title": r.get("title", ""),
+            "url": r.get("url", ""),
+            "content": r.get("content", ""),
+            "score": r.get("score", 0.0),
+        })
+    _save_cache(key, results)
 
-    except Exception as e:
-        print(f"[web_search] ERROR: {e}")
-        return []
+    return results

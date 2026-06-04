@@ -73,6 +73,15 @@ def cli():
               help="Auto-approve HITL (benchmark mode only)")
 
 def run(topic, card_id, series, auto):
+    # Validate required credentials before doing any work.
+    # Fail here instead of mid-pipeline with a cryptic API error.
+    missing = [v for v in ("DEEPSEEK_API_KEY", "TAVILY_API_KEY") if not os.getenv(v)]
+    if missing:
+        raise click.UsageError(
+            f"Missing required environment variables: {', '.join(missing)}\n"
+            f"Copy .env.example to .env and fill in the missing values."
+        )
+
     os.environ["HITL_AUTO_APPROVE"] = "1" if auto else "0"
 
     slug = (
