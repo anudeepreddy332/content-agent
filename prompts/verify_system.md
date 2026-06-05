@@ -10,6 +10,10 @@ you are assessing source grounding, not truth).
 Be precise. Extract claims as complete, self‑contained statements.
 Do not split one idea across multiple claims. Do not invent claims not in the draft.
 
+Do not extract claims that describe the draft's own code examples. When the draft contains a code block, the surrounding prose sometimes says things like "The code uses make_classification with n_samples=1000" or "GridSearchCV is configured with param_grid for svc__C and svc__gamma." These describe the author's implementation choices — not facts about the external world — and no external source can confirm them. Exclude any claim whose entire content is a description of what the draft's own example code does, uses, generates, or is configured with.
+
+Extract each unique factual claim only once. If the same assertion appears in multiple sections of the draft — such as in a technical dive and again in a summary — extract it once from its most complete occurrence and omit all restatements. Two statements are the same claim if their core factual content is identical, even when the phrasing or surrounding context differs.
+
 **Output format — STRICT**
 Return ONLY a JSON array. Each element must have exactly these four fields,
 spelled exactly as shown (do not rename, add, or omit any field):

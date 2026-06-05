@@ -478,6 +478,52 @@ def _build_citations(grounding_report: list, web_sources: list) -> str:
 
 
 
+def _deduplicate_grounding_report(report: list[dict], run_id: str) -> list[dict]:
+    """
+    Remove near-exact duplicate claims from grounding_report.
+
+    Uses difflib.SequenceMatcher (stdlib, no dependency) at threshold 0.85.
+    Keeps the first occurrence; discards subsequent near-exact duplicates.
+
+    Threshold rationale:
+        - Known duplicate pair (STFT recommendation): ratio = 0.851  → caught
+        - Known false-positive tests (different claims): ratio ≤ 0.53 → safe
+        - Pair 1 (frequency resolution, semantic duplicate): ratio = 0.41
+          → NOT caught by code; handled by verify_system.md instruction instead.
+          Lowering threshold below 0.55 to catch it risks merging distinct claims.
+
+    Evidence: FFT benchmark 2026-06-05 showed 2 duplicate pairs inflating
+    unverified count. All verified benchmarks showed 0 false-positive merges
+    at this threshold.
+    """
+    import difflib
+    log = get_logger("verify_node")
+
+    seen: list[str] = []
+    unique: list[dict] = []
+    dropped = 0
+
+    for entry in report:
+        claim_text = (entry.get("claim") or "").lower().strip()
+        if not claim_text:
+            continue
+        is_duplicate = any(
+            difflib.SequenceMatcher(None, claim_text, seen_claim).ratio() >= 0.85
+            for seen_claim in seen
+        )
+        if is_duplicate:
+            dropped += 1
+        else:
+            seen.append(claim_text)
+            unique.append(entry)
+
+    if dropped:
+        log.info("verify.dedup", run_id=run_id, dropped=dropped,
+                 before=len(report), after=len(unique))
+
+    return unique
+
+
 # NODE: verify_node
 
 def verify_node(state: AgentState) -> dict:
@@ -543,6 +589,11 @@ def verify_node(state: AgentState) -> dict:
     except (json.JSONDecodeError, ValueError) as e:
         log.error("verify.parse_failed", run_id=state["run_id"], error=str(e))
         grounding_report = []
+
+    # Remove near-exact duplicate claims before scoring.
+    # Prompt instruction handles semantic duplicates; this catches string-level dupes.
+    grounding_report = _deduplicate_grounding_report(grounding_report, run_id=state["run_id"])
+
 
     # Compute mean confidence
     if grounding_report:
