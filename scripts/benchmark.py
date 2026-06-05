@@ -14,6 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+from config import GROUNDING_FLOOR
 
 @click.command()
 @click.option("--limit", default=None, type=int, help="Run first N topics only")
@@ -92,6 +93,12 @@ def run_benchmark(limit, topic_id):
                   f"hitl={telemetry.get('hitl_status')} | "
                   f"git={telemetry.get('git_status')} | "
                   f"{elapsed:.0f}s")
+            bd = telemetry.get("grounding_breakdown", {})
+            if bd and telemetry.get("grounding_score", 1.0) < 0.75:
+                print(f"    ↳ unverified: {telemetry.get('claims_unverified', 0)} claims  "
+                      f"({bd.get('unverified_no_source', 0)} no-source / "
+                      f"{bd.get('unverified_has_source', 0)} has-source) | "
+                      f"conf_unverified={bd.get('mean_confidence_unverified', 0):.2f}")
         else:
             print(f"  {status} (no telemetry found) | {elapsed:.0f}s")
 
@@ -113,6 +120,23 @@ def run_benchmark(limit, topic_id):
             / max(len(successful), 1),
             1
         ),
+        "mean_unverified_rate": round(
+            sum(
+                r["telemetry"].get("claims_unverified", 0) /
+                max(
+                    r["telemetry"].get("claims_verified", 0) +
+                    r["telemetry"].get("claims_weak", 0) +
+                    r["telemetry"].get("claims_unverified", 0),
+                    1,
+                )
+                for r in successful
+            ) / max(len(successful), 1),
+            3,
+        ),
+        "runs_below_grounding_floor": sum(
+            1 for r in successful
+            if r["telemetry"].get("grounding_score", 1.0) < GROUNDING_FLOOR
+        ),
         "runs": results,
     }
 
@@ -121,9 +145,11 @@ def run_benchmark(limit, topic_id):
 
     print(f"\n{'═' * 60}")
     print(f"Benchmark Complete")
-    print(f"  Successful : {aggregate['successful']}/{aggregate['total_runs']}")
+    print(f"  Successful : {len(successful)}/{aggregate['total_runs']}")
     print(f"  Mean cost  : ${aggregate['mean_cost_usd']:.5f}")
     print(f"  Mean grounding: {aggregate['mean_grounding']:.2f}")
+    print(f"  Mean unverified rate: {aggregate['mean_unverified_rate']:.1%}")
+    print(f"  Runs below floor ({GROUNDING_FLOOR:.0%}): {aggregate['runs_below_grounding_floor']}/{len(successful)}")
     print(f"  Mean reflection: {aggregate['mean_reflection']:.1f}")
     print(f"  Mean HTML errors/run: {aggregate['mean_html_errors']:.1f}")
     print(f"  Report: {out_path}")

@@ -31,6 +31,12 @@ def _write_telemetry(state: dict):
     out_path = Path(f"outputs/runs/{run_id}.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Pre-compute slices once — used for both aggregate counts and breakdown
+    report = state.get("grounding_report", [])
+    unverified = [r for r in report if r.get("status") == "unverified"]
+    verified = [r for r in report if r.get("status") == "verified"]
+
+
     record = {
         "run_id": run_id,
         "topic": state.get("topic"),
@@ -39,6 +45,7 @@ def _write_telemetry(state: dict):
         "prompt_version": state.get("prompt_version", "unknown"),
         "iterations": state.get("iterations", 0),
         "reflection_score": state.get("reflection_score"),
+        "reflection_notes": state.get("reflection_notes", ""),
         "grounding_score": state.get("grounding_score"),
         "hitl_status": state.get("hitl_status"),
         "git_status": state.get("git_status"),
@@ -52,7 +59,26 @@ def _write_telemetry(state: dict):
                            if r.get("status") == "weak"),
         "claims_unverified": sum(1 for r in state.get("grounding_report", [])
                                  if r.get("status") == "unverified"),
+
+        # Categorised breakdown: directly answers "why did grounding fail?"
+        #   unverified_no_source  → retrieval gap (Tavily never found a relevant source)
+        #   unverified_has_source → precision mismatch or hallucination
+        #   mean_confidence_*     → verify model calibration signal
+        "grounding_breakdown": {
+            "unverified_no_source": sum(1 for r in unverified if not r.get("source_url")),
+            "unverified_has_source": sum(1 for r in unverified if r.get("source_url")),
+            "weak_count": sum(1 for r in report if r.get("status") == "weak"),
+            "mean_confidence_verified": round(
+                sum(r.get("confidence", 0) for r in verified) / max(len(verified), 1), 3,
+            ),
+            "mean_confidence_unverified": round(
+                sum(r.get("confidence", 0) for r in unverified) / max(len(unverified), 1), 3,
+            ),
+        },
+        # Full claim-level evidence
+        "grounding_report": report,
     }
+
     out_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
     return out_path
 

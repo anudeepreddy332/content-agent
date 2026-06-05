@@ -563,7 +563,7 @@ def verify_node(state: AgentState) -> dict:
              run_id=state["run_id"],
              grounding_score=round(grounding_score, 3),
              claims=len(grounding_report),
-             verfied=n_verified,
+             verified=n_verified,
              weak=n_weak,
              unverified=n_unverified,
              latency_ms=latency,
