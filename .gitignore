@@ -162,3 +162,4 @@ docs/
 docker-compose.yml
 kb/.DS_Store
 outputs/retrieval_eval.json
+tmp/

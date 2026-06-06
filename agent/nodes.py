@@ -292,6 +292,7 @@ def retrieve_node(state: AgentState) -> dict:
     # Speed and cost. LLM query generation adds a full round-trip for marginal gain.
     # These three angles cover 90% of what the verify_node needs.
 
+
     queries = [
         f"{topic} explained technical",
         f"{topic} failure modes limitations production",
