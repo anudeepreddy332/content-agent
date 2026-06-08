@@ -306,6 +306,7 @@ def retrieve_node(state: AgentState) -> dict:
     # Declare before the first loop so Tavily errors can be captured there too
     new_error_log = list(state.get("error_log", []))
 
+
     for query in queries:
         try:
             results = web_search(query, max_results=5)
