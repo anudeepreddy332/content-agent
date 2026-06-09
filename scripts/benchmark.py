@@ -87,9 +87,15 @@ def run_benchmark(limit, topic_id):
         results.append(result)
 
         if telemetry:
+            v = telemetry.get("claims_verified", 0)
+            w = telemetry.get("claims_weak", 0)
+            u = telemetry.get("claims_unverified", 0)
+            total = v + w + u
+            uvr = u / total if total else 0
             print(f"  cost=${telemetry['total_cost_usd']:.4f} | "
                   f"grounding={telemetry.get('grounding_score', 0):.2f} | "
                   f"reflection={telemetry.get('reflection_score', 0)} | "
+                  f"claims={total} (v={v} w={w} u={u}) | uvr={uvr:.2f} | "
                   f"hitl={telemetry.get('hitl_status')} | "
                   f"git={telemetry.get('git_status')} | "
                   f"{elapsed:.0f}s")

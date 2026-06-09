@@ -153,6 +153,7 @@ cython_debug/
 kb/chroma_db/
 kb/qdrant_data/
 outputs/runs/
+
 outputs/articles/
 outputs/tavily_cache/
 outputs/.DS_Store
@@ -162,5 +163,6 @@ docs/
 docker-compose.yml
 kb/.DS_Store
 outputs/retrieval_eval.json
-tmp/outputs/m1/
 outputs/m2/
+outputs/m1/
+tmp/m2_sources

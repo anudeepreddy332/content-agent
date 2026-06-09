@@ -167,6 +167,24 @@ def draft_node(state: AgentState) -> dict:
     if state.get("hitl_feedback"):
         feedback_block = f"\n\nREVISION FEEDBACK FROM HUMAN REVIEWER:\n{state['hitl_feedback']}\nAddress this feedback specifically in the new draft."
 
+    # M2: source-aware drafting. Gated on SOURCE_AWARE_DRAFT (NOT on source presence),
+    # so the blind baseline never injects sources even on a revision iteration where
+    # web_sources is already populated in state. Treatment injects retrieved evidence.
+    source_block = ""
+    if os.environ.get("SOURCE_AWARE_DRAFT") == "1":
+        web_sources = state.get("web_sources", []) or []
+        kb_results = state.get("kb_results", []) or []
+        if web_sources or kb_results:
+            source_context = _build_source_context(web_sources[:6], kb_results[:3])
+            source_block = (
+                "\n\nGROUNDING SOURCES (retrieved for this topic):\n"
+                f"{source_context}\n\n"
+                "Ground the article in these sources. Assert only what the sources support. "
+                "Synthesize in your own words — do not copy source sentences. "
+                "If you cannot support a point from the sources, omit it rather than guessing. "
+                "Prefer fewer well-supported claims over broad unsupported ones."
+            )
+
     user_message = f"""Write a technical article for The Machinist on the following topic.
 
                     Topic: {state['topic']}

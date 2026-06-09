@@ -77,6 +77,15 @@ def _write_telemetry(state: dict):
         },
         # Full claim-level evidence
         "grounding_report": report,
+        "web_sources_count": len(state.get("web_sources", []) or []),
+        "kb_results_count": len(state.get("kb_results", []) or []),
+
+        "web_sources": [
+            {"url": s.get("url"), "score": s.get("score"),
+             "content": (s.get("content") or "")[:2000]}
+            for s in (state.get("web_sources", []) or [])
+        ],
+
     }
 
     out_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
