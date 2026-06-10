@@ -75,6 +75,18 @@ def _write_telemetry(state: dict):
                 sum(r.get("confidence", 0) for r in unverified) / max(len(unverified), 1), 3,
             ),
         },
+        # Grounded-depth metric (M3): rewards substantive claims that are verified.
+        #   SV = substantive AND verified (the objective to maximize)
+        #   unverified_fraction = UVR (the grounding gate; must stay <= 0.15)
+        "grounded_depth": {
+            "SV": sum(1 for r in report
+                      if r.get("specificity") == "substantive" and r.get("status") == "verified"),
+            "S": sum(1 for r in report if r.get("specificity") == "substantive"),
+            "V": len(verified),
+            "N": len(report),
+            "verified_fraction": round(len(verified) / max(len(report), 1), 3),
+            "unverified_fraction": round(len(unverified) / max(len(report), 1), 3),
+        },
         # Full claim-level evidence
         "grounding_report": report,
         "web_sources_count": len(state.get("web_sources", []) or []),

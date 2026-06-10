@@ -65,16 +65,9 @@ def build_graph() -> StateGraph:
 
     # M2 toggle: source-aware drafting reorders retrieve BEFORE draft so the
     # draft writes against retrieved evidence. Default (unset/0) keeps blind drafting.
-    source_aware = os.environ.get("SOURCE_AWARE_DRAFT") == "1"
-    if source_aware:
-        builder.set_entry_point("retrieve")
-        builder.add_edge("retrieve", "draft")
-        builder.add_edge("draft", "verify")
-    else:
-        builder.set_entry_point("draft")
-        builder.add_edge("draft", "retrieve")
-        builder.add_edge("retrieve", "verify")
-
+    builder.set_entry_point("retrieve")
+    builder.add_edge("retrieve", "draft")
+    builder.add_edge("draft", "verify")
     builder.add_edge("verify", "reflect")
 
     # Conditional edge after reflect

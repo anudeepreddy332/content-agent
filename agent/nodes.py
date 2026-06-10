@@ -167,11 +167,8 @@ def draft_node(state: AgentState) -> dict:
     if state.get("hitl_feedback"):
         feedback_block = f"\n\nREVISION FEEDBACK FROM HUMAN REVIEWER:\n{state['hitl_feedback']}\nAddress this feedback specifically in the new draft."
 
-    # M2: source-aware drafting. Gated on SOURCE_AWARE_DRAFT (NOT on source presence),
-    # so the blind baseline never injects sources even on a revision iteration where
-    # web_sources is already populated in state. Treatment injects retrieved evidence.
     source_block = ""
-    if os.environ.get("SOURCE_AWARE_DRAFT") == "1":
+    if state.get("web_sources") or state.get("kb_results"):
         web_sources = state.get("web_sources", []) or []
         kb_results = state.get("kb_results", []) or []
         if web_sources or kb_results:
@@ -179,23 +176,27 @@ def draft_node(state: AgentState) -> dict:
             source_block = (
                 "\n\nGROUNDING SOURCES (retrieved for this topic):\n"
                 f"{source_context}\n\n"
-                "Ground the article in these sources. Assert only what the sources support. "
-                "Synthesize in your own words — do not copy source sentences. "
-                "If you cannot support a point from the sources, omit it rather than guessing. "
-                "Prefer fewer well-supported claims over broad unsupported ones."
+                "Use these sources to make SPECIFIC, substantive technical claims — mechanisms, "
+                "conditions, tradeoffs, failure modes, concrete details — but ONLY where a source "
+                "actually contains that specific detail. For well-known background NOT covered by "
+                "these sources, state it in general terms and do NOT attach specific figures, names, "
+                "or mechanisms you cannot source. When choosing between a specific claim you cannot "
+                "source and a general statement you can support, choose the general one. Do NOT "
+                "extrapolate or combine sources into new specific claims they do not individually support."
             )
 
     user_message = f"""Write a technical article for The Machinist on the following topic.
 
-                    Topic: {state['topic']}
-                    Card ID: {state['card_id']}
-                    Series context: {state['series_context']}
-                    
-                    This article will be published on themachinist.org under the Learning Log section.
-                    The audience is engineers learning ML and agentic AI — they are smart but new to this specific topic.
-                    {feedback_block}
-                    
-                    Return ONLY the JSON object as specified in your instructions. No markdown wrapper."""
+                        Topic: {state['topic']}
+                        Card ID: {state['card_id']}
+                        Series context: {state['series_context']}
+
+                        This article will be published on themachinist.org under the Learning Log section.
+                        The audience is engineers learning ML and agentic AI — they are smart but new to this specific topic.
+                        {feedback_block}
+                        {source_block}
+
+                        Return ONLY the JSON object as specified in your instructions. No markdown wrapper."""
 
 
     messages = [
@@ -581,7 +582,8 @@ def verify_node(state: AgentState) -> dict:
                             
                             Return a JSON array. Each element:
                             {{"claim": "...", "source_url": "..." or null, "confidence": 0.0-1.0,
-                              "status": "verified" | "weak" | "unverified"}}
+                              "status": "verified" | "weak" | "unverified",
+                              "specificity": "substantive" | "generic"}}
                             
                             Return ONLY the JSON array. No preamble.
                             """
@@ -629,6 +631,13 @@ def verify_node(state: AgentState) -> dict:
     n_weak = sum(1 for r in grounding_report if r.get("status") == "weak")
     n_unverified = sum(1 for r in grounding_report if r.get("status") == "unverified")
 
+    # Grounded-depth signal (M3): SV = Substantive and verified
+    n_substantive = sum(1 for r in grounding_report if r.get("specificity") == "substantive")
+    n_substantive_verified = sum(
+        1 for r in grounding_report
+        if r.get("specificity") == "substantive" and r.get("status") == "verified"
+    )
+
 
     log.info("verify.complete",
              run_id=state["run_id"],
@@ -637,6 +646,8 @@ def verify_node(state: AgentState) -> dict:
              verified=n_verified,
              weak=n_weak,
              unverified=n_unverified,
+             substantive=n_substantive,
+             substantive_verified=n_substantive_verified,
              latency_ms=latency,
              cost=round(run_cost, 5),
              )
