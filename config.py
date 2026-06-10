@@ -61,6 +61,34 @@ TAVILY_MIN_AVG_SCORE = 0.5  # Force cache bypass if first-pass avg Tavily score 
 THEMACHINIST_REPO_PATH = os.getenv("THEMACHINIST_REPO_PATH", "/Users/anudeep/PycharmProjects/themachinist-website")
 MAX_TAGS_TO_KEEP = 5        # Prune older tags beyond this count
 
-# Reproducibility
-PROMPT_VERSION = "v1.0"     # Increment when prompts/draft_system.md changes
+# Reproducibility (M6a)
+# PROMPT_VERSION is a content hash over the four runtime prompt files, computed
+# once at import time. Any edit to any of them changes the version automatically
+# — no manual bump, no silent re-baselining. Motivation: M3 metric discontinuity
+# (CatBoost blind UVR 0.06 vs 0.50 across verify-prompt versions).
+# PROMPT_HASHES exposes per-file hashes so telemetry shows WHICH prompt changed:
+# grounding/SV numbers are cross-comparable iff verify_system hashes match.
+# Fails loud (FileNotFoundError) at import if a prompt file is missing —
+# consistent with the startup-validation philosophy.
+import hashlib
+from pathlib import Path as _Path
+
+_PROJECT_ROOT = _Path(__file__).resolve().parent
+
+_PROMPT_FILES = [
+    "prompts/draft_system.md",
+    "prompts/verify_system.md",
+    "prompts/reflect_system.md",
+    "prompts/html_template.md",
+]
+
+def _prompt_hash(rel_path: str) -> str:
+    """12-hex-char SHA-256 prefix of a prompt file's raw bytes."""
+    return hashlib.sha256((_PROJECT_ROOT / rel_path).read_bytes()).hexdigest()[:12]
+
+PROMPT_HASHES = {_Path(p).stem: _prompt_hash(p) for p in _PROMPT_FILES}
+
+PROMPT_VERSION = "sha-" + hashlib.sha256(
+    "|".join(f"{k}:{v}" for k, v in sorted(PROMPT_HASHES.items())).encode("utf-8")
+).hexdigest()[:12]
 

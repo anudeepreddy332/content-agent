@@ -22,7 +22,7 @@ import uuid
 import json
 from pathlib import Path
 from agent.graph import build_graph
-from config import PROMPT_VERSION
+from config import PROMPT_VERSION, PROMPT_HASHES
 
 
 def _write_telemetry(state: dict):
@@ -43,6 +43,13 @@ def _write_telemetry(state: dict):
         "slug": state.get("slug"),
         "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
         "prompt_version": state.get("prompt_version", "unknown"),
+
+        # Per-file prompt hashes (M6a). Read from config, not state: the hashes
+        # are a property of the checkout at write time, and this guarantees the
+        # crash-path telemetry carries them too. Comparability rule: grounding/SV
+        # metrics are comparable across runs iff verify_system hashes match.
+        "prompt_hashes": PROMPT_HASHES,
+
         "iterations": state.get("iterations", 0),
         "reflection_score": state.get("reflection_score"),
         "reflection_notes": state.get("reflection_notes", ""),

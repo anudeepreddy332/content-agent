@@ -4,6 +4,7 @@ from pathlib import Path
 
 REQUIRED_FIELDS = [
     "run_id", "topic", "slug", "timestamp",
+    "prompt_version", "prompt_hashes",
     "claims_verified", "claims_weak", "claims_unverified",
     "grounding_score", "grounding_breakdown", "grounding_report",
     "reflection_score", "reflection_notes",
