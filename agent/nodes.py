@@ -479,7 +479,7 @@ def retrieve_node(state: AgentState) -> dict:
     existing_latency = state.get("latency_ms", {})
     existing_latency["retrieve"] = latency
     existing_latency["retrieve_web"] = t_web
-    existing_latency["retrieve_kb"] = latency = t_web
+    existing_latency["retrieve_kb"] = latency - t_web
 
     log.info(
         "retrieve.complete",
