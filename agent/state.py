@@ -55,5 +55,15 @@ class AgentState(TypedDict):
     total_cost_usd: float
     latency_ms: dict            # {draft, retrieve, verify, reflect, html_gen, git}
 
+    # Per-iteration verify metrics (M4 instrumentation): one entry per verify pass.
+    # Without this, iteration 1's grounding report is overwritten by iteration 2
+    # and the revise loop's effect is invisible in telemetry.
+    iteration_metrics: list
+
+    # M4: count of unverified claims injected into the current draft call
+    # (0 on iteration 1 and in the control arm). Records injection REALITY,
+    # not intent — guard against the M2 interpolation-bug class.
+    m4_feedback_claims: int
+
     # Error log
     error_log: list[str]

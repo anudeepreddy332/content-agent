@@ -2,6 +2,22 @@
 import sys, json, subprocess, uuid, os
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Module identity guard (M4 post-mortem): imports must resolve to this source tree,
+# not a stale installed copy (.venv shadowing voided a full M4 round).
+import inspect
+import tools.web_search as _ws
+import agent.nodes as _an
+_root = Path(__file__).resolve().parent.parent
+for _m in (_ws, _an):
+    _f = Path(inspect.getsourcefile(_m)).resolve()
+    if _root not in _f.parents:
+        print(f"FAIL: {_m.__name__} resolves to {_f} — stale installed copy shadows the source tree")
+        sys.exit(1)
+print("module identity OK")
+
+
 # Run one quick smoke topic with auto-approve
 run_id = str(uuid.uuid4())[:8]
 topic = "Gradient Descent"

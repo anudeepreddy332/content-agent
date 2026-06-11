@@ -51,6 +51,16 @@ def _write_telemetry(state: dict):
         "prompt_hashes": PROMPT_HASHES,
 
         "iterations": state.get("iterations", 0),
+        # M4: per-iteration verify metrics + experiment toggles. The independent
+        # variable must be visible in every run record (preflight rule).
+        "iteration_metrics": state.get("iteration_metrics", []),
+        "m4_feedback_claims": state.get("m4_feedback_claims", 0),
+        "experiment_flags": {
+            "m4_force_revise": os.environ.get("M4_FORCE_REVISE", "0"),
+            "m4_grounding_feedback": os.environ.get("M4_GROUNDING_FEEDBACK", "0"),
+            "m4_freeze_cache": os.environ.get("M4_FREEZE_CACHE", "0"),
+        },
+
         "reflection_score": state.get("reflection_score"),
         "reflection_notes": state.get("reflection_notes", ""),
         "grounding_score": state.get("grounding_score"),
@@ -168,6 +178,8 @@ def run(topic, card_id, series, auto):
         "html_filename": None,
         "branch_name": None,
         "git_status": None,
+        "iteration_metrics": [],
+        "m4_feedback_claims": 0,
         "run_id": run_id,
         "prompt_version": PROMPT_VERSION,
         "total_tokens": 0,

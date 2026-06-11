@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from agent.nodes import _get_client, _llm_call, DEEPSEEK_MODEL
+from agent.nodes import _get_client, _llm_call, DEEPSEEK_MODEL, _extract_json_array
 
 VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text(encoding="utf-8")
 
@@ -82,15 +82,13 @@ def verify_one(claim: str) -> dict:
                             {"role":"user","content":user}],
                   temperature=0.1, max_tokens=500)
     raw = r.choices[0].message.content.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"): raw = raw[4:]
-        raw = raw.strip()
     try:
-        arr = json.loads(raw)
-        return arr[0] if isinstance(arr, list) and arr else {"status":"EMPTY","raw":raw[:120]}
+        arr = _extract_json_array(raw)
+        return arr[0] if arr else {"status": "EMPTY", "raw": raw[:500]}
     except Exception as e:
-        return {"status":f"PARSE_FAIL", "err":str(e), "raw":raw[:120]}
+        return {"status": "PARSE_FAIL", "err": str(e), "raw": raw[:500]}
+
+
 
 print(f"{'kind':<14}{'exp_status':<11}{'got_status':<11}{'exp_spec':<12}{'got_spec':<12} claim")
 print("-" * 100)
@@ -106,6 +104,9 @@ for kind, exp_status, exp_spec, claim in CLAIMS:
     ground_ok += int(g_pass)
     spec_ok += int(s_pass)
     print(f"{kind:<14}{exp_status:<11}{got_status:<11}{exp_spec:<12}{got_spec:<12} {claim[:38]}")
+    if got_status in ("PARSE_FAIL", "EMPTY"):
+        print(f"    err: {v.get('err')}")
+        print(f"    raw: {v.get('raw')!r}")
 print("-" * 100)
 print(f"grounding accuracy:   {ground_ok}/{len(CLAIMS)}")
 print(f"specificity accuracy: {spec_ok}/{len(CLAIMS)}")

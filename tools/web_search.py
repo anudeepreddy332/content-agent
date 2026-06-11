@@ -41,7 +41,12 @@ def _load_cache(key: str) -> list | None:
     if age_days > CACHE_TTL_DAYS:
         path.unlink()
         return None
-    return json.loads(path.read_text())
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError:
+        # Corrupt cache entry = cache miss; live fetch overwrites it.
+        # (Kept from M4 debugging — robustness, independent of the freeze.)
+        return None
 
 
 def _save_cache(key: str, results: list) -> None:
@@ -101,6 +106,8 @@ def web_search(query: str, max_results: int = 5, force_refresh: bool = False) ->
                    is expected to catch this and append to error_log.
     """
     key = _cache_key(query, max_results)
+
+
     if not force_refresh:
         cached = _load_cache(key)
         if cached is not None:

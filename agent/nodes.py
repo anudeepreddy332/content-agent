@@ -100,6 +100,39 @@ def _load_system_prompt() -> str:
     content_lines = [l for l in lines if not l.startswith("#")]
     return "\n".join(content_lines).strip()
 
+
+def _extract_json_array(raw: str) -> list:
+    """
+    Tolerant JSON-array extraction for verifier output.
+
+    Layer 1: strip code fences, json.loads (the original path).
+    Layer 2: slice from first '[' to last ']' and parse — recovers outputs
+             with preamble/postamble text around a valid array.
+    Raises ValueError/JSONDecodeError if no array can be recovered.
+
+    Parsing robustness only — does NOT touch the verify rubric. Any change
+    here must re-pass evals/verifier_golden_test.py (>=11/12, >=10/12).
+    """
+    s = raw.strip()
+    if s.startswith("```"):
+        s = s.split("```")[1]
+        if s.startswith("json"):
+            s = s[4:]
+        s = s.strip()
+    try:
+        parsed = json.loads(s)
+        if isinstance(parsed, list):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+    start, end = s.find("["), s.rfind("]")
+    if start != -1 and end > start:
+        parsed = json.loads(s[start:end + 1])
+        if isinstance(parsed, list):
+            return parsed
+    raise ValueError("no JSON array found in verifier output")
+
+
 def _cost(usage) -> float:
     """Compute DeepSeek API cost from a usage object."""
     return (
@@ -167,6 +200,40 @@ def draft_node(state: AgentState) -> dict:
     if state.get("hitl_feedback"):
         feedback_block = f"\n\nREVISION FEEDBACK FROM HUMAN REVIEWER:\n{state['hitl_feedback']}\nAddress this feedback specifically in the new draft."
 
+    # Grounding-report feedback on revision (M4 PASS, locked 2026-06-11):
+    # every revision pass feeds the previous iteration's unverified claims back
+    # with ground/generalize/cut instructions. Evidence: M4 (18 runs, frozen
+    # cache) — Multi-Agent UVR2 0.230 vs control 0.341 with no SV loss; the
+    # blind re-roll control regressed UVR on 2/3 topics. Fires on both the
+    # reflect-loop and HITL-feedback revision paths (iterations >= 1 in both).
+    # Field name m4_feedback_claims kept deliberately for telemetry continuity.
+    m4_feedback_claims = 0
+    grounding_feedback_block = ""
+    if state.get("iterations", 0) >= 1 and state.get("grounding_report"):
+        unverified_claims = [
+            (r.get("claim") or "").strip()
+            for r in state["grounding_report"]
+            if r.get("status") == "unverified" and (r.get("claim") or "").strip()
+        ]
+        if unverified_claims:
+            m4_feedback_claims = len(unverified_claims)
+            claims_list = "\n".join(f"- {c}" for c in unverified_claims)
+            grounding_feedback_block = (
+                "\n\nREVISION — GROUNDING REPORT FEEDBACK:\n"
+                "Your previous draft contained the following claims that could NOT "
+                "be verified against the provided sources:\n"
+                f"{claims_list}\n\n"
+                "For EACH claim above, do exactly one of the following in the new draft:\n"
+                "1. GROUND IT: keep it only if one of the GROUNDING SOURCES below "
+                "actually contains that specific detail.\n"
+                "2. GENERALIZE IT: replace it with a general statement that drops the "
+                "unsourceable specifics (figures, names, mechanisms).\n"
+                "3. CUT IT: remove it entirely if it adds little.\n"
+                "Do NOT invent new specific claims to replace them. Keep all other "
+                "content — especially specific claims that WERE verifiable — intact."
+            )
+
+
     source_block = ""
     if state.get("web_sources") or state.get("kb_results"):
         web_sources = state.get("web_sources", []) or []
@@ -194,6 +261,7 @@ def draft_node(state: AgentState) -> dict:
                         This article will be published on themachinist.org under the Learning Log section.
                         The audience is engineers learning ML and agentic AI — they are smart but new to this specific topic.
                         {feedback_block}
+                        {grounding_feedback_block}
                         {source_block}
 
                         Return ONLY the JSON object as specified in your instructions. No markdown wrapper."""
@@ -203,6 +271,12 @@ def draft_node(state: AgentState) -> dict:
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_message},
     ]
+
+    if grounding_feedback_block:
+        log.info("draft.grounding_feedback_injected", run_id=state["run_id"],
+                 claims=m4_feedback_claims,
+                 block_chars=len(grounding_feedback_block),
+                 in_user_message=grounding_feedback_block in user_message)
 
     response = _llm_call(
         client,
@@ -267,6 +341,7 @@ def draft_node(state: AgentState) -> dict:
     return {
         "draft_sections": sections,
         "draft_markdown": draft_markdown,
+        "m4_feedback_claims": m4_feedback_claims,
         "iterations": state.get("iterations", 0) + 1,
         "total_tokens": state.get("total_tokens", 0) + response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
@@ -393,6 +468,8 @@ def retrieve_node(state: AgentState) -> dict:
     web_sources.sort(key=lambda x: x.get("score", 0), reverse=True)
     web_sources = web_sources[:10]
 
+    t_web = int((time.time() - t_start) * 1000)
+
     # KB query — use topic + first 100 chars of problem_framing for richer context
     problem_framing_preview = state.get("draft_sections", {}).get("problem_framing", "")[:100]
     kb_query = f"{topic} {problem_framing_preview}".strip()
@@ -401,6 +478,8 @@ def retrieve_node(state: AgentState) -> dict:
     latency = int((time.time() - t_start) * 1000)
     existing_latency = state.get("latency_ms", {})
     existing_latency["retrieve"] = latency
+    existing_latency["retrieve_web"] = t_web
+    existing_latency["retrieve_kb"] = latency = t_web
 
     log.info(
         "retrieve.complete",
@@ -598,18 +677,12 @@ def verify_node(state: AgentState) -> dict:
 
     # Parse grounding report
     raw = claim_response.choices[0].message.content.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-        raw = raw.strip()
 
     try:
-        grounding_report = json.loads(raw)
-        if not isinstance(grounding_report, list):
-            raise ValueError("Expected list")
+        grounding_report = _extract_json_array(raw)
     except (json.JSONDecodeError, ValueError) as e:
-        log.error("verify.parse_failed", run_id=state["run_id"], error=str(e))
+        log.error("verify.parse_failed", run_id=state["run_id"], error=str(e),
+                  raw_preview=raw[:300])
         grounding_report = []
 
     # Remove near-exact duplicate claims before scoring.
@@ -652,9 +725,30 @@ def verify_node(state: AgentState) -> dict:
              cost=round(run_cost, 5),
              )
 
+    # M4 instrumentation: persist this iteration's metrics. verify runs once per
+    # draft iteration; appending here gives per-iteration SV/UVR in telemetry.
+    iteration_metrics = list(state.get("iteration_metrics", []) or [])
+    iteration_metrics.append({
+        "iteration": state.get("iterations", 0),
+        "SV": n_substantive_verified,
+        "S": n_substantive,
+        "V": n_verified,
+        "W": n_weak,
+        "U": n_unverified,
+        "N": len(grounding_report),
+        "uvr": round(n_unverified / max(len(grounding_report), 1), 3),
+        "grounding_score": round(grounding_score, 3),
+        "m4_feedback_claims": state.get("m4_feedback_claims", 0),
+        "unverified_claims": [
+            (r.get("claim") or "")[:200]
+            for r in grounding_report if r.get("status") == "unverified"
+        ],
+    })
+
     return {
         "grounding_report": grounding_report,
         "grounding_score": round(grounding_score, 3),
+        "iteration_metrics": iteration_metrics,
         "total_tokens": state.get("total_tokens", 0) + claim_response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
