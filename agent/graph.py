@@ -26,7 +26,7 @@ Vulnerabilities:
     - Interrupt for HITL (hitl_node) requires graph to be compiled with checkpointer
       in main.py if you want to resume across process restarts. For now, in-process only.
 """
-
+import os
 from langgraph.graph import StateGraph, END
 from agent.state import AgentState
 from agent.nodes import (
@@ -63,12 +63,11 @@ def build_graph() -> StateGraph:
     builder.add_node("html_gen", html_gen_node)
     builder.add_node("git", git_node)
 
-    # Set entry point
-    builder.set_entry_point("draft")
-
-    # Linear edges (no branching)
-    builder.add_edge("draft", "retrieve")
-    builder.add_edge("retrieve", "verify")
+    # M2 toggle: source-aware drafting reorders retrieve BEFORE draft so the
+    # draft writes against retrieved evidence. Default (unset/0) keeps blind drafting.
+    builder.set_entry_point("retrieve")
+    builder.add_edge("retrieve", "draft")
+    builder.add_edge("draft", "verify")
     builder.add_edge("verify", "reflect")
 
     # Conditional edge after reflect

@@ -3,29 +3,20 @@ agent/nodes.py
 --------------
 All node and edge functions for the content-agent pipeline.
 
-Day 23 status:
-    COMPLETE: draft_node, retrieve_node
-    STUBBED:  verify_node, reflect_node, hitl_node, html_gen_node, git_node
-
 Each node signature: (state: AgentState) -> dict
     Nodes return ONLY the keys they update.
     LangGraph merges the return dict into the existing state.
-    Never return the full state — only your changes.
+    Never return the full state — only the changes.
 
-Vulnerabilities to watch:
-    - draft_node: DeepSeek may return malformed JSON. Handled with try/except + fallback.
-    - retrieve_node: Tavily may return 0 results on niche topics. KB may be empty.
-      Both are handled — node degrades gracefully, does not crash.
-    - draft_node loops back from hitl if feedback is given. On loop, iterations increments.
-      Max iterations enforced in route_after_reflect, not here.
 """
 
 import os
 import json
 import time
 from pathlib import Path
-from openai import OpenAI
+from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
 from dotenv import load_dotenv
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 load_dotenv()
 
 from agent.state import AgentState, DraftSections
@@ -41,6 +32,8 @@ from config import (
     COST_GATE_USD,
     DEEPSEEK_INPUT_COST_PER_M,
     DEEPSEEK_OUTPUT_COST_PER_M,
+    PROMPT_VERSION,
+    TAVILY_MIN_AVG_SCORE,
 )
 from observability.logger import get_logger
 import html as html_module
@@ -60,16 +53,85 @@ def _get_client() -> OpenAI:
         base_url=DEEPSEEK_BASE_URL,
     )
 
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type((
+        RateLimitError,
+        APIConnectionError,
+        APITimeoutError,
+        InternalServerError,
+    )),
+    reraise=True,
+)
+
+def _llm_call(client: OpenAI, **kwargs):
+    """
+    Thin retry wrapper around client.chat.completions.create().
+
+    Retries up to 3 times on transient errors only:
+        RateLimitError     — 429, back off and retry
+        APIConnectionError — network failure, retry
+        APITimeoutError    — request timed out, retry
+        InternalServerError — 500, server-side transient, retry
+
+    Does NOT retry:
+        AuthenticationError — wrong API key, will never succeed
+        BadRequestError     — malformed prompt, will never succeed
+
+    reraise=True: after 3 failures the original exception propagates to
+    main.py's crash handler, which writes telemetry and re-raises.
+
+    Wait schedule: 2s → 4s → 8s (capped at 10s). Max total wait: ~14s.
+    """
+    return client.chat.completions.create(**kwargs)
+
+
+
 def _load_system_prompt() -> str:
     """Load draft system prompt from prompts/draft_system.md."""
     prompt_path = Path("prompts/draft_system.md")
-    if not prompt_path:
+    if not prompt_path.exists():
         raise FileNotFoundError(f"Draft system prompt not found at {prompt_path}")
 
     # Strip the comment header lines (lines starting with #) before the actual prompt
     lines = prompt_path.read_text(encoding="utf-8").splitlines()
     content_lines = [l for l in lines if not l.startswith("#")]
     return "\n".join(content_lines).strip()
+
+
+def _extract_json_array(raw: str) -> list:
+    """
+    Tolerant JSON-array extraction for verifier output.
+
+    Layer 1: strip code fences, json.loads (the original path).
+    Layer 2: slice from first '[' to last ']' and parse — recovers outputs
+             with preamble/postamble text around a valid array.
+    Raises ValueError/JSONDecodeError if no array can be recovered.
+
+    Parsing robustness only — does NOT touch the verify rubric. Any change
+    here must re-pass evals/verifier_golden_test.py (>=11/12, >=10/12).
+    """
+    s = raw.strip()
+    if s.startswith("```"):
+        s = s.split("```")[1]
+        if s.startswith("json"):
+            s = s[4:]
+        s = s.strip()
+    try:
+        parsed = json.loads(s)
+        if isinstance(parsed, list):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+    start, end = s.find("["), s.rfind("]")
+    if start != -1 and end > start:
+        parsed = json.loads(s[start:end + 1])
+        if isinstance(parsed, list):
+            return parsed
+    raise ValueError("no JSON array found in verifier output")
+
 
 def _cost(usage) -> float:
     """Compute DeepSeek API cost from a usage object."""
@@ -138,17 +200,71 @@ def draft_node(state: AgentState) -> dict:
     if state.get("hitl_feedback"):
         feedback_block = f"\n\nREVISION FEEDBACK FROM HUMAN REVIEWER:\n{state['hitl_feedback']}\nAddress this feedback specifically in the new draft."
 
+    # Grounding-report feedback on revision (M4 PASS, locked 2026-06-11):
+    # every revision pass feeds the previous iteration's unverified claims back
+    # with ground/generalize/cut instructions. Evidence: M4 (18 runs, frozen
+    # cache) — Multi-Agent UVR2 0.230 vs control 0.341 with no SV loss; the
+    # blind re-roll control regressed UVR on 2/3 topics. Fires on both the
+    # reflect-loop and HITL-feedback revision paths (iterations >= 1 in both).
+    # Field name m4_feedback_claims kept deliberately for telemetry continuity.
+    m4_feedback_claims = 0
+    grounding_feedback_block = ""
+    if state.get("iterations", 0) >= 1 and state.get("grounding_report"):
+        unverified_claims = [
+            (r.get("claim") or "").strip()
+            for r in state["grounding_report"]
+            if r.get("status") == "unverified" and (r.get("claim") or "").strip()
+        ]
+        if unverified_claims:
+            m4_feedback_claims = len(unverified_claims)
+            claims_list = "\n".join(f"- {c}" for c in unverified_claims)
+            grounding_feedback_block = (
+                "\n\nREVISION — GROUNDING REPORT FEEDBACK:\n"
+                "Your previous draft contained the following claims that could NOT "
+                "be verified against the provided sources:\n"
+                f"{claims_list}\n\n"
+                "For EACH claim above, do exactly one of the following in the new draft:\n"
+                "1. GROUND IT: keep it only if one of the GROUNDING SOURCES below "
+                "actually contains that specific detail.\n"
+                "2. GENERALIZE IT: replace it with a general statement that drops the "
+                "unsourceable specifics (figures, names, mechanisms).\n"
+                "3. CUT IT: remove it entirely if it adds little.\n"
+                "Do NOT invent new specific claims to replace them. Keep all other "
+                "content — especially specific claims that WERE verifiable — intact."
+            )
+
+
+    source_block = ""
+    if state.get("web_sources") or state.get("kb_results"):
+        web_sources = state.get("web_sources", []) or []
+        kb_results = state.get("kb_results", []) or []
+        if web_sources or kb_results:
+            source_context = _build_source_context(web_sources[:6], kb_results[:3])
+            source_block = (
+                "\n\nGROUNDING SOURCES (retrieved for this topic):\n"
+                f"{source_context}\n\n"
+                "Use these sources to make SPECIFIC, substantive technical claims — mechanisms, "
+                "conditions, tradeoffs, failure modes, concrete details — but ONLY where a source "
+                "actually contains that specific detail. For well-known background NOT covered by "
+                "these sources, state it in general terms and do NOT attach specific figures, names, "
+                "or mechanisms you cannot source. When choosing between a specific claim you cannot "
+                "source and a general statement you can support, choose the general one. Do NOT "
+                "extrapolate or combine sources into new specific claims they do not individually support."
+            )
+
     user_message = f"""Write a technical article for The Machinist on the following topic.
 
-                    Topic: {state['topic']}
-                    Card ID: {state['card_id']}
-                    Series context: {state['series_context']}
-                    
-                    This article will be published on themachinist.org under the Learning Log section.
-                    The audience is engineers learning ML and agentic AI — they are smart but new to this specific topic.
-                    {feedback_block}
-                    
-                    Return ONLY the JSON object as specified in your instructions. No markdown wrapper."""
+                        Topic: {state['topic']}
+                        Card ID: {state['card_id']}
+                        Series context: {state['series_context']}
+
+                        This article will be published on themachinist.org under the Learning Log section.
+                        The audience is engineers learning ML and agentic AI — they are smart but new to this specific topic.
+                        {feedback_block}
+                        {grounding_feedback_block}
+                        {source_block}
+
+                        Return ONLY the JSON object as specified in your instructions. No markdown wrapper."""
 
 
     messages = [
@@ -156,7 +272,14 @@ def draft_node(state: AgentState) -> dict:
         {"role": "user", "content": user_message},
     ]
 
-    response = client.chat.completions.create(
+    if grounding_feedback_block:
+        log.info("draft.grounding_feedback_injected", run_id=state["run_id"],
+                 claims=m4_feedback_claims,
+                 block_chars=len(grounding_feedback_block),
+                 in_user_message=grounding_feedback_block in user_message)
+
+    response = _llm_call(
+        client,
         model=DEEPSEEK_MODEL,
         messages=messages,
         temperature=DRAFT_TEMPERATURE,
@@ -218,6 +341,7 @@ def draft_node(state: AgentState) -> dict:
     return {
         "draft_sections": sections,
         "draft_markdown": draft_markdown,
+        "m4_feedback_claims": m4_feedback_claims,
         "iterations": state.get("iterations", 0) + 1,
         "total_tokens": state.get("total_tokens", 0) + response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
@@ -262,6 +386,7 @@ def retrieve_node(state: AgentState) -> dict:
     # Speed and cost. LLM query generation adds a full round-trip for marginal gain.
     # These three angles cover 90% of what the verify_node needs.
 
+
     queries = [
         f"{topic} explained technical",
         f"{topic} failure modes limitations production",
@@ -272,16 +397,78 @@ def retrieve_node(state: AgentState) -> dict:
     seen_urls = set()
     web_sources = []
 
+    # Declare before the first loop so Tavily errors can be captured there too
+    new_error_log = list(state.get("error_log", []))
+
+
     for query in queries:
-        results = web_search(query, max_results=5)
+        try:
+            results = web_search(query, max_results=5)
+        except Exception as e:
+            new_error_log.append(f"[retrieve] Tavily error for query '{query[:50]}': {e}")
+            log.warning("retrieve.tavily_error",
+                        run_id=state["run_id"], query=query, error=str(e))
+            continue
+
         for r in results:
             if r["url"] not in seen_urls:
                 seen_urls.add(r["url"])
                 web_sources.append(r)
 
+    # Source quality gate: force cache bypass if first-pass sources are sparse OR low-scoring.
+    # COUNT check (< 3): catches empty/near-empty returns.
+    # SCORE check (avg < TAVILY_MIN_AVG_SCORE): catches the stale-cache case where the
+    #   cache has entries (bypassing the count check) but they are off-topic or outdated.
+    #   Confirmed by benchmark 20260604: Topic 1 retrieve=118ms (cache hit), grounding=0.636;
+    #   Topics 2 & 3 retrieve=6000ms+ (live), grounding=0.86+.
+    # A second pass with force_refresh=True overwrites the cache entry with fresh results.
+
+    avg_score = (
+        sum(r.get("score", 0.0) for r in web_sources) / len(web_sources)
+        if web_sources else 0.0
+    )
+    needs_refresh = len(web_sources) < 3 or avg_score < TAVILY_MIN_AVG_SCORE
+
+
+    if needs_refresh:
+        refresh_reason = (
+            f"count={len(web_sources)}" if len(web_sources) < 3
+            else f"avg_score={round(avg_score, 3)} < {TAVILY_MIN_AVG_SCORE}"
+        )
+        log.warning("retrieve.low_quality_sources",
+                    run_id=state["run_id"],
+                    count=len(web_sources),
+                    avg_score=round(avg_score, 3),
+                    reason=refresh_reason,
+                    action="forcing_refresh")
+
+        web_sources = []
+        seen_urls = set()
+        for query in queries:
+            try:
+                results = web_search(query, max_results=5, force_refresh=True)
+            except Exception as e:
+                new_error_log.append(
+                    f"[retrieve] Tavily force_refresh error for query '{query[:50]}': {e}"
+                )
+                log.warning("retrieve.tavily_refresh_error",
+                            run_id=state["run_id"], query=query, error=str(e))
+                continue
+
+            for r in results:
+                if r["url"] not in seen_urls:
+                    seen_urls.add(r["url"])
+                    web_sources.append(r)
+
+        new_error_log.append(
+            f"retrieve: low quality sources on first pass ({refresh_reason}), "
+            f"forced refresh — post-refresh count={len(web_sources)}"
+        )
     # Sort by Tavily relevance score descending, then keep top 10
     web_sources.sort(key=lambda x: x.get("score", 0), reverse=True)
     web_sources = web_sources[:10]
+
+    t_web = int((time.time() - t_start) * 1000)
 
     # KB query — use topic + first 100 chars of problem_framing for richer context
     problem_framing_preview = state.get("draft_sections", {}).get("problem_framing", "")[:100]
@@ -291,6 +478,8 @@ def retrieve_node(state: AgentState) -> dict:
     latency = int((time.time() - t_start) * 1000)
     existing_latency = state.get("latency_ms", {})
     existing_latency["retrieve"] = latency
+    existing_latency["retrieve_web"] = t_web
+    existing_latency["retrieve_kb"] = latency = t_web
 
     log.info(
         "retrieve.complete",
@@ -305,16 +494,34 @@ def retrieve_node(state: AgentState) -> dict:
         "web_sources": web_sources,
         "kb_results": kb_results,
         "latency_ms": existing_latency,
+        "error_log": new_error_log,
     }
 
 
 def _build_source_context(web_sources: list, kb_results: list) -> str:
-    """Format sources into a compact string for the verify prompt."""
+    """Format sources into a compact string for the verify prompt.
+
+    Truncation limits — do not change without re-running benchmark:
+      WEB_CHARS: Tavily content median is ~1923 chars (305-result sample).
+                 1500 chars covers ~78% of a typical result and the full
+                 lower quartile. 98% of results were cut at the old 500-char
+                 limit, which is why obvious claims were marked unverified.
+      KB_CHARS:  Seed docs average ~5294 chars. 800 chars covered only 15%
+                 of a doc (intro paragraph only). 2000 chars covers ~38%,
+                 reaching algorithm-level detail in all seed docs.
+      Context budget at these limits (worst-case, 5+5 sources):
+        source tokens  ~4375  |  total input ~5695  |  headroom 54k / 64k
+        cost delta per verify call: +$0.00074 (+14.3%)
+    """
+    # PHASE-1 EXPERIMENT: raised from 500 → 1500 (web) and 800 → 2000 (kb)
+    WEB_CHARS = 1500
+    KB_CHARS  = 2000
+
     parts = []
     for s in web_sources[:5]:
-        parts.append(f"[WEB] {s['url']}\n{s['content'][:500]}")
+        parts.append(f"[WEB] {s['url']}\n{s['content'][:WEB_CHARS]}")
     for k in kb_results[:5]:
-        parts.append(f"[KB] {k['source']}\n{k['text'][:800]}")
+        parts.append(f"[KB] {k['source']}\n{k['text'][:KB_CHARS]}")
     return "\n\n".join(parts) if parts else "No sources available."
 
 def _build_citations(grounding_report: list, web_sources: list) -> str:
@@ -371,6 +578,52 @@ def _build_citations(grounding_report: list, web_sources: list) -> str:
 
 
 
+def _deduplicate_grounding_report(report: list[dict], run_id: str) -> list[dict]:
+    """
+    Remove near-exact duplicate claims from grounding_report.
+
+    Uses difflib.SequenceMatcher (stdlib, no dependency) at threshold 0.85.
+    Keeps the first occurrence; discards subsequent near-exact duplicates.
+
+    Threshold rationale:
+        - Known duplicate pair (STFT recommendation): ratio = 0.851  → caught
+        - Known false-positive tests (different claims): ratio ≤ 0.53 → safe
+        - Pair 1 (frequency resolution, semantic duplicate): ratio = 0.41
+          → NOT caught by code; handled by verify_system.md instruction instead.
+          Lowering threshold below 0.55 to catch it risks merging distinct claims.
+
+    Evidence: FFT benchmark 2026-06-05 showed 2 duplicate pairs inflating
+    unverified count. All verified benchmarks showed 0 false-positive merges
+    at this threshold.
+    """
+    import difflib
+    log = get_logger("verify_node")
+
+    seen: list[str] = []
+    unique: list[dict] = []
+    dropped = 0
+
+    for entry in report:
+        claim_text = (entry.get("claim") or "").lower().strip()
+        if not claim_text:
+            continue
+        is_duplicate = any(
+            difflib.SequenceMatcher(None, claim_text, seen_claim).ratio() >= 0.85
+            for seen_claim in seen
+        )
+        if is_duplicate:
+            dropped += 1
+        else:
+            seen.append(claim_text)
+            unique.append(entry)
+
+    if dropped:
+        log.info("verify.dedup", run_id=run_id, dropped=dropped,
+                 before=len(report), after=len(unique))
+
+    return unique
+
+
 # NODE: verify_node
 
 def verify_node(state: AgentState) -> dict:
@@ -392,7 +645,8 @@ def verify_node(state: AgentState) -> dict:
 
     source_context = _build_source_context(state["web_sources"], state["kb_results"])
 
-    claim_response = client.chat.completions.create(
+    claim_response = _llm_call(
+        client,
         model=DEEPSEEK_MODEL,
         messages=[
             {"role": "system", "content": VERIFY_SYSTEM},
@@ -407,7 +661,8 @@ def verify_node(state: AgentState) -> dict:
                             
                             Return a JSON array. Each element:
                             {{"claim": "...", "source_url": "..." or null, "confidence": 0.0-1.0,
-                              "status": "verified" | "weak" | "unverified"}}
+                              "status": "verified" | "weak" | "unverified",
+                              "specificity": "substantive" | "generic"}}
                             
                             Return ONLY the JSON array. No preamble.
                             """
@@ -422,19 +677,18 @@ def verify_node(state: AgentState) -> dict:
 
     # Parse grounding report
     raw = claim_response.choices[0].message.content.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-        raw = raw.strip()
 
     try:
-        grounding_report = json.loads(raw)
-        if not isinstance(grounding_report, list):
-            raise ValueError("Expected list")
+        grounding_report = _extract_json_array(raw)
     except (json.JSONDecodeError, ValueError) as e:
-        log.error("verify.parse_failed", run_id=state["run_id"], error=str(e))
+        log.error("verify.parse_failed", run_id=state["run_id"], error=str(e),
+                  raw_preview=raw[:300])
         grounding_report = []
+
+    # Remove near-exact duplicate claims before scoring.
+    # Prompt instruction handles semantic duplicates; this catches string-level dupes.
+    grounding_report = _deduplicate_grounding_report(grounding_report, run_id=state["run_id"])
+
 
     # Compute mean confidence
     if grounding_report:
@@ -450,21 +704,51 @@ def verify_node(state: AgentState) -> dict:
     n_weak = sum(1 for r in grounding_report if r.get("status") == "weak")
     n_unverified = sum(1 for r in grounding_report if r.get("status") == "unverified")
 
+    # Grounded-depth signal (M3): SV = Substantive and verified
+    n_substantive = sum(1 for r in grounding_report if r.get("specificity") == "substantive")
+    n_substantive_verified = sum(
+        1 for r in grounding_report
+        if r.get("specificity") == "substantive" and r.get("status") == "verified"
+    )
+
 
     log.info("verify.complete",
              run_id=state["run_id"],
              grounding_score=round(grounding_score, 3),
              claims=len(grounding_report),
-             verfied=n_verified,
+             verified=n_verified,
              weak=n_weak,
              unverified=n_unverified,
+             substantive=n_substantive,
+             substantive_verified=n_substantive_verified,
              latency_ms=latency,
              cost=round(run_cost, 5),
              )
 
+    # M4 instrumentation: persist this iteration's metrics. verify runs once per
+    # draft iteration; appending here gives per-iteration SV/UVR in telemetry.
+    iteration_metrics = list(state.get("iteration_metrics", []) or [])
+    iteration_metrics.append({
+        "iteration": state.get("iterations", 0),
+        "SV": n_substantive_verified,
+        "S": n_substantive,
+        "V": n_verified,
+        "W": n_weak,
+        "U": n_unverified,
+        "N": len(grounding_report),
+        "uvr": round(n_unverified / max(len(grounding_report), 1), 3),
+        "grounding_score": round(grounding_score, 3),
+        "m4_feedback_claims": state.get("m4_feedback_claims", 0),
+        "unverified_claims": [
+            (r.get("claim") or "")[:200]
+            for r in grounding_report if r.get("status") == "unverified"
+        ],
+    })
+
     return {
         "grounding_report": grounding_report,
         "grounding_score": round(grounding_score, 3),
+        "iteration_metrics": iteration_metrics,
         "total_tokens": state.get("total_tokens", 0) + claim_response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
@@ -498,7 +782,8 @@ def reflect_node(state: AgentState) -> dict:
     client = _get_client()
     grounding_summary = _format_grounding_summary(state.get("grounding_report", []))
 
-    response = client.chat.completions.create(
+    response = _llm_call(
+        client,
         model=DEEPSEEK_MODEL,
         messages=[
             {
@@ -691,7 +976,8 @@ RULES:
 Content to convert:
 {technical_dive}"""
 
-    response = client.chat.completions.create(
+    response = _llm_call(
+        client,
         model=DEEPSEEK_MODEL,
         messages=[
             {"role": "system", "content": "You are an HTML conversion engine. Return only valid HTML elements, no markdown, no fences, no preamble."},

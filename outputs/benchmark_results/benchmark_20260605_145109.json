@@ -1,0 +1,522 @@
+{
+  "timestamp": "20260605_145109",
+  "total_runs": 1,
+  "successful": [
+    {
+      "id": 15,
+      "topic": "LangGraph \u2014 State Machines for AI Agents",
+      "status": "success",
+      "wall_time_s": 45.5,
+      "telemetry": {
+        "run_id": "3cc117a1-ed15-47da-b977-c5310225f3f8",
+        "topic": "LangGraph \u2014 State Machines for AI Agents",
+        "slug": "langgraph--state-machines-for-ai-agents",
+        "timestamp": "2026-06-05T09:21:54.458362",
+        "prompt_version": "v1.0",
+        "iterations": 1,
+        "reflection_score": 7,
+        "reflection_notes": "The structure is solid with all required sections present and coherent. Technical depth is appropriate for senior engineers, covering core abstractions, failure modes, and tradeoffs. However, the writing occasionally slips into generic phrasing ('spaghetti code', 'impossible to debug') and the code example is overly simplistic \u2014 a real senior engineer would expect a more realistic multi-node example with tool execution. The grounding score of 0.81 is acceptable but the 4 unverified claims should be addressed.",
+        "grounding_score": 0.814,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 11231,
+        "total_cost_usd": 0.00608,
+        "latency_ms": {
+          "draft": 13063,
+          "retrieve": 6654,
+          "verify": 13356,
+          "reflect": 2516,
+          "html_gen": 5221,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 31,
+        "claims_weak": 0,
+        "claims_unverified": 4,
+        "grounding_breakdown": {
+          "unverified_no_source": 4,
+          "unverified_has_source": 0,
+          "weak_count": 0,
+          "mean_confidence_verified": 0.919,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Building reliable AI agents requires managing multi-step workflows where each step depends on previous outputs.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Simple linear chains break when an agent needs to loop, branch, or recover from errors.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "LangGraph solves this by modeling agent behavior as a state machine \u2014 a directed graph where nodes execute logic and edges define transitions based on the current state.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph lets you build agents that can retry, explore alternatives, or stop early, all with explicit control flow.",
+            "source_url": "https://www.ibm.com/think/topics/langgraph",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "Without a state machine, agents become spaghetti code of nested conditionals and callbacks, impossible to debug or extend.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "LangGraph gives engineers a structured way to design, visualize, and run complex agentic systems.",
+            "source_url": "https://www.ibm.com/think/topics/langgraph",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph is a library built on top of LangChain.",
+            "source_url": "https://www.ibm.com/think/topics/langgraph",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph represents an agent as a graph of nodes and edges.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Each node is a function that takes the current state and returns an updated state.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Edges define which node runs next, based on the state or a fixed mapping.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The core abstraction is the StateGraph.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "You define a state schema (a TypedDict or Pydantic model) that holds all data flowing through the graph.",
+            "source_url": "https://medium.com/spillwave-solutions/langgraph-essentials-in-python-build-ai-agent-workflows-with-state-routing-and-human-in-the-loop-102c3a393a34",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Nodes are added with graph.add_node(name, function).",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Edges are added with graph.add_edge(source, target) for unconditional transitions, or graph.add_conditional_edges(source, condition_function, mapping) for branching.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "A common pattern is the ReAct agent loop: the agent observes, thinks, acts, then loops back to observe.",
+            "source_url": "https://neurlcreators.substack.com/p/langgraph-agent-state-machine-review",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "In LangGraph, this is a cycle: a node calls an LLM, another node executes a tool, and a conditional edge decides whether to continue or stop.",
+            "source_url": "https://neurlcreators.substack.com/p/langgraph-agent-state-machine-review",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "The state tracks conversation history, tool outputs, and iteration count.",
+            "source_url": "https://www.ibm.com/think/topics/langgraph",
+            "confidence": 0.8,
+            "status": "verified"
+          },
+          {
+            "claim": "StateGraph takes a state_schema.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "add_node takes a name and a callable.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "add_conditional_edges takes a source node, a function that returns a string key, and a dict mapping keys to target nodes.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "The graph is compiled with graph.compile() and run with graph.invoke(initial_state).",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Infinite loops are the biggest risk.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Always include a max iteration limit in the state and check it in the conditional edge.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Another issue is state explosion \u2014 storing large tool outputs in state can blow memory.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Use selective state updates or external storage.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Conditional edge functions must be deterministic; if they rely on LLM output that changes between runs, the graph can behave unpredictably.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "State machines give you control but add boilerplate.",
+            "source_url": "https://neurlcreators.substack.com/p/langgraph-agent-state-machine-review",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "For simple linear chains, a plain LangChain chain is simpler.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph shines when you need cycles, branching, or human-in-the-loop.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Debugging is harder than linear code \u2014 use LangSmith tracing to visualize graph execution.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph models agent workflows as directed graphs with state passing through nodes.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Always include a max iteration limit in your state to prevent infinite loops.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Use conditional edges for branching logic based on LLM output or tool results.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph adds boilerplate \u2014 only use it when you need cycles or branching, not for linear chains.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Debug graph execution with LangSmith tracing to visualize node transitions and state changes.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          }
+        ]
+      },
+      "stderr": null
+    }
+  ],
+  "failed": 0,
+  "mean_cost_usd": 0.00608,
+  "mean_grounding": 0.814,
+  "mean_reflection": 7.0,
+  "mean_wall_time_s": 45.5,
+  "mean_html_errors": 0.0,
+  "mean_unverified_rate": 0.114,
+  "runs_below_grounding_floor": 0,
+  "runs": [
+    {
+      "id": 15,
+      "topic": "LangGraph \u2014 State Machines for AI Agents",
+      "status": "success",
+      "wall_time_s": 45.5,
+      "telemetry": {
+        "run_id": "3cc117a1-ed15-47da-b977-c5310225f3f8",
+        "topic": "LangGraph \u2014 State Machines for AI Agents",
+        "slug": "langgraph--state-machines-for-ai-agents",
+        "timestamp": "2026-06-05T09:21:54.458362",
+        "prompt_version": "v1.0",
+        "iterations": 1,
+        "reflection_score": 7,
+        "reflection_notes": "The structure is solid with all required sections present and coherent. Technical depth is appropriate for senior engineers, covering core abstractions, failure modes, and tradeoffs. However, the writing occasionally slips into generic phrasing ('spaghetti code', 'impossible to debug') and the code example is overly simplistic \u2014 a real senior engineer would expect a more realistic multi-node example with tool execution. The grounding score of 0.81 is acceptable but the 4 unverified claims should be addressed.",
+        "grounding_score": 0.814,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 11231,
+        "total_cost_usd": 0.00608,
+        "latency_ms": {
+          "draft": 13063,
+          "retrieve": 6654,
+          "verify": 13356,
+          "reflect": 2516,
+          "html_gen": 5221,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 31,
+        "claims_weak": 0,
+        "claims_unverified": 4,
+        "grounding_breakdown": {
+          "unverified_no_source": 4,
+          "unverified_has_source": 0,
+          "weak_count": 0,
+          "mean_confidence_verified": 0.919,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Building reliable AI agents requires managing multi-step workflows where each step depends on previous outputs.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Simple linear chains break when an agent needs to loop, branch, or recover from errors.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "LangGraph solves this by modeling agent behavior as a state machine \u2014 a directed graph where nodes execute logic and edges define transitions based on the current state.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph lets you build agents that can retry, explore alternatives, or stop early, all with explicit control flow.",
+            "source_url": "https://www.ibm.com/think/topics/langgraph",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "Without a state machine, agents become spaghetti code of nested conditionals and callbacks, impossible to debug or extend.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "LangGraph gives engineers a structured way to design, visualize, and run complex agentic systems.",
+            "source_url": "https://www.ibm.com/think/topics/langgraph",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph is a library built on top of LangChain.",
+            "source_url": "https://www.ibm.com/think/topics/langgraph",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph represents an agent as a graph of nodes and edges.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Each node is a function that takes the current state and returns an updated state.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Edges define which node runs next, based on the state or a fixed mapping.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The core abstraction is the StateGraph.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "You define a state schema (a TypedDict or Pydantic model) that holds all data flowing through the graph.",
+            "source_url": "https://medium.com/spillwave-solutions/langgraph-essentials-in-python-build-ai-agent-workflows-with-state-routing-and-human-in-the-loop-102c3a393a34",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Nodes are added with graph.add_node(name, function).",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Edges are added with graph.add_edge(source, target) for unconditional transitions, or graph.add_conditional_edges(source, condition_function, mapping) for branching.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "A common pattern is the ReAct agent loop: the agent observes, thinks, acts, then loops back to observe.",
+            "source_url": "https://neurlcreators.substack.com/p/langgraph-agent-state-machine-review",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "In LangGraph, this is a cycle: a node calls an LLM, another node executes a tool, and a conditional edge decides whether to continue or stop.",
+            "source_url": "https://neurlcreators.substack.com/p/langgraph-agent-state-machine-review",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "The state tracks conversation history, tool outputs, and iteration count.",
+            "source_url": "https://www.ibm.com/think/topics/langgraph",
+            "confidence": 0.8,
+            "status": "verified"
+          },
+          {
+            "claim": "StateGraph takes a state_schema.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "add_node takes a name and a callable.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "add_conditional_edges takes a source node, a function that returns a string key, and a dict mapping keys to target nodes.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "The graph is compiled with graph.compile() and run with graph.invoke(initial_state).",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Infinite loops are the biggest risk.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Always include a max iteration limit in the state and check it in the conditional edge.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Another issue is state explosion \u2014 storing large tool outputs in state can blow memory.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Use selective state updates or external storage.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Conditional edge functions must be deterministic; if they rely on LLM output that changes between runs, the graph can behave unpredictably.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "State machines give you control but add boilerplate.",
+            "source_url": "https://neurlcreators.substack.com/p/langgraph-agent-state-machine-review",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "For simple linear chains, a plain LangChain chain is simpler.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph shines when you need cycles, branching, or human-in-the-loop.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Debugging is harder than linear code \u2014 use LangSmith tracing to visualize graph execution.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph models agent workflows as directed graphs with state passing through nodes.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Always include a max iteration limit in your state to prevent infinite loops.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Use conditional edges for branching logic based on LLM output or tool results.",
+            "source_url": "https://realpython.com/langgraph-python",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "LangGraph adds boilerplate \u2014 only use it when you need cycles or branching, not for linear chains.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Debug graph execution with LangSmith tracing to visualize node transitions and state changes.",
+            "source_url": "https://langgraph-state-machines",
+            "confidence": 0.9,
+            "status": "verified"
+          }
+        ]
+      },
+      "stderr": null
+    }
+  ]
+}

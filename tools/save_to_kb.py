@@ -23,8 +23,7 @@ Point IDs:
 import os
 import uuid
 import tiktoken
-import chromadb
-from chromadb.utils import embedding_functions
+
 from dotenv import load_dotenv
 from tools.query_kb import invalidate_bm25
 load_dotenv()

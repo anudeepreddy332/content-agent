@@ -1,0 +1,1354 @@
+{
+  "timestamp": "20260605_111558",
+  "total_runs": 3,
+  "successful": [
+    {
+      "id": 1,
+      "topic": "Linear & Logistic Regression",
+      "status": "success",
+      "wall_time_s": 59.3,
+      "telemetry": {
+        "run_id": "c945e07b-cf99-475a-8373-f29ed023b76f",
+        "topic": "Linear & Logistic Regression",
+        "slug": "linear-and-logistic-regression",
+        "timestamp": "2026-06-05T05:46:56.518547",
+        "prompt_version": "v1.0",
+        "iterations": 2,
+        "reflection_score": 7,
+        "reflection_notes": "The structure is complete and coherent, and the technical depth is appropriate for senior engineers, covering key failure modes and training methods. However, the writing occasionally slips into AI-slop phrases like 'Engineers need these models for quick prototyping' and the code example is overly simplistic for the intended audience. The grounding score of 0.81 is solid, but the unverified claims (e.g., 'outliers heavily skew linear regression coefficients') should be cited or rephrased.",
+        "grounding_score": 0.81,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 20716,
+        "total_cost_usd": 0.01071,
+        "latency_ms": {
+          "draft": 9518,
+          "retrieve": 300,
+          "verify": 9062,
+          "reflect": 2487,
+          "html_gen": 3601,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 21,
+        "claims_weak": 0,
+        "claims_unverified": 3,
+        "grounding_breakdown": {
+          "unverified_no_source": 3,
+          "unverified_has_source": 0,
+          "weak_count": 0,
+          "mean_confidence_verified": 0.926,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Linear regression is the simplest model that learns a linear relationship between input features and a target.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Logistic regression predicts the probability that an input belongs to a class.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "A logistic regression is just a single neuron with a sigmoid activation.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Linear regression models the target y as y = w^T x + b, where w is a weight vector and b is a bias.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "The model is trained by minimizing the mean squared error (MSE) loss: L = (1/n) * sum((y_i - (w^T x_i + b))^2).",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The optimal weights can be found analytically via the normal equation: w = (X^T X)^{-1} X^T y.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "For large datasets, gradient descent is used: w = w - lr * (2/n) * X^T (X w - y).",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "If features are highly correlated (multicollinearity), X^T X becomes near-singular, leading to unstable coefficients.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Regularization (Ridge, Lasso) adds a penalty to the loss to shrink weights.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Logistic regression models the log-odds of a binary outcome: log(p/(1-p)) = w^T x + b.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "The probability is p = 1 / (1 + exp(-(w^T x + b))).",
+            "source_url": "https://blog.alliedoffsets.com/understanding-the-difference-between-linear-and-logistic-regression-models",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "The loss is binary cross-entropy: L = - (1/n) * sum(y_i * log(p_i) + (1 - y_i) * log(1 - p_i)).",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "There is no closed-form solution; training uses gradient descent or Newton's method.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "A common failure mode is separation: when a feature perfectly separates classes, weights diverge to infinity.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Regularization (L2) prevents this.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Both models assume linear decision boundaries.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Outliers heavily skew linear regression coefficients.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Logistic regression is sensitive to class imbalance \u2014 the model predicts the majority class with high confidence.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Always scale features for gradient descent convergence.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Linear regression predicts continuous values by minimizing MSE; logistic regression predicts class probabilities via the sigmoid function and cross-entropy loss.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Both models assume linear decision boundaries \u2014 they fail on nonlinear patterns without feature engineering.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Gradient descent is the standard training method for logistic regression; linear regression has a closed-form solution via the normal equation.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Regularization (Ridge/Lasso for linear, L2 for logistic) is essential to handle multicollinearity and separation.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Always scale features to zero mean and unit variance before training to ensure stable gradient descent.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          }
+        ]
+      },
+      "stderr": null
+    },
+    {
+      "id": 2,
+      "topic": "Ridge, Lasso & ElasticNet",
+      "status": "success",
+      "wall_time_s": 42.5,
+      "telemetry": {
+        "run_id": "0b003f25-9e76-4496-94d1-13d49aae3e42",
+        "topic": "Ridge, Lasso & ElasticNet",
+        "slug": "ridge-lasso-and-elasticnet",
+        "timestamp": "2026-06-05T05:47:39.057294",
+        "prompt_version": "v1.0",
+        "iterations": 1,
+        "reflection_score": 7,
+        "reflection_notes": "The structure is complete and coherent, but the technical depth is uneven: the gradient descent update for Ridge is unnecessary for senior engineers, while the Lasso coordinate descent formula is too terse to be useful without more context. The grounding score of 0.72 indicates a significant number of weak or unverified claims, which undermines credibility. The writing is direct and avoids filler, but the 'Takeaways' section reads like a bulleted summary rather than a synthesis.",
+        "grounding_score": 0.719,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 12190,
+        "total_cost_usd": 0.00677,
+        "latency_ms": {
+          "draft": 11663,
+          "retrieve": 6717,
+          "verify": 11190,
+          "reflect": 2841,
+          "html_gen": 5446,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 21,
+        "claims_weak": 3,
+        "claims_unverified": 5,
+        "grounding_breakdown": {
+          "unverified_no_source": 5,
+          "unverified_has_source": 0,
+          "weak_count": 3,
+          "mean_confidence_verified": 0.893,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Ordinary least squares (OLS) minimizes the sum of squared errors, but it has no mechanism to prevent coefficients from becoming arbitrarily large.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge, Lasso, and ElasticNet are regularization techniques that add a penalty term to the loss function.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge uses an L2 penalty (sum of squared coefficients), Lasso uses an L1 penalty (sum of absolute coefficients), and ElasticNet combines both.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge adds an L2 penalty: L_ridge = L_OLS + lambda * sum(w_j^2)",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The gradient becomes: grad = -2 * X^T * (y - Xw) + 2 * lambda * w",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "The update (if using gradient descent) is: w = w - lr * (-2 * X^T * (y - Xw) + 2 * lambda * w)",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Ridge shrinks coefficients proportionally. It never sets them exactly to zero, so all features remain in the model.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Lasso uses an L1 penalty: L_lasso = L_OLS + lambda * sum(|w_j|)",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The L1 penalty has a kink at zero, which forces some coefficients to become exactly zero.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "The gradient is not defined at zero, so optimization typically uses coordinate descent or subgradient methods.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.8,
+            "status": "verified"
+          },
+          {
+            "claim": "The update for each coefficient (using coordinate descent) is: w_j = soft_threshold(rho_j, lambda) / z_j",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "ElasticNet combines both penalties: L_en = L_OLS + lambda1 * sum(|w_j|) + lambda2 * sum(w_j^2)",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "It has two hyperparameters: alpha (overall penalty strength) and l1_ratio (mix between L1 and L2).",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "When l1_ratio = 1, it's Lasso; when l1_ratio = 0, it's Ridge.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "ElasticNet is preferred when there are groups of correlated features.",
+            "source_url": "https://www.digitalocean.com/community/tutorials/regularization-in-machine-learning-lasso-ridge-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Lasso tends to pick one feature from a group arbitrarily; ElasticNet can keep the whole group.",
+            "source_url": "https://www.digitalocean.com/community/tutorials/regularization-in-machine-learning-lasso-ridge-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge can fail when lambda is too large, underfitting by shrinking all coefficients too much.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.7,
+            "status": "weak"
+          },
+          {
+            "claim": "Lasso can be unstable with highly correlated features \u2014 it may select different features on different runs.",
+            "source_url": "https://www.digitalocean.com/community/tutorials/regularization-in-machine-learning-lasso-ridge-elastic-net",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "ElasticNet requires tuning two hyperparameters, which increases computational cost.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.8,
+            "status": "verified"
+          },
+          {
+            "claim": "All three assume features are on a similar scale; standardizing features (mean 0, variance 1) is critical before applying regularization.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge is best when all features matter.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.7,
+            "status": "weak"
+          },
+          {
+            "claim": "Lasso is best when you suspect only a few features are relevant.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.7,
+            "status": "weak"
+          },
+          {
+            "claim": "ElasticNet is the safe default when you don't know the feature structure.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "In practice, ElasticNet with l1_ratio around 0.5 often works well.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Ridge uses L2 penalty and shrinks all coefficients but never to zero; use when all features are relevant.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Lasso uses L1 penalty and can zero out coefficients, performing feature selection; use when you expect sparse solutions.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "ElasticNet combines L1 and L2 penalties; it handles correlated features better than Lasso alone.",
+            "source_url": "https://www.digitalocean.com/community/tutorials/regularization-in-machine-learning-lasso-ridge-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Always standardize features before applying any of these regularizers; otherwise the penalty is applied unevenly.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The alpha (or lambda) hyperparameter controls regularization strength \u2014 cross-validation is essential to choose it.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          }
+        ]
+      },
+      "stderr": null
+    },
+    {
+      "id": 3,
+      "topic": "Support Vector Machines",
+      "status": "success",
+      "wall_time_s": 42.7,
+      "telemetry": {
+        "run_id": "2e9e642c-d93a-4306-b956-3f1630781243",
+        "topic": "Support Vector Machines",
+        "slug": "support-vector-machines",
+        "timestamp": "2026-06-05T05:48:21.857413",
+        "prompt_version": "v1.0",
+        "iterations": 1,
+        "reflection_score": 7,
+        "reflection_notes": "The draft has all required sections and is technically accurate, but the writing feels slightly generic and lacks the sharp, opinionated voice expected for senior engineers. The 'Technical Deep-Dive' could better emphasize practical trade-offs (e.g., why RBF is default despite pitfalls) and the 'Takeaways' are too list-like. The grounding is strong, but the prose reads like a competent summary rather than an engaging, expert-level analysis.",
+        "grounding_score": 0.824,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 12535,
+        "total_cost_usd": 0.00701,
+        "latency_ms": {
+          "draft": 10470,
+          "retrieve": 6584,
+          "verify": 13787,
+          "reflect": 2764,
+          "html_gen": 4494,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 34,
+        "claims_weak": 0,
+        "claims_unverified": 3,
+        "grounding_breakdown": {
+          "unverified_no_source": 3,
+          "unverified_has_source": 0,
+          "weak_count": 0,
+          "mean_confidence_verified": 0.897,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Support Vector Machines (SVMs) solve classification problems by finding the hyperplane that maximizes the margin between classes.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The margin is the distance from the hyperplane to the nearest data points of any class, called support vectors.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs are robust to outliers and effective in high-dimensional spaces.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.8,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs use the kernel trick to handle non-linear boundaries without explicitly transforming the data.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "For engineers, SVMs are a go-to for tasks like text classification, image recognition, and bioinformatics where clear separation is critical.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "An SVM finds the hyperplane that maximizes the margin.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "For a binary classification problem with labels y_i \u2208 {-1, 1}, the hyperplane is defined by w \u00b7 x + b = 0.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The decision function is f(x) = sign(w \u00b7 x + b).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The margin is 2 / ||w||.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Maximizing the margin is equivalent to minimizing ||w|| subject to y_i (w \u00b7 x_i + b) >= 1 for all i.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "This is a convex optimization problem solved using Lagrange multipliers.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The solution depends only on the support vectors \u2014 the points where y_i (w \u00b7 x_i + b) = 1.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The soft-margin SVM introduces slack variables \u03be_i and a penalty parameter C.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The objective becomes: minimize (1/2)||w||^2 + C * sum(\u03be_i) subject to y_i (w \u00b7 x_i + b) >= 1 - \u03be_i, \u03be_i >= 0.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "C controls the trade-off between a wide margin and misclassification.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "A large C penalizes errors heavily, leading to a narrower margin that fits the training data closely (risk of overfitting).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "A small C allows more misclassifications for a wider margin (risk of underfitting).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The kernel trick allows SVMs to find non-linear decision boundaries.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Instead of mapping data to a higher-dimensional space explicitly, the kernel function K(x_i, x_j) computes dot products in that space implicitly.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Common kernels: linear (K = x_i \u00b7 x_j), polynomial (K = (\u03b3 x_i \u00b7 x_j + r)^d), and RBF (K = exp(-\u03b3 ||x_i - x_j||^2)).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The RBF kernel is a default choice because it can approximate any continuous function, but it has a hyperparameter \u03b3 that controls the influence of a single training example.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "High \u03b3 leads to complex boundaries and overfitting; low \u03b3 leads to simpler boundaries.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs are sensitive to feature scaling \u2014 always standardize features.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs do not scale well to very large datasets (O(n^2) memory for kernel matrices).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The choice of C and kernel parameters requires cross-validation.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "For imbalanced classes, class weights or different C values per class are needed.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs do not provide probabilistic outputs natively; Platt scaling can be used but adds calibration complexity.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The code example uses make_classification to generate synthetic data with 1000 samples and 20 features.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "The code example splits data into training and test sets with test_size=0.2.",
+            "source_url": "https://ashutoshtripathi.com/implementing-support-vector-machine-using-scikit-learn-in-python",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The code example uses a pipeline with StandardScaler and SVC with kernel='rbf', C=1.0, gamma='scale'.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The code example prints test accuracy.",
+            "source_url": "https://ashutoshtripathi.com/implementing-support-vector-machine-using-scikit-learn-in-python",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The tuning code uses GridSearchCV with param_grid for svc__C and svc__gamma.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "SVMs maximize the margin between classes, making them robust to outliers.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The soft-margin parameter C controls the trade-off between margin width and misclassification.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The kernel trick enables non-linear decision boundaries without explicit feature mapping.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Always standardize features before training an SVM.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs do not scale well to large datasets; consider alternatives like linear models or gradient boosting for millions of samples.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          }
+        ]
+      },
+      "stderr": null
+    }
+  ],
+  "failed": 0,
+  "mean_cost_usd": 0.00816,
+  "mean_grounding": 0.784,
+  "mean_reflection": 7.0,
+  "mean_wall_time_s": 48.2,
+  "mean_html_errors": 0.0,
+  "mean_unverified_rate": 0.126,
+  "runs_below_grounding_floor": 0,
+  "runs": [
+    {
+      "id": 1,
+      "topic": "Linear & Logistic Regression",
+      "status": "success",
+      "wall_time_s": 59.3,
+      "telemetry": {
+        "run_id": "c945e07b-cf99-475a-8373-f29ed023b76f",
+        "topic": "Linear & Logistic Regression",
+        "slug": "linear-and-logistic-regression",
+        "timestamp": "2026-06-05T05:46:56.518547",
+        "prompt_version": "v1.0",
+        "iterations": 2,
+        "reflection_score": 7,
+        "reflection_notes": "The structure is complete and coherent, and the technical depth is appropriate for senior engineers, covering key failure modes and training methods. However, the writing occasionally slips into AI-slop phrases like 'Engineers need these models for quick prototyping' and the code example is overly simplistic for the intended audience. The grounding score of 0.81 is solid, but the unverified claims (e.g., 'outliers heavily skew linear regression coefficients') should be cited or rephrased.",
+        "grounding_score": 0.81,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 20716,
+        "total_cost_usd": 0.01071,
+        "latency_ms": {
+          "draft": 9518,
+          "retrieve": 300,
+          "verify": 9062,
+          "reflect": 2487,
+          "html_gen": 3601,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 21,
+        "claims_weak": 0,
+        "claims_unverified": 3,
+        "grounding_breakdown": {
+          "unverified_no_source": 3,
+          "unverified_has_source": 0,
+          "weak_count": 0,
+          "mean_confidence_verified": 0.926,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Linear regression is the simplest model that learns a linear relationship between input features and a target.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Logistic regression predicts the probability that an input belongs to a class.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "A logistic regression is just a single neuron with a sigmoid activation.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Linear regression models the target y as y = w^T x + b, where w is a weight vector and b is a bias.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "The model is trained by minimizing the mean squared error (MSE) loss: L = (1/n) * sum((y_i - (w^T x_i + b))^2).",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The optimal weights can be found analytically via the normal equation: w = (X^T X)^{-1} X^T y.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "For large datasets, gradient descent is used: w = w - lr * (2/n) * X^T (X w - y).",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "If features are highly correlated (multicollinearity), X^T X becomes near-singular, leading to unstable coefficients.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Regularization (Ridge, Lasso) adds a penalty to the loss to shrink weights.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Logistic regression models the log-odds of a binary outcome: log(p/(1-p)) = w^T x + b.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "The probability is p = 1 / (1 + exp(-(w^T x + b))).",
+            "source_url": "https://blog.alliedoffsets.com/understanding-the-difference-between-linear-and-logistic-regression-models",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "The loss is binary cross-entropy: L = - (1/n) * sum(y_i * log(p_i) + (1 - y_i) * log(1 - p_i)).",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "There is no closed-form solution; training uses gradient descent or Newton's method.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "A common failure mode is separation: when a feature perfectly separates classes, weights diverge to infinity.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Regularization (L2) prevents this.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Both models assume linear decision boundaries.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Outliers heavily skew linear regression coefficients.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Logistic regression is sensitive to class imbalance \u2014 the model predicts the majority class with high confidence.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Always scale features for gradient descent convergence.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Linear regression predicts continuous values by minimizing MSE; logistic regression predicts class probabilities via the sigmoid function and cross-entropy loss.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Both models assume linear decision boundaries \u2014 they fail on nonlinear patterns without feature engineering.",
+            "source_url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Gradient descent is the standard training method for logistic regression; linear regression has a closed-form solution via the normal equation.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Regularization (Ridge/Lasso for linear, L2 for logistic) is essential to handle multicollinearity and separation.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Always scale features to zero mean and unit variance before training to ensure stable gradient descent.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "confidence": 0.9,
+            "status": "verified"
+          }
+        ]
+      },
+      "stderr": null
+    },
+    {
+      "id": 2,
+      "topic": "Ridge, Lasso & ElasticNet",
+      "status": "success",
+      "wall_time_s": 42.5,
+      "telemetry": {
+        "run_id": "0b003f25-9e76-4496-94d1-13d49aae3e42",
+        "topic": "Ridge, Lasso & ElasticNet",
+        "slug": "ridge-lasso-and-elasticnet",
+        "timestamp": "2026-06-05T05:47:39.057294",
+        "prompt_version": "v1.0",
+        "iterations": 1,
+        "reflection_score": 7,
+        "reflection_notes": "The structure is complete and coherent, but the technical depth is uneven: the gradient descent update for Ridge is unnecessary for senior engineers, while the Lasso coordinate descent formula is too terse to be useful without more context. The grounding score of 0.72 indicates a significant number of weak or unverified claims, which undermines credibility. The writing is direct and avoids filler, but the 'Takeaways' section reads like a bulleted summary rather than a synthesis.",
+        "grounding_score": 0.719,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 12190,
+        "total_cost_usd": 0.00677,
+        "latency_ms": {
+          "draft": 11663,
+          "retrieve": 6717,
+          "verify": 11190,
+          "reflect": 2841,
+          "html_gen": 5446,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 21,
+        "claims_weak": 3,
+        "claims_unverified": 5,
+        "grounding_breakdown": {
+          "unverified_no_source": 5,
+          "unverified_has_source": 0,
+          "weak_count": 3,
+          "mean_confidence_verified": 0.893,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Ordinary least squares (OLS) minimizes the sum of squared errors, but it has no mechanism to prevent coefficients from becoming arbitrarily large.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge, Lasso, and ElasticNet are regularization techniques that add a penalty term to the loss function.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge uses an L2 penalty (sum of squared coefficients), Lasso uses an L1 penalty (sum of absolute coefficients), and ElasticNet combines both.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge adds an L2 penalty: L_ridge = L_OLS + lambda * sum(w_j^2)",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The gradient becomes: grad = -2 * X^T * (y - Xw) + 2 * lambda * w",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "The update (if using gradient descent) is: w = w - lr * (-2 * X^T * (y - Xw) + 2 * lambda * w)",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Ridge shrinks coefficients proportionally. It never sets them exactly to zero, so all features remain in the model.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Lasso uses an L1 penalty: L_lasso = L_OLS + lambda * sum(|w_j|)",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The L1 penalty has a kink at zero, which forces some coefficients to become exactly zero.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "The gradient is not defined at zero, so optimization typically uses coordinate descent or subgradient methods.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.8,
+            "status": "verified"
+          },
+          {
+            "claim": "The update for each coefficient (using coordinate descent) is: w_j = soft_threshold(rho_j, lambda) / z_j",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "ElasticNet combines both penalties: L_en = L_OLS + lambda1 * sum(|w_j|) + lambda2 * sum(w_j^2)",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "It has two hyperparameters: alpha (overall penalty strength) and l1_ratio (mix between L1 and L2).",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "When l1_ratio = 1, it's Lasso; when l1_ratio = 0, it's Ridge.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.95,
+            "status": "verified"
+          },
+          {
+            "claim": "ElasticNet is preferred when there are groups of correlated features.",
+            "source_url": "https://www.digitalocean.com/community/tutorials/regularization-in-machine-learning-lasso-ridge-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Lasso tends to pick one feature from a group arbitrarily; ElasticNet can keep the whole group.",
+            "source_url": "https://www.digitalocean.com/community/tutorials/regularization-in-machine-learning-lasso-ridge-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge can fail when lambda is too large, underfitting by shrinking all coefficients too much.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.7,
+            "status": "weak"
+          },
+          {
+            "claim": "Lasso can be unstable with highly correlated features \u2014 it may select different features on different runs.",
+            "source_url": "https://www.digitalocean.com/community/tutorials/regularization-in-machine-learning-lasso-ridge-elastic-net",
+            "confidence": 0.85,
+            "status": "verified"
+          },
+          {
+            "claim": "ElasticNet requires tuning two hyperparameters, which increases computational cost.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.8,
+            "status": "verified"
+          },
+          {
+            "claim": "All three assume features are on a similar scale; standardizing features (mean 0, variance 1) is critical before applying regularization.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Ridge is best when all features matter.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.7,
+            "status": "weak"
+          },
+          {
+            "claim": "Lasso is best when you suspect only a few features are relevant.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.7,
+            "status": "weak"
+          },
+          {
+            "claim": "ElasticNet is the safe default when you don't know the feature structure.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "In practice, ElasticNet with l1_ratio around 0.5 often works well.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "Ridge uses L2 penalty and shrinks all coefficients but never to zero; use when all features are relevant.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Lasso uses L1 penalty and can zero out coefficients, performing feature selection; use when you expect sparse solutions.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "ElasticNet combines L1 and L2 penalties; it handles correlated features better than Lasso alone.",
+            "source_url": "https://www.digitalocean.com/community/tutorials/regularization-in-machine-learning-lasso-ridge-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Always standardize features before applying any of these regularizers; otherwise the penalty is applied unevenly.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The alpha (or lambda) hyperparameter controls regularization strength \u2014 cross-validation is essential to choose it.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+            "confidence": 0.9,
+            "status": "verified"
+          }
+        ]
+      },
+      "stderr": null
+    },
+    {
+      "id": 3,
+      "topic": "Support Vector Machines",
+      "status": "success",
+      "wall_time_s": 42.7,
+      "telemetry": {
+        "run_id": "2e9e642c-d93a-4306-b956-3f1630781243",
+        "topic": "Support Vector Machines",
+        "slug": "support-vector-machines",
+        "timestamp": "2026-06-05T05:48:21.857413",
+        "prompt_version": "v1.0",
+        "iterations": 1,
+        "reflection_score": 7,
+        "reflection_notes": "The draft has all required sections and is technically accurate, but the writing feels slightly generic and lacks the sharp, opinionated voice expected for senior engineers. The 'Technical Deep-Dive' could better emphasize practical trade-offs (e.g., why RBF is default despite pitfalls) and the 'Takeaways' are too list-like. The grounding is strong, but the prose reads like a competent summary rather than an engaging, expert-level analysis.",
+        "grounding_score": 0.824,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 12535,
+        "total_cost_usd": 0.00701,
+        "latency_ms": {
+          "draft": 10470,
+          "retrieve": 6584,
+          "verify": 13787,
+          "reflect": 2764,
+          "html_gen": 4494,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 34,
+        "claims_weak": 0,
+        "claims_unverified": 3,
+        "grounding_breakdown": {
+          "unverified_no_source": 3,
+          "unverified_has_source": 0,
+          "weak_count": 0,
+          "mean_confidence_verified": 0.897,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Support Vector Machines (SVMs) solve classification problems by finding the hyperplane that maximizes the margin between classes.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The margin is the distance from the hyperplane to the nearest data points of any class, called support vectors.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs are robust to outliers and effective in high-dimensional spaces.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.8,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs use the kernel trick to handle non-linear boundaries without explicitly transforming the data.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "For engineers, SVMs are a go-to for tasks like text classification, image recognition, and bioinformatics where clear separation is critical.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "An SVM finds the hyperplane that maximizes the margin.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "For a binary classification problem with labels y_i \u2208 {-1, 1}, the hyperplane is defined by w \u00b7 x + b = 0.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The decision function is f(x) = sign(w \u00b7 x + b).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The margin is 2 / ||w||.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Maximizing the margin is equivalent to minimizing ||w|| subject to y_i (w \u00b7 x_i + b) >= 1 for all i.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "This is a convex optimization problem solved using Lagrange multipliers.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The solution depends only on the support vectors \u2014 the points where y_i (w \u00b7 x_i + b) = 1.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The soft-margin SVM introduces slack variables \u03be_i and a penalty parameter C.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The objective becomes: minimize (1/2)||w||^2 + C * sum(\u03be_i) subject to y_i (w \u00b7 x_i + b) >= 1 - \u03be_i, \u03be_i >= 0.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "C controls the trade-off between a wide margin and misclassification.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "A large C penalizes errors heavily, leading to a narrower margin that fits the training data closely (risk of overfitting).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "A small C allows more misclassifications for a wider margin (risk of underfitting).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The kernel trick allows SVMs to find non-linear decision boundaries.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Instead of mapping data to a higher-dimensional space explicitly, the kernel function K(x_i, x_j) computes dot products in that space implicitly.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Common kernels: linear (K = x_i \u00b7 x_j), polynomial (K = (\u03b3 x_i \u00b7 x_j + r)^d), and RBF (K = exp(-\u03b3 ||x_i - x_j||^2)).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The RBF kernel is a default choice because it can approximate any continuous function, but it has a hyperparameter \u03b3 that controls the influence of a single training example.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "High \u03b3 leads to complex boundaries and overfitting; low \u03b3 leads to simpler boundaries.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs are sensitive to feature scaling \u2014 always standardize features.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs do not scale well to very large datasets (O(n^2) memory for kernel matrices).",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The choice of C and kernel parameters requires cross-validation.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "For imbalanced classes, class weights or different C values per class are needed.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs do not provide probabilistic outputs natively; Platt scaling can be used but adds calibration complexity.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The code example uses make_classification to generate synthetic data with 1000 samples and 20 features.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "The code example splits data into training and test sets with test_size=0.2.",
+            "source_url": "https://ashutoshtripathi.com/implementing-support-vector-machine-using-scikit-learn-in-python",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The code example uses a pipeline with StandardScaler and SVC with kernel='rbf', C=1.0, gamma='scale'.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The code example prints test accuracy.",
+            "source_url": "https://ashutoshtripathi.com/implementing-support-vector-machine-using-scikit-learn-in-python",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The tuning code uses GridSearchCV with param_grid for svc__C and svc__gamma.",
+            "source_url": null,
+            "confidence": 0.0,
+            "status": "unverified"
+          },
+          {
+            "claim": "SVMs maximize the margin between classes, making them robust to outliers.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The soft-margin parameter C controls the trade-off between margin width and misclassification.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "The kernel trick enables non-linear decision boundaries without explicit feature mapping.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "Always standardize features before training an SVM.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          },
+          {
+            "claim": "SVMs do not scale well to large datasets; consider alternatives like linear models or gradient boosting for millions of samples.",
+            "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+            "confidence": 0.9,
+            "status": "verified"
+          }
+        ]
+      },
+      "stderr": null
+    }
+  ]
+}
