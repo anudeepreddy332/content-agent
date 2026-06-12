@@ -624,6 +624,62 @@ def _deduplicate_grounding_report(report: list[dict], run_id: str) -> list[dict]
     return unique
 
 
+
+def _resolve_attributions(report: list[dict], web_sources: list, kb_results: list) -> list[dict]:
+    """
+       Annotate each grounding_report entry with resolved attribution (M5).
+
+       The verifier's source_url is free text — never validated against the actual
+       retrieved set until now. This resolves it post-hoc, with ZERO change to the
+       verify prompt or source context (no metric re-baseline).
+
+       Adds to each entry:
+           source_kind: "web" | "kb" | "none" | "unresolved"
+               none       = verifier attached no source (expected for unverified)
+               unresolved = verifier emitted a source_url not in the retrieved set
+                            (hallucinated attribution — a signal, not silently passed)
+           source_ref:  canonical URL (web) or "kb:<file>" (kb); null otherwise
+           kb_chunk_candidates: chunk_index list for the matched KB file (kb only) —
+               exact-chunk disambiguation is deferred to M5b (requires verifier-
+               visible source tagging, which re-baselines metrics).
+
+       Matching is normalization-tolerant (lowercase, trailing-slash strip) — safe
+       because collision risk within one run's <=15-source set is nil.
+       """
+    def _norm(u: str) -> str:
+        return (u or "").strip().lower().rstrip("/")
+
+    web_index = {_norm(s.get("url", "")): s.get("url") for s in web_sources if s.get("url")}
+    kb_index: dict[str, list[int]] = {}
+    for k in kb_results:
+        kb_index.setdefault(k.get("source", "unknown"), []).append(k.get("chunk_index", 0))
+
+    for entry in report:
+        su = entry.get("source_url")
+        if not su:
+            entry["source_kind"] = "none"
+            entry["source_ref"] = None
+            continue
+        nsu = _norm(su)
+        if nsu in web_index:
+            entry["source_kind"] = "web"
+            entry["source_ref"] = web_index[nsu]
+            continue
+        kb_match = next(
+            (src for src in kb_index if nsu == _norm(src) or _norm(src) in nsu or nsu in _norm(src)),
+            None,
+        )
+        if kb_match:
+            entry["source_kind"] = "kb"
+            entry["source_ref"] = f"kb:{kb_match}"
+            entry["kb_chunk_candidates"] = sorted(set(kb_index[kb_match]))
+            continue
+        entry["source_kind"] = "unresolved"
+        entry["source_ref"] = None
+
+    return report
+
+
 # NODE: verify_node
 
 def verify_node(state: AgentState) -> dict:
@@ -688,6 +744,12 @@ def verify_node(state: AgentState) -> dict:
     # Remove near-exact duplicate claims before scoring.
     # Prompt instruction handles semantic duplicates; this catches string-level dupes.
     grounding_report = _deduplicate_grounding_report(grounding_report, run_id=state["run_id"])
+
+    # M5: resolve each claim's source_url against the actual retrieved set.
+    # Pure post-processing — verifier prompt and source context untouched.
+    grounding_report = _resolve_attributions(
+        grounding_report, state.get("web_sources", []), state.get("kb_results", [])
+    )
 
 
     # Compute mean confidence
