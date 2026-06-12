@@ -204,6 +204,7 @@ def _bm25_query(query: str, n_results: int) -> list[dict]:
         results.append({
             "text": _bm25_docs[idx],
             "source": _bm25_metas[idx].get("source", "unknown"),
+            "chunk_index": _bm25_metas[idx].get("chunk_index", 0),
             "distance": 0.0,
         })
 
@@ -264,6 +265,7 @@ def _reciprocal_rank_fusion(
         output.append({
             "text": text,
             "source": base["source"],
+            "chunk_index": base.get("chunk_index", 0),
             "distance": base.get("distance", 0.0),   # keep original distance for logging
             "rrf_score": round(rrf_score, 5),
         })
@@ -318,6 +320,7 @@ def query_kb(query: str, n_results: int = 5) -> list[dict]:
             dense_results.append({
                 "text": payload.get("text", ""),
                 "source": payload.get("source", "unknown"),
+                "chunk_index": payload.get("chunk_index", 0),
                 "distance": distance,
             })
 
@@ -343,3 +346,40 @@ def query_kb(query: str, n_results: int = 5) -> list[dict]:
         return dense_results[:n_results]
 
     return _reciprocal_rank_fusion(dense_results, bm25_results, k=60, n=n_results)
+
+
+def warmup() -> dict:
+    """
+       Eagerly load the encoder and build the BM25 index before the pipeline runs.
+
+       Why: both are one-time per-process costs (~8s model load, ~4s torch import
+       happens at module import). Paying them inside the first retrieve_node call
+       pollutes latency_ms.retrieve_kb, which must measure steady-state query cost.
+       Called by main.py before graph invocation. Returns timings for logging.
+       """
+    import time
+    t0 = time.perf_counter()
+    _get_encoder()
+    t1 = time.perf_counter()
+    if _bm25 is None:
+        _build_bm25()
+    t2 = time.perf_counter()
+    return {
+        "encoder_load_ms": int((t1-t0) * 1000),
+        "bm25_build_ms": int((t2-t1) * 1000),
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -27,10 +27,11 @@ class AgentState(TypedDict):
 
     # Retrieval
     web_sources: list           # [{title, url, content, score}]
-    kb_results: list            # [{text, source, distance}]
+    kb_results: list            # [{text, source, chunk_index, distance, rrf_score}]
 
     # Verification
-    grounding_report: list      # [{claim, source_url, confidence, status}]
+    grounding_report: list      # [{claim, source_url, confidence, status, specificity,
+                                #   source_kind, source_ref, kb_chunk_candidates?}]
     grounding_score: float      # mean confidence across all claims
 
     # Reflection

@@ -25,6 +25,12 @@ DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"
 DEEPSEEK_INPUT_COST_PER_M = 0.27    # prompt tokens
 DEEPSEEK_OUTPUT_COST_PER_M = 1.10   # completion tokens
 
+
+LLM_TIMEOUT_S = 120   # Per-request DeepSeek timeout. Draft calls are the longest
+                      # (~30-60s at max_tokens 4000+); 120s kills only genuine hangs.
+                      # APITimeoutError is in the tenacity retry set, so a hung
+                      # call is killed and retried, not fatal.
+
 # LLM behavior
 DRAFT_TEMPERATURE = 0.3     # Low = factual consistency. Raise to 0.5 if drafts feel robotic.
 REFLECT_TEMPERATURE = 0.1   # Very low = deterministic scoring. Do not raise above 0.2

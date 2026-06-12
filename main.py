@@ -23,6 +23,9 @@ import json
 from pathlib import Path
 from agent.graph import build_graph
 from config import PROMPT_VERSION, PROMPT_HASHES
+from observability.logger import get_logger
+import re
+import datetime
 
 
 def _write_telemetry(state: dict):
@@ -41,7 +44,7 @@ def _write_telemetry(state: dict):
         "run_id": run_id,
         "topic": state.get("topic"),
         "slug": state.get("slug"),
-        "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "prompt_version": state.get("prompt_version", "unknown"),
 
         # Per-file prompt hashes (M6a). Read from config, not state: the hashes
@@ -114,6 +117,23 @@ def _write_telemetry(state: dict):
              "content": (s.get("content") or "")[:2000]}
             for s in (state.get("web_sources", []) or [])
         ],
+        # M5: persist the retrieved KB set with chunk identity — without this,
+        # KB-verified claims were not reconstructable (only a count was stored).
+        "kb_results": [
+            {"source": k.get("source"), "chunk_index": k.get("chunk_index", 0),
+             "distance": k.get("distance"), "rrf_score": k.get("rrf_score"),
+             "text": (k.get("text") or "")[:2000]}
+            for k in (state.get("kb_results", []) or [])
+        ],
+
+        # M5: attribution resolution summary. unresolved > 0 means the verifier
+        # cited a source not in the retrieved set — surface it, don't hide it.
+        "attribution": {
+            "web": sum(1 for r in report if r.get("source_kind") == "web"),
+            "kb": sum(1 for r in report if r.get("source_kind") == "kb"),
+            "none": sum(1 for r in report if r.get("source_kind") == "none"),
+            "unresolved": sum(1 for r in report if r.get("source_kind") == "unresolved"),
+        },
 
     }
 
@@ -148,14 +168,14 @@ def run(topic, card_id, series, auto):
 
     os.environ["HITL_AUTO_APPROVE"] = "1" if auto else "0"
 
-    slug = (
-        topic.lower()
-        .replace(" ", "-")
-        .replace("&", "and")
-        .replace(",", "")
-        .replace("—", "")
-        .strip("-")
-    )
+    # B1: allowlist sanitization. The slug reaches the filesystem
+    # (../themachinist-website/<slug>.html) and git branch/tag names, so it must
+    # be incapable of path traversal or ref injection BY CONSTRUCTION:
+    # only [a-z0-9-] survives, length-capped, never empty.
+    slug = re.sub(r"[^a-z0-9]+", "-", topic.lower().replace("&", "and"))
+    slug = re.sub(r"-{2,}", "-", slug).strip("-")[:80]
+    if not slug:
+        raise click.UsageError(f"Topic {topic!r} produces an empty slug.")
     run_id = str(uuid.uuid4())
 
     initial_state = {
@@ -187,6 +207,12 @@ def run(topic, card_id, series, auto):
         "latency_ms": {},
         "error_log": [],
     }
+    # KB warmup (M5): pay the one-time encoder load + BM25 build BEFORE the graph
+    # runs, so latency_ms.retrieve_kb measures steady-state query cost only.
+    from tools.query_kb import warmup as kb_warmup
+    warmup_times = kb_warmup()
+    get_logger("main").info("kb.warmup", run_id=run_id, **warmup_times)
+
 
     graph = build_graph()
     try:
