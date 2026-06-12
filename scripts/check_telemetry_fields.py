@@ -20,7 +20,7 @@ topic = "Gradient Descent"
 proc = subprocess.run(
     ["uv", "run", "python", "main.py", "run",
      "--topic", topic, "--card-id", "standalone", "--series", "Test", "--auto"],
-    capture_output=True, text=True, timeout=120,
+    capture_output=True, text=True, timeout=300,
 )
 runs = sorted(Path("outputs/runs").glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
 data = json.loads(runs[0].read_text())

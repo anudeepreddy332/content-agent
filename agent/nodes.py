@@ -34,6 +34,7 @@ from config import (
     DEEPSEEK_OUTPUT_COST_PER_M,
     PROMPT_VERSION,
     TAVILY_MIN_AVG_SCORE,
+    LLM_TIMEOUT_S,
 )
 from observability.logger import get_logger
 import html as html_module
@@ -51,6 +52,8 @@ def _get_client() -> OpenAI:
     return OpenAI(
         api_key=os.getenv("DEEPSEEK_API_KEY"),
         base_url=DEEPSEEK_BASE_URL,
+        timeout=LLM_TIMEOUT_S,
+        max_retries=0,  # tenacity owns retries; SDK-internal retries would stack (3x2=6 attempts)
     )
 
 
@@ -805,6 +808,10 @@ def verify_node(state: AgentState) -> dict:
             (r.get("claim") or "")[:200]
             for r in grounding_report if r.get("status") == "unverified"
         ],
+        # M5: full annotated report per iteration — the final grounding_report
+        # only reflects the LAST iteration; without this, iteration 1 of a
+        # revised run was un-reconstructable.
+        "grounding_report": grounding_report,
     })
 
     return {
@@ -1305,7 +1312,7 @@ def git_node(state: AgentState) -> dict:
 
         # 5. Merge or tag-then-merge
         if changed_files:
-            date_str = datetime.datetime.utcnow().strftime("%Y%m%d")
+            date_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
             tag_name = f"v-{date_str}-{slug}"
             existing_tag_names = [t.name for t in repo.tags]
             if tag_name in existing_tag_names:

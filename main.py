@@ -24,6 +24,8 @@ from pathlib import Path
 from agent.graph import build_graph
 from config import PROMPT_VERSION, PROMPT_HASHES
 from observability.logger import get_logger
+import re
+import datetime
 
 
 def _write_telemetry(state: dict):
@@ -42,7 +44,7 @@ def _write_telemetry(state: dict):
         "run_id": run_id,
         "topic": state.get("topic"),
         "slug": state.get("slug"),
-        "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "prompt_version": state.get("prompt_version", "unknown"),
 
         # Per-file prompt hashes (M6a). Read from config, not state: the hashes
@@ -166,14 +168,14 @@ def run(topic, card_id, series, auto):
 
     os.environ["HITL_AUTO_APPROVE"] = "1" if auto else "0"
 
-    slug = (
-        topic.lower()
-        .replace(" ", "-")
-        .replace("&", "and")
-        .replace(",", "")
-        .replace("—", "")
-        .strip("-")
-    )
+    # B1: allowlist sanitization. The slug reaches the filesystem
+    # (../themachinist-website/<slug>.html) and git branch/tag names, so it must
+    # be incapable of path traversal or ref injection BY CONSTRUCTION:
+    # only [a-z0-9-] survives, length-capped, never empty.
+    slug = re.sub(r"[^a-z0-9]+", "-", topic.lower().replace("&", "and"))
+    slug = re.sub(r"-{2,}", "-", slug).strip("-")[:80]
+    if not slug:
+        raise click.UsageError(f"Topic {topic!r} produces an empty slug.")
     run_id = str(uuid.uuid4())
 
     initial_state = {
