@@ -150,6 +150,43 @@ def _make_slug(topic: str) -> str:
     return re.sub(r"-{2,}", "-", slug).strip("-")[:80]
 
 
+
+
+def _build_initial_state(topic, slug, card_id, series, run_id):
+    """Canonical AgentState seed. Used by the CLI and the API server so the
+    state shape is defined in exactly one place (LangGraph merges silently on
+    key drift — see graph.py docstring)."""
+    return {
+        "topic": topic,
+        "slug": slug,
+        "card_id": card_id,
+        "series_context": series,
+        "draft_sections": {},
+        "draft_markdown": "",
+        "web_sources": [],
+        "kb_results": [],
+        "grounding_report": [],
+        "grounding_score": 0.0,
+        "reflection_score": 0,
+        "reflection_notes": "",
+        "iterations": 0,
+        "hitl_status": "pending",
+        "hitl_feedback": None,
+        "html_output": None,
+        "html_filename": None,
+        "branch_name": None,
+        "git_status": None,
+        "iteration_metrics": [],
+        "m4_feedback_claims": 0,
+        "run_id": run_id,
+        "prompt_version": PROMPT_VERSION,
+        "total_tokens": 0,
+        "total_cost_usd": 0.0,
+        "latency_ms": {},
+        "error_log": [],
+    }
+
+
 @click.group()
 def cli():
     pass
@@ -183,35 +220,8 @@ def run(topic, card_id, series, auto):
         raise click.UsageError(f"Topic {topic!r} produces an empty slug.")
     run_id = str(uuid.uuid4())
 
-    initial_state = {
-        "topic": topic,
-        "slug": slug,
-        "card_id": card_id,
-        "series_context": series,
-        "draft_sections": {},
-        "draft_markdown": "",
-        "web_sources": [],
-        "kb_results": [],
-        "grounding_report": [],
-        "grounding_score": 0.0,
-        "reflection_score": 0,
-        "reflection_notes": "",
-        "iterations": 0,
-        "hitl_status": "pending",
-        "hitl_feedback": None,
-        "html_output": None,
-        "html_filename": None,
-        "branch_name": None,
-        "git_status": None,
-        "iteration_metrics": [],
-        "m4_feedback_claims": 0,
-        "run_id": run_id,
-        "prompt_version": PROMPT_VERSION,
-        "total_tokens": 0,
-        "total_cost_usd": 0.0,
-        "latency_ms": {},
-        "error_log": [],
-    }
+    initial_state = _build_initial_state(topic, slug, card_id, series, run_id)
+
     # KB warmup (M5): pay the one-time encoder load + BM25 build BEFORE the graph
     # runs, so latency_ms.retrieve_kb measures steady-state query cost only.
     from tools.query_kb import warmup as kb_warmup
@@ -235,6 +245,16 @@ def run(topic, card_id, series, auto):
         f"Git: {result.get('git_status', 'n/a')}"
     )
     click.echo(f"RUN_ID={result['run_id']}")
+
+
+@cli.command()
+@click.option("--host", default="0.0.0.0", show_default=True)
+@click.option("--port", default=8000, show_default=True, type=int)
+def serve(host, port):
+    """Launch the HITL API server (FastAPI). Requires API_BEARER_TOKEN in env."""
+    import uvicorn
+    uvicorn.run("api.server:app", host=host, port=port, log_level="info")
+
 
 
 if __name__ == "__main__":

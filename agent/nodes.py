@@ -933,6 +933,35 @@ def hitl_node(state: AgentState) -> dict:
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
         return {"hitl_status": "approved", "hitl_feedback": None}
 
+    # B4: API mode — pause the graph via LangGraph interrupt(). The checkpointer
+    # (set by the API server's build_graph) persists full state to SQLite, so the
+    # review can outlive a process restart. On resume via Command(resume=...),
+    # this node re-executes from the top and interrupt() returns the resume payload
+    # instead of pausing again. hitl_node has no LLM calls, so re-execution is free
+    # and cannot double-count cost. Fail-safe default is REJECT — never auto-publish.
+
+    if os.environ.get("HITL_MODE") == "api":
+        from langgraph.types import interrupt
+        decision = interrupt({
+            "type": "hitl_review",
+            "run_id": state["run_id"],
+            "topic": state["topic"],
+            "slug": state["slug"],
+            "draft_markdown": state["draft_markdown"],
+            "grounding_report": state.get("grounding_report", []),
+            "grounding_score": state.get("grounding_score", 0.0),
+            "reflection_score": state.get("reflection_score", 0),
+            "reflection_notes": state.get("reflection_notes", ""),
+            "error_log": state.get("error_log", []),
+        }) or {}
+        action = decision.get("action")
+        if action == "approve":
+            return {"hitl_status": "approved", "hitl_feedback": None}
+        if action == "feedback":
+            fb = (decision.get("feedback") or "").strip()
+            if fb:
+                return {"hitl_status": "feedback", "hitl_feedback": fb}
+        return {"hitl_status": "rejected", "hitl_feedback": None}
 
 
     from rich.console import Console
