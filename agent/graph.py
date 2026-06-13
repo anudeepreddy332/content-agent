@@ -41,7 +41,7 @@ from agent.nodes import (
     route_after_hitl,
 )
 
-def build_graph() -> StateGraph:
+def build_graph(checkpointer=None) -> StateGraph:
     """
     Build and compile the content-agent LangGraph state machine.
 
@@ -49,7 +49,15 @@ def build_graph() -> StateGraph:
         Compiled LangGraph graph ready for .invoke() or .stream()
 
     Node registration order doesn't matter - edges define execution order.
-    Entry point is always draft_node.
+    Entry point is always retrieve_node.
+
+    checkpointer: LangGraph checkpointer (e.g. SqliteSaver) enabling durable
+        interrupt/resume for async HITL. CLI passes None -> compile(checkpointer=None)
+        is identical to the previous bare compile(), so CLI behavior is unchanged.
+        The API server passes a SqliteSaver so hitl_node's interrupt() can pause
+        and the run can resume across process restarts.
+
+
     """
 
     builder = StateGraph(AgentState)
@@ -97,7 +105,7 @@ def build_graph() -> StateGraph:
     builder.add_edge("html_gen", "git")
     builder.add_edge("git", END)
 
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)
 
 
 
