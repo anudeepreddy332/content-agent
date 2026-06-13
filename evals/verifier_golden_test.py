@@ -113,3 +113,5 @@ print(f"specificity accuracy: {spec_ok}/{len(CLAIMS)}")
 print("\nGATE TO PROCEED: grounding >= 11/12 AND specificity >= 10/12.")
 print("If specificity < 10/12, SV is NOT trustworthy — fix the specificity definition in")
 print("verify_system.md and re-run before any experiment.")
+
+sys.exit(0 if (ground_ok >= 11 and spec_ok >= 10) else 1)
