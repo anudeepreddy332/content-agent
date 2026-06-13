@@ -18,7 +18,8 @@ jobs:
       # Fatal tier only (syntax errors, undefined names): meaningful signal
       # without demanding a style-cleanup sprint mid-freeze. Widen post-freeze.
       - run: uv run ruff check --select E9,F63,F7,F82 .
-
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -33,3 +34,5 @@ jobs:
       # (verified offline 2026-06-13). Imports pull torch via sentence-transformers,
       # so the first uncached sync is the slow step (~3-5 min), not the tests.
       - run: uv run pytest tests/ -v
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
