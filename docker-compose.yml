@@ -1,0 +1,27 @@
+# Runs Qdrant locallu for dev
+# Production: swap image for a managed Qdrant Cloud instance or EC2
+
+# Usage
+# docker-compose up -d    # Start Qdrant in background
+# docker-compose down     # Stop and remove container
+# docker-compose down -v  # Stop and delete persisted data too
+
+# Data is persisted to ./kb/qdrant_data/ on the local disk
+
+version: "3.9"
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.9.2
+    container_name: content-agent-qdrant
+    ports:
+      - "6333:6333"     # REST API — used by qdrant-client
+      - "6334:6334"     # gRPC — not used yet, exposed for future
+    volumes:
+      - ./kb/qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333 && printf \"GET /readyz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5

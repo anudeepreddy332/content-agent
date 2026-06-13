@@ -1,0 +1,1346 @@
+{
+  "timestamp": "20260613_091426",
+  "total_runs": 1,
+  "successful": [
+    {
+      "id": 1,
+      "topic": "Linear & Logistic Regression",
+      "status": "success",
+      "wall_time_s": 74.4,
+      "telemetry": {
+        "run_id": "d08afb39-bd97-4999-9e90-9d780065dc00",
+        "topic": "Linear & Logistic Regression",
+        "slug": "linear-and-logistic-regression",
+        "timestamp": "2026-06-13T03:45:39.839563+00:00",
+        "prompt_version": "sha-6687240c8cd8",
+        "prompt_hashes": {
+          "draft_system": "ab2c32162513",
+          "verify_system": "e7ac8744409d",
+          "reflect_system": "b4335ad3b720",
+          "html_template": "5d44aebed766"
+        },
+        "iterations": 1,
+        "iteration_metrics": [
+          {
+            "iteration": 1,
+            "SV": 23,
+            "S": 23,
+            "V": 27,
+            "W": 0,
+            "U": 0,
+            "N": 27,
+            "uvr": 0.0,
+            "grounding_score": 0.943,
+            "m4_feedback_claims": 0,
+            "unverified_claims": [],
+            "grounding_report": [
+              {
+                "claim": "Linear regression predicts continuous values by minimizing squared errors.",
+                "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "generic",
+                "source_kind": "web",
+                "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+              },
+              {
+                "claim": "Logistic regression predicts binary probabilities via the sigmoid function.",
+                "source_url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "generic",
+                "source_kind": "web",
+                "source_ref": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression"
+              },
+              {
+                "claim": "Logistic regression uses maximum likelihood estimation (no closed form).",
+                "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+              },
+              {
+                "claim": "Linear regression uses ordinary least squares (closed form via normal equation).",
+                "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+              },
+              {
+                "claim": "Feature scaling is not required for linear regression but is essential for regularized logistic regression.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Both models assume linear relationships; add polynomial features or interactions if the true relationship is nonlinear.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.9,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Evaluate linear regression with RMSE and R\u00b2.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "generic",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Evaluate logistic regression with accuracy, precision, recall, F1, and ROC-AUC.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "generic",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Linear regression models the relationship between predictors X and a continuous target y as y = X\u03b2 + \u03b5, where \u03b5 is Gaussian noise with mean 0.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "The coefficients \u03b2 are estimated by minimizing the sum of squared residuals: \u03a3(y\u1d62 - x\u1d62\u00b7\u03b2)\u00b2.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "The closed-form solution is \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y, computable in O(p\u00b3) time for p features.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Key assumptions: linearity, independent errors, homoscedasticity (constant variance of errors), and no perfect multicollinearity.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "If predictors are highly correlated (VIF > 5\u201310), coefficient estimates become unstable.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "If errors are heteroscedastic, standard errors are wrong but coefficients remain unbiased.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.9,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Logistic regression models the probability of a binary outcome Y=1 as P(Y=1) = 1 / (1 + exp(-X\u03b2)).",
+                "source_url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression"
+              },
+              {
+                "claim": "The log-odds are linear: log(P/(1-P)) = X\u03b2.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Coefficients are estimated by maximum likelihood (MLE), maximizing the Bernoulli likelihood \u2113 = \u03a0 p\u1d62^{y\u1d62} (1-p\u1d62)^{1-y\u1d62}.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "There is no closed-form solution; iterative solvers like Newton-Raphson or IRLS are used.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Scikit-learn's LogisticRegression defaults to 'lbfgs' solver, which handles multinomial loss.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "For binary classification, 'liblinear' is a faster option.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Key assumptions: independent binary outcomes, log-odds linear in X, no perfect or quasi-separation (where a predictor perfectly predicts the outcome \u2014 this causes MLE to diverge).",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "In practice, adding a small L2 penalty (increasing C) or using Firth's penalized likelihood stabilizes estimates under separation.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Feature scaling is essential for regularized logistic regression because penalty terms are sensitive to predictor scales.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Linear regression extrapolates poorly outside the observed range.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.9,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Logistic regression can produce overconfident probabilities with rare events or imbalanced classes \u2014 use class_weight='balanced' to adjust.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Overfitting is controlled via regularization: Ridge (L2) for linear regression, L1 or ElasticNet for logistic regression.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.9,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Linear regression uses R\u00b2 (coefficient of determination, bounded \u22641, can be negative) and RMSE.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              }
+            ]
+          }
+        ],
+        "m4_feedback_claims": 0,
+        "experiment_flags": {
+          "m4_force_revise": "0",
+          "m4_grounding_feedback": "0",
+          "m4_freeze_cache": "0"
+        },
+        "reflection_score": 8,
+        "reflection_notes": "The draft is well-structured with all required sections present and logically coherent. Technical depth is appropriate for senior engineers, covering assumptions, failure modes, and practical considerations like regularization and scaling. The writing is direct and avoids filler phrases, though the Takeaways section could be more concise and avoid repeating earlier points. The code example is clean and illustrative, but adding a brief comment on interpreting coefficients would strengthen the practical value.",
+        "grounding_score": 0.943,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 15611,
+        "total_cost_usd": 0.00799,
+        "latency_ms": {
+          "retrieve": 14724,
+          "retrieve_web": 14297,
+          "retrieve_kb": 427,
+          "draft": 16195,
+          "verify": 17965,
+          "reflect": 2766,
+          "html_gen": 7690,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 27,
+        "claims_weak": 0,
+        "claims_unverified": 0,
+        "grounding_breakdown": {
+          "unverified_no_source": 0,
+          "unverified_has_source": 0,
+          "weak_count": 0,
+          "mean_confidence_verified": 0.943,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounded_depth": {
+          "SV": 23,
+          "S": 23,
+          "V": 27,
+          "N": 27,
+          "verified_fraction": 1.0,
+          "unverified_fraction": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Linear regression predicts continuous values by minimizing squared errors.",
+            "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "generic",
+            "source_kind": "web",
+            "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+          },
+          {
+            "claim": "Logistic regression predicts binary probabilities via the sigmoid function.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "generic",
+            "source_kind": "web",
+            "source_ref": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression"
+          },
+          {
+            "claim": "Logistic regression uses maximum likelihood estimation (no closed form).",
+            "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+          },
+          {
+            "claim": "Linear regression uses ordinary least squares (closed form via normal equation).",
+            "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+          },
+          {
+            "claim": "Feature scaling is not required for linear regression but is essential for regularized logistic regression.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Both models assume linear relationships; add polynomial features or interactions if the true relationship is nonlinear.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.9,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Evaluate linear regression with RMSE and R\u00b2.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "generic",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Evaluate logistic regression with accuracy, precision, recall, F1, and ROC-AUC.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "generic",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Linear regression models the relationship between predictors X and a continuous target y as y = X\u03b2 + \u03b5, where \u03b5 is Gaussian noise with mean 0.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "The coefficients \u03b2 are estimated by minimizing the sum of squared residuals: \u03a3(y\u1d62 - x\u1d62\u00b7\u03b2)\u00b2.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "The closed-form solution is \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y, computable in O(p\u00b3) time for p features.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Key assumptions: linearity, independent errors, homoscedasticity (constant variance of errors), and no perfect multicollinearity.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "If predictors are highly correlated (VIF > 5\u201310), coefficient estimates become unstable.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "If errors are heteroscedastic, standard errors are wrong but coefficients remain unbiased.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.9,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Logistic regression models the probability of a binary outcome Y=1 as P(Y=1) = 1 / (1 + exp(-X\u03b2)).",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression"
+          },
+          {
+            "claim": "The log-odds are linear: log(P/(1-P)) = X\u03b2.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Coefficients are estimated by maximum likelihood (MLE), maximizing the Bernoulli likelihood \u2113 = \u03a0 p\u1d62^{y\u1d62} (1-p\u1d62)^{1-y\u1d62}.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "There is no closed-form solution; iterative solvers like Newton-Raphson or IRLS are used.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Scikit-learn's LogisticRegression defaults to 'lbfgs' solver, which handles multinomial loss.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "For binary classification, 'liblinear' is a faster option.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Key assumptions: independent binary outcomes, log-odds linear in X, no perfect or quasi-separation (where a predictor perfectly predicts the outcome \u2014 this causes MLE to diverge).",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "In practice, adding a small L2 penalty (increasing C) or using Firth's penalized likelihood stabilizes estimates under separation.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Feature scaling is essential for regularized logistic regression because penalty terms are sensitive to predictor scales.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Linear regression extrapolates poorly outside the observed range.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.9,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Logistic regression can produce overconfident probabilities with rare events or imbalanced classes \u2014 use class_weight='balanced' to adjust.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Overfitting is controlled via regularization: Ridge (L2) for linear regression, L1 or ElasticNet for logistic regression.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.9,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Linear regression uses R\u00b2 (coefficient of determination, bounded \u22641, can be negative) and RMSE.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          }
+        ],
+        "web_sources_count": 10,
+        "kb_results_count": 5,
+        "web_sources": [
+          {
+            "url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+            "score": 0.8302782,
+            "content": "## Linear Regression Vs. Logistic Regression\n\nLinear regression gives you a continuous output, but logistic regression provides a constant output. An example of the continuous output is house price and stock price. Examples of the discrete output are predicting whether a patient has cancer or not and predicting whether a customer will churn. Logistic regression is estimated using the maximum likelihood estimation (MLE) approach, while linear regression is typically estimated using ordinary least squares (OLS), which can also be considered a special case of MLE when the errors in the model are normally distributed.\n\n## Maximum Likelihood Estimation Vs. Least Squares Method [...] Logistic regression can be used for various classification problems, such as spam detection. Some other examples include: diabetes prediction, whether a given customer will purchase a particular product; whether or not a customer will churn, whether the user will click on a given advertisement link or not, and many more examples.\n\nLogistic Regression is one of the most simple and commonly used Machine Learning algorithms for two-class classification. It is easy to implement and can be used as the baseline for any binary classification problem. Its basic fundamental concepts are also constructive in deep learning. Logistic regression describes and estimates the relationship between one dependent binary variable and independent variables. [...] To easily run all the example code in this tutorial yourself, you can create a DataLab workbook for free that has Python pre-installed and contains all code samples. For more practice on logistic regression, check out the exercises in our Credit Risk Modeling in R course, which has plenty of real-world examples.\n\n## What is Logistic Regression?\n\nLogistic regression is a statistical method for predicting binary classes. The outcome or target variable is dichotomous in nature. Dichotomous means there are only two possible classes. For example, it can be us"
+          },
+          {
+            "url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "score": 0.758958,
+            "content": "Linear regression and logistic regression are machine learning techniques that make predictions by analyzing historical data. For example, by looking at past customer purchase trends, regression analysis estimates future sales, so you can make more informed inventory purchases. Linear regression techniques mathematically model the unknown factor on multiple known factors to estimate the exact unknown value. Similarly, logistic regression uses mathematics to find the relationships between two data factors. It then uses this relationship to predict the value of one of those factors based on the other. The prediction usually has a finite number of outcomes, like yes or no.\n\nRead about linear regression \u00bb\n\nRead about logistic regression \u00bb [...] Linear regression\n\nLogistic regression\n\nWhat is it?\n\nA statistical method to predict an output value from a set of input values.\n\nA statistical method to predict the probability of an output value being from a certain category from a set of categorical variables.\n\nRelationship\n\nLinear relationship, represented by a straight line.\n\nLogistic relationship or sigmoidal relationship, represented by an S-shaped curve.\n\nEquation\n\nLinear.\n\nLogarithmic.\n\nType of supervised learning\n\nRegression.\n\nClassification.\n\nDistribution type\n\nNormal/gaussian.\n\nBinomial.\n\nBest suited for\n\nTasks requiring a predicted continuous dependent variable from a scale.\n\nTasks requiring a predicted likelihood of a categorical dependent variable occurring from a fixed set of categories. [...] ### Mathematical distribution type\n\nLinear regression follows a normal or Gaussian distribution of the dependent variable. A normal distribution is depicted by a continuous line on a graph.\n\nA logistic regression follows a binomial distribution. Binomial distribution is typically depicted as a bar graph.\n\n## When to use linear regression vs. logistic regression\n\nYou can use linear regression when you want to predict a continuous dependent variable from a scale of values. Use"
+          },
+          {
+            "url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "score": 0.7355091,
+            "content": "For the logistic regression examples, we will model malignant or benign as a function of the first 10 predictors (columns) in our dataset. These first 10 correspond to mean measurements of each tumor; mean radius, mean texture, mean perimeter, mean area, etc. (We selected these 10 columns purely for convenience to limit output. The goal of this article is to present different ways of performing logistic regression in Python, not how to select variables.)\n\n```plaintext\nfrom sklearn.model_selection import train_test_split\n\n# Select the first 10 columns of our DataFrame that we will use as the predictors in our models\nx = cancer.iloc[:,:10]\n\n# Select the response column \ny = cancer.Target [...] ```plaintext\nTest accuracy =  0.958041958041958\n```\n\n```plaintext\n# Confusion matrix\ncm = confusion_matrix(y_test, prediction_1) \nprint (\"\\nConfusion Matrix : \\n\", cm)\n```\n\n```plaintext\nConfusion Matrix : \n [[49  5]\n [ 1 88]]\n```\n\n## Method 2: sklearn.linear_model.LogisticRegression()\n\nIn this example, we will use the `LogisticRegression()` function from `sklearn.linear_model` to build our logistic regression model. To get estimates similar to the other methods presented in this article we need to set `solver = 'newton-cg'`.\n\nHere we import the function and fit the model to the training data:\n\n```plaintext\nfrom sklearn.linear_model import LogisticRegression\n\nlog_reg_2 = LogisticRegression(solver = 'newton-cg').fit(x_train,y_train)\n``` [...] 2.   Ordinal Logistic Regression\n       response variable has 3+ possible outcomes and they have a specified order\n       example: which grade is a student likely to receive on scale of A through F based on one or more predictor\n\n3.   Multinomial Logistic Regression\n       the response variable has 3 or more possible outcomes but they have no specified order\n       example: which candy are people likely to prefer out of chocolate, hard candy, sour gummies, and sweet gummies based on one or more predictor\n\nWe use binary logistic regression for"
+          },
+          {
+            "url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+            "score": 0.7140107,
+            "content": "geeksforgeeks\n\n# Linear Regression vs Logistic Regression\n\nLinear Regression and Logistic Regression are two widely used supervised machine learning algorithms. Although they sound similar, they are used for completely different purposes.\n\nlogistic_regression_vs_linear_regression\n\nBoth techniques analyse relationships between independent variables and dependent variables, but differ in usage, output form, mathematics and evaluation metrics.\n\n## Understanding Linear Regression\n\nLinear Regression is used when the output is a continuous number. The model tries to find a straight line (or a plane in higher dimensions) that best fits the data. It predicts values by calculating a weighted sum of input features. It is mainly used to estimate quantities such as price, marks, salary or temperature. [...] ### Applications\n\n### Advantages\n\n### Limitations\n\n## Understanding Logistic Regression\n\nLogistic Regression is used when the output is categorical, usually binary (0 or 1). Instead of predicting a straight-line value, it predicts the probability of an event happening using the sigmoid function which forms a S-shaped curve graph and it converts any number into a value between 0 and 1.\n\nIt is used for classification tasks such as spam detection or whether a student will pass or fail.\n\n### Applications\n\n### Advantages\n\n### Limitations\n\n## Difference between Linear Regression and Logistic Regression\n\nHere we compare linear regression and logistic regression"
+          },
+          {
+            "url": "https://blog.alliedoffsets.com/understanding-the-difference-between-linear-and-logistic-regression-models",
+            "score": 0.71088976,
+            "content": "#### Conclusion\n\nLinear regression and logistic regression are two commonly used regression models that have different strengths and weaknesses. Linear regression is used for predicting continuous values, while logistic regression is used for predicting binary outcomes. Both models have assumptions that must be met for accurate predictions and can benefit from regularization techniques to prevent overfitting and improve performance.\n\nWhen choosing between linear regression and logistic regression, it\u2019s important to consider the nature of the problem and the type of outcome variable you are trying to predict. By understanding the differences between these two models, you can select the one that best suits your needs and achieve better predictions. [...] #### Logistic Regression\n\nLogistic regression is a regression analysis used to model the relationship between a dependent variable and one or more independent variables. Unlike linear regression, logistic regression predicts binary outcomes \u2014 either 0 or 1. The output of logistic regression is a probability value that represents the likelihood of the binary outcome.\n\n#### Equation\n\nThe equation of a logistic regression model is given by:\n\nwhere p is the probability of the binary outcome, z is the weighted sum of the independent variables, and e is the mathematical constant (approximately 2.71828). The values of the coefficients are estimated using maximum likelihood estimation.\n\n#### Advantages\n\n#### Disadvantages\n\n#### Real-world Example [...] #### Linear Regression\n\nLinear regression is a regression analysis used to model the linear relationship between a dependent variable and one or more independent variables. The main goal of linear regression is to find the best-fit line through the data points that minimizes the sum of the squared residuals (the difference between the predicted value and the actual value).\n\n#### Equation\n\nThe equation of a simple linear regression model is given by:\n\nwhere y is the dependent va"
+          },
+          {
+            "url": "https://www.geeksforgeeks.org/machine-learning/linear-regression-python-implementation",
+            "score": 0.70799106,
+            "content": "Simple Linear Regression\n\n### 2. Multiple Linear Regression\n\nMultiple Linear Regression is used to predict a continuous target variable based on two or more input features, assuming a linear relationship between the inputs and the output.\n\nStep 1: Import Libraries\n\nImport NumPy for numerical operations, Matplotlib for plotting and mpl_toolkits.mplot3d to create 3D visualizations.\n\nPython\n```python3\nimport numpy as np\nimport matplotlib.pyplot as plt\nfrom mpl_toolkits.mplot3d import Axes3D\n```\n\nStep 2: Implement Multiple Linear Regression Class\n\nHere we implement a Multiple Linear Regression class to model the relationship between multiple input features and a continuous target variable using a linear equation. [...] Step 3: Generate Sample Dataset\n\nWe create a small dataset with two input features and a target variable, adding noise to simulate real-world data.\n\nPython\n```python3\nnp.random.seed(0)\nX1 = np.random.randint(1, 11, 15)\nX2 = np.random.randint(1, 11, 15)\nX_multi = np.column_stack((X1, X2))\ny_multi = 1 + 2X1 + 3X2 + np.random.randn(15)2\n```\n\nStep 4: Fit the Model and Visualize\n\nWe train the Multiple Linear Regression model on the dataset, print coefficients and R\u00b2 score, and visualize the regression plane in 3D.\n\nPython\n```python3\nmlr = MultipleLinearRegression()\nmlr.fit(X_multi, y_multi)\nprint(f\"Multiple LR Coefficients: {mlr.coefficients_}\")\nprint(f\"R\u00b2 Score: {mlr.r2score_:.2f}\")\n\nfig = plt.figure(figsize=(10,7))\nax = fig.add_subplot(111, projection='3d') [...] Python\n```python3\nclass SimpleLinearRegression:\n    def __init__(self):\n        self.coefficient_ = None\n        self.intercept_ = None\n        self.r2score_ = None\n        \n    def fit(self, X, y):\n        n = len(X)\n        X_b = np.c_[np.ones((n,1)), X]  \n   \n        self.coefficients_ = np.linalg.inv(X_b.T.dot(X_b)).dot(X_b.T).dot(y)\n        self.intercept_ = self.coefficients_\n        y_pred = X_b.dot(self.coefficients_)\n        # R\u00b2\n        self.r2score_ = 1 - (np.sum((y - y_pred)2) / np.sum(("
+          },
+          {
+            "url": "https://numiqo.com/tutorial/logistic-regression",
+            "score": 0.69573146,
+            "content": "### Linear regression:\n\nAn independent variable is considered \"good\" if it correlates strongly with the dependent variable.\n\n### Logistic regression:\n\nAn independent variable is said to be \"good\" if it allows the groups of the dependent variable to be distinguished significantly from each other.\n\n## Odds Ratios\n\nAn odds ratio (OR) is a statistical measure used to determine the strength of association or effect size between two events or groups, often in case-control studies. It compares the odds of an event occurring in one group to the odds of it occurring in another group.\n\n \n\nOdds represent the ratio of the probability of an event happening to it not happening. Odds ratio is the ratio of these odds between two groups.\n\n## Pseudo-R squared [...] In logistic regression, on the other hand, the dependent variable is dichotomous (0 or 1) and the probability that outcome 1 occurs is estimated. Returning to the example above, this means: How likely is disease given a person's age, sex, and smoking status?\n\n## Calculate Logistic Regression\n\nTo build a logistic regression model, the linear regression equation is used as the starting point.\n\nlinear regression equation\n\nIf you simply apply linear regression to a logistic problem, the result looks like this:\n\nDerivation of the Logistic Regression \n\nAs can be seen in the graph, predictions can take values between plus and minus infinity. Logistic regression, however, estimates probabilities rather than raw values. Therefore, the equation must be transformed. [...] ## Goals of a Logistic Regression Analysis\n\nIn the basic form of logistic regression, dichotomous variables (0 or 1) are predicted. The model estimates the probability of value 1 (characteristic present).\n\nLogistic regression and dichotomous variables\n\nIn medicine, for example, a frequent application is to find out which variables have an influence on a disease. In this case, 0 could stand for not diseased and 1 for diseased. Subsequently, the influence of age, gend"
+          },
+          {
+            "url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-logistic-regression-from-scratch-using-python",
+            "score": 0.6615081,
+            "content": "geeksforgeeks\n\n# Implementation of Logistic Regression from Scratch using Python\n\nLogistic regression is a statistical method used for binary classification tasks where we need to categorize data into one of two classes. The algorithm differs in its approach as it uses curved S-shaped function (sigmoid function) for plotting any real-valued input to a value between 0 and 1.\n\n_what_is_logistic_regression\n\nTo understand it better we will implement logistic regression from scratch in this article.\n\n## 1. Import Required Libraries\n\nWe will import required libraries from python:\n\n````\nimport numpy as np\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nimport matplotlib.pyplot as plt\n\n````\n\n## 2. Logistic Regression Class [...] ````\n\n## 2. Logistic Regression Class\n\nWe define a class LogisticRegressionScratch that implements logistic regression using gradient descent.\n\n````\nclass LogisticRegressionScratch:\n    def __init__(self, learning_rate=0.01, iterations=1000):\n        self.lr = learning_rate\n        self.iterations = iterations\n        self.weights = None\n        self.bias = 0\n        self.cost_history = []\n\n    def sigmoid(self, z):\n        \"\"\"Sigmoid activation function\"\"\"\n        return 1 / (1 + np.exp(-z))\n\n    def cost(self, h, y):\n        \"\"\"Cross-entropy loss\"\"\"\n        m = len(y)\n        return - (1/m)  np.sum(ynp.log(h) + (1-y)np.log(1-h))\n\n    def fit(self, X, y):\n        \"\"\"Train model using gradient descent\"\"\"\n        m, n = X.shape\n        self.weights = np.zeros(n) [...] for _ in range(self.iterations):\n            z = np.dot(X, self.weights) + self.bias\n            h = self.sigmoid(z)\n\n            dw = (1/m)  np.dot(X.T, (h - y))\n            db = (1/m)  np.sum(h - y)\n\n            self.weights -= self.lr  dw\n            self.bias -= self.lr  db\n\n            self.cost_history.append(self.cost(h, y))\n\n    def predict(self, X):\n        \"\"\"Make predictions\"\"\"\n        return (self.sigmoid(np.dot(X, self.w"
+          },
+          {
+            "url": "https://www.w3schools.com/python/python_ml_linear_regression.asp",
+            "score": 0.65359193,
+            "content": "In the example below, the x-axis represents age, and the y-axis represents speed. We have registered the age and speed of 13 cars as they were passing a\ntollbooth. Let us see if the data we collected could be used in a linear\nregression:\n\n### Example\n\nStart by drawing a scatter plot:\n\n### Result:\n\n### Example\n\nImport `scipy` and draw the line of Linear Regression:\n\n`scipy`\n\n### Result:\n\n### Example Explained\n\nImport the modules you need.\n\nYou can learn about the Matplotlib module in our Matplotlib Tutorial.\n\nYou can learn about the SciPy module in our SciPy Tutorial.\n\n`import matplotlib.pyplot as plt  \nfrom scipy\nimport stats`\n\n`import matplotlib.pyplot as plt  \nfrom scipy\nimport stats`\n\nCreate the arrays that represent the values of the x and y axis: [...] `x = [5,7,8,7,2,17,2,9,4,11,12,9,6]  \ny = [99,86,87,88,111,86,103,87,94,78,77,85,86]`\n\n`x = [5,7,8,7,2,17,2,9,4,11,12,9,6]  \ny = [99,86,87,88,111,86,103,87,94,78,77,85,86]`\n\nExecute a method that returns some important key values of Linear Regression:\n\n`slope, intercept, r,\np, std_err = stats.linregress(x, y)`\n\n`slope, intercept, r,\np, std_err = stats.linregress(x, y)`\n\nCreate a function that uses the `slope` and\n`intercept` values to return a new value. This\nnew value represents where on the y-axis the corresponding x value will be\nplaced:\n\n`slope`\n`intercept`\n\n`def myfunc(x):  \n  return slope  x + intercept`\n\n`def myfunc(x):  \n  return slope  x + intercept`\n\nRun each value of the x array through the function. This will result in a new\narray with new values for the y-axis: [...] `mymodel = list(map(myfunc, x))`\n\n`mymodel = list(map(myfunc, x))`\n\nDraw the original scatter plot:\n\n`plt.scatter(x, y)`\n\n`plt.scatter(x, y)`\n\nDraw the line of linear regression:\n\n`plt.plot(x, mymodel)`\n\n`plt.plot(x, mymodel)`\n\nDisplay the diagram:\n\n`plt.show()`\n\n`plt.show()`\n\n## R for Relationship\n\nIt is important to know how the relationship between the values of the\nx-axis and the values of the y-axis is, if there are no relationship "
+          },
+          {
+            "url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "score": 0.6501347,
+            "content": "| Aspect | Linear Regression | Logistic Regression |\n --- \n| Definition | Linear regression is used to predict the continuous dependent variable using a given set of independent variables. | Logistic regression is used to predict the categorical dependent variable using a given set of independent variables. |\n| Problem Type | It is used for solving regression problem. | It is used for solving classification problems. |\n| Output Type | In this we predict the value of continuous variables. | In this we predict values of categorical variables. |\n| Curve/Model Fitting | In this we find best fit line. | In this we find S-Curve. |\n| Estimation Method | Least square estimation method is used for estimation of accuracy. | Maximum likelihood estimation method is used for estimation of accuracy. |"
+          }
+        ],
+        "kb_results": [
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 0,
+            "distance": 0.3983,
+            "rrf_score": 0.03333,
+            "text": "# Linear and Logistic Regression\n\n## Definition\nLinear regression models a continuous response y as a linear function of predictors X plus Gaussian noise. Logistic regression models a binary target Y by estimating P(Y=1) as the logistic sigmoid applied to a linear combination of X.\n\n## Intuition\nLinear regression fits a line (or hyperplane) by minimizing the sum of squared vertical distances. Logistic regression maximizes the Bernoulli likelihood, mapping linear scores to probabilities via the sigmoid curve, which naturally bounds outputs in (0,1).\n\n## Mathematical Formulation\nLinear: y = X\u03b2 + \u03b5, with \u03b5 ~ N(0, \u03c3\u00b2). Prediction: \u0177 = X\u03b2.  \nLogistic: log(P(Y=1)/(1\u2212P(Y=1))) = X\u03b2, equivalently P(Y=1) = 1/(1 + exp(\u2212X\u03b2)).\n\n## Estimation\nLinear: ordinary least squares (OLS) minimizes \u03a3 (y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2. Closed-form \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y (if invertible).  \nLogistic: no closed-form. Maximum likelihood is found iteratively (Newton-Raphson, IRLS) maximizing \u2113 = \u220f p\u1d62^{y\u1d62}(1\u2212p\u1d62)^{1\u2212y\u1d62}, with p\u1d62 = 1/(1+exp(\u2212x\u1d62\u00b7\u03b2)).\n\n## Assumptions\nLinear: linearity, independent errors, homoscedasticity; normality needed only for exact inference. Gauss\u2011Markov conditions (zero mean, uncorrelated, homoscedastic errors) suffice for BLUE.  \nLogistic: independent binary outcomes, log-odds linear in X, no perfect or quasi-separation, adequate sample size per predictor; no error variance assumption.\n\n## Key Properties"
+          },
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 4,
+            "distance": 0.4957,
+            "rrf_score": 0.03252,
+            "text": "`) is not required for linear regression but essential for regularized logistic regression.\n- The normal equation \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y is O(p\u00b3) in time; for p >\u202f10k features, use SGD or mini\u2011batch methods."
+          },
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 3,
+            "distance": 0.5512,
+            "rrf_score": 0.03227,
+            "text": " datasets).\n- \u2018lbfgs\u2019 solver handles multinomial loss; \u2018liblinear\u2019 only supports one\u2011vs\u2011rest.\n- For `penalty='elasticnet'`, set `l1_ratio` (0=ridge, 1=lasso) and `solver='saga'`.\n- C is inverse regularization strength: smaller C = stronger penalty; typical search range [0.001, 0.01, 0.1, 1, 10, 100].\n- LogisticRegression `class_weight='balanced'` adjusts weights inversely proportional to class frequencies.\n- Logistic regression predicts probabilities via `predict_proba()`; `predict()` returns the most likely class.\n- LinearRegression `score()` returns R\u00b2 (coefficient of determination), bounded \u2264\u202f1, can be negative for poorly fitting models.\n- Logistic regression typical evaluation: accuracy, precision, recall, F1, ROC\u2011AUC; `roc_auc_score(y_true, y_proba[:,1])`.\n- Assumptions for linear regression coefficient tests (t\u2011tests): errors normally distributed; without normality, use bootstrap confidence intervals.\n- Variance Inflation Factor (VIF) >\u202f5\u201310 indicates multicollinearity among predictors.\n- For perfect separation in logistic regression, Firth\u2019s penalized likelihood or adding a small L2 penalty (increasing C) can stabilize.\n- Scikit-learn `LinearRegression` does NOT natively handle missing values; pre\u2011impute with `SimpleImputer` or `IterativeImputer`.\n- Polynomial features can be generated with `sklearn.preprocessing.PolynomialFeatures(degree=2, include_bias=False)`.\n- Feature scaling (e.g., `StandardScaler`) is not required for linear regression but essential for regularized logistic regression.\n- The normal equation \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y is O(p\u00b3) in time; for p >\ufffd"
+          },
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 1,
+            "distance": 0.505,
+            "rrf_score": 0.032,
+            "text": "correlated, homoscedastic errors) suffice for BLUE.  \nLogistic: independent binary outcomes, log-odds linear in X, no perfect or quasi-separation, adequate sample size per predictor; no error variance assumption.\n\n## Key Properties\nLinear: under Gauss-Markov, OLS is BLUE; predictions are unbounded; R\u00b2 measures explained variance.  \nLogistic: MLE is consistent and asymptotically normal; outputs are calibrated probabilities; coefficients are log-odds ratios; the decision boundary p=0.5 is the hyperplane X\u03b2=0.\n\n## Failure Modes\nLinear: heteroscedasticity inflates SEs, nonlinearity causes bias, outliers are influential, multicollinearity destabilizes coefficients, extrapolation gives misleading predictions.  \nLogistic: complete separation yields infinite estimates, quasi-separation inflates errors, multicollinearity destabilizes, severe class imbalance biases the intercept, non-linear log-odds harms fit, miscalibration possible.\n\n## When to Use / Not Use\nUse linear regression for continuous unbounded outcomes when the mean is linear in predictors and coefficient interpretation is important. Avoid for proportions, counts, or binary data.  \nUse logistic regression for binary responses requiring probability estimates and a roughly linear log-odds. Avoid for multi-class (use multinomial) or highly non-linear boundaries without proper transformations.\n\n## Variants / Extensions\nLinear: ridge (L2), lasso (L1), elastic net, generalized linear models (GLM), polynomial/spline expansions.  \nLogistic: multinomial (softmax) for >2 classes, ordinal logistic, regularized (L1/L2) logistic, Firth\u2019s penalized likelihood for small samples, Bayesian logistic.\n\n## Minimal Example (Python)\n```python\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression, LogisticRegression\n\nX = np.array([[1], [2], [3], [4]])\ny_lin = np.array"
+          },
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 2,
+            "distance": 0.6092,
+            "rrf_score": 0.03101,
+            "text": ", Bayesian logistic.\n\n## Minimal Example (Python)\n```python\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression, LogisticRegression\n\nX = np.array([[1], [2], [3], [4]])\ny_lin = np.array([2.2, 3.1, 4.8, 6.1])\ny_log = np.array([0, 0, 1, 1])\n\nlin = LinearRegression().fit(X, y_lin)\nprint(lin.coef_, lin.intercept_)\n\nlog = LogisticRegression().fit(X, y_log)\nprint(log.coef_, log.intercept_)\n```\n## Claim-Dense Reference Facts\n\n- Scikit-learn `LinearRegression` uses scipy.linalg.lstsq (SVD\u2011based) by default; no regularization, intercept fitted unless `fit_intercept=False`.\n- Scikit-learn `LogisticRegression` defaults: penalty='l2', C=1.0, solver='lbfgs', max_iter=100, multi_class='auto'.\n- The logistic sigmoid function is \u03c3(z) = 1 / (1 + e\u207b\u1dbb); its derivative is \u03c3(z)(1\u2212\u03c3(z)).\n- Odds = p/(1\u2212p); log\u2011odds = ln(odds); each unit increase in x multiplies odds by exp(\u03b2).\n- Logistic regression decision boundary: p=0.5 \u2194 log\u2011odds=0 \u2194 X\u03b2=0.\n- `LogisticRegression` solvers: 'lbfgs' (L2 only or no penalty), 'liblinear' (L1/L2, small datasets), 'saga' (L1/L2, elasticnet, large datasets).\n- \u2018lbfgs\u2019 solver handles multinomial loss; \u2018liblinear\u2019 only supports one\u2011vs\u2011rest.\n- For `penalty='elasticnet'`, set `l1_ratio` (0=ridge, 1="
+          }
+        ],
+        "attribution": {
+          "web": 27,
+          "kb": 0,
+          "none": 0,
+          "unresolved": 0
+        }
+      },
+      "stderr": null
+    }
+  ],
+  "failed": 0,
+  "mean_cost_usd": 0.00799,
+  "mean_grounding": 0.943,
+  "mean_reflection": 8.0,
+  "mean_wall_time_s": 74.4,
+  "mean_html_errors": 0.0,
+  "mean_unverified_rate": 0.0,
+  "runs_below_grounding_floor": 0,
+  "runs": [
+    {
+      "id": 1,
+      "topic": "Linear & Logistic Regression",
+      "status": "success",
+      "wall_time_s": 74.4,
+      "telemetry": {
+        "run_id": "d08afb39-bd97-4999-9e90-9d780065dc00",
+        "topic": "Linear & Logistic Regression",
+        "slug": "linear-and-logistic-regression",
+        "timestamp": "2026-06-13T03:45:39.839563+00:00",
+        "prompt_version": "sha-6687240c8cd8",
+        "prompt_hashes": {
+          "draft_system": "ab2c32162513",
+          "verify_system": "e7ac8744409d",
+          "reflect_system": "b4335ad3b720",
+          "html_template": "5d44aebed766"
+        },
+        "iterations": 1,
+        "iteration_metrics": [
+          {
+            "iteration": 1,
+            "SV": 23,
+            "S": 23,
+            "V": 27,
+            "W": 0,
+            "U": 0,
+            "N": 27,
+            "uvr": 0.0,
+            "grounding_score": 0.943,
+            "m4_feedback_claims": 0,
+            "unverified_claims": [],
+            "grounding_report": [
+              {
+                "claim": "Linear regression predicts continuous values by minimizing squared errors.",
+                "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "generic",
+                "source_kind": "web",
+                "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+              },
+              {
+                "claim": "Logistic regression predicts binary probabilities via the sigmoid function.",
+                "source_url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "generic",
+                "source_kind": "web",
+                "source_ref": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression"
+              },
+              {
+                "claim": "Logistic regression uses maximum likelihood estimation (no closed form).",
+                "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+              },
+              {
+                "claim": "Linear regression uses ordinary least squares (closed form via normal equation).",
+                "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+              },
+              {
+                "claim": "Feature scaling is not required for linear regression but is essential for regularized logistic regression.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Both models assume linear relationships; add polynomial features or interactions if the true relationship is nonlinear.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.9,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Evaluate linear regression with RMSE and R\u00b2.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "generic",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Evaluate logistic regression with accuracy, precision, recall, F1, and ROC-AUC.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "generic",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Linear regression models the relationship between predictors X and a continuous target y as y = X\u03b2 + \u03b5, where \u03b5 is Gaussian noise with mean 0.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "The coefficients \u03b2 are estimated by minimizing the sum of squared residuals: \u03a3(y\u1d62 - x\u1d62\u00b7\u03b2)\u00b2.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "The closed-form solution is \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y, computable in O(p\u00b3) time for p features.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Key assumptions: linearity, independent errors, homoscedasticity (constant variance of errors), and no perfect multicollinearity.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "If predictors are highly correlated (VIF > 5\u201310), coefficient estimates become unstable.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "If errors are heteroscedastic, standard errors are wrong but coefficients remain unbiased.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.9,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Logistic regression models the probability of a binary outcome Y=1 as P(Y=1) = 1 / (1 + exp(-X\u03b2)).",
+                "source_url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression"
+              },
+              {
+                "claim": "The log-odds are linear: log(P/(1-P)) = X\u03b2.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Coefficients are estimated by maximum likelihood (MLE), maximizing the Bernoulli likelihood \u2113 = \u03a0 p\u1d62^{y\u1d62} (1-p\u1d62)^{1-y\u1d62}.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "There is no closed-form solution; iterative solvers like Newton-Raphson or IRLS are used.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Scikit-learn's LogisticRegression defaults to 'lbfgs' solver, which handles multinomial loss.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "For binary classification, 'liblinear' is a faster option.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Key assumptions: independent binary outcomes, log-odds linear in X, no perfect or quasi-separation (where a predictor perfectly predicts the outcome \u2014 this causes MLE to diverge).",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "In practice, adding a small L2 penalty (increasing C) or using Firth's penalized likelihood stabilizes estimates under separation.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Feature scaling is essential for regularized logistic regression because penalty terms are sensitive to predictor scales.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Linear regression extrapolates poorly outside the observed range.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.9,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Logistic regression can produce overconfident probabilities with rare events or imbalanced classes \u2014 use class_weight='balanced' to adjust.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Overfitting is controlled via regularization: Ridge (L2) for linear regression, L1 or ElasticNet for logistic regression.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.9,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              },
+              {
+                "claim": "Linear regression uses R\u00b2 (coefficient of determination, bounded \u22641, can be negative) and RMSE.",
+                "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+                "confidence": 0.95,
+                "status": "verified",
+                "specificity": "substantive",
+                "source_kind": "web",
+                "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+              }
+            ]
+          }
+        ],
+        "m4_feedback_claims": 0,
+        "experiment_flags": {
+          "m4_force_revise": "0",
+          "m4_grounding_feedback": "0",
+          "m4_freeze_cache": "0"
+        },
+        "reflection_score": 8,
+        "reflection_notes": "The draft is well-structured with all required sections present and logically coherent. Technical depth is appropriate for senior engineers, covering assumptions, failure modes, and practical considerations like regularization and scaling. The writing is direct and avoids filler phrases, though the Takeaways section could be more concise and avoid repeating earlier points. The code example is clean and illustrative, but adding a brief comment on interpreting coefficients would strengthen the practical value.",
+        "grounding_score": 0.943,
+        "hitl_status": "approved",
+        "git_status": "dry_run",
+        "total_tokens": 15611,
+        "total_cost_usd": 0.00799,
+        "latency_ms": {
+          "retrieve": 14724,
+          "retrieve_web": 14297,
+          "retrieve_kb": 427,
+          "draft": 16195,
+          "verify": 17965,
+          "reflect": 2766,
+          "html_gen": 7690,
+          "git": 0
+        },
+        "error_log": [],
+        "claims_verified": 27,
+        "claims_weak": 0,
+        "claims_unverified": 0,
+        "grounding_breakdown": {
+          "unverified_no_source": 0,
+          "unverified_has_source": 0,
+          "weak_count": 0,
+          "mean_confidence_verified": 0.943,
+          "mean_confidence_unverified": 0.0
+        },
+        "grounded_depth": {
+          "SV": 23,
+          "S": 23,
+          "V": 27,
+          "N": 27,
+          "verified_fraction": 1.0,
+          "unverified_fraction": 0.0
+        },
+        "grounding_report": [
+          {
+            "claim": "Linear regression predicts continuous values by minimizing squared errors.",
+            "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "generic",
+            "source_kind": "web",
+            "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+          },
+          {
+            "claim": "Logistic regression predicts binary probabilities via the sigmoid function.",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "generic",
+            "source_kind": "web",
+            "source_ref": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression"
+          },
+          {
+            "claim": "Logistic regression uses maximum likelihood estimation (no closed form).",
+            "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+          },
+          {
+            "claim": "Linear regression uses ordinary least squares (closed form via normal equation).",
+            "source_url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python"
+          },
+          {
+            "claim": "Feature scaling is not required for linear regression but is essential for regularized logistic regression.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Both models assume linear relationships; add polynomial features or interactions if the true relationship is nonlinear.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.9,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Evaluate linear regression with RMSE and R\u00b2.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "generic",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Evaluate logistic regression with accuracy, precision, recall, F1, and ROC-AUC.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "generic",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Linear regression models the relationship between predictors X and a continuous target y as y = X\u03b2 + \u03b5, where \u03b5 is Gaussian noise with mean 0.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "The coefficients \u03b2 are estimated by minimizing the sum of squared residuals: \u03a3(y\u1d62 - x\u1d62\u00b7\u03b2)\u00b2.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "The closed-form solution is \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y, computable in O(p\u00b3) time for p features.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Key assumptions: linearity, independent errors, homoscedasticity (constant variance of errors), and no perfect multicollinearity.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "If predictors are highly correlated (VIF > 5\u201310), coefficient estimates become unstable.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "If errors are heteroscedastic, standard errors are wrong but coefficients remain unbiased.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.9,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Logistic regression models the probability of a binary outcome Y=1 as P(Y=1) = 1 / (1 + exp(-X\u03b2)).",
+            "source_url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression"
+          },
+          {
+            "claim": "The log-odds are linear: log(P/(1-P)) = X\u03b2.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Coefficients are estimated by maximum likelihood (MLE), maximizing the Bernoulli likelihood \u2113 = \u03a0 p\u1d62^{y\u1d62} (1-p\u1d62)^{1-y\u1d62}.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "There is no closed-form solution; iterative solvers like Newton-Raphson or IRLS are used.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Scikit-learn's LogisticRegression defaults to 'lbfgs' solver, which handles multinomial loss.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "For binary classification, 'liblinear' is a faster option.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Key assumptions: independent binary outcomes, log-odds linear in X, no perfect or quasi-separation (where a predictor perfectly predicts the outcome \u2014 this causes MLE to diverge).",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "In practice, adding a small L2 penalty (increasing C) or using Firth's penalized likelihood stabilizes estimates under separation.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Feature scaling is essential for regularized logistic regression because penalty terms are sensitive to predictor scales.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Linear regression extrapolates poorly outside the observed range.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.9,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Logistic regression can produce overconfident probabilities with rare events or imbalanced classes \u2014 use class_weight='balanced' to adjust.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Overfitting is controlled via regularization: Ridge (L2) for linear regression, L1 or ElasticNet for logistic regression.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.9,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          },
+          {
+            "claim": "Linear regression uses R\u00b2 (coefficient of determination, bounded \u22641, can be negative) and RMSE.",
+            "source_url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "confidence": 0.95,
+            "status": "verified",
+            "specificity": "substantive",
+            "source_kind": "web",
+            "source_ref": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python"
+          }
+        ],
+        "web_sources_count": 10,
+        "kb_results_count": 5,
+        "web_sources": [
+          {
+            "url": "https://www.datacamp.com/tutorial/understanding-logistic-regression-python",
+            "score": 0.8302782,
+            "content": "## Linear Regression Vs. Logistic Regression\n\nLinear regression gives you a continuous output, but logistic regression provides a constant output. An example of the continuous output is house price and stock price. Examples of the discrete output are predicting whether a patient has cancer or not and predicting whether a customer will churn. Logistic regression is estimated using the maximum likelihood estimation (MLE) approach, while linear regression is typically estimated using ordinary least squares (OLS), which can also be considered a special case of MLE when the errors in the model are normally distributed.\n\n## Maximum Likelihood Estimation Vs. Least Squares Method [...] Logistic regression can be used for various classification problems, such as spam detection. Some other examples include: diabetes prediction, whether a given customer will purchase a particular product; whether or not a customer will churn, whether the user will click on a given advertisement link or not, and many more examples.\n\nLogistic Regression is one of the most simple and commonly used Machine Learning algorithms for two-class classification. It is easy to implement and can be used as the baseline for any binary classification problem. Its basic fundamental concepts are also constructive in deep learning. Logistic regression describes and estimates the relationship between one dependent binary variable and independent variables. [...] To easily run all the example code in this tutorial yourself, you can create a DataLab workbook for free that has Python pre-installed and contains all code samples. For more practice on logistic regression, check out the exercises in our Credit Risk Modeling in R course, which has plenty of real-world examples.\n\n## What is Logistic Regression?\n\nLogistic regression is a statistical method for predicting binary classes. The outcome or target variable is dichotomous in nature. Dichotomous means there are only two possible classes. For example, it can be us"
+          },
+          {
+            "url": "https://aws.amazon.com/compare/the-difference-between-linear-regression-and-logistic-regression",
+            "score": 0.758958,
+            "content": "Linear regression and logistic regression are machine learning techniques that make predictions by analyzing historical data. For example, by looking at past customer purchase trends, regression analysis estimates future sales, so you can make more informed inventory purchases. Linear regression techniques mathematically model the unknown factor on multiple known factors to estimate the exact unknown value. Similarly, logistic regression uses mathematics to find the relationships between two data factors. It then uses this relationship to predict the value of one of those factors based on the other. The prediction usually has a finite number of outcomes, like yes or no.\n\nRead about linear regression \u00bb\n\nRead about logistic regression \u00bb [...] Linear regression\n\nLogistic regression\n\nWhat is it?\n\nA statistical method to predict an output value from a set of input values.\n\nA statistical method to predict the probability of an output value being from a certain category from a set of categorical variables.\n\nRelationship\n\nLinear relationship, represented by a straight line.\n\nLogistic relationship or sigmoidal relationship, represented by an S-shaped curve.\n\nEquation\n\nLinear.\n\nLogarithmic.\n\nType of supervised learning\n\nRegression.\n\nClassification.\n\nDistribution type\n\nNormal/gaussian.\n\nBinomial.\n\nBest suited for\n\nTasks requiring a predicted continuous dependent variable from a scale.\n\nTasks requiring a predicted likelihood of a categorical dependent variable occurring from a fixed set of categories. [...] ### Mathematical distribution type\n\nLinear regression follows a normal or Gaussian distribution of the dependent variable. A normal distribution is depicted by a continuous line on a graph.\n\nA logistic regression follows a binomial distribution. Binomial distribution is typically depicted as a bar graph.\n\n## When to use linear regression vs. logistic regression\n\nYou can use linear regression when you want to predict a continuous dependent variable from a scale of values. Use"
+          },
+          {
+            "url": "http://library.virginia.edu/data/articles/logistic-regression-four-ways-with-python",
+            "score": 0.7355091,
+            "content": "For the logistic regression examples, we will model malignant or benign as a function of the first 10 predictors (columns) in our dataset. These first 10 correspond to mean measurements of each tumor; mean radius, mean texture, mean perimeter, mean area, etc. (We selected these 10 columns purely for convenience to limit output. The goal of this article is to present different ways of performing logistic regression in Python, not how to select variables.)\n\n```plaintext\nfrom sklearn.model_selection import train_test_split\n\n# Select the first 10 columns of our DataFrame that we will use as the predictors in our models\nx = cancer.iloc[:,:10]\n\n# Select the response column \ny = cancer.Target [...] ```plaintext\nTest accuracy =  0.958041958041958\n```\n\n```plaintext\n# Confusion matrix\ncm = confusion_matrix(y_test, prediction_1) \nprint (\"\\nConfusion Matrix : \\n\", cm)\n```\n\n```plaintext\nConfusion Matrix : \n [[49  5]\n [ 1 88]]\n```\n\n## Method 2: sklearn.linear_model.LogisticRegression()\n\nIn this example, we will use the `LogisticRegression()` function from `sklearn.linear_model` to build our logistic regression model. To get estimates similar to the other methods presented in this article we need to set `solver = 'newton-cg'`.\n\nHere we import the function and fit the model to the training data:\n\n```plaintext\nfrom sklearn.linear_model import LogisticRegression\n\nlog_reg_2 = LogisticRegression(solver = 'newton-cg').fit(x_train,y_train)\n``` [...] 2.   Ordinal Logistic Regression\n       response variable has 3+ possible outcomes and they have a specified order\n       example: which grade is a student likely to receive on scale of A through F based on one or more predictor\n\n3.   Multinomial Logistic Regression\n       the response variable has 3 or more possible outcomes but they have no specified order\n       example: which candy are people likely to prefer out of chocolate, hard candy, sour gummies, and sweet gummies based on one or more predictor\n\nWe use binary logistic regression for"
+          },
+          {
+            "url": "https://www.geeksforgeeks.org/machine-learning/ml-linear-regression-vs-logistic-regression",
+            "score": 0.7140107,
+            "content": "geeksforgeeks\n\n# Linear Regression vs Logistic Regression\n\nLinear Regression and Logistic Regression are two widely used supervised machine learning algorithms. Although they sound similar, they are used for completely different purposes.\n\nlogistic_regression_vs_linear_regression\n\nBoth techniques analyse relationships between independent variables and dependent variables, but differ in usage, output form, mathematics and evaluation metrics.\n\n## Understanding Linear Regression\n\nLinear Regression is used when the output is a continuous number. The model tries to find a straight line (or a plane in higher dimensions) that best fits the data. It predicts values by calculating a weighted sum of input features. It is mainly used to estimate quantities such as price, marks, salary or temperature. [...] ### Applications\n\n### Advantages\n\n### Limitations\n\n## Understanding Logistic Regression\n\nLogistic Regression is used when the output is categorical, usually binary (0 or 1). Instead of predicting a straight-line value, it predicts the probability of an event happening using the sigmoid function which forms a S-shaped curve graph and it converts any number into a value between 0 and 1.\n\nIt is used for classification tasks such as spam detection or whether a student will pass or fail.\n\n### Applications\n\n### Advantages\n\n### Limitations\n\n## Difference between Linear Regression and Logistic Regression\n\nHere we compare linear regression and logistic regression"
+          },
+          {
+            "url": "https://blog.alliedoffsets.com/understanding-the-difference-between-linear-and-logistic-regression-models",
+            "score": 0.71088976,
+            "content": "#### Conclusion\n\nLinear regression and logistic regression are two commonly used regression models that have different strengths and weaknesses. Linear regression is used for predicting continuous values, while logistic regression is used for predicting binary outcomes. Both models have assumptions that must be met for accurate predictions and can benefit from regularization techniques to prevent overfitting and improve performance.\n\nWhen choosing between linear regression and logistic regression, it\u2019s important to consider the nature of the problem and the type of outcome variable you are trying to predict. By understanding the differences between these two models, you can select the one that best suits your needs and achieve better predictions. [...] #### Logistic Regression\n\nLogistic regression is a regression analysis used to model the relationship between a dependent variable and one or more independent variables. Unlike linear regression, logistic regression predicts binary outcomes \u2014 either 0 or 1. The output of logistic regression is a probability value that represents the likelihood of the binary outcome.\n\n#### Equation\n\nThe equation of a logistic regression model is given by:\n\nwhere p is the probability of the binary outcome, z is the weighted sum of the independent variables, and e is the mathematical constant (approximately 2.71828). The values of the coefficients are estimated using maximum likelihood estimation.\n\n#### Advantages\n\n#### Disadvantages\n\n#### Real-world Example [...] #### Linear Regression\n\nLinear regression is a regression analysis used to model the linear relationship between a dependent variable and one or more independent variables. The main goal of linear regression is to find the best-fit line through the data points that minimizes the sum of the squared residuals (the difference between the predicted value and the actual value).\n\n#### Equation\n\nThe equation of a simple linear regression model is given by:\n\nwhere y is the dependent va"
+          },
+          {
+            "url": "https://www.geeksforgeeks.org/machine-learning/linear-regression-python-implementation",
+            "score": 0.70799106,
+            "content": "Simple Linear Regression\n\n### 2. Multiple Linear Regression\n\nMultiple Linear Regression is used to predict a continuous target variable based on two or more input features, assuming a linear relationship between the inputs and the output.\n\nStep 1: Import Libraries\n\nImport NumPy for numerical operations, Matplotlib for plotting and mpl_toolkits.mplot3d to create 3D visualizations.\n\nPython\n```python3\nimport numpy as np\nimport matplotlib.pyplot as plt\nfrom mpl_toolkits.mplot3d import Axes3D\n```\n\nStep 2: Implement Multiple Linear Regression Class\n\nHere we implement a Multiple Linear Regression class to model the relationship between multiple input features and a continuous target variable using a linear equation. [...] Step 3: Generate Sample Dataset\n\nWe create a small dataset with two input features and a target variable, adding noise to simulate real-world data.\n\nPython\n```python3\nnp.random.seed(0)\nX1 = np.random.randint(1, 11, 15)\nX2 = np.random.randint(1, 11, 15)\nX_multi = np.column_stack((X1, X2))\ny_multi = 1 + 2X1 + 3X2 + np.random.randn(15)2\n```\n\nStep 4: Fit the Model and Visualize\n\nWe train the Multiple Linear Regression model on the dataset, print coefficients and R\u00b2 score, and visualize the regression plane in 3D.\n\nPython\n```python3\nmlr = MultipleLinearRegression()\nmlr.fit(X_multi, y_multi)\nprint(f\"Multiple LR Coefficients: {mlr.coefficients_}\")\nprint(f\"R\u00b2 Score: {mlr.r2score_:.2f}\")\n\nfig = plt.figure(figsize=(10,7))\nax = fig.add_subplot(111, projection='3d') [...] Python\n```python3\nclass SimpleLinearRegression:\n    def __init__(self):\n        self.coefficient_ = None\n        self.intercept_ = None\n        self.r2score_ = None\n        \n    def fit(self, X, y):\n        n = len(X)\n        X_b = np.c_[np.ones((n,1)), X]  \n   \n        self.coefficients_ = np.linalg.inv(X_b.T.dot(X_b)).dot(X_b.T).dot(y)\n        self.intercept_ = self.coefficients_\n        y_pred = X_b.dot(self.coefficients_)\n        # R\u00b2\n        self.r2score_ = 1 - (np.sum((y - y_pred)2) / np.sum(("
+          },
+          {
+            "url": "https://numiqo.com/tutorial/logistic-regression",
+            "score": 0.69573146,
+            "content": "### Linear regression:\n\nAn independent variable is considered \"good\" if it correlates strongly with the dependent variable.\n\n### Logistic regression:\n\nAn independent variable is said to be \"good\" if it allows the groups of the dependent variable to be distinguished significantly from each other.\n\n## Odds Ratios\n\nAn odds ratio (OR) is a statistical measure used to determine the strength of association or effect size between two events or groups, often in case-control studies. It compares the odds of an event occurring in one group to the odds of it occurring in another group.\n\n \n\nOdds represent the ratio of the probability of an event happening to it not happening. Odds ratio is the ratio of these odds between two groups.\n\n## Pseudo-R squared [...] In logistic regression, on the other hand, the dependent variable is dichotomous (0 or 1) and the probability that outcome 1 occurs is estimated. Returning to the example above, this means: How likely is disease given a person's age, sex, and smoking status?\n\n## Calculate Logistic Regression\n\nTo build a logistic regression model, the linear regression equation is used as the starting point.\n\nlinear regression equation\n\nIf you simply apply linear regression to a logistic problem, the result looks like this:\n\nDerivation of the Logistic Regression \n\nAs can be seen in the graph, predictions can take values between plus and minus infinity. Logistic regression, however, estimates probabilities rather than raw values. Therefore, the equation must be transformed. [...] ## Goals of a Logistic Regression Analysis\n\nIn the basic form of logistic regression, dichotomous variables (0 or 1) are predicted. The model estimates the probability of value 1 (characteristic present).\n\nLogistic regression and dichotomous variables\n\nIn medicine, for example, a frequent application is to find out which variables have an influence on a disease. In this case, 0 could stand for not diseased and 1 for diseased. Subsequently, the influence of age, gend"
+          },
+          {
+            "url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-logistic-regression-from-scratch-using-python",
+            "score": 0.6615081,
+            "content": "geeksforgeeks\n\n# Implementation of Logistic Regression from Scratch using Python\n\nLogistic regression is a statistical method used for binary classification tasks where we need to categorize data into one of two classes. The algorithm differs in its approach as it uses curved S-shaped function (sigmoid function) for plotting any real-valued input to a value between 0 and 1.\n\n_what_is_logistic_regression\n\nTo understand it better we will implement logistic regression from scratch in this article.\n\n## 1. Import Required Libraries\n\nWe will import required libraries from python:\n\n````\nimport numpy as np\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nimport matplotlib.pyplot as plt\n\n````\n\n## 2. Logistic Regression Class [...] ````\n\n## 2. Logistic Regression Class\n\nWe define a class LogisticRegressionScratch that implements logistic regression using gradient descent.\n\n````\nclass LogisticRegressionScratch:\n    def __init__(self, learning_rate=0.01, iterations=1000):\n        self.lr = learning_rate\n        self.iterations = iterations\n        self.weights = None\n        self.bias = 0\n        self.cost_history = []\n\n    def sigmoid(self, z):\n        \"\"\"Sigmoid activation function\"\"\"\n        return 1 / (1 + np.exp(-z))\n\n    def cost(self, h, y):\n        \"\"\"Cross-entropy loss\"\"\"\n        m = len(y)\n        return - (1/m)  np.sum(ynp.log(h) + (1-y)np.log(1-h))\n\n    def fit(self, X, y):\n        \"\"\"Train model using gradient descent\"\"\"\n        m, n = X.shape\n        self.weights = np.zeros(n) [...] for _ in range(self.iterations):\n            z = np.dot(X, self.weights) + self.bias\n            h = self.sigmoid(z)\n\n            dw = (1/m)  np.dot(X.T, (h - y))\n            db = (1/m)  np.sum(h - y)\n\n            self.weights -= self.lr  dw\n            self.bias -= self.lr  db\n\n            self.cost_history.append(self.cost(h, y))\n\n    def predict(self, X):\n        \"\"\"Make predictions\"\"\"\n        return (self.sigmoid(np.dot(X, self.w"
+          },
+          {
+            "url": "https://www.w3schools.com/python/python_ml_linear_regression.asp",
+            "score": 0.65359193,
+            "content": "In the example below, the x-axis represents age, and the y-axis represents speed. We have registered the age and speed of 13 cars as they were passing a\ntollbooth. Let us see if the data we collected could be used in a linear\nregression:\n\n### Example\n\nStart by drawing a scatter plot:\n\n### Result:\n\n### Example\n\nImport `scipy` and draw the line of Linear Regression:\n\n`scipy`\n\n### Result:\n\n### Example Explained\n\nImport the modules you need.\n\nYou can learn about the Matplotlib module in our Matplotlib Tutorial.\n\nYou can learn about the SciPy module in our SciPy Tutorial.\n\n`import matplotlib.pyplot as plt  \nfrom scipy\nimport stats`\n\n`import matplotlib.pyplot as plt  \nfrom scipy\nimport stats`\n\nCreate the arrays that represent the values of the x and y axis: [...] `x = [5,7,8,7,2,17,2,9,4,11,12,9,6]  \ny = [99,86,87,88,111,86,103,87,94,78,77,85,86]`\n\n`x = [5,7,8,7,2,17,2,9,4,11,12,9,6]  \ny = [99,86,87,88,111,86,103,87,94,78,77,85,86]`\n\nExecute a method that returns some important key values of Linear Regression:\n\n`slope, intercept, r,\np, std_err = stats.linregress(x, y)`\n\n`slope, intercept, r,\np, std_err = stats.linregress(x, y)`\n\nCreate a function that uses the `slope` and\n`intercept` values to return a new value. This\nnew value represents where on the y-axis the corresponding x value will be\nplaced:\n\n`slope`\n`intercept`\n\n`def myfunc(x):  \n  return slope  x + intercept`\n\n`def myfunc(x):  \n  return slope  x + intercept`\n\nRun each value of the x array through the function. This will result in a new\narray with new values for the y-axis: [...] `mymodel = list(map(myfunc, x))`\n\n`mymodel = list(map(myfunc, x))`\n\nDraw the original scatter plot:\n\n`plt.scatter(x, y)`\n\n`plt.scatter(x, y)`\n\nDraw the line of linear regression:\n\n`plt.plot(x, mymodel)`\n\n`plt.plot(x, mymodel)`\n\nDisplay the diagram:\n\n`plt.show()`\n\n`plt.show()`\n\n## R for Relationship\n\nIt is important to know how the relationship between the values of the\nx-axis and the values of the y-axis is, if there are no relationship "
+          },
+          {
+            "url": "https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression",
+            "score": 0.6501347,
+            "content": "| Aspect | Linear Regression | Logistic Regression |\n --- \n| Definition | Linear regression is used to predict the continuous dependent variable using a given set of independent variables. | Logistic regression is used to predict the categorical dependent variable using a given set of independent variables. |\n| Problem Type | It is used for solving regression problem. | It is used for solving classification problems. |\n| Output Type | In this we predict the value of continuous variables. | In this we predict values of categorical variables. |\n| Curve/Model Fitting | In this we find best fit line. | In this we find S-Curve. |\n| Estimation Method | Least square estimation method is used for estimation of accuracy. | Maximum likelihood estimation method is used for estimation of accuracy. |"
+          }
+        ],
+        "kb_results": [
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 0,
+            "distance": 0.3983,
+            "rrf_score": 0.03333,
+            "text": "# Linear and Logistic Regression\n\n## Definition\nLinear regression models a continuous response y as a linear function of predictors X plus Gaussian noise. Logistic regression models a binary target Y by estimating P(Y=1) as the logistic sigmoid applied to a linear combination of X.\n\n## Intuition\nLinear regression fits a line (or hyperplane) by minimizing the sum of squared vertical distances. Logistic regression maximizes the Bernoulli likelihood, mapping linear scores to probabilities via the sigmoid curve, which naturally bounds outputs in (0,1).\n\n## Mathematical Formulation\nLinear: y = X\u03b2 + \u03b5, with \u03b5 ~ N(0, \u03c3\u00b2). Prediction: \u0177 = X\u03b2.  \nLogistic: log(P(Y=1)/(1\u2212P(Y=1))) = X\u03b2, equivalently P(Y=1) = 1/(1 + exp(\u2212X\u03b2)).\n\n## Estimation\nLinear: ordinary least squares (OLS) minimizes \u03a3 (y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2. Closed-form \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y (if invertible).  \nLogistic: no closed-form. Maximum likelihood is found iteratively (Newton-Raphson, IRLS) maximizing \u2113 = \u220f p\u1d62^{y\u1d62}(1\u2212p\u1d62)^{1\u2212y\u1d62}, with p\u1d62 = 1/(1+exp(\u2212x\u1d62\u00b7\u03b2)).\n\n## Assumptions\nLinear: linearity, independent errors, homoscedasticity; normality needed only for exact inference. Gauss\u2011Markov conditions (zero mean, uncorrelated, homoscedastic errors) suffice for BLUE.  \nLogistic: independent binary outcomes, log-odds linear in X, no perfect or quasi-separation, adequate sample size per predictor; no error variance assumption.\n\n## Key Properties"
+          },
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 4,
+            "distance": 0.4957,
+            "rrf_score": 0.03252,
+            "text": "`) is not required for linear regression but essential for regularized logistic regression.\n- The normal equation \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y is O(p\u00b3) in time; for p >\u202f10k features, use SGD or mini\u2011batch methods."
+          },
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 3,
+            "distance": 0.5512,
+            "rrf_score": 0.03227,
+            "text": " datasets).\n- \u2018lbfgs\u2019 solver handles multinomial loss; \u2018liblinear\u2019 only supports one\u2011vs\u2011rest.\n- For `penalty='elasticnet'`, set `l1_ratio` (0=ridge, 1=lasso) and `solver='saga'`.\n- C is inverse regularization strength: smaller C = stronger penalty; typical search range [0.001, 0.01, 0.1, 1, 10, 100].\n- LogisticRegression `class_weight='balanced'` adjusts weights inversely proportional to class frequencies.\n- Logistic regression predicts probabilities via `predict_proba()`; `predict()` returns the most likely class.\n- LinearRegression `score()` returns R\u00b2 (coefficient of determination), bounded \u2264\u202f1, can be negative for poorly fitting models.\n- Logistic regression typical evaluation: accuracy, precision, recall, F1, ROC\u2011AUC; `roc_auc_score(y_true, y_proba[:,1])`.\n- Assumptions for linear regression coefficient tests (t\u2011tests): errors normally distributed; without normality, use bootstrap confidence intervals.\n- Variance Inflation Factor (VIF) >\u202f5\u201310 indicates multicollinearity among predictors.\n- For perfect separation in logistic regression, Firth\u2019s penalized likelihood or adding a small L2 penalty (increasing C) can stabilize.\n- Scikit-learn `LinearRegression` does NOT natively handle missing values; pre\u2011impute with `SimpleImputer` or `IterativeImputer`.\n- Polynomial features can be generated with `sklearn.preprocessing.PolynomialFeatures(degree=2, include_bias=False)`.\n- Feature scaling (e.g., `StandardScaler`) is not required for linear regression but essential for regularized logistic regression.\n- The normal equation \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y is O(p\u00b3) in time; for p >\ufffd"
+          },
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 1,
+            "distance": 0.505,
+            "rrf_score": 0.032,
+            "text": "correlated, homoscedastic errors) suffice for BLUE.  \nLogistic: independent binary outcomes, log-odds linear in X, no perfect or quasi-separation, adequate sample size per predictor; no error variance assumption.\n\n## Key Properties\nLinear: under Gauss-Markov, OLS is BLUE; predictions are unbounded; R\u00b2 measures explained variance.  \nLogistic: MLE is consistent and asymptotically normal; outputs are calibrated probabilities; coefficients are log-odds ratios; the decision boundary p=0.5 is the hyperplane X\u03b2=0.\n\n## Failure Modes\nLinear: heteroscedasticity inflates SEs, nonlinearity causes bias, outliers are influential, multicollinearity destabilizes coefficients, extrapolation gives misleading predictions.  \nLogistic: complete separation yields infinite estimates, quasi-separation inflates errors, multicollinearity destabilizes, severe class imbalance biases the intercept, non-linear log-odds harms fit, miscalibration possible.\n\n## When to Use / Not Use\nUse linear regression for continuous unbounded outcomes when the mean is linear in predictors and coefficient interpretation is important. Avoid for proportions, counts, or binary data.  \nUse logistic regression for binary responses requiring probability estimates and a roughly linear log-odds. Avoid for multi-class (use multinomial) or highly non-linear boundaries without proper transformations.\n\n## Variants / Extensions\nLinear: ridge (L2), lasso (L1), elastic net, generalized linear models (GLM), polynomial/spline expansions.  \nLogistic: multinomial (softmax) for >2 classes, ordinal logistic, regularized (L1/L2) logistic, Firth\u2019s penalized likelihood for small samples, Bayesian logistic.\n\n## Minimal Example (Python)\n```python\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression, LogisticRegression\n\nX = np.array([[1], [2], [3], [4]])\ny_lin = np.array"
+          },
+          {
+            "source": "linear-logistic-regression",
+            "chunk_index": 2,
+            "distance": 0.6092,
+            "rrf_score": 0.03101,
+            "text": ", Bayesian logistic.\n\n## Minimal Example (Python)\n```python\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression, LogisticRegression\n\nX = np.array([[1], [2], [3], [4]])\ny_lin = np.array([2.2, 3.1, 4.8, 6.1])\ny_log = np.array([0, 0, 1, 1])\n\nlin = LinearRegression().fit(X, y_lin)\nprint(lin.coef_, lin.intercept_)\n\nlog = LogisticRegression().fit(X, y_log)\nprint(log.coef_, log.intercept_)\n```\n## Claim-Dense Reference Facts\n\n- Scikit-learn `LinearRegression` uses scipy.linalg.lstsq (SVD\u2011based) by default; no regularization, intercept fitted unless `fit_intercept=False`.\n- Scikit-learn `LogisticRegression` defaults: penalty='l2', C=1.0, solver='lbfgs', max_iter=100, multi_class='auto'.\n- The logistic sigmoid function is \u03c3(z) = 1 / (1 + e\u207b\u1dbb); its derivative is \u03c3(z)(1\u2212\u03c3(z)).\n- Odds = p/(1\u2212p); log\u2011odds = ln(odds); each unit increase in x multiplies odds by exp(\u03b2).\n- Logistic regression decision boundary: p=0.5 \u2194 log\u2011odds=0 \u2194 X\u03b2=0.\n- `LogisticRegression` solvers: 'lbfgs' (L2 only or no penalty), 'liblinear' (L1/L2, small datasets), 'saga' (L1/L2, elasticnet, large datasets).\n- \u2018lbfgs\u2019 solver handles multinomial loss; \u2018liblinear\u2019 only supports one\u2011vs\u2011rest.\n- For `penalty='elasticnet'`, set `l1_ratio` (0=ridge, 1="
+          }
+        ],
+        "attribution": {
+          "web": 27,
+          "kb": 0,
+          "none": 0,
+          "unresolved": 0
+        }
+      },
+      "stderr": null
+    }
+  ]
+}

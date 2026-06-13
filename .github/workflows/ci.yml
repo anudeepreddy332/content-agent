@@ -1,0 +1,35 @@
+name: CI
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv python install 3.14
+      - run: uv sync
+      # Fatal tier only (syntax errors, undefined names): meaningful signal
+      # without demanding a style-cleanup sprint mid-freeze. Widen post-freeze.
+      - run: uv run ruff check --select E9,F63,F7,F82 .
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv python install 3.14
+      - run: uv sync
+      # B2 failure-injection suite + B1 slug tests. Zero network, zero API cost
+      # (verified offline 2026-06-13). Imports pull torch via sentence-transformers,
+      # so the first uncached sync is the slow step (~3-5 min), not the tests.
+      - run: uv run pytest tests/ -v
