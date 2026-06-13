@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.14"
 dependencies = [
+    "chromadb>=1.5.8",
     "click>=8.3.3",
     "dotenv>=0.9.9",
     "gitpython>=3.1.49",
@@ -23,5 +24,5 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15.17",
+    "pytest>=9.0.3",
 ]
