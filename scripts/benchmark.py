@@ -19,7 +19,9 @@ from config import GROUNDING_FLOOR
 @click.command()
 @click.option("--limit", default=None, type=int, help="Run first N topics only")
 @click.option("--id", "topic_id", default=None, type=int, help="Run single topic by id")
-def run_benchmark(limit, topic_id):
+@click.option("--gate", is_flag=True, default=False,
+              help="CI mode: exit 1 if any run fails or any run's UVR > 0.15")
+def run_benchmark(limit, topic_id, gate):
     topics = json.loads(Path("evals/topics.json").read_text())
 
     if topic_id:
@@ -159,6 +161,27 @@ def run_benchmark(limit, topic_id):
     print(f"  Mean reflection: {aggregate['mean_reflection']:.1f}")
     print(f"  Mean HTML errors/run: {aggregate['mean_html_errors']:.1f}")
     print(f"  Report: {out_path}")
+
+    # B3 CI gate. Gates: zero outright failures + per-run UVR <= 0.15 (the locked
+    # grounding gate). SV is deliberately NOT gated here — at n=3 the +/-6-7 noise
+    # band (DECISIONS) would make an SV threshold flake; it is reported only.
+    if gate:
+        gate_failures = []
+        if aggregate["failed"] > 0:
+            gate_failures.append(f"{aggregate['failed']} run(s) failed outright")
+        for r in successful:
+            t = r["telemetry"]
+            tot = (t.get("claims_verified", 0) + t.get("claims_weak", 0)
+                   + t.get("claims_unverified", 0))
+            uvr = t.get("claims_unverified", 0) / tot if tot else 0.0
+            if uvr > 0.15:
+                gate_failures.append(f"topic {r['id']:02d} UVR {uvr:.2f} > 0.15")
+        if gate_failures:
+            print("\nCI GATE: FAIL")
+            for gf in gate_failures:
+                print(f"  - {gf}")
+            sys.exit(1)
+        print("\nCI GATE: PASS — all runs succeeded, all UVR <= 0.15")
 
     # Gate report trigger
     if len(successful) >= 10:

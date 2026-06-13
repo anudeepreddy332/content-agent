@@ -140,6 +140,16 @@ def _write_telemetry(state: dict):
     out_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
     return out_path
 
+
+def _make_slug(topic: str) -> str:
+    """B1: allowlist sanitization. The slug reaches the filesystem
+        (../themachinist-website/<slug>.html) and git branch/tag names, so it must
+        be incapable of path traversal or ref injection BY CONSTRUCTION:
+        only [a-z0-9-] survives, length-capped. Caller rejects empty results."""
+    slug = re.sub(r"[^a-z0-9]+", "-", topic.lower().replace("&", "and"))
+    return re.sub(r"-{2,}", "-", slug).strip("-")[:80]
+
+
 @click.group()
 def cli():
     pass
@@ -168,12 +178,7 @@ def run(topic, card_id, series, auto):
 
     os.environ["HITL_AUTO_APPROVE"] = "1" if auto else "0"
 
-    # B1: allowlist sanitization. The slug reaches the filesystem
-    # (../themachinist-website/<slug>.html) and git branch/tag names, so it must
-    # be incapable of path traversal or ref injection BY CONSTRUCTION:
-    # only [a-z0-9-] survives, length-capped, never empty.
-    slug = re.sub(r"[^a-z0-9]+", "-", topic.lower().replace("&", "and"))
-    slug = re.sub(r"-{2,}", "-", slug).strip("-")[:80]
+    slug = _make_slug(topic)
     if not slug:
         raise click.UsageError(f"Topic {topic!r} produces an empty slug.")
     run_id = str(uuid.uuid4())
