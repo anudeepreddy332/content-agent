@@ -153,6 +153,8 @@ cython_debug/
 kb/chroma_db/
 kb/qdrant_data/
 outputs/runs/
+outputs/checkpoints.sqlite*
+
 
 outputs/articles/
 outputs/tavily_cache/
