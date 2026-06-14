@@ -1,0 +1,38 @@
+# Production stack: API + Qdrant on a private network.
+# Qdrant has NO host ports — reachable only as qdrant:6333 inside this network.
+# Usage on the VM:
+#   docker compose -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.prod.yml run --rm app python scripts/ingest.py --source kb/seed_docs/
+#   docker compose -f docker-compose.prod.yml up -d
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.9.2
+    container_name: content-agent-qdrant
+    # No `ports:` — network isolation. Only services on this compose network reach it.
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333 && printf \"GET /readyz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"200 OK\" <&3'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: content-agent-api
+    env_file: .env                       # DEEPSEEK_API_KEY, TAVILY_API_KEY, API_BEARER_TOKEN
+    environment:
+      QDRANT_URL: "http://qdrant:6333"   # service DNS, not localhost
+      GIT_PUSH_ENABLED: "false"          # locked for the freeze; git_node stays dry-run
+    ports:
+      - "127.0.0.1:8000:8000"            # loopback only — access via SSH tunnel, not public
+    volumes:
+      - ./outputs:/app/outputs           # telemetry + checkpoints.sqlite persist here
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
