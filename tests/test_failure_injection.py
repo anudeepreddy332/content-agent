@@ -176,3 +176,22 @@ def test_route_max_iterations_forces_hitl(base_state):
     assert nodes.route_after_reflect(base_state) == "hitl"
 
 
+def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path):
+    """B6 regression: html_filename must be <slug>.html regardless of local archive
+    state, so republishing a topic is a modification (tagged_and_merged), not a new file."""
+    import agent.nodes as nodes
+    monkeypatch.setattr(nodes, "_get_client", lambda: object())
+    monkeypatch.setattr(nodes, "_render_technical_dive_via_llm", lambda **kw: ("<p>td</p>", 0, 0.0))
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "prompts").mkdir()
+    (tmp_path / "prompts" / "html_template.md").write_text(
+        '<!DOCTYPE html><html><body><main id="main"><h1>{{TOPIC}}</h1>'
+        '{{PROBLEM_FRAMING}}{{TECHNICAL_DIVE}}{{CODE_SNIPPETS}}{{TAKEAWAYS}}{{SOURCES}}'
+        '</main></body></html>')
+    base_state.update(slug="republish-target",
+                      draft_sections={"problem_framing": "x", "technical_dive": "y",
+                                      "code_snippets": "", "takeaways": "z"})
+    r1 = nodes.html_gen_node({**base_state, "run_id": "run-aaaaaa"})
+    r2 = nodes.html_gen_node({**base_state, "run_id": "run-bbbbbb"})  # archive now exists
+    assert r1["html_filename"] == "republish-target.html"
+    assert r2["html_filename"] == "republish-target.html"   # NOT suffixed

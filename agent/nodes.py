@@ -1205,18 +1205,25 @@ def html_gen_node(state: AgentState) -> dict:
 
     latency = int((time.time() - t_start) * 1000)
 
-    base_filename = f"{state['slug']}.html"
-    out_path = Path("outputs/articles") / base_filename
-    if out_path.exists():
-        # Append first 6 chars of run_id to make it unique
-        suffix = state["run_id"].split("-")[-1][:6]
-        filename = f"{state['slug']}-{suffix}.html"
-    else:
-        filename = base_filename
+    # PUBLISHED filename — ALWAYS the canonical <slug>.html. git_node writes this into
+    # the website repo via state["html_filename"], so republishing the same topic targets
+    # the same file and git sees a MODIFICATION (-> tagged_and_merged), not a new file.
+    # B6 finding: previously this name took a run-id suffix whenever a LOCAL archive copy
+    # already existed, leaking local-archive collision-avoidance into the published URL.
+    filename = f"{state['slug']}.html"
 
-    out_path = Path("outputs/articles") / filename
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding="utf-8")
+    # LOCAL archive copy (debug history) — decoupled from the published name. Keep a
+    # per-run-unique name here so we never clobber a prior run's HTML in outputs/articles/.
+    # This path is write-only and never reaches git_node.
+    archive_name = filename
+    archive_path = Path("outputs/articles") / archive_name
+    if archive_path.exists():
+        suffix = state["run_id"].split("-")[-1][:6]
+        archive_name = f"{state['slug']}-{suffix}.html"
+    archive_path = Path("outputs/articles") / archive_name
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    archive_path.write_text(html, encoding="utf-8")
+
 
     existing_latency = state.get("latency_ms", {})
     existing_latency["html_gen"] = latency
@@ -1226,6 +1233,7 @@ def html_gen_node(state: AgentState) -> dict:
         error_log.append(f"[html_gen] Validation warnings: {errors}")
 
     log.info("html_gen.complete", run_id=run_id, filename=filename,
+             archive=archive_name,
              validation_errors=errors, latency_ms=latency,
              td_tokens=td_tokens, td_cost=round(td_cost, 5))
 
