@@ -153,7 +153,7 @@ def _make_slug(topic: str) -> str:
 
 
 
-def _build_initial_state(topic, slug, card_id, series, run_id):
+def _build_initial_state(topic, slug, card_id, series, run_id, category="concept-exploration"):
     """Canonical AgentState seed. Used by the CLI and the API server so the
     state shape is defined in exactly one place (LangGraph merges silently on
     key drift — see graph.py docstring)."""
@@ -161,6 +161,7 @@ def _build_initial_state(topic, slug, card_id, series, run_id):
         "topic": topic,
         "slug": slug,
         "card_id": card_id,
+        "category": category,
         "series_context": series,
         "draft_sections": {},
         "draft_markdown": "",
