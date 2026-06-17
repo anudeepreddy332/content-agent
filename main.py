@@ -135,7 +135,6 @@ def _write_telemetry(state: dict):
             "none": sum(1 for r in report if r.get("source_kind") == "none"),
             "unresolved": sum(1 for r in report if r.get("source_kind") == "unresolved"),
         },
-
     }
 
     out_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
