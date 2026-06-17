@@ -2,6 +2,35 @@
 
 Purpose: Prevent future chats from re-litigating solved problems.
 Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing architecture changes.
+
+---
+Date: 2026-06-17
+
+Decision: P2 second HITL gate LOCKED as a CONTENT-FROZEN layout gate. Two gates, no production
+bypass: gate 1 (hitl_node) reviews CONTENT; once approved, content is frozen. gate 2
+(hitl_html_node) reviews the RENDERED HTML for design/structure/formatting/positioning ONLY.
+request_changes routes to a new html_revise_node — a single temperature-0 LLM pass that edits
+markup/layout on the existing html_output and loops back to hitl_html (NOT to draft). The
+freeze is mechanically enforced: a visible-word-multiset guard discards any revision that
+alters text/claims/code/sources (drift > 2 words) and keeps the original with a warning.
+hitl_html feedback is stored in a dedicated html_feedback field, never hitl_feedback, so it
+can never reach draft_node.
+
+Correction recorded: the first implementation routed request_changes -> draft, which re-opened
+content, re-fired gate 1, and could not change layout anyway (layout lives in html_template.md +
+deterministic renderers, not draft_node). Caught before validation; superseded.
+
+Reason: the reviewer must be able to fix how the article LOOKS without any risk of changing
+what it SAYS, after content has been approved.
+
+Tradeoffs: introduces one new LLM call per layout-revision request (human-triggered, t=0, cost
+accounted in total_cost_usd/latency_ms.html_revise). New prompt prompts/html_revise_system.md
+is orthogonal to the grounding baseline (sha-6687240c8cd8) — no metric re-baseline. Recurring
+or systematic layout issues should be fixed once in html_template.md (permanent, free) rather
+than via per-article LLM revision.
+
+Status: Accepted (locked). API: existing /feedback endpoint resumes both gates; no new endpoint.
+
 ---
 Date: 2026-06-16
 

@@ -35,11 +35,14 @@ themachinist.org, optionally pushed to a feature branch on the themachinist-webs
         │          Composite gate: rewrite if grounding < 0.60, OR
         │          (reflection < 7 AND grounding < 0.75). Max 2 iterations.
         ▼
-[HITL GATE] — You see: full draft + grounding report + reflection score + warnings
-        │      You: approve / reject / give feedback   (auto-approve via HITL_AUTO_APPROVE=1)
+[HITL GATE 1 — CONTENT] full draft + grounding report + reflection + warnings
+        │      approve / reject / feedback→draft   (auto-approve via HITL_AUTO_APPROVE=1)
         ▼
 [HTML GEN NODE] — Produces themachinist.org-compliant HTML
         │          (3 sections rendered deterministically, technical_dive via LLM)
+        ▼
+[HITL GATE 2 — LAYOUT] rendered HTML; content is FROZEN here
+        │      approve→git / request_changes→html_revise→(loop) / reject→END
         ▼
 [GIT NODE] — Dry-run by default. Only acts when GIT_PUSH_ENABLED=true.
         │      Writes to themachinist-website repo, feature/article-<slug> branch,
@@ -88,6 +91,8 @@ class AgentState(TypedDict):
     # HITL
     hitl_status: Literal["pending", "approved", "rejected", "feedback"]
     hitl_feedback: str | None
+    html_review_status: Literal["approved", "rejected", "changes"] | None  
+    html_feedback: str | None   # P2 layout note for html_revise 
 
     # Output
     html_output: str | None
@@ -174,6 +179,13 @@ class AgentState(TypedDict):
   validates programmatically (DOCTYPE, `id="main"`, `<h1>`, no unreplaced `{{...}}`).
   Validation warnings go to `error_log`, they do not block. Cost-gated.
 - Output: `html_output`, `html_filename` (written to `outputs/articles/`, suffixed on collision).
+
+### 3.6.5 hitl_html_node + html_revise_node (P2)
+- hitl_html_node: gate 2. Reviews rendered HTML for design/structure/formatting/positioning.
+  approve→git, reject→END, request_changes→html_revise. CLI/API/auto-approve modes mirror hitl_node.
+- html_revise_node: one temperature-0 LLM pass applying the layout note to html_output, then
+  loops to hitl_html. Content-freeze guard (visible-word-multiset) discards any drifting
+  revision and keeps the original. No production path bypasses either gate.
 
 ### 3.7 git_node
 - Input: `html_output`, `html_filename`, `slug`, `topic`.

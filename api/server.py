@@ -96,9 +96,9 @@ def _advance(run_id: str, invoke_input, finalizing: bool):
             return
         # Terminal. Reject path never runs git; approve path does.
         REGISTRY[run_id]["result"] = result
-        REGISTRY[run_id]["status"] = (
-            "rejected" if result.get("hitl_status") == "rejected" else "complete"
-        )
+        rejected = (result.get("hitl_status") == "rejected"
+                    or result.get("html_review_status") == "rejected")
+        REGISTRY[run_id]["status"] = "rejected" if rejected else "complete"
     _write_telemetry(result)
 
 
@@ -178,6 +178,7 @@ def get_run(run_id: str):
                 "grounding_score": r.get("grounding_score"),
                 "total_cost_usd": r.get("total_cost_usd"),
                 "hitl_status": r.get("hitl_status"),
+                "html_review_status": r.get("html_review_status"),
                 "git_status": r.get("git_status"),
                 "html_filename": r.get("html_filename"),
             }

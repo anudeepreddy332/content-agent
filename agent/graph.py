@@ -39,6 +39,9 @@ from agent.nodes import (
     git_node,
     route_after_reflect,
     route_after_hitl,
+    hitl_html_node,
+    route_after_html_review,
+    html_revise_node,
 )
 
 def build_graph(checkpointer=None) -> StateGraph:
@@ -69,6 +72,8 @@ def build_graph(checkpointer=None) -> StateGraph:
     builder.add_node("reflect", reflect_node)
     builder.add_node("hitl", hitl_node)
     builder.add_node("html_gen", html_gen_node)
+    builder.add_node("hitl_html", hitl_html_node)
+    builder.add_node("html_revise", html_revise_node)
     builder.add_node("git", git_node)
 
     # M2 toggle: source-aware drafting reorders retrieve BEFORE draft so the
@@ -102,7 +107,17 @@ def build_graph(checkpointer=None) -> StateGraph:
     )
 
     # Linear edges to finish
-    builder.add_edge("html_gen", "git")
+    builder.add_edge("html_gen", "hitl_html")
+    builder.add_conditional_edges(
+        "hitl_html",
+        route_after_html_review,
+        {
+            "git": "git",  # approved -> publish
+            "html_revise": "html_revise",   # request_changes -> layout revision (content frozen)
+            END: END,   # rejected -> nothing published
+        },
+    )
+    builder.add_edge("html_revise", "hitl_html")     # re-verify the revised render
     builder.add_edge("git", END)
 
     return builder.compile(checkpointer=checkpointer)
