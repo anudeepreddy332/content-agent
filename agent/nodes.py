@@ -1388,6 +1388,76 @@ def html_revise_node(state: AgentState) -> dict:
     }
 
 
+_CATEGORY_LABELS = {
+    "concept-exploration": "Concept Exploration",
+    "project-deep-dives": "Project Deep Dives",
+    "field-notes": "Field Notes",
+}
+
+
+def _derive_excerpt(state: AgentState, max_len: int = 220) -> str:
+    """Plain-text excerpt for the Learning Log card, from the (frozen) problem framing.
+    No LLM call — strips markdown and truncates at a word boundary."""
+    sections = state.get("draft_sections") or {}
+    raw = sections.get("problem_framing") or state.get("draft_markdown") or ""
+    text = re.sub(r"[#*`_>\[\]]", "", raw)
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) > max_len:
+        text = text[:max_len].rsplit(" ", 1)[0] + "…"
+    return text or "A technical deep dive."
+
+
+def _build_index_card(filename: str, title: str, category: str, excerpt: str) -> str:
+    """Build one Learning Log <a class="article-card"> block, matching index.html's exact
+    indentation so insertion produces a minimal, clean diff."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    datetime_attr = now.strftime("%Y-%m-%d")
+    display_date = f"{now.strftime('%B')} {now.day}, {now.year}"
+    label = _CATEGORY_LABELS.get(category, "Concept Exploration")
+    safe_title = html_module.escape(title)
+    safe_excerpt = html_module.escape(excerpt)
+    return (
+        f'                    <a href="{filename}" class="article-card" data-category="{category}">\n'
+        f'                        <time class="article-date" datetime="{datetime_attr}">{display_date}</time>\n'
+        f'                        <h3 class="article-title">{safe_title}</h3>\n'
+        f'                        <p class="article-excerpt">\n'
+        f'                            {safe_excerpt}\n'
+        f'                        </p>\n'
+        f'                        <div class="article-tags">\n'
+        f'                            <span class="article-tag">{label}</span>\n'
+        f'                        </div>\n'
+        f'                    </a>'
+    )
+
+
+def _update_index_html(repo_path: Path, filename: str, title: str, category: str,
+                       excerpt: str, log, run_id: str) -> tuple[bool, str]:
+    """Insert (newest-first) or update-in-place the Learning Log card for this article.
+    Idempotent: re-publishing the same slug REPLACES its card instead of duplicating.
+    Non-fatal: if index.html or the grid anchor is missing, skip and let the publish proceed."""
+    index_path = repo_path / "index.html"
+    if not index_path.exists():
+        log.warning("index.not_found", run_id=run_id, path=str(index_path))
+        return False, "index.html not found"
+
+    html = index_path.read_text(encoding="utf-8")
+    anchor = '<div class="articles-grid" id="articlesGrid">'
+    if anchor not in html:
+        log.warning("index.anchor_missing", run_id=run_id)
+        return False, "articles-grid anchor missing"
+
+    card = _build_index_card(filename, title, category, excerpt)
+    existing = re.compile(r'[ \t]*<a href="' + re.escape(filename) + r'"[^>]*>.*?</a>\n?', re.DOTALL)
+    if existing.search(html):
+        new_html, action = existing.sub(card + "\n", html, count=1), "updated"
+    else:
+        new_html, action = html.replace(anchor, anchor + "\n" + card, 1), "inserted"
+
+    index_path.write_text(new_html, encoding="utf-8")
+    log.info("index.updated", run_id=run_id, action=action, href=filename)
+    return True, action
+
+
 # NODE: git_node
 
 def git_node(state: AgentState) -> dict:
@@ -1469,6 +1539,14 @@ def git_node(state: AgentState) -> dict:
         dest_path = repo_path/filename
         dest_path.write_text(html_content, encoding='utf-8')
 
+        # P2.2: insert/update the Learning Log card in index.html (same commit).
+        index_ok, _index_action = _update_index_html(
+            repo_path, filename, topic,
+            state.get("category", "concept-exploration"),
+            _derive_excerpt(state), log, state["run_id"])
+        if not index_ok:
+            error_log.append("[git_node] index.html not updated (anchor/file missing) — article still published")
+
         # 2. Create and checkout feature branch
         if branch in repo.heads:
             repo.delete_head(branch, force=True)
@@ -1477,7 +1555,7 @@ def git_node(state: AgentState) -> dict:
         new_branch.checkout()
 
         # 3. Stage and commit
-        repo.index.add([filename])
+        repo.index.add([filename] + (["index.html"] if index_ok else []))
         commit_msg = f"feat: add {topic} article [content-agent]"
         commit = repo.index.commit(commit_msg)
 
@@ -1485,7 +1563,10 @@ def git_node(state: AgentState) -> dict:
         main_commit = repo.commit("main")
         diff_index = main_commit.diff(commit)
 
-        changed_files = [d.b_path for d in diff_index if d.change_type in ("M", "D", "R")]
+        # index.html is updated on EVERY publish; exclude it so a brand-new article still
+        # reports "merged" (and a real re-publish still reports "tagged_and_merged").
+        changed_files = [d.b_path for d in diff_index
+                         if d.change_type in ("M", "D", "R") and d.b_path != "index.html"]
         new_files = [d.b_path for d in diff_index if d.change_type == "A"]
 
         # 5. Merge or tag-then-merge

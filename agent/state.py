@@ -20,6 +20,7 @@ class AgentState(TypedDict):
     slug: str                   # e.g. "linear-logistic-regression"
     series_context: str         # e.g. "Family 01 — Linear Models · supervised-learning-models.html"
     card_id: str                # e.g. "01-A"
+    category: str               # P2.2 Learning Log category: concept-exploration | project-deep-dives | field-notes
 
     # Draft
     draft_sections: DraftSections        # {problem_framing, technical_dive, code_snippets, takeaways}
