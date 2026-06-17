@@ -1095,6 +1095,82 @@ Content to convert:
 
 
 
+def hitl_html_node(state: AgentState) -> dict:
+    """
+    P2 second HITL gate (post-render). The human reviews the GENERATED HTML before publish.
+      approve         -> git (publish)
+      reject          -> END (nothing published)
+      request_changes -> draft (revise): the note is stored in hitl_feedback (the SAME channel
+                         draft_node already consumes, lines 32-33), and the graph loops
+                         draft -> verify -> reflect -> draft gate -> html_gen -> here again.
+    No LLM calls, so interrupt() re-execution on resume is free. Fail-safe default is REJECT.
+    """
+    if not state.get("html_output"):
+        return {"html_review_status": "rejected"}
+
+    if os.environ.get("HITL_AUTO_APPROVE") == "1":
+        return {"html_review_status": "approved"}
+
+    if os.environ.get("HITL_MODE") == "api":
+        from langgraph.types import interrupt
+        decision = interrupt({
+            "type": "hitl_html_review",
+            "run_id": state["run_id"],
+            "topic": state["topic"],
+            "slug": state["slug"],
+            "html_filename": state.get("html_filename"),
+            "html_output": state.get("html_output"),
+            "validation_warnings": [e for e in state.get("error_log", []) if "html_gen" in e],
+            "grounding_score": state.get("grounding_score", 0.0),
+        }) or {}
+        action = decision.get("action")
+        if action == "approve":
+            return {"html_review_status": "approved"}
+        # /feedback endpoint sends action="feedback"; accept "request_changes" as an alias.
+        if action in ("request_changes", "feedback"):
+            note = (decision.get("feedback") or "").strip()
+            if note:
+                # Layout/design/positioning only — content is frozen after the draft gate.
+                return {"html_review_status": "changes", "html_feedback": note}
+
+    # CLI interactive
+    from rich.console import Console
+    from rich.panel import Panel
+    console = Console()
+    preview = Path("outputs/preview") / f"{state['slug']}.html"
+    preview.parent.mkdir(parents=True, exist_ok=True)
+    preview.write_text(state["html_output"], encoding="utf-8")
+    console.print(Panel(f"[bold]HTML REVIEW — {state['topic']}[/bold]", style="cyan"))
+    console.print(f"Rendered file  : {state.get('html_filename')}")
+    console.print(f"Open in browser: file://{preview.resolve()}")
+    warnings = [e for e in state.get("error_log", []) if "html_gen" in e]
+    if warnings:
+        console.print(f"[yellow]Validation warnings:[/yellow] {'; '.join(warnings)}")
+    while True:
+        choice = input("\n[a]pprove (publish) / [c]hanges to LAYOUT (revise) / [r]eject (discard): ").strip().lower()
+        if choice == "a":
+            return {"html_review_status": "approved"}
+        if choice == "r":
+            return {"html_review_status": "rejected"}
+        if choice == "c":
+            note = input("Design/layout/positioning change (NOT content): ").strip()
+            if note:
+                return {"html_review_status": "changes", "html_feedback": note}
+
+
+def route_after_html_review(state: AgentState) -> str:
+    """approved -> git; changes -> draft (revise loop); anything else -> END."""
+    from langgraph.graph import END
+    log = get_logger("router")
+    status = state.get("html_review_status", "rejected")
+    log.info("html_review.decision", run_id=state["run_id"], status=status)
+    if status == "approved":
+        return "git"
+    if status == "changes":
+        return "html_revise"
+    return END
+
+
 # NODE: html_gen_node
 
 def html_gen_node(state: AgentState) -> dict:
@@ -1244,6 +1320,71 @@ def html_gen_node(state: AgentState) -> dict:
         "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
         "latency_ms": existing_latency,
         "error_log": error_log,
+    }
+
+
+def _visible_words(html_str: str) -> list:
+    """Lowercased word tokens of the visible text (tags stripped) — used to prove an HTML
+    revision changed only markup/layout, never content."""
+    text = html_module.unescape(re.sub(r"<[^>]+>", " ", html_str or ""))
+    return re.findall(r"\w+", text.lower())
+
+
+def html_revise_node(state: AgentState) -> dict:
+    """
+    P2 layout revision. Applies the reviewer's design/structure/formatting/positioning note to
+    the already-rendered HTML via ONE constrained LLM pass, then loops back to hitl_html.
+    Content is frozen after the draft gate; this pass must not alter text/claims/code/sources.
+    A word-multiset guard ENFORCES that: if the visible word content changes, the revision is
+    DISCARDED and the original HTML is kept (with a warning), so the freeze can't be violated
+    even by a misbehaving model.
+    """
+    from collections import Counter
+    t0 = time.time()
+    log = get_logger("html_revise")
+    original = state["html_output"]
+    note = state.get("html_feedback") or ""
+
+    system = Path("prompts/html_revise_system.md").read_text(encoding="utf-8")
+    user = (
+        "Apply ONLY these design/structure/formatting/positioning changes. Do NOT add, remove, "
+        "reword, or reorder any sentence, claim, code line, or source — the article text is FROZEN.\n\n"
+        f"CHANGES REQUESTED:\n{note}\n\n"
+        f"CURRENT HTML (return the COMPLETE revised document, HTML only, no commentary):\n{original}"
+    )
+    client = _get_client()
+    resp = _llm_call(client, model=DEEPSEEK_MODEL,
+                     messages=[{"role": "system", "content": system},
+                               {"role": "user", "content": user}],
+                     temperature=0)
+    revised = re.sub(r"^```(?:html)?\s*|\s*```$", "", resp.choices[0].message.content.strip()).strip()
+
+    usage = resp.usage
+    cost = round(usage.prompt_tokens / 1_000_000 * DEEPSEEK_INPUT_COST_PER_M
+                 + usage.completion_tokens / 1_000_000 * DEEPSEEK_OUTPUT_COST_PER_M, 6)
+
+    # Content-freeze guard.
+    before, after = Counter(_visible_words(original)), Counter(_visible_words(revised))
+    drift = sum((before - after).values()) + sum((after - before).values())
+    looks_like_html = ("<html" in revised.lower()) or revised.lower().startswith("<!doctype")
+    errors = list(state.get("error_log", []))
+    if drift > 2 or not looks_like_html:
+        errors.append(f"html_revise: revision DISCARDED (content drift={drift} words / valid_html={looks_like_html}); kept original")
+        log.warning("html_revise.discarded", run_id=state["run_id"], drift=drift, valid_html=looks_like_html)
+        out_html = original
+    else:
+        log.info("html_revise.applied", run_id=state["run_id"], drift=drift, cost=cost)
+        out_html = revised
+
+    lat = dict(state.get("latency_ms", {}))
+    lat["html_revise"] = int((time.time() - t0) * 1000)
+    return {
+        "html_output": out_html,
+        "html_feedback": None,
+        "total_tokens": state.get("total_tokens", 0) + usage.total_tokens,
+        "total_cost_usd": round(state.get("total_cost_usd", 0.0) + cost, 6),
+        "latency_ms": lat,
+        "error_log": errors,
     }
 
 
