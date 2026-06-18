@@ -1,0 +1,43 @@
+# Demo override — layers ON TOP of docker-compose.prod.yml. Adds a public, TLS-terminating
+# Caddy reverse proxy and switches the app service into live-publish mode for the DEMO FORK
+# only (never production). git_node is untouched: it still only does a local merge inside
+# THEMACHINIST_REPO_PATH; GIT_PUSH_ENABLED here just lets that local merge happen instead of
+# staying dry-run. The actual push to the fork's remote is the separate, human-triggered
+# POST /ui/runs/{id}/publish endpoint — autonomy posture is unchanged.
+#
+# Usage (on the VM):
+#   docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml build
+#   docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml up -d
+#
+# Requires Docker Compose v2.24+ for the `!reset` merge tag below (clears app's host port
+# binding so Caddy is the only public entry point). If your compose version doesn't support
+# `!reset`, drop the `ports:` block from docker-compose.prod.yml's `app` service directly in
+# this demo deployment instead — see DEPLOY_DEMO.md.
+services:
+  caddy:
+    image: caddy:2
+    container_name: content-agent-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    environment:
+      DEMO_DOMAIN: "${DEMO_DOMAIN}"
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  app:
+    environment:
+      GIT_PUSH_ENABLED: "true"             # local merge only — git_node still never pushes
+      PUBLISH_REMOTE: "${PUBLISH_REMOTE:-origin}"
+      NETLIFY_BASE_URL: "${NETLIFY_BASE_URL:-https://tmw-demo-site.netlify.app}"
+      THEMACHINIST_REPO_PATH: /app/fork
+    volumes:
+      - ./fork-clone:/app/fork
+    ports: !reset []                       # Caddy is the only public entry point now
+
+volumes:
+  caddy_data:

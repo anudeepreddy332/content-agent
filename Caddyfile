@@ -1,0 +1,3 @@
+{$DEMO_DOMAIN} {
+    reverse_proxy app:8000
+}
