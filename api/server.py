@@ -29,12 +29,13 @@ import hmac
 import json
 import queue
 import asyncio
+import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, Header, HTTPException
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, Response
 from pydantic import BaseModel, Field
 
 # HITL mode + mandatory review must be set BEFORE the graph/nodes decide behavior.
@@ -391,6 +392,72 @@ async def ui_events(run_id: str, token: str = ""):
             yield f"data: {json.dumps(item)}\n\n"
 
     return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+@app.get("/ui/runs/{run_id}/preview", include_in_schema=False)
+def ui_preview(run_id: str, token: str = ""):
+    """Render the run's current html_output so a reviewer can open the
+    not-yet-published article in a new tab at gate 2. Same query-param
+    bearer check as the SSE endpoint (EventSource/plain links can't set
+    headers)."""
+    expected = os.environ.get("API_BEARER_TOKEN")
+    if not expected:
+        raise HTTPException(503, "API_BEARER_TOKEN not configured on the server")
+    if not hmac.compare_digest(token, expected):
+        raise HTTPException(401, "invalid or missing token")
+    with LOCK:
+        reg = REGISTRY.get(run_id)
+        if not reg:
+            raise HTTPException(404, "unknown run_id")
+        html = (reg.get("result") or {}).get("html_output")
+        if not html:
+            payload = reg.get("interrupt_payload") or {}
+            if payload.get("type") == "hitl_html_review":
+                html = payload.get("html_output")
+    if not html:
+        raise HTTPException(404, "no html_output available for this run")
+    return Response(content=html, media_type="text/html")
+
+
+@app.post("/ui/runs/{run_id}/publish", dependencies=[Depends(require_auth)])
+def ui_publish(run_id: str):
+    """Human-triggered cloud publish: push the fork clone's local merge
+    (already made by git_node, which never pushes) to its remote so Netlify
+    redeploys. git_node itself is untouched — this is a separate, explicit
+    step, preserving the no-autonomous-publish property."""
+    from config import THEMACHINIST_REPO_PATH
+
+    with LOCK:
+        reg = REGISTRY.get(run_id)
+        if not reg:
+            raise HTTPException(404, "unknown run_id")
+        result = reg.get("result") or {}
+        git_status = result.get("git_status")
+        if git_status not in ("merged", "tagged_and_merged"):
+            raise HTTPException(409, f"run git_status is {git_status!r}, "
+                                      "not 'merged' or 'tagged_and_merged'")
+        slug = result.get("slug")
+
+    remote = os.environ.get("PUBLISH_REMOTE", "origin")
+    netlify_base = os.environ.get("NETLIFY_BASE_URL", "https://tmw-demo-site.netlify.app").rstrip("/")
+
+    try:
+        proc = subprocess.run(
+            ["git", "push", remote, "main"],
+            cwd=THEMACHINIST_REPO_PATH, capture_output=True, text=True, timeout=30,
+        )
+    except (subprocess.TimeoutExpired, OSError) as e:
+        log.error("ui.publish_error", run_id=run_id, remote=remote, error=str(e))
+        raise HTTPException(500, f"git push could not run: {e}")
+
+    if proc.returncode != 0:
+        log.error("ui.publish_failed", run_id=run_id, remote=remote,
+                   returncode=proc.returncode, stderr=proc.stderr)
+        raise HTTPException(500, proc.stderr.strip() or "git push failed")
+
+    live_url = f"{netlify_base}/{slug}"
+    log.info("ui.publish", run_id=run_id, slug=slug, remote=remote, live_url=live_url)
+    return {"live_url": live_url}
 
 
 @app.get("/", include_in_schema=False)

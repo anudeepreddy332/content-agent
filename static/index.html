@@ -47,17 +47,27 @@
         border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   /* grounding table */
-  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
-  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child{max-width:360px;word-break:break-word;line-height:1.5}
   th{color:var(--muted);font-weight:600}
   .tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px}
   .tag.verified{background:rgba(63,185,80,.16);color:var(--green)}
   .tag.weak{background:rgba(210,153,34,.16);color:var(--yellow)}
   .tag.unverified{background:rgba(248,81,73,.16);color:var(--red)}
-  .draft{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:16px;
-         max-height:360px;overflow:auto}
-  .draft h1,.draft h2,.draft h3{font-size:16px;margin:14px 0 6px}
-  .draft pre{background:#0a0e14;padding:10px;border-radius:6px;overflow:auto}
+  #g1meta{margin:10px 0 14px}
+  #g1grounding{margin-top:22px}
+  #g1grounding h3{font-size:13px;color:var(--muted);font-weight:600;margin:0 0 6px;
+        text-transform:uppercase;letter-spacing:.4px}
+  .draft{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:20px 22px;
+         max-height:460px;overflow:auto;line-height:1.7;font-size:14.5px}
+  .draft h1,.draft h2,.draft h3{font-size:16px;margin:22px 0 10px;line-height:1.4}
+  .draft h1:first-child,.draft h2:first-child,.draft h3:first-child{margin-top:0}
+  .draft p{margin:0 0 14px}
+  .draft ul,.draft ol{margin:0 0 14px;padding-left:22px}
+  .draft li{margin-bottom:6px}
+  .draft pre{background:#0a0e14;padding:12px 14px;border-radius:6px;overflow:auto;margin:0 0 14px}
+  .draft code{font-size:13px}
   iframe{width:100%;height:480px;border:1px solid var(--line);border-radius:8px;background:#fff}
   .pill{display:inline-block;font-family:var(--mono);font-size:12px;color:var(--muted)}
   .warn{color:var(--yellow);font-size:13px;margin-top:8px}
@@ -126,6 +136,7 @@
   <section class="card hidden" id="gate2">
     <h2 class="section">Gate 2 &middot; Layout review <span class="pill">content is frozen</span></h2>
     <div class="muted" id="g2meta"></div>
+    <p><a id="g2preview" href="#" target="_blank" rel="noopener">Open preview in new tab &#8599;</a></p>
     <iframe id="g2frame" title="rendered article"></iframe>
     <div class="warn hidden" id="g2warn"></div>
     <label>Layout / design change only (content drift &gt; 2 words is auto-discarded)</label>
@@ -141,6 +152,10 @@
   <section class="card hidden" id="done">
     <h2 class="section">Result</h2>
     <div id="doneBody"></div>
+    <div class="btns hidden" id="publishBtns">
+      <button id="publishBtn">&#128640; Publish to live</button>
+    </div>
+    <div id="livePanel"></div>
   </section>
 
 </main>
@@ -222,6 +237,7 @@ function onGate(r){
     $("#g1fb").value=""; show("#gate1"); $("#gate1").scrollIntoView({behavior:"smooth"});
   } else if(r.type==="hitl_html_review"){
     $("#g2meta").textContent = `${r.html_filename||""} · grounding ${(r.grounding_score??0).toFixed(2)}`;
+    $("#g2preview").href = `/ui/runs/${RUN}/preview?token=${encodeURIComponent(TOKEN)}`;
     $("#g2frame").srcdoc = r.html_output||"";
     const w = r.validation_warnings||[];
     if(w.length){ $("#g2warn").textContent = "warnings: "+w.join("; "); show("#g2warn"); } else hide("#g2warn");
@@ -229,7 +245,7 @@ function onGate(r){
   }
 }
 function renderGrounding(report){
-  if(!report.length){ $("#g1grounding").innerHTML="<p class='muted'>No claims extracted.</p>"; return; }
+  if(!report.length){ $("#g1grounding").innerHTML="<h3>Claims &amp; sources</h3><p class='muted'>No claims extracted.</p>"; return; }
   const rows = report.slice(0,40).map(c=>{
     const st=(c.status||"").toLowerCase();
     const src=c.source_url ? `<a href="${c.source_url}" target="_blank">link</a>` : "<span class='muted'>none</span>";
@@ -238,7 +254,7 @@ function renderGrounding(report){
       <td>${(c.confidence??0).toFixed(2)}</td><td>${src}</td></tr>`;
   }).join("");
   $("#g1grounding").innerHTML =
-    `<table><thead><tr><th>Claim</th><th>Status</th><th>Conf.</th><th>Source</th></tr></thead><tbody>${rows}</tbody></table>`;
+    `<h3>Claims &amp; sources</h3><table><thead><tr><th>Claim</th><th>Status</th><th>Conf.</th><th>Source</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 // ---- gate actions ----
@@ -265,8 +281,12 @@ function onDone(d){
   if(ES){ES.close();ES=null;}
   hide("#gate1"); hide("#gate2");
   const s=d.summary||{}; const base=$("#siteBase").value.trim().replace(/\/+$/,"");
+  const publishable = d.status==="complete" && (s.git_status==="merged" || s.git_status==="tagged_and_merged");
   let link="";
-  if(d.status==="complete" && s.slug && base){
+  if(publishable){
+    link=`<p class="ok">Merged locally (git_status: <code>${s.git_status}</code>). Click Publish to push
+          the fork and go live on Netlify.</p>`;
+  } else if(d.status==="complete" && s.slug && base){
     const url=`${base}/${s.slug}.html`;
     link=`<p class="ok">Published locally (git_status: <code>${s.git_status||"?"}</code>).</p>
           <p>Run <code>git -C &lt;fork&gt; push origin main</code> to go live, then open:
@@ -278,9 +298,50 @@ function onDone(d){
   }
   $("#doneBody").innerHTML =
     `${link}<p class="muted">grounding ${s.grounding_score??"?"} · cost $${(s.total_cost_usd??0)}</p>`;
+  $("#livePanel").innerHTML = "";
+  $("#publishBtn").disabled = false;
+  if(publishable) show("#publishBtns"); else hide("#publishBtns");
   $("#pipeSub").textContent="finished"; show("#done"); $("#done").scrollIntoView({behavior:"smooth"});
   $("#go").disabled=false;
 }
+
+// ---- cloud publish (gate-2-approved runs only; separate human-triggered step) ----
+async function publishRun(){
+  $("#publishBtn").disabled = true;
+  const res = await api(`/ui/runs/${RUN}/publish`, "POST");
+  if(!res.ok){
+    const t = await res.text();
+    $("#livePanel").innerHTML = `<p class="bad">publish failed: ${res.status} ${t}</p>`;
+    $("#publishBtn").disabled = false;
+    return;
+  }
+  const j = await res.json();
+  $("#livePanel").innerHTML =
+    `<p class="ok" style="font-size:16px;font-weight:700">&#128640; LIVE &mdash;
+     <a href="${j.live_url}" target="_blank" rel="noopener">${j.live_url}</a></p>`;
+  hide("#publishBtns");
+}
+$("#publishBtn").addEventListener("click", publishRun);
+
+// ---- keyboard shortcuts: a=approve, r=reject, c=request changes (focus feedback),
+// p=publish (only while the publish button is showing). Ignored while typing in any
+// input/textarea so feedback text and the topic/token fields are never hijacked.
+document.addEventListener("keydown", (e)=>{
+  const tag = (e.target && e.target.tagName) || "";
+  if(tag==="TEXTAREA" || tag==="INPUT") return;
+  const key = e.key.toLowerCase();
+  const gate1Open = !$("#gate1").classList.contains("hidden");
+  const gate2Open = !$("#gate2").classList.contains("hidden");
+  if(gate1Open || gate2Open){
+    const gate = gate1Open ? "1" : "2";
+    if(key==="a"){ e.preventDefault(); gateAction(gate, "approve"); }
+    else if(key==="r"){ e.preventDefault(); gateAction(gate, "reject"); }
+    else if(key==="c"){ e.preventDefault(); $(gate==="1" ? "#g1fb" : "#g2fb").focus(); }
+  }
+  if(key==="p" && !$("#publishBtns").classList.contains("hidden")){
+    e.preventDefault(); publishRun();
+  }
+});
 function onError(msg){
   if(ES){ES.close();ES=null;}
   $("#pipeSub").innerHTML=`<span class="bad">error: ${msg}</span>`;
