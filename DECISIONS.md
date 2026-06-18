@@ -4,6 +4,62 @@ Purpose: Prevent future chats from re-litigating solved problems.
 Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing architecture changes.
 
 ---
+Date: 2026-06-18
+
+Decision: DEMO (P-demo) live rehearsal PASSED end to end against the fork. Netlify site
+(tmw-demo-site.netlify.app) deployed from themachinist-website-fork; server launched with
+GIT_PUSH_ENABLED=true + THEMACHINIST_REPO_PATH=~/tmp/tmw-fork; topic "Why batch normalization
+speeds up training" driven through both gates via the SPA's /ui endpoints.
+
+Evidence: retrieve 10 web sources -> grounding 0.773 (floor 0.60), 28 claims, reflection 7/10;
+html_gen produced 0 validation warnings; gate 1 + gate 2 both approved through the SSE flow;
+git_node returned git_status=merged (local --no-ff merge only, feature branch auto-deleted,
+no push attempted by the agent — confirms local-merge-no-push held under the demo's streaming
+path exactly as under the CLI/poll path). Human ran `git push origin main` on the fork
+(c2407ca..9cd3102); Netlify redeployed; article URL returned 200 and the homepage Learning Log
+card rendered the new title. Total cost $0.0066.
+
+Status: Accepted (rehearsal complete). Remaining for P-demo: AWS deploy of the validated
+container for a persistent public URL (currently demo requires a human-run local server).
+
+---
+Date: 2026-06-17
+
+Decision: DEMO (P-demo) — interactive live front-end ADOPTED. A self-contained SPA
+(static/index.html, vanilla JS + EventSource, served at GET /) over a NEW additive streaming
+surface on the FastAPI app: POST /ui/runs, POST /ui/runs/{id}/{approve|reject|feedback}, and an
+SSE drain GET /ui/runs/{id}/events. The SPA shows each node completing in real time, both HITL
+gates inline (gate 1 = draft + grounding table; gate 2 = rendered HTML in an iframe), and a
+published-link panel. Publish target for the demo is a Netlify-deployed copy of the FORK
+(~/tmp/tmw-fork), never production — launched with GIT_PUSH_ENABLED=true +
+THEMACHINIST_REPO_PATH=<fork>; the human still runs `git push` (local-merge-no-push unchanged).
+API host: AWS (post-rehearsal).
+
+Architecture constraints honored: (1) the frozen poll API (/runs*) and ALL 40 prior tests are
+untouched — the /ui surface is purely additive. (2) Streaming uses GRAPH.stream(stream_mode=
+["updates","values"]) but ALL graph compute still runs on the single EXECUTOR (max_workers=1)
+via a per-run queue.Queue that the SSE endpoint drains, so the check_same_thread=False SQLite
+invariant holds. (3) interrupt()-based HITL is unchanged — graph.stream surfaces interrupts the
+same way invoke does; it is a swap of the observation channel, not a re-architecture of the gate
+model. (4) HITL stays MANDATORY; no auto-approve path added. SSE auth is the same fail-closed
+compare_digest check, token via query param (EventSource cannot set headers) — acceptable for a
+single-user demo, noted as a minor log-exposure smell.
+
+Rejected: Streamlit/Gradio (rerun/generator models fight live per-node streaming AND the two
+paused gates; still need the SSE endpoint underneath; read as internal tooling). LangGraph
+Studio + LangSmith (shows graph internals, not the topic->gates->live-site narrative; no website
+payoff; LangSmith was cut at freeze). asciinema (CLI recording, ruled out by the goal).
+
+Evidence: tests/test_api_stream.py (3 tests: full two-gate publish with ordered node events +
+both gate payloads + terminal summary; SSE token auth; resume-after-terminal 409). Full suite
+43 passed, $0. Local smoke: server boots, serves SPA at /, fail-closed 401 on /ui/runs and SSE.
+No prompt files touched -> grounding baseline sha-6687240c8cd8 unchanged (orthogonal to metrics).
+
+Status: Accepted (code complete + tested). Remaining = operator steps: Netlify fork deploy,
+one live local rehearsal (real DeepSeek/Tavily spend), AWS deploy. Suggest its own feature
+branch off main + a v6-demo tag.
+
+---
 Date: 2026-06-17
 
 Decision: P2.2 (index.html Learning Log auto-update) ACCEPTED, no reopen. git_node now patches

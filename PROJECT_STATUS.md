@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Last updated: 2026-06-17 — POST-FREEZE P2 series closed_
+_Last updated: 2026-06-18 — P-demo live rehearsal passed_
 
 ## Current Phase
 POST-FREEZE phase P2 — COMPLETE. P2.1 (content-frozen HTML HITL gate + html_revise),
@@ -15,22 +15,35 @@ Qdrant, single-VM compose. SV primary / UVR≤0.15 gate / prompt hash sha-668724
 
 ## Completed   (append)
 - Grounding arc M1-M5, M6a (prompt hashing). B1-B8 (DECISIONS 2026-06-12 … 2026-06-16).
+- P2.1 second HITL gate, P2.2 index.html auto-update, P2.3 MAX_ITERATIONS reject (2026-06-17).
 
 ## Currently active
-None on this branch. P2 series is closed (see DECISIONS 2026-06-17, P2.2 + P2.3 entries). This
-branch (feature/p2.3-max-iterations) carries only the reverted experiment toggle (commit
-d301ed2) and the analysis scripts kept for the record. Next workstream is the demo front-end,
-which lives on its own branch: feature/demo-ui (see that branch's PROJECT_STATUS.md).
+DEMO (P-demo) — interactive live front-end. CODE COMPLETE + TESTED + REHEARSED LIVE. One
+operator step remains (AWS deploy) before this is merge-ready.
+- Built: SSE streaming surface on the API (api/server.py, additive /ui/runs* + GET
+  /ui/runs/{id}/events) + self-contained SPA (static/index.html) served at GET /. Shows each
+  node live, both HITL gates inline, published-link panel. See DECISIONS 2026-06-17 (P-demo).
+- Tested: tests/test_api_stream.py (3 tests); full suite 43 passed ($0); local boot smoke OK.
+  Frozen poll API + all prior tests untouched; SQLite single-worker invariant preserved.
+- DONE — operator steps:
+  1. Netlify: tmw-demo-site.netlify.app deployed from themachinist-website-fork.
+  2. Local rehearsal PASSED 2026-06-18: topic "Why batch normalization speeds up training"
+     through both gates, grounding 0.773, $0.0066, git_status=merged (local merge only, no
+     agent push), human `git push origin main` on the fork, article + Learning Log card
+     confirmed live (200). See DECISIONS 2026-06-18 (P-demo rehearsal).
+- REMAINING (operator, needs AWS account/credentials):
+  3. AWS deploy of the validated container (docker-compose.prod.yml) for a persistent public
+     URL — today the demo only runs while a human has the server up locally.
 
 ## Current blocker
 None.
 
 ## Repository state
-- main: v6-p2.2-index-auto-update.
-- This branch: code revert only (d301ed2, MAX_ITERATIONS back to 2) + scripts/p2_3_analyze.py,
-  scripts/p2_3_reach.py kept for the record. No production code change.
-- Standing limitations unchanged (FREEZE.md): B4 registry volatility (spans 2 pause points),
-  5-tag rollback window, local-merge-no-auto-push, single-worker throughput.
+- main: v6-p2.2-index-auto-update + P2.3 revert (d301ed2) + P-demo (this merge).
+- scripts/p2_3_analyze.py, scripts/p2_3_reach.py kept for the record; no production code
+  change from P2.3.
+- Standing limitations unchanged (FREEZE.md): B4 registry volatility (now spans 2 pause
+  points), 5-tag rollback window, local-merge-no-auto-push, single-worker throughput.
 
 ## Operating points (confirmed)
 MAX_ITERATIONS=2, REFLECTION_THRESHOLD=7, GROUNDING_FLOOR=0.60, COST_GATE_USD=0.10.
