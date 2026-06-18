@@ -6,6 +6,43 @@ Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing
 ---
 Date: 2026-06-17
 
+Decision: DEMO (P-demo) — interactive live front-end ADOPTED. A self-contained SPA
+(static/index.html, vanilla JS + EventSource, served at GET /) over a NEW additive streaming
+surface on the FastAPI app: POST /ui/runs, POST /ui/runs/{id}/{approve|reject|feedback}, and an
+SSE drain GET /ui/runs/{id}/events. The SPA shows each node completing in real time, both HITL
+gates inline (gate 1 = draft + grounding table; gate 2 = rendered HTML in an iframe), and a
+published-link panel. Publish target for the demo is a Netlify-deployed copy of the FORK
+(~/tmp/tmw-fork), never production — launched with GIT_PUSH_ENABLED=true +
+THEMACHINIST_REPO_PATH=<fork>; the human still runs `git push` (local-merge-no-push unchanged).
+API host: AWS (post-rehearsal).
+
+Architecture constraints honored: (1) the frozen poll API (/runs*) and ALL 40 prior tests are
+untouched — the /ui surface is purely additive. (2) Streaming uses GRAPH.stream(stream_mode=
+["updates","values"]) but ALL graph compute still runs on the single EXECUTOR (max_workers=1)
+via a per-run queue.Queue that the SSE endpoint drains, so the check_same_thread=False SQLite
+invariant holds. (3) interrupt()-based HITL is unchanged — graph.stream surfaces interrupts the
+same way invoke does; it is a swap of the observation channel, not a re-architecture of the gate
+model. (4) HITL stays MANDATORY; no auto-approve path added. SSE auth is the same fail-closed
+compare_digest check, token via query param (EventSource cannot set headers) — acceptable for a
+single-user demo, noted as a minor log-exposure smell.
+
+Rejected: Streamlit/Gradio (rerun/generator models fight live per-node streaming AND the two
+paused gates; still need the SSE endpoint underneath; read as internal tooling). LangGraph
+Studio + LangSmith (shows graph internals, not the topic->gates->live-site narrative; no website
+payoff; LangSmith was cut at freeze). asciinema (CLI recording, ruled out by the goal).
+
+Evidence: tests/test_api_stream.py (3 tests: full two-gate publish with ordered node events +
+both gate payloads + terminal summary; SSE token auth; resume-after-terminal 409). Full suite
+43 passed, $0. Local smoke: server boots, serves SPA at /, fail-closed 401 on /ui/runs and SSE.
+No prompt files touched -> grounding baseline sha-6687240c8cd8 unchanged (orthogonal to metrics).
+
+Status: Accepted (code complete + tested). Remaining = operator steps: Netlify fork deploy,
+one live local rehearsal (real DeepSeek/Tavily spend), AWS deploy. Suggest its own feature
+branch off main + a v6-demo tag.
+
+---
+Date: 2026-06-17
+
 Decision: P2 second HITL gate LOCKED as a CONTENT-FROZEN layout gate. Two gates, no production
 bypass: gate 1 (hitl_node) reviews CONTENT; once approved, content is frozen. gate 2
 (hitl_html_node) reviews the RENDERED HTML for design/structure/formatting/positioning ONLY.

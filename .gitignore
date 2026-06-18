@@ -27,7 +27,7 @@ coverage.xml
 htmlcov/
 .cache
 .hypothesis/
-
+agent.md
 # Environments & secrets
 .env
 .venv
