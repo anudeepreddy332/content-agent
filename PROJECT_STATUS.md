@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Last updated: 2026-06-16 — PRODUCTION FREEZE (v5-freeze)_
+_Last updated: 2026-06-18 — P-demo live rehearsal passed_
 
 ## Current Phase
 POST-FREEZE phase P2 — COMPLETE. P2.1 (content-frozen HTML HITL gate + html_revise),
@@ -17,20 +17,25 @@ Qdrant, single-VM compose. SV primary / UVR≤0.15 gate / prompt hash sha-668724
 - Grounding arc M1-M5, M6a (prompt hashing). B1-B8 (DECISIONS 2026-06-12 … 2026-06-16).
 
 ## Currently active
-DEMO (P-demo) — interactive live front-end. CODE COMPLETE + TESTED, operator steps remain.
+DEMO (P-demo) — interactive live front-end. CODE COMPLETE + TESTED + REHEARSED LIVE. One
+operator step remains (AWS deploy) before this is merge-ready.
 - Built: SSE streaming surface on the API (api/server.py, additive /ui/runs* + GET
   /ui/runs/{id}/events) + self-contained SPA (static/index.html) served at GET /. Shows each
   node live, both HITL gates inline, published-link panel. See DECISIONS 2026-06-17 (P-demo).
 - Tested: tests/test_api_stream.py (3 tests); full suite 43 passed ($0); local boot smoke OK.
   Frozen poll API + all prior tests untouched; SQLite single-worker invariant preserved.
-- REMAINING (operator, needs accounts/credentials + one paid run):
-  1. Netlify: deploy ~/tmp/tmw-fork as a dedicated demo site (publish dir = repo root).
-  2. Local rehearsal: launch with GIT_PUSH_ENABLED=true THEMACHINIST_REPO_PATH=<fork>
-     API_BEARER_TOKEN=<tok>; run a topic end-to-end through both gates; `git push` the fork.
-  3. AWS deploy of the validated container (docker-compose.prod.yml) for a public URL.
-- Branch note: this work now lives on feature/demo-ui (off main, beabceb). The reverted P2.3
-  toggle + analysis scripts moved to their own feature/p2.3-max-iterations branch. Tag v6-demo
-  on merge.
+- DONE — operator steps:
+  1. Netlify: tmw-demo-site.netlify.app deployed from themachinist-website-fork.
+  2. Local rehearsal PASSED 2026-06-18: topic "Why batch normalization speeds up training"
+     through both gates, grounding 0.773, $0.0066, git_status=merged (local merge only, no
+     agent push), human `git push origin main` on the fork, article + Learning Log card
+     confirmed live (200). See DECISIONS 2026-06-18 (P-demo rehearsal).
+- REMAINING (operator, needs AWS account/credentials):
+  3. AWS deploy of the validated container (docker-compose.prod.yml) for a persistent public
+     URL — today the demo only runs while a human has the server up locally.
+- Branch note: this work lives on feature/demo-ui (off main, beabceb; pushed to origin). The
+  reverted P2.3 toggle + analysis scripts live on their own feature/p2.3-max-iterations branch
+  (also pushed). Tag v6-demo on merge.
 
 ## Current blocker
 None. Highest-risk item: B4 durable HITL (Days 4–6); pre-registered fallback = CLI-in-container, decision end of Day 6.

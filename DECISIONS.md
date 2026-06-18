@@ -4,6 +4,25 @@ Purpose: Prevent future chats from re-litigating solved problems.
 Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing architecture changes.
 
 ---
+Date: 2026-06-18
+
+Decision: DEMO (P-demo) live rehearsal PASSED end to end against the fork. Netlify site
+(tmw-demo-site.netlify.app) deployed from themachinist-website-fork; server launched with
+GIT_PUSH_ENABLED=true + THEMACHINIST_REPO_PATH=~/tmp/tmw-fork; topic "Why batch normalization
+speeds up training" driven through both gates via the SPA's /ui endpoints.
+
+Evidence: retrieve 10 web sources -> grounding 0.773 (floor 0.60), 28 claims, reflection 7/10;
+html_gen produced 0 validation warnings; gate 1 + gate 2 both approved through the SSE flow;
+git_node returned git_status=merged (local --no-ff merge only, feature branch auto-deleted,
+no push attempted by the agent — confirms local-merge-no-push held under the demo's streaming
+path exactly as under the CLI/poll path). Human ran `git push origin main` on the fork
+(c2407ca..9cd3102); Netlify redeployed; article URL returned 200 and the homepage Learning Log
+card rendered the new title. Total cost $0.0066.
+
+Status: Accepted (rehearsal complete). Remaining for P-demo: AWS deploy of the validated
+container for a persistent public URL (currently demo requires a human-run local server).
+
+---
 Date: 2026-06-17
 
 Decision: DEMO (P-demo) — interactive live front-end ADOPTED. A self-contained SPA
