@@ -6,6 +6,40 @@ Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing
 ---
 Date: 2026-06-17
 
+Decision: P2.2 (index.html Learning Log auto-update) ACCEPTED, no reopen. git_node now patches
+a Learning Log card into index.html on every successful publish, in place on re-publish of the
+same slug, excluded from the tag-trigger diff so the merged/tagged_and_merged distinction from
+B7 still holds.
+
+Status: Accepted (locked, merged to main as v6-p2.2-index-auto-update).
+
+---
+Date: 2026-06-17
+
+Decision: P2.3 (raise MAX_ITERATIONS above 2 to chase grounding) REJECTED. Reverted to
+MAX_ITERATIONS=2; experiment toggle removed (commit d301ed2, this branch).
+
+Reason: A higher ceiling cannot help drafts that never revise in the first place (the gate
+that matters is route_after_reflect ever choosing to revise, not how many times it's allowed
+to). On drafts that do revise, the extra iterations traded SV (substantive verified claims)
+for vagueness rather than improving grounding — UVR-only improvement is explicitly disallowed
+as a success criterion per the SV-no-loss co-condition.
+
+Alternatives Considered: Raising the ceiling to 3-4 (rejected on the above); pairing a higher
+ceiling with stronger per-iteration grounding feedback (not attempted — M4's unconditional
+grounding-report feedback was already in place and didn't change the verdict).
+
+Evidence: scripts/p2_3_analyze.py, scripts/p2_3_reach.py (kept on this branch for the record,
+not part of the production pipeline). SV noise band +/-7 at n<=3 observed and accounted for.
+
+Tradeoffs: None — code reverted cleanly, no prompt or baseline change (sha-6687240c8cd8
+unaffected).
+
+Status: Rejected (locked). MAX_ITERATIONS stays 2 per CLAUDE.md locked decisions.
+
+---
+Date: 2026-06-17
+
 Decision: P2 second HITL gate LOCKED as a CONTENT-FROZEN layout gate. Two gates, no production
 bypass: gate 1 (hitl_node) reviews CONTENT; once approved, content is frozen. gate 2
 (hitl_html_node) reviews the RENDERED HTML for design/structure/formatting/positioning ONLY.
