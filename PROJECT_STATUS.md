@@ -40,8 +40,8 @@ None.
 
 ## Repository state
 - main: v6-p2.2-index-auto-update + P2.3 revert (d301ed2) + P-demo (this merge).
-- scripts/p2_3_analyze.py, scripts/p2_3_reach.py kept for the record; no production code
-  change from P2.3.
+- scripts/archive/p2_3_analyze.py, scripts/archive/p2_3_reach.py kept for the record (moved
+  into scripts/archive/ during the feature/cleanup reorg); no production code change from P2.3.
 - Standing limitations unchanged (FREEZE.md): B4 registry volatility (now spans 2 pause
   points), 5-tag rollback window, local-merge-no-auto-push, single-worker throughput.
 

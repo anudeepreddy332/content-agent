@@ -1,5 +1,5 @@
 """Assert every required telemetry field is present in a fresh run JSON."""
-import sys, json, subprocess, uuid
+import sys, json, subprocess
 from pathlib import Path
 
 REQUIRED_FIELDS = [

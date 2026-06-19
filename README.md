@@ -67,40 +67,57 @@ uv run python main.py run --topic "Gradient Descent" --auto
 ```
 content-agent/
 ├── architecture.md          ← Contract. Read this first.
+├── DECISIONS.md / PROJECT_STATUS.md / FREEZE.md   ← canonical living docs
 ├── main.py                  ← CLI entry point
-├── docker-compose.yml       ← Qdrant local dev service
+├── Dockerfile  Caddyfile  docker-compose.{yml,prod.yml,demo.yml}
 ├── agent/
 │   ├── state.py             ← AgentState TypedDict
 │   ├── graph.py             ← LangGraph state machine
 │   └── nodes.py             ← All node implementations
+├── api/
+│   └── server.py            ← FastAPI HITL API + demo SSE/publish surface
+├── static/
+│   └── index.html           ← Self-contained demo SPA, served at GET /
 ├── tools/
 │   ├── web_search.py        ← Tavily wrapper with 7-day file cache
 │   ├── query_kb.py          ← Qdrant + BM25 hybrid retrieval with RRF
 │   ├── save_to_kb.py        ← Qdrant ingest with chunking
-│   └── document_ingest.py   ← Docling multi-format parser
+│   └── archive/
+│       └── document_ingest.py.archived  ← Docling multi-format parser, runtime-blocked (§13)
 ├── observability/
 │   └── logger.py            ← structlog JSON logger
 ├── kb/
 │   ├── seed_docs/           ← 20 enriched .md files (committed)
-│   └── qdrant_data/         ← Qdrant storage (gitignored)
+│   ├── qdrant_data/         ← Qdrant storage (gitignored)
+│   └── chroma_db/           ← legacy ChromaDB store (gitignored)
 ├── prompts/
 │   ├── draft_system.md      ← Draft node system prompt
 │   ├── verify_system.md     ← Verify node system prompt
 │   ├── reflect_system.md    ← Reflect node system prompt
-│   └── html_template.md     ← HTML generation template
+│   ├── html_template.md     ← HTML generation template
+│   └── html_revise_system.md ← Layout-only revision prompt (P2)
 ├── evals/
-│   ├── prompt_evals/        ← Prompt-level regression tests
+│   ├── verifier_golden_test.py  ← CI grounding-regression gate
+│   ├── prompt_evals/        ← Prompt-level schema-stability checks
 │   └── topics.json          ← 20 evaluation topics
 ├── scripts/
 │   ├── smoke_test.py        ← Single end-to-end validation run
 │   ├── benchmark.py         ← 20-topic benchmark harness
 │   ├── retrieval_eval.py    ← Retrieval recall@k evaluation
-│   └── ingest.py            ← KB seed script (multi-format)
-└── outputs/
-    ├── runs/                ← Per-run telemetry JSON (gitignored)
-    ├── articles/            ← Generated HTML articles (gitignored)
-    ├── tavily_cache/        ← Tavily result cache (gitignored)
-    └── retrieval-baseline-chromadb/  ← ChromaDB baseline for comparison
+│   ├── ingest.py            ← KB seed script (multi-format)
+│   ├── rollback_publish.sh  ← Revert a published article's merge
+│   └── archive/             ← Concluded one-off experiment analysis, kept for the record
+├── tests/                   ← pytest suite, $0/mocked, runs in CI on every push
+├── .github/workflows/       ← ci.yml (lint+test+eval-gate), eval.yml (manual full sweep)
+├── docs/
+│   ├── CASE_STUDY.md  CHEATSHEET_AWS.md  CHEATSHEET_LOCAL.md  PRODUCTION_READINESS.md
+│   ├── deploy/           ← DEPLOY.md, DEPLOY_DEMO.md, RECOVERY.md
+│   └── archive/          ← historical gate reports + retrieval-eval evidence
+└── outputs/                  ← all gitignored runtime artifacts
+    ├── runs/                ← Per-run telemetry JSON
+    ├── articles/            ← Generated HTML articles (local archive)
+    ├── checkpoints.sqlite   ← Durable HITL graph state (SqliteSaver)
+    └── tavily_cache/        ← Tavily result cache
 ```
 
 ---
@@ -122,4 +139,4 @@ content-agent/
 
 Multi-agent (Phase 4b) is only justified if evaluation data shows the single agent
 is hitting systematic limits. See `architecture.md § 10` for the exact criteria.
-Gate report: `outputs/retrieval-baseline-chromadb/final_phase4a_gate_report.md`
+Gate report: `docs/archive/retrieval-baseline-chromadb/final_phase4a_gate_report.md`

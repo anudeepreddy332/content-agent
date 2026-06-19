@@ -1,5 +1,5 @@
 """
-Seed the local ChromaDB knowledge base with evergreen AI/ML content.
+Seed the Qdrant knowledge base with evergreen AI/ML content.
 
 Usage:
     uv run python scripts/ingest.py --source kb/seed_docs/
@@ -13,8 +13,9 @@ What goes in the KB:
 Seed doc format:
     Plain .md or .txt files.
     Filename becomes the source identifier.
-    Put them in kb/seed_docs/ — that directory is gitignored for chroma_db
-    but seed_docs/ itself should be committed (it's just markdown files).
+    Put new docs in kb/seed_docs/ — that directory is committed (it's just markdown
+    files); the actual vector store data (kb/qdrant_data/, legacy kb/chroma_db/) is
+    gitignored, since it's all derived from seed_docs/ and regenerable via this script.
 """
 
 import os

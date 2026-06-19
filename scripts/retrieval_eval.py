@@ -1,6 +1,9 @@
 """
-Measures retrieval accuracy (recall@k) against a fixed golden set.
-Run at 1 doc, 5 docs, 10 docs, 20 docs in kb. Plot the curve.
+Measures retrieval accuracy (recall@k, concept-hit rate, out-of-scope rejection
+rate) against a fixed 35-query golden set, evaluated against whatever is
+currently in the KB. To compare across corpus sizes, re-run this script after
+each ingest stage and diff the JSON reports by hand — there is no built-in
+loop or plotting; each invocation is a single point-in-time measurement.
 
 Usage:
     uv run python scripts/retrieval_eval.py

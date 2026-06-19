@@ -1,6 +1,7 @@
 """
 Runs all 20 topics from evals/topics.json through the full pipeline.
-Writes per-run JSON to outputs/runs/ and aggregate to outputs/benchmark_<timestamp>.json.
+Writes per-run JSON to outputs/runs/ and aggregate to
+outputs/benchmark_results/benchmark_<timestamp>.json.
 
 Usage:
     uv run python scripts/benchmark.py               # all 20 topics
