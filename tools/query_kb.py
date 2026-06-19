@@ -42,6 +42,10 @@ load_dotenv()
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
+from observability.logger import get_logger
+
+log = get_logger("query_kb")
+
 
 # Module-level singletons
 _client: QdrantClient | None = None
@@ -326,7 +330,7 @@ def query_kb(query: str, n_results: int = 5) -> list[dict]:
 
 
     except Exception as e:
-        print(f"[query_kb] Qdrant search ERROR: {e}")
+        log.error("query_kb.search_error", error=str(e))
         return []
 
 
@@ -334,10 +338,12 @@ def query_kb(query: str, n_results: int = 5) -> list[dict]:
     try:
         bm25_results = _bm25_query(query, n_results=fetch_n)
     except ImportError:
-        print("[query_kb] WARNING: rank_bm25 not installed — falling back to dense-only")
+        log.warning("query_kb.bm25_unavailable",
+                    note="rank_bm25 not installed — falling back to dense-only")
         return dense_results[:n_results]
     except Exception as e:
-        print(f"[query_kb] BM25 ERROR: {e} — falling back to dense-only")
+        log.error("query_kb.bm25_error", error=str(e),
+                  note="falling back to dense-only")
         return dense_results[:n_results]
 
     # Fusion
