@@ -24,6 +24,7 @@ from pathlib import Path
 from agent.graph import build_graph
 from config import PROMPT_VERSION, PROMPT_HASHES
 from observability.logger import get_logger
+from observability.tracing import setup_langsmith_tracing
 import re
 import datetime
 
@@ -217,6 +218,10 @@ def run(topic, card_id, series, auto):
         )
 
     os.environ["HITL_AUTO_APPROVE"] = "1" if auto else "0"
+
+    # Opt-in, OFF by default — see observability/tracing.py. No-op unless
+    # LANGSMITH_TRACING=1 + LANGCHAIN_API_KEY + LANGCHAIN_PROJECT are all set.
+    setup_langsmith_tracing()
 
     slug = _make_slug(topic)
     if not slug:
