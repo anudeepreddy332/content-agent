@@ -29,7 +29,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 COPY . .
 
 # Non-root. uid 10001 must own /app (incl. baked model cache) to write outputs/checkpoints.
-RUN useradd -m -u 10001 appuser && chown -R appuser:appuser /app
+RUN useradd -m -u 10001 appuser && chown -R appuser:appuser /app/.cache /home/appuser
 USER appuser
 
 EXPOSE 8000
