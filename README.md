@@ -1,16 +1,29 @@
 # content-agent
 
-**Phase 4a — AI/Tech Article Drafting Pipeline**
+**A production-grade, single-agent LangGraph pipeline that researches a topic, drafts a
+grounded HTML article, verifies every claim against its sources, and publishes it — with a
+human approving both the content and the rendered layout before anything goes live.**
+
 Part of the multi-phase agentic AI engineering journey → themachinist.org
+
+🔗 **Live interactive demo:** https://54-221-24-43.sslip.io
+Type a topic, watch retrieve → draft → verify → reflect run live over SSE, review the draft
+and grounding report at gate 1, review the rendered HTML at gate 2, then publish to a live
+site. Deployed on EC2 behind Caddy (TLS), pulling `anudeepreddy332/content-agent:demo` from
+Docker Hub — see `docs/deploy/DEPLOY_DEMO.md` for the exact deploy path. The demo publishes to
+a FORK of themachinist.org, never production.
 
 ---
 
 ## What this does
 
 Takes a topic as input. Produces a publish-ready HTML article for themachinist.org,
-pushed to a feature branch on the themachinist-website repo.
+pushed to a feature branch on the themachinist-website repo (or its demo fork).
 
-Pipeline: Draft → Retrieve → Verify → Reflect → HITL → HTML Gen → Git push
+Pipeline: Retrieve → Draft → Verify → Reflect → [revise ≤2] → HITL (content) → HTML Gen →
+HITL (layout) → Git (local merge only — a human always does the actual `git push`).
+Source-aware drafting (retrieve runs before draft, not after) was locked at M3 — see
+`DECISIONS.md`, 2026-06-09.
 
 Read `architecture.md` before touching any code.
 
@@ -58,7 +71,19 @@ uv run python main.py run \
 
 # Benchmark mode (auto-approve, no git push)
 uv run python main.py run --topic "Gradient Descent" --auto
+
+# Interactive demo SPA + API, locally
+uv run python main.py serve   # then open http://localhost:8000/
 ```
+
+For copy-paste command sequences beyond the basics above — running the full interactive
+demo locally end-to-end, or deploying/operating the EC2 + Caddy + Docker Hub cloud demo — see:
+- `docs/CHEATSHEET_LOCAL.md` — local server, SPA walkthrough, where telemetry/articles land.
+- `docs/CHEATSHEET_AWS.md` — EC2 deploy, Docker Hub build/push, DNS via sslip.io, what
+  persists across a reboot.
+
+(`docs/deploy/DEPLOY.md` and `docs/deploy/DEPLOY_DEMO.md` are the full runbooks the cheat
+sheets are distilled from, if you need the complete picture or are setting up from scratch.)
 
 ---
 
@@ -129,9 +154,12 @@ content-agent/
 | 1 — Logging + core nodes | ✓ complete | structlog, verify_node, reflect_node, smoke_test passing |
 | 2 — Full pipeline | ✓ complete | html_gen_node, git_node, main.py CLI |
 | 3 — Evals + benchmark | ✓ complete | Prompt evals, retrieval golden set (100% recall@3), 5-round benchmark |
-| 4 — Qdrant + Docling | ✓ complete | Qdrant migration, BM25+RRF, multi-format ingest |
-| 5 — API + fault injection | in progress | FastAPI, 5 fault modes tested |
-| 6 — Docker + AWS | planned | Containerized deployment |
+| 4 — Qdrant + Docling | ✓ complete | Qdrant migration, BM25+RRF, multi-format ingest (Docling later dropped, M6) |
+| 5 — API + fault injection | ✓ complete | FastAPI durable HITL API (B4), 5 fault modes tested (B2) |
+| 6 — Docker + AWS | ✓ complete | Containerized (B5), live on EC2 + Caddy + Docker Hub (see demo link above) |
+
+Step labels are historical; see PROJECT_STATUS.md for the current milestone state (M1-M6,
+B1-B9, P2, P-demo all complete) and agent.md for the full roadmap.
 
 ---
 
