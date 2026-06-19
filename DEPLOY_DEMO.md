@@ -43,7 +43,51 @@ Let's Encrypt cert with no DNS setup.
     export DEMO_DOMAIN=$(curl -s ifconfig.me | tr '.' '-').sslip.io
     echo "DEMO_DOMAIN=$DEMO_DOMAIN" >> .env
 
-## 5. Build and start (prod compose + demo override)
+## 5. Build and start
+
+### Primary path (what this demo actually runs today): pull a pre-built image
+Building on a small EC2 instance is slow (the `sentence-transformers` baking step alone takes
+minutes) and ties up the box every deploy. The path actually used in production for this demo
+is: build once on a fast machine, push to Docker Hub, and have the EC2 box only ever `pull`.
+
+**On your laptop** (or any machine with Docker buildx; match `--platform` to the EC2 instance's
+CPU architecture — `linux/arm64` for Graviton instances like `t4g.*`, `linux/amd64` otherwise):
+
+    docker buildx build --platform linux/arm64 -t anudeepreddy332/content-agent:demo --push .
+
+This builds and pushes to Docker Hub (`docker.io/anudeepreddy332/content-agent:demo`) in one
+step — `docker login` once beforehand if you haven't.
+
+**On the EC2 box**, create `docker-compose.image.yml` (not committed to this repo — it's a
+deploy-time artifact, since it hardcodes the registry image tag rather than building from the
+checked-out source):
+
+    services:
+      app:
+        image: anudeepreddy332/content-agent:demo
+        pull_policy: always
+
+This is layered on top of `docker-compose.prod.yml` + `docker-compose.demo.yml` exactly like
+any other override — it replaces the `app` service's `build: .` with a registry pull and
+forces a fresh pull on every `up` (`pull_policy: always`) so re-running step 5 always gets the
+latest pushed tag instead of silently reusing a stale local image:
+
+    docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml -f docker-compose.image.yml pull
+    docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml -f docker-compose.image.yml up -d qdrant
+    docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml -f docker-compose.image.yml run --rm app \
+        python scripts/ingest.py --source kb/seed_docs/
+    docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml -f docker-compose.image.yml up -d
+    docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml -f docker-compose.image.yml ps
+
+Re-deploying a code change with this path is: rebuild+push on your laptop, then on the box
+just re-run the `pull` + `up -d` lines above — no git clone/checkout needed on the EC2 box at
+all for the `content-agent` source itself (you still need `Caddyfile`, the compose files, and
+`.env`/`fork-clone` present, per steps 1-4, since those aren't baked into the image).
+
+### Alternative path: build from source on the VM
+This is what `DEPLOY.md` describes for the non-demo deployment, and it still works here too —
+useful if you don't want a Docker Hub dependency, or you're iterating directly on the VM:
+
     docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml build
     docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml up -d qdrant
     docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml run --rm app \
@@ -51,6 +95,10 @@ Let's Encrypt cert with no DNS setup.
     docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml up -d
     docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml ps
 
+Slower per-deploy (rebuilds on the EC2 box itself) and requires a full `git clone` of this repo
+on the box; no registry account needed.
+
+### Either path
 `docker-compose.demo.yml` REMOVES the app's `127.0.0.1:8000` host port binding (via the
 compose `!reset` merge tag — requires Compose v2.24+; `docker compose version` to check) and
 adds a `caddy` service bound to 80/443 that reverse-proxies to `app:8000` over the internal
