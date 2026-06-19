@@ -110,7 +110,7 @@ def _advance(run_id: str, invoke_input, finalizing: bool):
         REGISTRY[run_id]["status"] = "rejected" if rejected else "complete"
     if result.get("git_status") == "failed":
         # ERROR level (not just git_node's own log line) so this is grep-able for an
-        # external log-based alert — PRODUCTION_READINESS.md item 2. No dashboard here,
+        # external log-based alert — docs/PRODUCTION_READINESS.md item 2. No dashboard here,
         # just a distinct, greppable signal: "api.publish_failed".
         log.error("api.publish_failed", run_id=run_id,
                   error_log=result.get("error_log", []))
@@ -201,7 +201,7 @@ def _advance_streaming(run_id, invoke_input, finalizing):
         q.put({"event": "gate", "review": payload})
     else:
         if result.get("git_status") == "failed":
-            # Same grep-able ERROR signal as the poll path (_advance) — PRODUCTION_READINESS.md
+            # Same grep-able ERROR signal as the poll path (_advance) — docs/PRODUCTION_READINESS.md
             # item 2. The streaming path has its own terminal branch, so this must be
             # duplicated here rather than shared.
             log.error("api.publish_failed", run_id=run_id,

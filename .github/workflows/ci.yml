@@ -37,7 +37,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
-  # PRODUCTION_READINESS.md item 1: a grounding-regression gate that actually runs on
+  # docs/PRODUCTION_READINESS.md item 1: a grounding-regression gate that actually runs on
   # every PR (not just on manual workflow_dispatch like eval.yml's full benchmark sweep).
   # Scoped to ONLY the golden verifier fixture (~$0.02, no Qdrant needed) to keep this
   # cheap enough to run unconditionally. The full benchmark.py --gate sweep stays in
