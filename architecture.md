@@ -231,7 +231,7 @@ Note: the previously listed `tools/verify_claim.py` does not exist. Verification
 
 - Storage: Qdrant (Docker), `/kb/qdrant_data/`, started via `docker-compose up -d`.
 - Collection: `machinist_evergreen`.
-- Legacy: ChromaDB data preserved at `/kb/chroma_db/`; retrieval baseline at `outputs/retrieval-baseline-chromadb/`.
+- Legacy: ChromaDB data preserved at `/kb/chroma_db/`; retrieval baseline at `docs/archive/retrieval-baseline-chromadb/`.
 - Retrieval: dense (all-MiniLM-L6-v2, 384-dim, cosine) + BM25, fused via RRF (k=60).
 - Content: evergreen AI/ML concepts (definitions, formulas, architectures, theory).
 - NOT in KB: recent events, model releases, benchmark numbers, paper findings (those go to Tavily).

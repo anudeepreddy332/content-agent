@@ -122,4 +122,4 @@ content-agent/
 
 Multi-agent (Phase 4b) is only justified if evaluation data shows the single agent
 is hitting systematic limits. See `architecture.md § 10` for the exact criteria.
-Gate report: `outputs/retrieval-baseline-chromadb/final_phase4a_gate_report.md`
+Gate report: `docs/archive/retrieval-baseline-chromadb/final_phase4a_gate_report.md`
