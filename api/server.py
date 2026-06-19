@@ -49,8 +49,15 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from agent.graph import build_graph
 from main import _build_initial_state, _make_slug, _write_telemetry
 from observability.logger import get_logger
+from observability.tracing import setup_langsmith_tracing
 
 log = get_logger("api")
+
+# Opt-in, OFF by default — see observability/tracing.py. No-op unless
+# LANGSMITH_TRACING=1 + LANGCHAIN_API_KEY + LANGCHAIN_PROJECT are all set.
+# Must run before build_graph() so LangGraph's native tracing integration
+# (which activates process-wide via these env vars) covers every node run.
+setup_langsmith_tracing()
 
 _CKPT_PATH = "outputs/checkpoints.sqlite"
 os.makedirs("outputs", exist_ok=True)

@@ -85,6 +85,13 @@ demo locally end-to-end, or deploying/operating the EC2 + Caddy + Docker Hub clo
 (`docs/deploy/DEPLOY.md` and `docs/deploy/DEPLOY_DEMO.md` are the full runbooks the cheat
 sheets are distilled from, if you need the complete picture or are setting up from scratch.)
 
+### Optional: LangSmith tracing
+
+Off by default, additive to the existing structlog JSON logs. Set `LANGSMITH_TRACING=1` +
+`LANGCHAIN_API_KEY` + `LANGCHAIN_PROJECT` (all three, or it stays off) to get cross-node trace
+visualization in LangSmith. See `docs/LANGSMITH.md` for setup and exactly what it does/doesn't
+change.
+
 ---
 
 ## Project structure

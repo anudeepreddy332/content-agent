@@ -6,6 +6,29 @@ Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing
 ---
 Date: 2026-06-19
 
+Decision: LangSmith tracing IMPLEMENTED (feature/langsmith), closing the "IN PROGRESS / not
+started" entry directly below. Opt-in only: `observability/tracing.py::setup_langsmith_tracing()`
+gates on ALL THREE of `LANGSMITH_TRACING=1`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT` being set;
+missing any one is a true no-op (no langsmith import, no env mutation, no latency). When all
+three are set, it normalizes `LANGSMITH_TRACING` to the literal `"true"` that
+`langchain_core`/`langsmith` actually check for, then returns — LangGraph's native
+LangChain-callback tracing takes over process-wide from there, with zero per-node code changes.
+
+Reason: same as the entry below — closes the Phase 5 / PRODUCTION_READINESS.md Monitoring gap
+cheaply, without building a self-hosted LangFuse stack.
+
+Evidence: tests/test_tracing.py (8 tests, $0) — off-by-default, off-when-any-single-var-missing,
+the "1"-vs-"true" normalization, and two fresh-process (subprocess) import checks proving
+`api.server` boots cleanly both with the flag unset and with dummy (non-functional)
+credentials set. No prompt file touched; `config.PROMPT_VERSION` confirmed unchanged
+(sha-6687240c8cd8). structlog untouched — this is additive, not a replacement.
+
+Status: Accepted (locked). Off by default in every existing deployment (no env var changes
+made to docker-compose.prod.yml/.demo.yml or .env.example) — opt-in per-operator.
+
+---
+Date: 2026-06-19
+
 Decision: LangSmith / cross-node tracing is the next planned workstream, status IN PROGRESS
 (not started — recorded now so it isn't lost between sessions). Scope: instrument all seven
 graph nodes with LangSmith tracing, closing the Phase 5 observability gap that structlog-to-
