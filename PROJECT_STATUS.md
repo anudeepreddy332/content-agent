@@ -1,11 +1,14 @@
 # PROJECT STATUS
 
-_Last updated: 2026-06-18 — P-demo live rehearsal passed_
+_Last updated: 2026-06-19 — cloud deploy live; cleanup + docs-sync in review_
 
 ## Current Phase
 POST-FREEZE phase P2 — COMPLETE. P2.1 (content-frozen HTML HITL gate + html_revise),
 P2.2 (index.html Learning Log auto-update), P2.3 (MAX_ITERATIONS experiment — REJECT, stays 2)
-all closed. main at v6-p2.2-index-auto-update; P2.3 produced no code change (experiment reverted).
+all closed; P2.3 produced no code change (experiment reverted). P-demo (interactive SSE UI +
+cloud publish) is COMPLETE and LIVE on EC2. A production-readiness audit and its do-now fixes
+are merged to main (v7-audit-fixes). A repo cleanup (file reorg + docstring/dead-code pass) and
+this docs-sync pass are on unmerged feature branches awaiting review.
 
 ## Bird's-eye view
 retrieve → draft → verify → reflect → [revise ≤2] → HITL → html_gen → git. Deployed as a
@@ -16,30 +19,41 @@ Qdrant, single-VM compose. SV primary / UVR≤0.15 gate / prompt hash sha-668724
 ## Completed   (append)
 - Grounding arc M1-M5, M6a (prompt hashing). B1-B8 (DECISIONS 2026-06-12 … 2026-06-16).
 - P2.1 second HITL gate, P2.2 index.html auto-update, P2.3 MAX_ITERATIONS reject (2026-06-17).
+- P-demo: SSE streaming UI (api/server.py additive /ui/runs* + static/index.html), cloud
+  publish endpoint, live rehearsal passed (2026-06-18). See DECISIONS 2026-06-17/06-18.
+- Production-readiness audit (docs/PRODUCTION_READINESS.md) + its 4 do-now fixes: PR-only
+  grounding-regression CI gate, uptime-check runbook + ERROR-level publish-failure log,
+  query_kb.py structlog migration, Docker Hub deploy path documented. Tagged v7-audit-fixes.
+- **Cloud deploy LIVE (2026-06-19):** EC2 + Caddy (TLS reverse proxy) + Docker Hub
+  (`anudeepreddy332/content-agent:demo`, built via `docker buildx --platform linux/arm64
+  --push`, pulled on the box per docs/deploy/DEPLOY_DEMO.md's primary path) + sslip.io for TLS
+  without real DNS. Live demo: https://54-221-24-43.sslip.io — the app container has no direct
+  public port; Caddy is the only public surface (docker-compose.demo.yml `!reset` on `ports`).
+- Repo cleanup (feature/cleanup, unmerged): 93 tracked files (down from ~140) — deleted 9
+  tmp/ scratch scripts + 29 stale benchmark JSON dumps + 2 dead docs + 1 orphaned prompt;
+  relocated root markdown into docs/ + docs/deploy/, retrieval-baseline evidence + kept-for-
+  record scripts into docs/archive/ + scripts/archive/ + tools/archive/; fixed 5 docstring/
+  behavior mismatches and removed 3 dead imports in scripts/+tools/. Docker build re-verified
+  green after the reorg.
 
 ## Currently active
-DEMO (P-demo) — interactive live front-end. CODE COMPLETE + TESTED + REHEARSED LIVE. One
-operator step remains (AWS deploy) before this is merge-ready.
-- Built: SSE streaming surface on the API (api/server.py, additive /ui/runs* + GET
-  /ui/runs/{id}/events) + self-contained SPA (static/index.html) served at GET /. Shows each
-  node live, both HITL gates inline, published-link panel. See DECISIONS 2026-06-17 (P-demo).
-- Tested: tests/test_api_stream.py (3 tests); full suite 43 passed ($0); local boot smoke OK.
-  Frozen poll API + all prior tests untouched; SQLite single-worker invariant preserved.
-- DONE — operator steps:
-  1. Netlify: tmw-demo-site.netlify.app deployed from themachinist-website-fork.
-  2. Local rehearsal PASSED 2026-06-18: topic "Why batch normalization speeds up training"
-     through both gates, grounding 0.773, $0.0066, git_status=merged (local merge only, no
-     agent push), human `git push origin main` on the fork, article + Learning Log card
-     confirmed live (200). See DECISIONS 2026-06-18 (P-demo rehearsal).
-- REMAINING (operator, needs AWS account/credentials):
-  3. AWS deploy of the validated container (docker-compose.prod.yml) for a persistent public
-     URL — today the demo only runs while a human has the server up locally.
+Docs-sync (feature/docs-sync, off feature/cleanup, unmerged): bringing README.md,
+PROJECT_STATUS.md (this file), DECISIONS.md, architecture.md, agent.md, .gitignore, and the
+deploy docs in line with the cleanup reorg + cloud deploy. Next planned workstream after this
+merges: LangSmith/cross-node tracing (see DECISIONS.md).
 
 ## Current blocker
-None.
+None. Reminder carried from feature/cleanup: the Docker image was rebuilt and verified to
+build locally after the reorg, but if any further code changes land before the image is
+re-pushed to Docker Hub, re-push and re-pull-test on EC2 before trusting the live demo URL.
 
 ## Repository state
-- main: v6-p2.2-index-auto-update + P2.3 revert (d301ed2) + P-demo (this merge).
+- main: v7-audit-fixes (production-readiness audit + do-now fixes + cheatsheet docs merged).
+- feature/cleanup and feature/docs-sync: both unmerged, this status reflects their content.
+- Current file tree (post-cleanup): see README.md's "Project structure" section for the full
+  layout — docs/ (CASE_STUDY, cheatsheets, audit report), docs/deploy/ (DEPLOY*, RECOVERY),
+  docs/archive/ (gate reports, retrieval-eval evidence), scripts/archive/ + tools/archive/
+  (kept-for-record / blocked-dependency code). Dockerfile/compose/Caddyfile stayed at root.
 - scripts/archive/p2_3_analyze.py, scripts/archive/p2_3_reach.py kept for the record (moved
   into scripts/archive/ during the feature/cleanup reorg); no production code change from P2.3.
 - Standing limitations unchanged (FREEZE.md): B4 registry volatility (now spans 2 pause

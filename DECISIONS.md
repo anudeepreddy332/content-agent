@@ -4,6 +4,77 @@ Purpose: Prevent future chats from re-litigating solved problems.
 Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing architecture changes.
 
 ---
+Date: 2026-06-19
+
+Decision: LangSmith / cross-node tracing is the next planned workstream, status IN PROGRESS
+(not started — recorded now so it isn't lost between sessions). Scope: instrument all seven
+graph nodes with LangSmith tracing, closing the Phase 5 observability gap that structlog-to-
+stdout (M5) does not cover — M5 makes a single run reconstructable from telemetry alone, but
+does not give cross-run/cross-node trace visualization or latency-breakdown tooling.
+
+Reason: agent.md Phase 5 names LangFuse/LangSmith monitoring as unstarted; PRODUCTION_READINESS.md
+independently flags Monitoring as MISSING (no dashboards/alerting anywhere in the repo). Tracing
+is the cheapest of the two to add given structlog already emits structured per-node events.
+
+Alternatives Considered: Self-hosted LangFuse (heavier ops burden, a service to deploy/maintain
+on the same EC2 box already running the demo) vs. LangSmith (hosted, lower setup cost) — leaning
+LangSmith for that reason, not yet decided.
+
+Status: IN PROGRESS / not started. No code changes yet. Revisit this entry when work begins.
+
+---
+Date: 2026-06-19
+
+Decision: P-demo cloud deploy LIVE. EC2 (Ubuntu, Graviton/arm64) + Caddy (automatic TLS reverse
+proxy, no manual cert management) + Docker Hub (`anudeepreddy332/content-agent:demo`) + sslip.io
+(wildcard DNS-as-a-service, avoids needing a real domain for a demo). Live URL:
+https://54-221-24-43.sslip.io.
+
+Reason: the local-server-only demo (2026-06-18 rehearsal) required a human to keep a laptop
+process running for anyone to use it. A persistent public URL needed: (a) TLS without manual
+cert hassle -> Caddy's automatic HTTPS; (b) a domain without buying one -> sslip.io's
+IP-embedded wildcard resolution; (c) a deploy that doesn't rebuild the embedding-model-baking
+Docker image on a small EC2 box every time -> build once on a fast machine, push to Docker Hub,
+EC2 only ever pulls (see the next entry).
+
+Evidence: `docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml config` confirms
+the merged config removes `app`'s host port entirely (Caddy is the only public surface) and
+adds `caddy` bound to 80/443, reverse-proxying to `app:8000` over the internal Docker network.
+GET https://54-221-24-43.sslip.io/health returns 200 from the live box.
+
+Tradeoffs: sslip.io ties the URL to the EC2 instance's IP — a new instance (e.g. after a
+stop/start that reassigns the public IP) needs the DNS-equivalent step re-run (see
+docs/deploy/DEPLOY_DEMO.md step 4) and the demo URL changes. Acceptable for a demo; would need
+a real domain + Caddy's same automatic-HTTPS for anything longer-lived.
+
+Status: Accepted (locked). Documented in docs/deploy/DEPLOY_DEMO.md, PROJECT_STATUS.md.
+
+---
+Date: 2026-06-19
+
+Decision: Cloud publish endpoint (POST /ui/runs/{id}/publish) + Caddy/EC2 deploy topology
+ADOPTED. This decision should have been recorded when the code shipped (feature/demo-ui,
+merged to main) and is being backfilled now rather than left as an undocumented gap.
+
+The endpoint is human-triggered (a separate explicit POST, not auto-fired after gate 2) and
+gated on the run's git_status already being "merged"/"tagged_and_merged" — i.e. git_node has
+already done its local merge and already refused to push. The endpoint then runs
+`git push $PUBLISH_REMOTE main` inside the bind-mounted fork clone. git_node itself was NOT
+modified: grep confirms `push` does not appear anywhere in git_node's body, only in this new,
+separate, human-gated endpoint.
+
+Reason: the local-merge-no-autonomous-push property (DECISIONS 2026-06-14/2026-06-16) is the
+project's primary publish safeguard. Adding a real "go live" button to the demo had to extend
+the publish surface without weakening that property — preserved by keeping the push in its own
+endpoint that only succeeds after both HITL gates already passed and git_node already ran.
+
+Evidence: tests/test_api_publish.py (11 tests: 404/409/500/200 paths, mocked subprocess, $0).
+docker-compose.demo.yml verified via `docker compose config` to remove the app's host port
+binding and add Caddy as the sole public entry point (see the deploy-topology entry above).
+
+Status: Accepted (locked, in production on the live demo).
+
+---
 Date: 2026-06-18
 
 Decision: DEMO (P-demo) live rehearsal PASSED end to end against the fork. Netlify site

@@ -143,9 +143,9 @@ used in the earlier manual rehearsal:
 If `PUBLISH_REMOTE=demo` doesn't exist yet on the fork clone:
     git -C ~/tmp/tmw-fork remote add demo git@github.com:anudeepreddy332/themachinist-website-fork.git
 
-## Uptime monitoring (manual, infra-side — PRODUCTION_READINESS.md item 2)
+## Uptime monitoring (manual, infra-side — docs/PRODUCTION_READINESS.md item 2)
 There is no dashboard or metrics endpoint in this project (deliberately out of scope — see
-PRODUCTION_READINESS.md's Monitoring section). The one thing worth having for an unattended
+docs/PRODUCTION_READINESS.md's Monitoring section). The one thing worth having for an unattended
 demo is an external check that someone notices if the box or the app goes down. Set this up
 once, by hand, in a free uptime service (UptimeRobot, Better Stack, or similar):
 
