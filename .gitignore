@@ -61,3 +61,13 @@ tmp/
 # (feature/cleanup) because docs/ now holds real, tracked documentation (CASE_STUDY,
 # cheatsheets, audit report, deploy runbooks, archived gate reports). docs/.DS_Store
 # is still excluded by the .DS_Store rule above.
+
+# --- demo / cloud-publish runtime artifacts (docs/deploy/DEPLOY_DEMO.md) ---
+# The fork clone is the demo's publish target, bind-mounted into the app container at
+# /app/fork. It holds a live git working tree with its own push credentials in
+# fork-clone/.git/config — never commit it.
+fork-clone/
+# Deploy-time compose override that pins the app service to a registry image tag
+# (anudeepreddy332/content-agent:demo) instead of building from source. Documented inline
+# in DEPLOY_DEMO.md and recreated per-deploy on the EC2 box; not meant to be tracked here.
+docker-compose.image.yml
