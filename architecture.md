@@ -21,12 +21,13 @@ themachinist.org, optionally pushed to a feature branch on the themachinist-webs
 [You: topic + intent]
         │
         ▼
-[DRAFT NODE] — DeepSeek generates a structured 4-section draft
-        │       (NOTE: drafting is currently BLIND to retrieval — it writes
-        │        before any source is fetched. M2 will make this source-aware.)
-        ▼
 [RETRIEVE NODE] — Tavily (web, with 7-day cache + freshness gate)
         │          + Qdrant KB (dense + BM25 + RRF, evergreen concepts)
+        ▼
+[DRAFT NODE] — DeepSeek generates a structured 4-section draft, source-aware:
+        │       reads web_sources/kb_results and is instructed to assert only
+        │       what the retrieved sources can support (M3 LOCKED 2026-06-09,
+        │       see DECISIONS.md — retrieve-then-draft is now PERMANENT).
         ▼
 [VERIFY NODE] — Every factual claim extracted and scored for source grounding (0.0–1.0)
         │
@@ -115,18 +116,9 @@ class AgentState(TypedDict):
 
 ## 3. Node Definitions (verified against agent/nodes.py)
 
-### 3.1 draft_node
-- Input: `topic`, `series_context`, `card_id`, `hitl_feedback` (on revision).
-- Action: Calls DeepSeek with `prompts/draft_system.md` to produce a 4-key `draft_sections`
-  dict (`problem_framing`, `technical_dive`, `code_snippets`, `takeaways`). Parses JSON,
-  strips code fences, degrades gracefully on parse failure (preserves raw for debugging).
-- Output: `draft_sections`, `draft_markdown`, increments `iterations`, accrues tokens/cost/latency.
-- Current reality: does NOT read `web_sources` or `kb_results`. The draft is written before
-  retrieval and on every revision iteration. This is the leading root cause of unsourced
-  claims and is the target of M2 (grounding-aware drafting).
-
-### 3.2 retrieve_node
-- Input: `topic`, `draft_sections.problem_framing` (preview for KB query), `error_log`.
+### 3.1 retrieve_node (runs FIRST — entry point, M3 locked 2026-06-09)
+- Input: `topic`, `draft_sections.problem_framing` (preview for KB query, empty on iteration 1),
+  `error_log`.
 - Action:
   1. Tavily search over 3 fixed query angles (`explained technical`,
      `failure modes limitations production`, `implementation Python example`),
@@ -137,6 +129,19 @@ class AgentState(TypedDict):
 - Output: `web_sources`, `kb_results`, `latency_ms`, `error_log`.
 - Tools: `web_search` (Tavily), `query_kb` (Qdrant). Tavily errors are caught per-query
   into `error_log` and do not crash the node.
+
+### 3.2 draft_node (runs SECOND, source-aware since M3)
+- Input: `topic`, `series_context`, `card_id`, `hitl_feedback` (on revision), `web_sources`,
+  `kb_results`, `grounding_report` (on revision, M4 grounding feedback).
+- Action: Calls DeepSeek with `prompts/draft_system.md` to produce a 4-key `draft_sections`
+  dict (`problem_framing`, `technical_dive`, `code_snippets`, `takeaways`). Builds a
+  "GROUNDING SOURCES" block from `web_sources`/`kb_results` and instructs the model to assert
+  specific claims only where a source supports them, generalizing otherwise. On revision
+  iterations, also injects the previous iteration's unverified claims with ground/generalize/cut
+  instructions (M4). Parses JSON, strips code fences, degrades gracefully on parse failure
+  (preserves raw for debugging).
+- Output: `draft_sections`, `draft_markdown`, `m4_feedback_claims`, increments `iterations`,
+  accrues tokens/cost/latency.
 
 ### 3.3 verify_node
 - Input: `draft_markdown`, `web_sources`, `kb_results`.
@@ -360,16 +365,20 @@ Step labels below are historical. Current planning uses the milestone IDs in age
 | 5 | in progress | FastAPI wrapper, failure injection (5 fault modes) — now tracked as B4 / B2 |
 | 6 | planned | app container, compose app service, cloud — now tracked as B5 |
 
-Active milestone: M1 (retrieval freshness baseline). Next: M2 (grounding-aware drafting).
+M1-M6 and B1-B9 are all complete (see PROJECT_STATUS.md / agent.md for current status; this
+table's step labels are historical and superseded by the milestone roadmap).
 
 ---
 
 ## 13. Known contradictions and current-reality notes (with scheduled fix)
 
 These are real gaps between this contract's intent and current behavior. Each has an owning milestone.
+Item 1 below (drafting blind to retrieval) was the original #1 here and is RESOLVED — M3
+(2026-06-09, DECISIONS.md) permanently locked retrieve-then-draft; see §1 and §3.1-3.2 above.
+Items 2-5 are carried forward unrenumbered from the original audit; check PROJECT_STATUS.md/
+agent.md before assuming any of them are still open, since M6/B1/B4 are recorded as complete
+there and this list has not been re-audited line-by-line against that.
 
-1. Drafting is blind to retrieval (draft runs before retrieve, never reads sources). Leading
-   root cause of unsourced claims. Fix: M2 (grounding-aware drafting).
 2. Multi-format ingest is non-functional on the declared runtime: `pyproject.toml` requires
    Python >=3.14, Docling requires 3.11–3.13. Only `.md`/`.txt` ingest works today.
    Fix: M6 (pin runtime to 3.13 or drop Docling and document `.md`/`.txt`-only).
