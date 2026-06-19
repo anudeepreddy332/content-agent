@@ -36,3 +36,57 @@ jobs:
       - run: uv run pytest tests/ -v
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+  # PRODUCTION_READINESS.md item 1: a grounding-regression gate that actually runs on
+  # every PR (not just on manual workflow_dispatch like eval.yml's full benchmark sweep).
+  # Scoped to ONLY the golden verifier fixture (~$0.02, no Qdrant needed) to keep this
+  # cheap enough to run unconditionally. The full benchmark.py --gate sweep stays in
+  # eval.yml, manual, because it's a 20-topic real-pipeline run (real $ + real minutes).
+  # PR-only (not on push to feature branches) to avoid burning API credits on every commit.
+  eval-gate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # Secrets cannot be read directly in an `if:` conditional (GitHub Actions
+      # restriction), so detect presence via an env-to-output step. Forks and local
+      # clones of this repo won't have DEEPSEEK_API_KEY configured — the job must
+      # skip cleanly there instead of failing CI with a confusing auth error.
+      - name: Check for DEEPSEEK_API_KEY secret
+        id: secret_check
+        env:
+          KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Skip notice — DEEPSEEK_API_KEY not configured
+        if: steps.secret_check.outputs.has_key == 'false'
+        run: |
+          echo "::notice::DEEPSEEK_API_KEY is not set as a secret in this repository, \
+          so the grounding-regression gate is skipped. This is expected on forks or \
+          local clones; the gate runs for real on PRs against the upstream repo, which \
+          has the secret configured. No CI failure — this job exits 0."
+      - uses: astral-sh/setup-uv@v5
+        if: steps.secret_check.outputs.has_key == 'true'
+        with:
+          enable-cache: true
+      - run: uv python install 3.14
+        if: steps.secret_check.outputs.has_key == 'true'
+      - run: uv sync
+        if: steps.secret_check.outputs.has_key == 'true'
+      # Real, merge-blocking gate: evals/verifier_golden_test.py exits 1 if grounding
+      # accuracy < 11/12 or specificity accuracy < 10/12 over its 12 fixed claims.
+      # This DOES require the repo's branch-protection rule for `main` to list
+      # "eval-gate" as a required status check to actually block a merge on failure;
+      # the workflow job failing is necessary but not sufficient without that setting.
+      - name: "Grounding-regression gate: verifier golden fixture (>=11/12, >=10/12)"
+        if: steps.secret_check.outputs.has_key == 'true'
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: uv run python evals/verifier_golden_test.py
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
