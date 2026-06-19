@@ -95,6 +95,46 @@ used in the earlier manual rehearsal:
 If `PUBLISH_REMOTE=demo` doesn't exist yet on the fork clone:
     git -C ~/tmp/tmw-fork remote add demo git@github.com:anudeepreddy332/themachinist-website-fork.git
 
+## Uptime monitoring (manual, infra-side — PRODUCTION_READINESS.md item 2)
+There is no dashboard or metrics endpoint in this project (deliberately out of scope — see
+PRODUCTION_READINESS.md's Monitoring section). The one thing worth having for an unattended
+demo is an external check that someone notices if the box or the app goes down. Set this up
+once, by hand, in a free uptime service (UptimeRobot, Better Stack, or similar):
+
+1. Create a new **HTTP(s)** monitor.
+2. URL to monitor: `https://<DEMO_DOMAIN>/health` (the same `DEMO_DOMAIN` from step 4 above —
+   e.g. `https://3-91-12-44.sslip.io/health`). `/health` is unauthenticated by design
+   (`api/server.py`), safe for an external checker to hit unauthenticated.
+3. Expected response: HTTP `200` with JSON body `{"status": "ok"}`. Configure the monitor's
+   "keyword" or "response contains" check (if the service supports it) to look for `"ok"`, not
+   just the status code — a reverse-proxy misconfiguration that returns a 200 error page from
+   Caddy itself would otherwise pass a status-code-only check.
+4. Check interval: 5 minutes is plenty for a demo (this is not a paged production SLA).
+5. Alert destination: your own email/SMS/Slack webhook, whatever the free tier offers.
+6. **What an alert means:** either the EC2 instance is down, the `app` or `caddy` container
+   crashed/exited, or Caddy can't reach `app` over the internal network. It does NOT mean a
+   *run* failed (a bad DeepSeek/Tavily call doesn't take `/health` down) — for that, see the
+   log-based check below. First response: `ssh` in and run
+   `docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml ps` to see which
+   container is unhealthy, then check its logs.
+
+This is infra configuration, not code — there is nothing to commit for it beyond this runbook
+step. No dashboard, no metrics pipeline: a single uptime check is the entire monitoring surface
+for this demo, intentionally.
+
+## Log-based publish-failure signal
+`api/server.py` logs `api.publish_failed` at **ERROR** level (structlog, JSON to stdout) any
+time a run's `git_status` ends up `"failed"` after a publish attempt — distinct from
+`git_node`'s own lower-severity log lines, specifically so it's grep-able:
+
+    docker compose -f docker-compose.prod.yml -f docker-compose.demo.yml logs app \
+        | grep '"event": "api.publish_failed"'
+
+There is no alerting pipeline wired to this (that would be the dashboard/metrics work this
+project deliberately doesn't have) — it exists so that if you ever do add a log-shipping
+alert (e.g. a Datadog/Better Stack log forwarder watching for this exact event string), the
+signal is already there to hook into.
+
 ## Security posture (demo, additive to DEPLOY.md)
 - The app container is never directly publicly reachable — Caddy is the only public port,
   reverse-proxying over the internal Docker network.
