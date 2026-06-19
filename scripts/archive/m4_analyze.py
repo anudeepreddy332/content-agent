@@ -1,7 +1,7 @@
 """M4 analysis: per-cell means of iteration-1 vs iteration-2 verify metrics.
 
 Usage:
-    uv run python scripts/m4_analyze.py [min_iso_timestamp]
+    uv run python scripts/archive/m4_analyze.py [min_iso_timestamp]
 
 Selects outputs/runs/*.json with experiment_flags.m4_force_revise == "1" and
 exactly 2 iteration_metrics entries, optionally at/after min_iso_timestamp.

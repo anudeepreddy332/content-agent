@@ -76,7 +76,6 @@ def ingest_document(path: str | Path) -> list[dict]:
         List of {text, source, format, chunk_index} dicts.
         [] if file not found, format unsupported, or parse failed.
     """
-    import tiktoken
     path = Path(path)
 
     if not path.exists():
@@ -103,6 +102,11 @@ def ingest_document(path: str | Path) -> list[dict]:
             print(f"[document_ingest] Empty output from Docling for: {path.name}")
             return []
         return _chunk(text, path.stem, path.suffix.lower().lstrip("."))
-    except ImportError as e:
+    except Exception as e:
+        # Broad on purpose: the module docstring promises "never raises, all
+        # errors logged" for the whole public interface, not just the
+        # Docling-missing case. A narrower `except ImportError` here would let
+        # a real Docling parse failure (corrupt file, unsupported sub-format)
+        # propagate and break that contract.
         print(f"[document_ingest] ERROR processing {path.name}: {e}")
         return []

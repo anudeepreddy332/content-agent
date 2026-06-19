@@ -1,3 +1,16 @@
+"""
+Single end-to-end pipeline run, auto-approved at both HITL gates, asserting the
+output is sane rather than just "didn't crash" — a cheap (~$0.01) regression
+check for "did the last change quietly break draft/grounding/HTML generation."
+
+Usage:
+    uv run python scripts/smoke_test.py
+
+Exit code 0 + "SMOKE PASS" on success; exit code 1 + "SMOKE FAIL" with a list
+of specific failures (empty draft, missing/zero grounding score with no
+error_log, cost over $0.05, missing telemetry file, unreplaced HTML
+placeholders, missing/too-short rendered HTML on disk).
+"""
 import sys
 import os
 import uuid
@@ -9,6 +22,9 @@ from main import _write_telemetry
 
 
 def smoke_test():
+    """Run one full pipeline pass (HITL_AUTO_APPROVE=1) and assert the result
+    looks like a real article, not just a non-crashing run. Exits the process
+    with 0/1 — see module docstring for the exact checks."""
     initial_state = {
         "topic": "Gradient Descent",
         "slug": "gradient-descent-smoke",
@@ -51,7 +67,7 @@ def smoke_test():
     if grounding < 0:
         failures.append("grounding_score missing from result")
     elif grounding == 0 and not result.get("error_log"):
-        failures.append(f"grounding_score is 0 with no error_log — silent failure")
+        failures.append("grounding_score is 0 with no error_log — silent failure")
 
     if result.get("total_cost_usd", 0) >= 0.05:
         failures.append(f"cost exceeded: ${result['total_cost_usd']:.4f}")
