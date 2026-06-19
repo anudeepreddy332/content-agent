@@ -83,11 +83,11 @@ automatic enforcement: the grounding-quality gate is opt-in, not a merge require
   middleware that auto-attaches it, so any log line where a developer forgets to pass
   `run_id=...` (none currently, but nothing enforces it) silently drops out of reconstructability.
 - No external log sink: logs go to container stdout only (`docker-compose.prod.yml` has no
-  logging driver override, `DEPLOY.md` line 55 explicitly says structlog-to-stdout "IS the log
+  logging driver override, `docs/deploy/DEPLOY.md` line 55 explicitly says structlog-to-stdout "IS the log
   sink; a platform collector ingests it" — i.e. log persistence beyond `docker logs` is assumed
   to be the operator's problem and is not configured anywhere in this repo).
 - B4 limitation (documented, not hidden): the in-memory `REGISTRY` in `api/server.py` is not
-  rehydrated from the SqliteSaver checkpoint on restart (`FREEZE.md` item 1, `DEPLOY.md`
+  rehydrated from the SqliteSaver checkpoint on restart (`FREEZE.md` item 1, `docs/deploy/DEPLOY.md`
   lines 42-52) — a paused run's HTTP-visible state is lost on restart even though the
   underlying LangGraph checkpoint survives. This is a real, acknowledged gap in
   reconstructability for in-flight (not completed) runs specifically.
@@ -211,7 +211,7 @@ the strongest section of the audit.
   at all), so in the demo deployment Caddy is the *only* process with a public-facing port.
 - Secrets never reach the image or git history: `.dockerignore` excludes `.env` (line 1) and
   `*.md` generally; `.gitignore` excludes `.env`; `.env.example` documents required vars without
-  values. The fork's push credential is documented (`DEPLOY_DEMO.md` lines 33-36) to live only
+  values. The fork's push credential is documented (`docs/deploy/DEPLOY_DEMO.md` lines 33-36) to live only
   in `fork-clone/.git/config` on the VM, explicitly never in `.env` or a compose file — this is
   a stated design constraint, not yet independently verifiable from this repo alone since the
   fork-clone directory is host-side and out of scope.
@@ -221,7 +221,7 @@ the strongest section of the audit.
   `chown -R appuser:appuser /app` to the narrower
   `chown -R appuser:appuser /app/.cache /home/appuser` — this is a *more* least-privilege
   change (the bind-mounted `outputs/`/`fork-clone/` directories get their permissions from the
-  host-side `chown -R 10001:10001` in `DEPLOY.md`/`DEPLOY_DEMO.md`, not from the image), and the
+  host-side `chown -R 10001:10001` in `docs/deploy/DEPLOY.md`/`docs/deploy/DEPLOY_DEMO.md`, not from the image), and the
   commit message states it was tested against a real EC2 deployment.
 - Prompt-injection surface is documented, not silently ignored: retrieved web/KB content and
   the user-supplied topic both flow into LLM prompts unsanitized (by design — sanitizing would
@@ -269,8 +269,8 @@ than broken.
 ## 6. Deployment — PARTIAL
 
 **Covered and verified:**
-- Two deployment runbooks exist and are detailed enough to follow: `DEPLOY.md` (single-VM,
-  loopback-only, SSH-tunnel access — the original freeze posture) and `DEPLOY_DEMO.md`
+- Two deployment runbooks exist and are detailed enough to follow: `docs/deploy/DEPLOY.md` (single-VM,
+  loopback-only, SSH-tunnel access — the original freeze posture) and `docs/deploy/DEPLOY_DEMO.md`
   (adds Caddy + a public port for the demo, written and verified as part of this session's
   prior work). Both correctly call out the uid-10001 bind-mount chown requirement and the B4
   registry-volatility limitation.
@@ -309,7 +309,7 @@ than broken.
   `docker hub|dockerhub|docker\.io|registry|ECR` (excluding the unrelated B4 "in-memory
   registry" hits) finds nothing. There is no CI job that builds and pushes an image anywhere
   (`ci.yml` only lints and tests Python, it never runs `docker build`). The deployment model in
-  both `DEPLOY.md` and `DEPLOY_DEMO.md` is "clone the repo onto the VM and `docker compose
+  both `docs/deploy/DEPLOY.md` and `docs/deploy/DEPLOY_DEMO.md` is "clone the repo onto the VM and `docker compose
   build` from source" — meaning every deploy rebuilds from a git checkout on the target
   machine rather than pulling a pre-built, scanned, versioned image. This works, but it is not
   the registry-based deployment path the task description's framing ("EC2/Caddy/Docker Hub")

@@ -12,7 +12,7 @@
 # Requires Docker Compose v2.24+ for the `!reset` merge tag below (clears app's host port
 # binding so Caddy is the only public entry point). If your compose version doesn't support
 # `!reset`, drop the `ports:` block from docker-compose.prod.yml's `app` service directly in
-# this demo deployment instead — see DEPLOY_DEMO.md.
+# this demo deployment instead — see docs/deploy/DEPLOY_DEMO.md.
 services:
   caddy:
     image: caddy:2

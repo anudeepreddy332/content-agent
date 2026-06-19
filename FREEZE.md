@@ -12,7 +12,7 @@ v5-b6b8-complete; this commit (v5-freeze) is documentation only.
 - Prompt baseline hash: sha-6687240c8cd8 (metrics comparable only at this hash).
 
 ## How to operate
-- Deploy/recover: DEPLOY.md, RECOVERY.md.
+- Deploy/recover: docs/deploy/DEPLOY.md, docs/deploy/RECOVERY.md.
 - Publish: HITL approval, then a human `git push origin main`. The agent CANNOT push on its own.
 - Rollback: `scripts/rollback_publish.sh <slug>` + supervised push.
 
