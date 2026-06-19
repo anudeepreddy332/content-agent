@@ -28,6 +28,7 @@ htmlcov/
 .cache
 .hypothesis/
 agent.md
+GIT_WORKFLOW.md
 CLAUDE.md
 # Environments & secrets
 .env
@@ -56,3 +57,4 @@ kb/chroma_db/
 *.sqlite-*
 # Scratch analysis / probes.
 tmp/
+docs/
