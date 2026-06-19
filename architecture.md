@@ -217,7 +217,7 @@ def save_to_kb(text: str, source: str, metadata: dict | None = None) -> bool:
     """Qdrant ingest with 400/50 tiktoken chunking. Invalidates the BM25 index.
        NOTE: not yet wired into the pipeline (see §13, self-improvement)."""
 
-# tools/document_ingest.py
+# tools/archive/document_ingest.py.archived
 def ingest_document(path: str | Path) -> list[dict]:
     """Docling multi-format parser (PDF/DOCX/PPTX/XLSX/HTML) + .md/.txt fast path.
        NOTE: Docling is non-functional on Python 3.14 (see §13). .md/.txt work today."""
@@ -236,11 +236,14 @@ Note: the previously listed `tools/verify_claim.py` does not exist. Verification
 - Content: evergreen AI/ML concepts (definitions, formulas, architectures, theory).
 - NOT in KB: recent events, model releases, benchmark numbers, paper findings (those go to Tavily).
 - Chunking: 400 tokens, 50-token overlap (tiktoken cl100k_base), consistent across save and ingest.
-- Multi-format ingest: implemented in `tools/document_ingest.py` but blocked on the runtime (§13).
+- Multi-format ingest: implemented in `tools/archive/document_ingest.py.archived`, but the
+  Docling dependency was dropped at M6 (runtime-blocked on Python 3.14, §13) — kept archived
+  rather than deleted as a reference implementation if Docling's Python support changes.
 - Self-improvement: ingesting HITL-approved articles back into the KB is planned, not yet wired.
 - Seed content: `scripts/ingest.py` against `/kb/seed_docs/` (20 `.md` seed docs committed).
 - Retrieval health (verified): recall@1 0.967, recall@3 1.0, recall@5 1.0, concept-hit 0.867,
-  OOS rejection 0.8 on a 35-query adversarial golden set (`outputs/retrieval_eval_qdrant.json`).
+  OOS rejection 0.8 on a 35-query adversarial golden set
+  (`docs/archive/retrieval-eval-qdrant/retrieval_eval_qdrant.json`).
 
 ---
 

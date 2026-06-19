@@ -85,8 +85,9 @@ Alternatives Considered: Raising the ceiling to 3-4 (rejected on the above); pai
 ceiling with stronger per-iteration grounding feedback (not attempted — M4's unconditional
 grounding-report feedback was already in place and didn't change the verdict).
 
-Evidence: scripts/p2_3_analyze.py, scripts/p2_3_reach.py (kept on this branch for the record,
-not part of the production pipeline). SV noise band +/-7 at n<=3 observed and accounted for.
+Evidence: scripts/archive/p2_3_analyze.py, scripts/archive/p2_3_reach.py (kept for the record,
+not part of the production pipeline; relocated to scripts/archive/ in the feature/cleanup
+reorg). SV noise band +/-7 at n<=3 observed and accounted for.
 
 Tradeoffs: None — code reverted cleanly, no prompt or baseline change (sha-6687240c8cd8
 unaffected).

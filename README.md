@@ -77,7 +77,8 @@ content-agent/
 │   ├── web_search.py        ← Tavily wrapper with 7-day file cache
 │   ├── query_kb.py          ← Qdrant + BM25 hybrid retrieval with RRF
 │   ├── save_to_kb.py        ← Qdrant ingest with chunking
-│   └── document_ingest.py   ← Docling multi-format parser
+│   └── archive/
+│       └── document_ingest.py.archived  ← Docling multi-format parser, runtime-blocked (§13)
 ├── observability/
 │   └── logger.py            ← structlog JSON logger
 ├── kb/
