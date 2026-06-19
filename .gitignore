@@ -57,4 +57,7 @@ kb/chroma_db/
 *.sqlite-*
 # Scratch analysis / probes.
 tmp/
-docs/
+# NOTE: docs/ was previously blanket-ignored here; removed during the cleanup pass
+# (feature/cleanup) because docs/ now holds real, tracked documentation (CASE_STUDY,
+# cheatsheets, audit report, deploy runbooks, archived gate reports). docs/.DS_Store
+# is still excluded by the .DS_Store rule above.
