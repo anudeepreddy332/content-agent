@@ -7,8 +7,9 @@ Tests: does the prompt reliably return a JSON object with:
 Fixed input — not testing content quality, testing output schema stability.
 Run: uv run python evals/prompt_evals/test_reflect_prompt.py
 """
-import sys, os, json
-from json import JSONDecodeError
+import sys
+import os
+import json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 

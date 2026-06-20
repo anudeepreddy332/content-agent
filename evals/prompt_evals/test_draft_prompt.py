@@ -5,7 +5,9 @@ Fixed test inputs — not testing content quality, testing output schema stabili
 Run: uv run python evals/prompt_evals/test_draft_prompt.py
 """
 
-import sys, json, os
+import sys
+import json
+import os
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from openai import OpenAI

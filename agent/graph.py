@@ -26,7 +26,6 @@ Vulnerabilities:
     - Interrupt for HITL (hitl_node) requires graph to be compiled with checkpointer
       in main.py if you want to resume across process restarts. For now, in-process only.
 """
-import os
 from langgraph.graph import StateGraph, END
 from agent.state import AgentState
 from agent.nodes import (

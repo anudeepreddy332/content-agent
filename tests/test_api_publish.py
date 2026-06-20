@@ -58,7 +58,8 @@ def test_publish_409_when_run_still_in_progress(client):
 
 
 def test_publish_success_merged(client, monkeypatch):
-    import api.server as srv, subprocess
+    import api.server as srv
+    import subprocess
     rid = _seed_run(git_status="merged", slug="my-article")
     fake = subprocess.CompletedProcess(args=["git", "push"], returncode=0, stdout="", stderr="")
     monkeypatch.setattr(srv.subprocess, "run", lambda *a, **kw: fake)
@@ -70,7 +71,8 @@ def test_publish_success_merged(client, monkeypatch):
 
 
 def test_publish_success_tagged_and_merged(client, monkeypatch):
-    import api.server as srv, subprocess
+    import api.server as srv
+    import subprocess
     rid = _seed_run(git_status="tagged_and_merged", slug="republished")
     fake = subprocess.CompletedProcess(args=["git", "push"], returncode=0, stdout="", stderr="")
     monkeypatch.setattr(srv.subprocess, "run", lambda *a, **kw: fake)
@@ -80,7 +82,8 @@ def test_publish_success_tagged_and_merged(client, monkeypatch):
 
 
 def test_publish_failure_returns_500_with_git_error(client, monkeypatch):
-    import api.server as srv, subprocess
+    import api.server as srv
+    import subprocess
     rid = _seed_run(git_status="merged", slug="fails")
     fake = subprocess.CompletedProcess(args=["git", "push"], returncode=1,
                                         stdout="", stderr="fatal: authentication failed")

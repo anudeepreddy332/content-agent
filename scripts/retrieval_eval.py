@@ -10,7 +10,8 @@ Usage:
     uv run python scripts/retrieval_eval.py --k 1 3 5 --output retrieval_report.json
 """
 
-import sys, json
+import sys
+import json
 import argparse
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -389,7 +390,7 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(results, indent=2))
 
-    print(f"\nRetrieval Eval Results")
+    print("\nRetrieval Eval Results")
     print(f"{'─' * 50}")
 
     for k in args.k:

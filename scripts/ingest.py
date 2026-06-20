@@ -65,7 +65,7 @@ def ingest_file(filepath: Path) -> bool:
         from tools.document_ingest import ingest_document
     except ImportError:
         print(f"  [skip] Docling not installed — cannot parse {filepath.suffix} files")
-        print(f"         Install with: uv add docling")
+        print("         Install with: uv add docling")
         return False
 
     chunks = ingest_document(filepath)
@@ -124,7 +124,7 @@ def show_stats():
     collection_name = os.getenv("QDRANT_COLLECTION", "machinist_evergreen")
     client = QdrantClient(url=qdrant_url)
 
-    print(f"\nKB Stats")
+    print("\nKB Stats")
     print(f"{'─' * 40}")
     print(f"Backend: Qdrant at {qdrant_url}")
     print(f"Collection: {collection_name}")
@@ -137,13 +137,13 @@ def show_stats():
             # Sample query to confirm retrieval works
             from tools.query_kb import query_kb
             results = query_kb("gradient descent learning rate", n_results=2)
-            print(f"\nSample query: 'gradient descent learning rate'")
+            print("\nSample query: 'gradient descent learning rate'")
             for r in results:
                 preview = r['text'][:120].replace('\n', ' ')
                 print(f"  [{r['distance']:.4f}] {r['source']}: {preview}...")
 
     except Exception:
-        print(f"Total chunks: 0 (collection not found — run ingest first)")
+        print("Total chunks: 0 (collection not found — run ingest first)")
         return
 
 
@@ -173,10 +173,10 @@ def main():
 
     if not source.exists():
         print(f"ERROR: Path does not exist: {source}")
-        print(f"Create the directory and add .md or .txt files to it first.")
+        print("Create the directory and add .md or .txt files to it first.")
         sys.exit(1)
 
-    print(f"\nContent-Agent KB Ingest")
+    print("\nContent-Agent KB Ingest")
     print(f"{'─' * 40}")
 
     if source.is_file():

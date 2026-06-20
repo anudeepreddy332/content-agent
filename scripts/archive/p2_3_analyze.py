@@ -1,7 +1,8 @@
 """P2.3 Phase 1 — MAX_ITERATIONS 2 vs 3 on final SV/UVR. Groups by (topic, arm) via
 experiment_flags.p2_3_max_iter. Reports final SV/UVR, mean iterations, and the fraction
 of treatment runs that actually executed a 3rd pass (lever engagement). Read-only, $0."""
-import json, sys
+import json
+import sys
 from pathlib import Path
 from collections import defaultdict
 
