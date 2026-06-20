@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Last updated: 2026-06-19 — cloud deploy live; cleanup + docs-sync in review_
+_Last updated: 2026-06-20 — LangSmith default-on + token usage/cost attached (feature/langsmith-fixes)_
 
 ## Current Phase
 POST-FREEZE phase P2 — COMPLETE. P2.1 (content-frozen HTML HITL gate + html_revise),
@@ -35,12 +35,18 @@ Qdrant, single-VM compose. SV primary / UVR≤0.15 gate / prompt hash sha-668724
   record scripts into docs/archive/ + scripts/archive/ + tools/archive/; fixed 5 docstring/
   behavior mismatches and removed 3 dead imports in scripts/+tools/. Docker build re-verified
   green after the reorg.
+- Docs-sync, repo cleanup, and opt-in LangSmith tracing (LANGSMITH_TRACING=1 AND-gate) all
+  merged to main.
+- **LangSmith default-on + token usage/cost (2026-06-20, feature/langsmith-fixes, unmerged):**
+  `setup_langsmith_tracing()` now enables on `LANGCHAIN_API_KEY`+`LANGCHAIN_PROJECT` alone (no
+  flag needed); `LANGSMITH_TRACING="0"` force-off override added. `_get_client()` wraps the
+  DeepSeek client with `langsmith.wrappers.wrap_openai()` when tracing is on; `_llm_call()`
+  attaches DeepSeek's real per-token cost to each traced run's `usage_metadata` (LangSmith has
+  no built-in `deepseek-chat` price entry). See DECISIONS 2026-06-20. Off-path verified
+  zero-`langsmith`-import; full suite green (62 passed); smoke test passed with tracing off.
 
 ## Currently active
-Docs-sync (feature/docs-sync, off feature/cleanup, unmerged): bringing README.md,
-PROJECT_STATUS.md (this file), DECISIONS.md, architecture.md, agent.md, .gitignore, and the
-deploy docs in line with the cleanup reorg + cloud deploy. Next planned workstream after this
-merges: LangSmith/cross-node tracing (see DECISIONS.md).
+feature/langsmith-fixes (unmerged) is the tip of work — see Completed above and DECISIONS.md.
 
 ## Current blocker
 None. Reminder carried from feature/cleanup: the Docker image was rebuilt and verified to

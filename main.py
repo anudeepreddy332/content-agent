@@ -219,8 +219,8 @@ def run(topic, card_id, series, auto):
 
     os.environ["HITL_AUTO_APPROVE"] = "1" if auto else "0"
 
-    # Opt-in, OFF by default — see observability/tracing.py. No-op unless
-    # LANGSMITH_TRACING=1 + LANGCHAIN_API_KEY + LANGCHAIN_PROJECT are all set.
+    # Auto-on, OFF by default — see observability/tracing.py. Enables when
+    # LANGCHAIN_API_KEY + LANGCHAIN_PROJECT are set; LANGSMITH_TRACING=0 forces off.
     setup_langsmith_tracing()
 
     slug = _make_slug(topic)

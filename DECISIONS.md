@@ -4,6 +4,42 @@ Purpose: Prevent future chats from re-litigating solved problems.
 Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing architecture changes.
 
 ---
+Date: 2026-06-20
+
+Decision: LangSmith tracing made DEFAULT-ON when configured (feature/langsmith-fixes),
+superseding the 2026-06-19 entry's three-var AND-gate below. `setup_langsmith_tracing()` now
+enables iff `LANGCHAIN_API_KEY` + `LANGCHAIN_PROJECT` are both set; `LANGSMITH_TRACING="0"` is
+a force-off override (any other value, or unset, has no effect — it is no longer required to
+opt in). Also: `agent/nodes.py::_get_client()` wraps the DeepSeek client with LangSmith's
+`wrap_openai()` when tracing is on (DeepSeek's API is OpenAI-compatible), so every `_llm_call()`
+becomes a traced "llm" run with token usage attached; `_llm_call()` then layers this pipeline's
+own DeepSeek per-token pricing (`DEEPSEEK_INPUT_COST_PER_M`/`DEEPSEEK_OUTPUT_COST_PER_M`) onto
+that run's `usage_metadata`, since LangSmith's built-in price table has no `deepseek-chat`
+entry — without it, tokens would show but cost would read as zero.
+
+Reason: parity with the code-agent project, where tracing activates automatically whenever
+LangSmith credentials are present (no separate enable flag), and token usage/cost are visible
+per-trace. The original `LANGSMITH_TRACING=1` AND-gate required an extra flag with no safety
+benefit over the key+project check already being the real gate; cost was previously invisible
+in the LangSmith UI for every traced run because the LLM call path used the raw `openai`
+client (not a LangChain chat model), so no LLM-type run — and no usage_metadata — was ever
+created for it.
+
+Evidence: tests/test_tracing.py (8 tests, $0) — disabled-by-default, disabled-on-partial-config,
+default-on-with-key+project-and-no-flag, force-off-override, `is_tracing_enabled()` state check,
+and two fresh-process (subprocess) import checks. Full suite green (62 passed). Manually verified
+(mocked OpenAI response + patched LangSmith client, $0, no network) that `_attach_usage_to_current_run`
+populates `run.metadata["usage_metadata"]` with `input_tokens`/`output_tokens`/`total_tokens`/
+`total_cost` matching `_cost()`'s own arithmetic. `scripts/smoke_test.py` re-run with tracing OFF
+(the production default) to confirm the unwrapped client path is unaffected: SMOKE PASS,
+cost=$0.0128, grounding=0.75, reflection=7 — consistent with pre-change baselines. No prompt
+file touched; `prompt_version` unchanged (sha-6687240c8cd8). structlog untouched — additive only.
+
+Status: Accepted (locked). Off by default wherever `LANGCHAIN_API_KEY`/`LANGCHAIN_PROJECT`
+aren't set (no change to docker-compose.prod.yml/.demo.yml or .env.example) — auto-on per-operator
+the moment they add credentials, no flag required.
+
+---
 Date: 2026-06-19
 
 Decision: LangSmith tracing IMPLEMENTED (feature/langsmith), closing the "IN PROGRESS / not

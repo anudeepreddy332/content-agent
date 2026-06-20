@@ -1,7 +1,7 @@
-"""Opt-in LangSmith tracing (observability/tracing.py). Proves the OFF-by-default
-gate and that importing api.server never crashes regardless of the flag. $0,
-zero network — setup_langsmith_tracing() only ever sets env vars + logs; it
-never imports or calls the langsmith client itself."""
+"""Auto-on LangSmith tracing (observability/tracing.py). Proves the default-on-when-
+configured gate, the force-off override, and that importing api.server never crashes
+regardless of the flags. $0, zero network — setup_langsmith_tracing() only ever sets
+env vars + logs; it never imports or calls the langsmith client itself."""
 import os
 import subprocess
 import sys
@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from observability.tracing import setup_langsmith_tracing
+from observability.tracing import is_tracing_enabled, setup_langsmith_tracing
 
 _VARS = ("LANGSMITH_TRACING", "LANGCHAIN_API_KEY", "LANGCHAIN_PROJECT")
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -28,40 +28,39 @@ def test_disabled_by_default_with_nothing_set():
     assert "LANGSMITH_TRACING" not in os.environ
 
 
-def test_disabled_when_tracing_flag_missing(monkeypatch):
-    monkeypatch.setenv("LANGCHAIN_API_KEY", "dummy-key")
-    monkeypatch.setenv("LANGCHAIN_PROJECT", "dummy-project")
-    assert setup_langsmith_tracing() is False
-
-
 def test_disabled_when_api_key_missing(monkeypatch):
-    monkeypatch.setenv("LANGSMITH_TRACING", "1")
     monkeypatch.setenv("LANGCHAIN_PROJECT", "dummy-project")
     assert setup_langsmith_tracing() is False
 
 
 def test_disabled_when_project_missing(monkeypatch):
-    monkeypatch.setenv("LANGSMITH_TRACING", "1")
     monkeypatch.setenv("LANGCHAIN_API_KEY", "dummy-key")
     assert setup_langsmith_tracing() is False
 
 
-def test_disabled_when_flag_not_exactly_one(monkeypatch):
-    """Only the literal "1" gates this project's own check (distinct from the
-    "true" string langsmith.utils itself checks for after normalization)."""
-    monkeypatch.setenv("LANGSMITH_TRACING", "true")
-    monkeypatch.setenv("LANGCHAIN_API_KEY", "dummy-key")
-    monkeypatch.setenv("LANGCHAIN_PROJECT", "dummy-project")
-    assert setup_langsmith_tracing() is False
-
-
-def test_enabled_when_all_three_set_and_normalizes_flag(monkeypatch):
-    monkeypatch.setenv("LANGSMITH_TRACING", "1")
+def test_enabled_when_key_and_project_set_with_no_flag(monkeypatch):
+    """Default-on: no LANGSMITH_TRACING flag needed when key+project are present."""
     monkeypatch.setenv("LANGCHAIN_API_KEY", "dummy-key")
     monkeypatch.setenv("LANGCHAIN_PROJECT", "dummy-project")
     assert setup_langsmith_tracing() is True
     # Normalized to what langchain_core/langsmith actually check for.
     assert os.environ["LANGSMITH_TRACING"] == "true"
+
+
+def test_force_off_overrides_key_and_project(monkeypatch):
+    monkeypatch.setenv("LANGSMITH_TRACING", "0")
+    monkeypatch.setenv("LANGCHAIN_API_KEY", "dummy-key")
+    monkeypatch.setenv("LANGCHAIN_PROJECT", "dummy-project")
+    assert setup_langsmith_tracing() is False
+    assert os.environ["LANGSMITH_TRACING"] == "0"
+
+
+def test_is_tracing_enabled_reflects_setup_result(monkeypatch):
+    monkeypatch.setenv("LANGCHAIN_API_KEY", "dummy-key")
+    monkeypatch.setenv("LANGCHAIN_PROJECT", "dummy-project")
+    assert is_tracing_enabled() is False
+    setup_langsmith_tracing()
+    assert is_tracing_enabled() is True
 
 
 def _import_api_server_in_subprocess(env_overrides: dict) -> subprocess.CompletedProcess:
@@ -90,7 +89,6 @@ def test_api_server_imports_with_tracing_dummy_credentials():
     client lazily makes network calls on an actual traced run, not at import
     time, so a bad key surfaces later (if at all), never here."""
     proc = _import_api_server_in_subprocess({
-        "LANGSMITH_TRACING": "1",
         "LANGCHAIN_API_KEY": "dummy-key-not-real",
         "LANGCHAIN_PROJECT": "dummy-project",
     })

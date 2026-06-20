@@ -53,8 +53,8 @@ from observability.tracing import setup_langsmith_tracing
 
 log = get_logger("api")
 
-# Opt-in, OFF by default — see observability/tracing.py. No-op unless
-# LANGSMITH_TRACING=1 + LANGCHAIN_API_KEY + LANGCHAIN_PROJECT are all set.
+# Auto-on, OFF by default — see observability/tracing.py. Enables when
+# LANGCHAIN_API_KEY + LANGCHAIN_PROJECT are set; LANGSMITH_TRACING=0 forces off.
 # Must run before build_graph() so LangGraph's native tracing integration
 # (which activates process-wide via these env vars) covers every node run.
 setup_langsmith_tracing()

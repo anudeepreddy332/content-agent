@@ -37,6 +37,7 @@ from config import (
     LLM_TIMEOUT_S,
 )
 from observability.logger import get_logger
+from observability.tracing import is_tracing_enabled
 import html as html_module
 import re
 import datetime
@@ -49,12 +50,20 @@ REFLECT_SYSTEM = Path("prompts/reflect_system.md").read_text()
 # so that test_resilience.py invalid-key tests work correctly (Phase 3 lesson).
 
 def _get_client() -> OpenAI:
-    return OpenAI(
+    client = OpenAI(
         api_key=os.getenv("DEEPSEEK_API_KEY"),
         base_url=DEEPSEEK_BASE_URL,
         timeout=LLM_TIMEOUT_S,
         max_retries=0,  # tenacity owns retries; SDK-internal retries would stack (3x2=6 attempts)
     )
+    if is_tracing_enabled():
+        # wrap_openai patches .chat.completions.create() to emit a traced "llm" run
+        # per call with token usage attached — DeepSeek's API is OpenAI-compatible,
+        # so the same wrapper works against DEEPSEEK_BASE_URL. No-op import cost
+        # paid only when tracing is actually on.
+        from langsmith.wrappers import wrap_openai
+        return wrap_openai(client)
+    return client
 
 
 @retry(
@@ -88,7 +97,32 @@ def _llm_call(client: OpenAI, **kwargs):
 
     Wait schedule: 2s → 4s → 8s (capped at 10s). Max total wait: ~14s.
     """
-    return client.chat.completions.create(**kwargs)
+    response = client.chat.completions.create(**kwargs)
+    if is_tracing_enabled() and response.usage is not None:
+        _attach_usage_to_current_run(response.usage)
+    return response
+
+
+def _attach_usage_to_current_run(usage) -> None:
+    """Layer DeepSeek's actual per-token price (DEEPSEEK_INPUT_COST_PER_M /
+    DEEPSEEK_OUTPUT_COST_PER_M) onto the current LangSmith run's usage_metadata.
+    wrap_openai already attaches token counts from response.usage, but LangSmith's
+    built-in price table has no entry for "deepseek-chat", so cost would otherwise
+    show as zero — this makes it match the cost this pipeline already tracks
+    internally (see _cost())."""
+    from langsmith.run_helpers import get_current_run_tree
+
+    run = get_current_run_tree()
+    if run is None:
+        return
+    existing = (run.metadata or {}).get("usage_metadata") or {}
+    run.metadata["usage_metadata"] = {
+        **existing,
+        "input_tokens": usage.prompt_tokens,
+        "output_tokens": usage.completion_tokens,
+        "total_tokens": usage.total_tokens,
+        "total_cost": _cost(usage),
+    }
 
 
 
