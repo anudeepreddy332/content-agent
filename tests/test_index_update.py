@@ -1,5 +1,3 @@
-import re
-from pathlib import Path
 import agent.nodes as nodes
 
 GRID = '<div class="articles-grid" id="articlesGrid">'

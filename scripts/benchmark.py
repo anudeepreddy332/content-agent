@@ -10,7 +10,11 @@ Usage:
 
 """
 
-import sys, json, time, click, subprocess
+import sys
+import json
+import time
+import click
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
@@ -153,7 +157,7 @@ def run_benchmark(limit, topic_id, gate):
     out_path.write_text(json.dumps(aggregate, indent=2))
 
     print(f"\n{'═' * 60}")
-    print(f"Benchmark Complete")
+    print("Benchmark Complete")
     print(f"  Successful : {len(successful)}/{aggregate['total_runs']}")
     print(f"  Mean cost  : ${aggregate['mean_cost_usd']:.5f}")
     print(f"  Mean grounding: {aggregate['mean_grounding']:.2f}")
@@ -186,7 +190,7 @@ def run_benchmark(limit, topic_id, gate):
 
     # Gate report trigger
     if len(successful) >= 10:
-        print(f"\nGate criteria met (10+ runs). Write phase4a_gate_report.md.")
+        print("\nGate criteria met (10+ runs). Write phase4a_gate_report.md.")
 
 
 if __name__ == "__main__":

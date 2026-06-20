@@ -1,358 +1,296 @@
-# content-agent — Production Readiness Audit
+# content-agent — Production Readiness Audit (FINAL)
 
-Scope: read-only audit of the committed codebase on `main` (tip `80e6a83`) plus the
-demo/cloud-publish work merged from `feature/demo-ui`. Every claim below cites the file(s)
-it was verified against. Ratings: **COMPLETE**, **PARTIAL** (gap stated precisely), **MISSING**.
+Scope: read-only audit of `main` at tip `9a1ee17` (cleanup + docs-sync + LangSmith-fixes all
+merged), re-run after the prior audit's four "do-now" fixes landed (tag `v7-audit-fixes`) and
+after LangSmith tracing was made default-on with token/cost attached. Every claim cites the
+file(s) it was verified against. Ratings: **COMPLETE**, **PARTIAL** (gap stated precisely),
+**MISSING**.
 
----
+Audit date: 2026-06-20. Suite state at audit time: `uv run pytest tests/` → **62 passed** (9.2s,
+$0, verified this session). Working tree carried 15 files of uncommitted ruff-style cleanups
+(import-splitting, unused-import removal, no-placeholder f-string fixes) — **behavior-neutral**,
+confirmed by reading the diff; they are not part of this audit's findings but should be committed
+or stashed so `main`'s working tree is clean.
 
-## 1. Eval & benchmarking — PARTIAL
-
-**What exists and is real:**
-- `evals/verifier_golden_test.py` — 12 fixed claims (verbatim/paraphrase/absent/false ×
-  substantive/generic), each verified independently against a known source. Real exit code:
-  `sys.exit(0 if (ground_ok >= 11 and spec_ok >= 10) else 1)` (line 117). This is a genuine
-  gate, not a printed suggestion.
-- `scripts/benchmark.py --gate` — runs N topics from `evals/topics.json` (20 topics) through
-  the real CLI, computes per-run UVR, and **fails the process** (`sys.exit(1)`, lines 168-183)
-  if any run errors outright or any run's UVR > 0.15. This is the locked grounding gate from
-  `DECISIONS.md`/`CLAUDE.md`, enforced in code, not just documented.
-- `scripts/check_telemetry_fields.py` — asserts every required telemetry field is present and
-  that derived fields are internally consistent (attribution counts sum to claim count,
-  `source_kind` present on every claim, `chunk_index` present on every KB result). Real
-  `sys.exit(1)` on failure.
-- `.github/workflows/eval.yml` wires all three of the above as sequential gates ("Gate 1/2/3")
-  plus a Qdrant service container and KB ingest step. This is a legitimate, runnable eval
-  pipeline — not vestigial.
-
-**The gap:** `eval.yml` is `on: workflow_dispatch` only (line 3) — it costs real API money
-(documented as "~$0.07" in the workflow name) and is **never triggered automatically**, not on
-push, not on PR. The only workflow that runs automatically on every push/PR is `ci.yml`
-(`.github/workflows/ci.yml`), which runs fatal-tier lint (`ruff check --select E9,F63,F7,F82`,
-line 20) and `pytest tests/` (line 36) — and every test in `tests/` is mocked at $0 (confirmed
-by `tests/conftest.py`'s `FakeLLMClient`, and `os.environ["API_SYNC"]="1"` in
-`tests/test_api_stream.py`/`test_api_publish.py`). **None of the 54 tests in `tests/` touch
-grounding quality, the golden verifier fixture, or the benchmark gate.** A PR that regresses
-the verifier prompt or the grounding rubric can merge to `main` with a fully green CI badge,
-because the only thing that would catch it (`eval.yml`) requires a human to manually click
-"Run workflow."
-
-**Also ad hoc, wired into nothing:** `evals/prompt_evals/{test_draft,test_verify,test_reflect}_prompt.py`
-(schema-stability checks, run manually per their own docstrings) and `scripts/retrieval_eval.py`
-(25-query golden retrieval set, recall@k) are real and well-built but are not referenced by
-either GitHub workflow — they are run by hand and the results live in commit history /
-DECISIONS.md narrative, not in an enforced gate.
-
-**Verdict:** the eval harnesses themselves are complete, correctly designed, and have real
-enforced exit codes — this is well above the median portfolio project. What's missing is
-automatic enforcement: the grounding-quality gate is opt-in, not a merge requirement.
+This supersedes the prior audit (tip `80e6a83`). What changed since then is summarized per
+section under **Since last audit**.
 
 ---
 
-## 2. Observability — PARTIAL
+## Executive summary — the three questions
 
-**What exists and is real:**
-- Structured logging via `structlog` with `JSONRenderer` to stdout (`observability/logger.py`,
-  all 8 lines) — every node (`draft_node`, `retrieve_node`, `verify_node`, `reflect_node`,
-  `git_node`, `html_gen_node`, `html_revise_node`, the routers, `api/server.py`) logs through
-  `get_logger(name)` and consistently includes `run_id` on every call site (verified across
-  `agent/nodes.py`).
-- Prompt-version hashing is real and automatic: `config.py` lines 79-99 compute a SHA-256
-  hash per prompt file at import time (`PROMPT_HASHES`) and a combined `PROMPT_VERSION`; it
-  fails loudly (`FileNotFoundError`) if a prompt file is missing. This is stamped into every
-  telemetry record (`main.py` `_write_telemetry`, lines 48-54) — there is no way for a prompt
-  to change silently without the hash changing.
-- Telemetry completeness: `main.py::_write_telemetry` (lines 31-141) writes per-run JSON with
-  run_id, full grounding_report, full web_sources/kb_results (truncated to 2000 chars each,
-  not just counts), per-iteration `iteration_metrics` (so a 2-iteration revise loop is fully
-  reconstructable, not just the final draft), attribution breakdown, cost, tokens, latency per
-  node, and `error_log`. `scripts/check_telemetry_fields.py` enforces 27 required fields exist
-  — this is a genuine, tested reconstructability contract, not just a wish.
-- Per-iteration evidence: `agent/nodes.py::verify_node` (lines 793-815) appends a full snapshot
-  of that iteration's grounding_report to `iteration_metrics`, specifically because (per the
-  inline comment) the top-level `grounding_report` only reflects the *last* iteration — a real,
-  previously-identified reconstructability bug that was fixed, not just claimed fixed.
+### a. Is this truly production-grade? Would a big-tech CTO accept it as a portfolio piece?
 
-**The gaps:**
-- `tools/query_kb.py` uses bare `print()` for its three error paths (lines 329, 337, 340)
-  instead of the structlog logger every other module uses. These errors (Qdrant search
-  failure, missing rank_bm25, BM25 failure) will not appear in the structured JSON log stream
-  in production — they go to stdout as plain text, breaking the "every run reconstructable
-  from logs" property for retrieval-layer failures specifically.
-- No log correlation/request ID beyond the manually-passed `run_id` kwarg — there is no
-  middleware that auto-attaches it, so any log line where a developer forgets to pass
-  `run_id=...` (none currently, but nothing enforces it) silently drops out of reconstructability.
-- No external log sink: logs go to container stdout only (`docker-compose.prod.yml` has no
-  logging driver override, `docs/deploy/DEPLOY.md` line 55 explicitly says structlog-to-stdout "IS the log
-  sink; a platform collector ingests it" — i.e. log persistence beyond `docker logs` is assumed
-  to be the operator's problem and is not configured anywhere in this repo).
-- B4 limitation (documented, not hidden): the in-memory `REGISTRY` in `api/server.py` is not
-  rehydrated from the SqliteSaver checkpoint on restart (`FREEZE.md` item 1, `docs/deploy/DEPLOY.md`
-  lines 42-52) — a paused run's HTTP-visible state is lost on restart even though the
-  underlying LangGraph checkpoint survives. This is a real, acknowledged gap in
-  reconstructability for in-flight (not completed) runs specifically.
+**Yes, as a single-operator, supervised system — and it is well above the median portfolio
+project.** The distinguishing feature is not the feature list; it is the *discipline*. Reliability
+and security claims are backed by tests that independently verify the behavior in source (retry
+policy asserts exact attempt counts, cost gates assert the LLM client is never called, slug
+sanitization has a closed-alphabet fuzz test, content-freeze discards drifting revisions). The
+publish path has a real, end-to-end-preserved safety property (the agent can merge locally but
+*cannot* push — every live publish needs a human `git push`), and that property is verifiably
+intact even in the new cloud-publish endpoint. The project tracks a calibrated primary metric
+(SV) with prompt-hash comparability, logs structured JSON per node, traces cross-node with
+token/cost, and ships two real runbooks plus a scripted, debugged-against-a-fork rollback.
 
-**Verdict:** completed runs are fully reconstructable from telemetry + logs (and this is
-verified, not just claimed, by `check_telemetry_fields.py`). The two real gaps are the
-inconsistent logging in the KB layer and unrehydrated in-flight run state after a restart.
+A CTO would *not* mistake it for a multi-tenant SaaS — and it doesn't claim to be one. Within its
+declared scope (one operator, one article at a time, human-in-the-loop twice), it is engineered
+to a professional standard, with its limitations named first-class in `FREEZE.md` rather than
+hidden. The honesty of the gap disclosure is itself a senior signal.
+
+### b. Can I claim professional experience with this? What seniority does it demonstrate?
+
+**Yes.** This demonstrates **senior / staff-level individual-contributor** judgment, specifically
+in applied-ML / LLM systems engineering. The evidence isn't "I built an agent" — most candidates
+can say that. It's:
+- *Experimental rigor*: pre-registered A/B experiments with noise bands, frozen-cache protocols,
+  and rejected hypotheses kept on record (query reformulation, blind re-roll, MAX_ITERATIONS>2).
+  This is the single rarest thing to find in a portfolio and it's the strongest interview asset.
+- *Metric design under adversarial conditions*: recognizing that UVR-alone rewards vagueness and
+  constructing SV as a no-loss co-condition is a staff-level measurement insight.
+- *Production hardening as a first-class concern*: failure-injection suite, enforced CI gates with
+  real exit codes, durable HITL via a checkpointer, non-root network-isolated containers, a
+  human-gated publish safeguard.
+
+Honest framing for a resume/interview: *"Designed, hardened, and deployed a grounded LLM content
+pipeline — single-agent LangGraph, FastAPI + durable human-in-the-loop, containerized to EC2 with
+TLS — with a measured grounding metric enforced in CI and a no-autonomous-publish safety property."*
+Do **not** claim multi-tenant scale, high availability, or unattended autonomous operation — the
+system is explicitly none of those, and a sharp interviewer will find the single bearer token and
+the `max_workers=1` executor in five minutes. Claiming the scope you actually built is stronger
+than overclaiming; the rigor is what carries the seniority signal.
+
+### c. Biggest gaps blocking real-world multi-tenant / HA use — fix now vs. defer?
+
+The system is architected for *one* operator. Going multi-tenant/HA is not a hardening pass; it is
+a re-architecture. The load-bearing blockers:
+
+| Gap | Why it blocks multi-tenant / HA | Before demo? |
+|---|---|---|
+| **Single shared bearer token, no per-tenant identity/scoping** (`api/server.py::require_auth`) | No tenant isolation, no per-tenant quotas, no revocation of one tenant without rotating everyone | **Defer** — the demo is single-operator; this is a re-architecture, not a fix |
+| **No rate limiting / per-day spend cap** (`COST_GATE_USD` caps *per-run*, not per-token/day/tenant) | One caller can spin unbounded paid runs; no cost ceiling across runs | **Defer** for supervised demo; **required** before any shared exposure |
+| **`max_workers=1` single executor + single VM** (`api/server.py`, `DECISIONS.md` B4) | No horizontal scale, no HA; runs serialize; the box is a single point of failure | **Defer** — documented in `FREEZE.md`; correct scope cut for a demo |
+| **In-memory `REGISTRY` not rehydrated on restart** (B4, `FREEZE.md` item 1) | A restart/redeploy 404s in-flight paused runs (checkpoint survives, HTTP view doesn't); fatal for always-on multi-tenant | **Defer** — mitigation is "drain before restart"; real fix is post-freeze |
+| **No automated alerting** (uptime check is an operator-provisioned manual runbook) | Unattended operation has no failure signal beyond a human poking the URL | **Defer** for *supervised* demo; **fix** before unattended/multi-tenant |
+| **No CI image build/scan; image built by hand via `buildx`** | No vulnerability scanning or immutable, provenance-tracked supply chain | **Defer** — acceptable for a demo; needed for real prod |
+
+**None of these block a supervised demo.** They block leaving it running unattended for multiple
+strangers. Every one is already disclosed in `FREEZE.md` / `DECISIONS.md` as an accepted scope
+cut — the audit confirms they are *accurately* disclosed, not understated.
+
+**Recommendation: make no further code changes before the demo.** The four prior do-now items are
+done; the remaining gaps are all correct deferrals for the single-operator supervised scope. The
+only housekeeping item is committing/stashing the working-tree lint cleanup. Spending demo-prep
+time on rate limiting or registry rehydration would be polishing capabilities the demo does not
+exercise.
 
 ---
 
-## 3. Monitoring — MISSING
+## 1. Eval & benchmarking — PARTIAL (materially improved)
 
-A repo-wide search for `sentry|prometheus|grafana|datadog|pagerduty|alertmanager|uptime`
-across `*.py`, `*.md`, `*.yml`, `*.toml` returns zero matches. There is:
-- No metrics endpoint (no `/metrics`, no Prometheus client import anywhere).
-- No alerting of any kind — not on cost-gate breaches, not on `git_status: failed`, not on
-  repeated `unverified` spikes, not on the API process being down.
-- No uptime check / external healthcheck wiring. `GET /health` exists (`api/server.py` line
-  249) and the Docker `HEALTHCHECK` directive uses it (`Dockerfile` line 38-39), but that only
-  drives `docker compose ps` / container restart policy (`restart: unless-stopped` in both
-  compose files) — it does not notify a human.
-- No dashboard. The only place aggregate numbers surface is `scripts/benchmark.py`'s printed
-  summary and the JSON files under `outputs/benchmark_results/` — there is no Grafana/Looker/
-  anything consuming them.
+**Since last audit:** the prior audit's #1 do-now ("a grounding-regression gate that actually runs
+on PRs") **shipped**. `.github/workflows/ci.yml` now has an `eval-gate` job (lines 46-91) that runs
+`evals/verifier_golden_test.py` on every `pull_request` to `main`, secret-gated (skips cleanly with
+a `::notice::` on forks/clones without `DEEPSEEK_API_KEY`), ~$0.02/run. The golden fixture's real
+exit code (`sys.exit(0 if ground_ok>=11 and spec_ok>=10 else 1)`) makes it merge-blocking.
 
-**Verdict:** genuinely missing, not partially built. For a single-operator demo/portfolio
-project this is a defensible scope cut (documented nowhere as a cut, though — it's just
-absent), but it is the single most "not production" item in this audit. Anyone running this
-unattended would only discover an outage by trying the demo URL or `docker compose ps`.
+**What's real:** the three enforced eval harnesses (`verifier_golden_test.py`, `benchmark.py
+--gate` with per-run UVR≤0.15, `check_telemetry_fields.py`) all have genuine `sys.exit(1)` gates,
+not printed advisories. `eval.yml` wires all three behind a Qdrant service container. This is a
+legitimate, runnable eval pipeline.
+
+**Residual gaps:**
+- The PR gate covers **only** the verifier fixture (8 LLM calls). The full 20-topic SV/UVR
+  benchmark (`benchmark.py --gate`) is still `workflow_dispatch`-only — a draft-prompt regression
+  that lowers SV across topics without tripping the 12-claim verifier fixture is still not caught
+  automatically. This is a defensible cost/noise trade (SV has a ±7 noise band at n≤3, so gating
+  it would flake), but it means the *comprehensive* grounding gate remains manual.
+- The PR gate is merge-blocking **only if** the repo's branch-protection rule lists `eval-gate` as
+  a required status check — the workflow itself notes this (ci.yml lines 83-85). That's a GitHub
+  setting outside the repo; the audit cannot verify it is configured.
+
+**Verdict:** the cheap, high-frequency regression guard is now load-bearing on PRs — a real
+improvement over "opt-in only." The comprehensive guard stays manual by design. **PARTIAL**, but
+the gap narrowed from "no automatic grounding gate at all" to "only the cheap one is automatic."
+
+---
+
+## 2. Observability — COMPLETE (for the project's scope)
+
+**Since last audit:** two of the prior gaps closed. (1) `tools/query_kb.py`'s three bare `print()`
+error paths are now `log.error`/`log.warning` through the shared structlog logger (lines 333, 341,
+345) — retrieval-layer failures now land in the structured JSON stream like every other module.
+(2) **LangSmith tracing is implemented and default-on when configured** (`observability/tracing.py`,
+`agent/nodes.py::_get_client`): `wrap_openai()` wraps the DeepSeek client when tracing is on so
+every `_llm_call` emits a traced "llm" run, and `_attach_usage_to_current_run` layers DeepSeek's
+real per-token cost onto each run's `usage_metadata` (LangSmith has no `deepseek-chat` price entry,
+so cost would otherwise read zero). This adds cross-node trace visualization + per-call latency and
+token/cost breakdown — exactly the layer structlog-to-stdout did not provide.
+
+**What's real (carried forward, re-verified):** structured JSON logging per node with `run_id` on
+every call site; automatic prompt-hash versioning stamped into every telemetry record (no silent
+prompt drift); per-run JSON with full grounding_report, sources, per-iteration `iteration_metrics`,
+attribution, cost, tokens, per-node latency, error_log; `check_telemetry_fields.py` enforces the
+27-field reconstructability contract with a real exit code.
+
+**Residual gaps (both documented, neither hidden):**
+- No external log sink is *configured in the repo* — logs go to container stdout; `docs/deploy/
+  DEPLOY.md` states stdout "IS the log sink; a platform collector ingests it," making persistence
+  the operator's responsibility. `docker-compose.prod.yml` sets no logging driver.
+- B4: the in-memory `REGISTRY` is not rehydrated from the checkpoint on restart, so in-flight
+  paused runs lose their HTTP-visible state across a restart (the LangGraph checkpoint survives).
+  Real, acknowledged, mitigated by "drain before restart."
+- Tracing is **off unless `LANGCHAIN_API_KEY` + `LANGCHAIN_PROJECT` are set** — not in the prod/
+  demo compose or `.env.example`, so it's per-operator opt-in. On the live demo box it is on.
+
+**Verdict:** completed-run reconstructability is fully verified (`check_telemetry_fields.py`), the
+KB-layer logging inconsistency is fixed, and cross-node tracing with token/cost now exists. The two
+residuals are scoped, documented limitations, not defects. **COMPLETE** for this project's scope.
+
+---
+
+## 3. Monitoring — PARTIAL (up from MISSING)
+
+**Since last audit:** the prior audit's #2 do-now produced (a) an **uptime-check runbook**
+(`docs/deploy/DEPLOY_DEMO.md` "Uptime monitoring" section, lines ~146-170) walking the operator
+through provisioning a free HTTP monitor against `/health`; (b) **ERROR-level, greppable
+publish-failure logs** — `api.publish_failed`/`ui.publish_failed` (`api/server.py` lines 122, 214,
+473), `git.command_error`/`git.unexpected_error` (`agent/nodes.py` lines 1635, 1639); and (c) when
+LangSmith is on, per-node latency and per-run cost are visible in its dashboards.
+
+**What's still missing in-repo:**
+- No automated alerting — the uptime check is *provisioned by hand* by the operator in a
+  third-party service; nothing in the repo fires an alert on cost-gate breach, `git_status:
+  failed`, an `unverified` spike, or the process being down.
+- No metrics endpoint (`/metrics`), no Prometheus client, no in-repo dashboard.
+- `GET /health` + the Docker `HEALTHCHECK` drive only `restart: unless-stopped`; they don't notify
+  a human on their own.
+
+**Verdict:** the *building blocks and the runbook* now exist, and failure events are greppable in
+the structured logs — a real move off "genuinely absent." But the actual monitoring surface is
+still operator-provisioned and manual, with no alerting wired in the repo. For a *supervised* demo
+this is fine. For unattended or multi-tenant operation it remains the single most "not production"
+area. **PARTIAL** — honestly, the lower end of PARTIAL.
 
 ---
 
 ## 4. Reliability — COMPLETE (for the scope it covers)
 
-**What exists and is real, with test evidence:**
-- Retry policy on every LLM call: `agent/nodes.py::_llm_call` (lines 60-91) retries exactly
-  `RateLimitError`, `APIConnectionError`, `APITimeoutError`, `InternalServerError` up to 3
-  attempts with exponential backoff (2s→4s→8s), and explicitly does **not** retry
-  `AuthenticationError`/`BadRequestError` (these can never succeed). Verified by
-  `tests/test_failure_injection.py::test_llm_call_no_retry_on_auth_error` (asserts exactly 1
-  call) and `test_llm_call_retries_rate_limit_then_reraises` (asserts exactly 3 calls then
-  reraise). Tavily has its own identical retry wrapper (`tools/web_search.py::_call_tavily`,
-  lines 67-88).
-- Cost gates enforced at every LLM-leading edge, not just documented: `verify_node` (line 695),
-  `reflect_node` (line 846), `html_gen_node` (line 1180) all check
-  `total_cost_usd >= COST_GATE_USD` and skip the LLM call entirely (not just skip the loop).
-  `route_after_reflect` (line 1659) also checks the gate independently so a costly draft can't
-  loop again even if grounding is bad. Verified by
-  `test_verify_cost_gate_skips_llm_entirely` (asserts the mocked client's `.create` is never
-  called) and `test_route_cost_gate_forces_hitl_over_revision`.
-- Graceful degradation, proven not asserted: `retrieve_node` survives Tavily raising
-  `ConnectionError` (logs to `error_log`, returns `[]`, does not crash) and Qdrant being down
-  (`tools/query_kb.py::_collection_exists` catches `Exception` broadly and returns `False`,
-  so `query_kb` returns `[]`). Both directions tested independently
-  (`test_retrieve_tavily_errors_logged_not_fatal`, `test_query_kb_qdrant_down_returns_empty`,
-  `test_retrieve_survives_kb_down` — the last one specifically proves a KB outage does not
-  affect the (still-working) web path).
-- Malformed LLM output handled without crashing: both `draft_node` and `verify_node` catch
-  `json.JSONDecodeError`/parse failures and degrade to a placeholder/empty result rather than
-  raising — but the raw output is preserved in the degraded output for debugging
-  (`test_draft_malformed_output_degrades_gracefully` asserts the raw text survives into
-  `draft_markdown`). The verifier's tolerant `_extract_json_array` (lines 107-136) has its own
-  three tests including a true-negative (`test_extract_json_array_raises_on_garbage` — garbage
-  in must still raise, not silently return `[]`, so a parse failure is distinguishable from a
-  genuine empty result upstream).
-- The content-freeze guard in `html_revise_node` (lines 1333-1388) is a reliability mechanism,
-  not just a content rule: it computes a word-multiset diff between the original and
-  LLM-revised HTML and **discards** the revision if drift exceeds 2 words or the output isn't
-  valid-looking HTML, falling back to the original — this is tested
-  (`tests/test_api.py::test_html_revise_discards_content_change` and
-  `test_html_revise_applies_layout_only`) and protects against a misbehaving model corrupting
-  already-approved content, not just a prompt-following nicety.
-- `git_node` wraps every git operation in try/except (`GitCommandError` and bare `Exception`,
-  lines 1602-1608) and the `finally` block restores the original branch even on failure
-  (lines 1610-1617) — a failed publish does not leave the target repo on a feature branch.
+**Since last audit:** unchanged in substance; re-verified. The LangSmith wrapping is additive and
+does not touch the retry/cost-gate/degradation paths (`_llm_call`'s `@retry` decorator and the
+cost gates are intact; the wrap happens at client construction, the retry wraps the call).
 
-**One scope-bounded note (not a gap in what's tested, a gap in what's covered):** the new
-`POST /ui/runs/{id}/publish` endpoint (`api/server.py` lines 422-460) has its own retry-free
-`subprocess.run(..., timeout=30)` for the actual `git push` and converts both a timeout and a
-non-zero exit into an HTTP error — but unlike the LLM/Tavily paths, a transient push failure
-(e.g. a momentary network blip to GitHub) is not retried, only surfaced. This is tested for
-correctness (`tests/test_api_publish.py`, 11 tests covering 404/409/500/200 paths) but not for
-resilience — a flaky network during the live demo means clicking "Publish" again, not an
-automatic retry. Given this is a human-triggered, human-watched action (not a background
-process), the lack of retry here is a reasonable design choice, not an oversight, but it is the
-one LLM/Tavily-style failure mode in the new code that doesn't get the same treatment as the
-rest of the pipeline.
+**What's real, with test evidence (re-verified in source):** exact-3-attempt exponential-backoff
+retry on transient LLM errors only, never on auth/bad-request (`_llm_call`, asserted by exact
+call-count tests); cost gates at every LLM-leading edge that skip the call entirely (asserted the
+mocked client is never invoked); graceful degradation on Tavily/Qdrant outage and malformed model
+JSON (each independently tested, raw output preserved for debugging); the content-freeze
+word-multiset guard in `html_revise_node` that discards drifting revisions (tested both
+directions); `git_node` wrapping every git op in try/except with a `finally` that restores the
+original branch on failure.
 
-**Verdict:** COMPLETE for everything the test suite claims to cover, and the test suite's
-claims are independently verifiable in the source (not just asserted in test names). This is
-the strongest section of the audit.
+**Scope note (unchanged):** the human-triggered `POST /ui/runs/{id}/publish` does a retry-free
+`subprocess.run(..., timeout=30)` for the actual `git push` — a flaky network means clicking
+"Publish" again, not an auto-retry. Reasonable for a human-watched action; tested for correctness
+(11 tests), not resilience.
+
+**Verdict:** **COMPLETE** for everything the suite covers, and the suite's claims are independently
+verifiable in source. Still the strongest section. (Availability/scale limits — single worker,
+single VM, registry volatility — are Deployment/HA concerns below, not logic-reliability gaps.)
 
 ---
 
-## 5. Security — PARTIAL
+## 5. Security — PARTIAL (unchanged)
 
-**Covered and verified:**
-- Slug sanitization is allowlist-based, by construction: `main.py::_make_slug` (lines 144-150)
-  strips everything outside `[a-z0-9-]`, collapses repeats, strips leading/trailing `-`, caps
-  at 80 chars. This reaches the filesystem (`html_gen_node`'s `archive_path`, `git_node`'s
-  `dest_path = repo_path/filename`) and git branch/tag names (`feature/article-{slug}`,
-  `v-{date}-{slug}`). Six dedicated regression tests in `tests/test_slug.py` cover path
-  traversal (`../../etc/passwd` → `etc-passwd`), git-ref/shell injection
-  (`feature/../../main; rm -rf /` → `feature-main-rm-rf`), a closed-output-alphabet fuzz test
-  over five adversarial inputs including a null byte, and the empty-slug-must-be-rejected case
-  (enforced by both the CLI's `click.UsageError` and the API's `HTTPException(422, ...)` in
-  `api/server.py` lines 256-258 and 322-324).
-- Auth is fail-closed, not fail-open: `api/server.py::require_auth` (lines 216-222) raises
-  `503` if `API_BEARER_TOKEN` isn't configured at all (refuses to silently allow unauthenticated
-  access) and uses `hmac.compare_digest` (constant-time comparison, not `==`) for the token
-  check. The same fail-closed pattern is independently re-implemented for the two endpoints
-  that take the token via query param instead of header (`ui_events`, `ui_preview`) because
-  `EventSource`/plain links can't set headers — both are tested
-  (`tests/test_api_stream.py::test_sse_requires_token`, the analogous preview test in
-  `test_api_publish.py`).
-- Network isolation: `docker-compose.prod.yml` gives Qdrant no `ports:` mapping at all (line
-  8-19) — it is reachable only as `qdrant:6333` inside the compose network, never from the
-  host or internet. The demo override (`docker-compose.demo.yml`) goes further and removes the
-  app's own host port binding via the compose `!reset` tag (verified by running
-  `docker compose config` during this audit — the merged output for `app` has no `ports:` key
-  at all), so in the demo deployment Caddy is the *only* process with a public-facing port.
-- Secrets never reach the image or git history: `.dockerignore` excludes `.env` (line 1) and
-  `*.md` generally; `.gitignore` excludes `.env`; `.env.example` documents required vars without
-  values. The fork's push credential is documented (`docs/deploy/DEPLOY_DEMO.md` lines 33-36) to live only
-  in `fork-clone/.git/config` on the VM, explicitly never in `.env` or a compose file — this is
-  a stated design constraint, not yet independently verifiable from this repo alone since the
-  fork-clone directory is host-side and out of scope.
-- Non-root container: `Dockerfile` line 32 creates `uid 10001` and runs as that user (line 33).
-  Note this line changed recently (`git log -p` on `Dockerfile` shows commit `884ec8b`,
-  "Modified Run useradd command with app .cache added") from
-  `chown -R appuser:appuser /app` to the narrower
-  `chown -R appuser:appuser /app/.cache /home/appuser` — this is a *more* least-privilege
-  change (the bind-mounted `outputs/`/`fork-clone/` directories get their permissions from the
-  host-side `chown -R 10001:10001` in `docs/deploy/DEPLOY.md`/`docs/deploy/DEPLOY_DEMO.md`, not from the image), and the
-  commit message states it was tested against a real EC2 deployment.
-- Prompt-injection surface is documented, not silently ignored: retrieved web/KB content and
-  the user-supplied topic both flow into LLM prompts unsanitized (by design — sanitizing would
-  defeat the purpose of grounding), and the standing mitigation is that **HITL is mandatory on
-  both gates** (`agent/nodes.py::hitl_node`/`hitl_html_node` both check
-  `HITL_AUTO_APPROVE` and default to interrupt-and-wait; the API forces
-  `os.environ["HITL_AUTO_APPROVE"] = "0"` at import time, `api/server.py` line 42) — a human
-  reads every draft and every rendered HTML before anything reaches git, so an injected
-  instruction in a retrieved source has to survive human review to do anything. This is the
-  documented mitigation in `agent.md`/`DECISIONS.md`/`CLAUDE.md` and it is mechanically true in
-  the current code (verified by reading `hitl_node`/`hitl_html_node` directly, not just citing
-  the docs).
+**Since last audit:** no security item was a do-now and none changed. Re-verified intact:
+allowlist slug sanitization reaching filesystem + git refs (6 regression tests incl. path-traversal
+and a null-byte fuzz); fail-closed bearer auth with `hmac.compare_digest` and a `503` when the
+token is unconfigured (refuses fail-open); Qdrant network-isolated with no host port; demo compose
+removes the app's host port so Caddy is the only public surface; secrets excluded from image and
+git; non-root `uid 10001` container; prompt-injection mitigated by *mandatory* HITL on both gates
+(the API forces `HITL_AUTO_APPROVE=0` at import) — verified mechanically, not just cited.
 
-**Gaps:**
-- No rate limiting anywhere in `api/server.py`. The bearer token gates *who* can call
-  `POST /ui/runs`, but not *how often* — a leaked or guessed-adjacent token (the comparison is
-  constant-time, but tokens aren't rotated or scoped) could spin up unbounded runs, each
-  costing real DeepSeek/Tavily money. The single-worker `EXECUTOR` (`max_workers=1`) bounds
-  *concurrency* but not *queue depth* or *total spend* — `COST_GATE_USD` caps spend per-run, not
-  per-token or per-day.
-- No CORS configuration at all (no `CORSMiddleware` in `api/server.py`). This defaults to
-  same-origin-only from a browser's perspective, which is *accidentally* safe for this
-  same-origin SPA, but it's an absence, not a deliberate policy — there's nothing stopping a
-  future change from needing CORS and someone reflexively setting `allow_origins=["*"]`.
-- `GET /ui/runs/{run_id}/events` and `GET /ui/runs/{run_id}/preview` pass the bearer token as a
-  URL query parameter (`api/server.py` lines 361-369, 397-407) — this is explicitly flagged in
-  the code's own comments as "Query-param tokens can land in access logs; acceptable for a
-  single-user demo," which is an honest, documented tradeoff rather than a hidden gap, but it
-  is a real gap if this token is ever reused for anything beyond the single-operator demo.
-- The publish endpoint's `subprocess.run(["git", "push", remote, "main"], ...)` (line 446)
-  builds an argv list (not a shell string), so it is not shell-injectable via `remote` even
-  though `remote` comes from `os.environ.get("PUBLISH_REMOTE", "origin")` — but `PUBLISH_REMOTE`
-  is operator-set environment, not request input, so this was never a realistic injection
-  vector in the first place; noting it because the task asked for the injection surface to be
-  characterized, not because it's a finding.
+**Gaps (unchanged, none addressed — none were in scope for any milestone):**
+- No rate limiting / per-token / per-day spend cap anywhere in `api/server.py`.
+- No CORS policy (accidentally same-origin-safe for this SPA, but an absence, not a decision).
+- Bearer token passed as a URL query param on `/ui/runs/{id}/events` and `/preview` (EventSource/
+  plain links can't set headers) — flagged in-code as an accepted single-operator tradeoff.
+- Single shared, unrotated, unscoped bearer token — no per-caller identity.
 
-**Verdict:** the security-sensitive paths that were clearly identified and worked (slug
-sanitization, auth, network isolation, non-root, prompt-injection mitigation via mandatory
-HITL) are genuinely solid and test-backed. The gaps are the ones that weren't explicitly in
-scope for any milestone (rate limiting, token scoping/rotation, CORS posture) — absent rather
-than broken.
+**Verdict:** the security-sensitive paths that were *in scope* (sanitization, auth, isolation,
+non-root, injection-via-HITL) are solid and test-backed. The gaps are the multi-tenant/exposure
+concerns (rate limiting, token scoping, CORS) — absent rather than broken, and the correct things
+to *defer* for a single-operator demo but *fix* before shared exposure. **PARTIAL.**
 
 ---
 
-## 6. Deployment — PARTIAL
+## 6. Deployment — PARTIAL (improved)
 
-**Covered and verified:**
-- Two deployment runbooks exist and are detailed enough to follow: `docs/deploy/DEPLOY.md` (single-VM,
-  loopback-only, SSH-tunnel access — the original freeze posture) and `docs/deploy/DEPLOY_DEMO.md`
-  (adds Caddy + a public port for the demo, written and verified as part of this session's
-  prior work). Both correctly call out the uid-10001 bind-mount chown requirement and the B4
-  registry-volatility limitation.
-- Rollback is scripted, not just described: `scripts/rollback_publish.sh` reverts the
-  publish's `--no-ff` merge via `git revert` (handles both the merge-commit case with `-m 1`
-  and the plain-commit fallback case, lines 43-47), requires the operator to type the slug to
-  confirm (line 39-40), and explicitly does **not** auto-push — it prints the push command for
-  the operator to run (lines 57-58), preserving the same human-gated-push posture as publish
-  itself. **Caveat:** this script has no automated test (it's bash, and the test suite is
-  Python/pytest-only) — its correctness is attested in `DECISIONS.md` (2026-06-16 entry) as
-  having been manually validated against a fork twice, including a real bug fix to the original
-  version (the old `rm -f` was deleting articles on a *modification* rollback when it should
-  have restored the prior version). It works because it was debugged against a real repo, not
-  because it's covered by CI.
-- Publish-posture safety is real, not just asserted: `git_node` (`agent/nodes.py` lines
-  1463-1626) has no code path that calls `git push` — grep confirms `push` does not appear
-  anywhere in `git_node`'s body. The only `git push` in the entire codebase is the new
-  `ui_publish` endpoint (`api/server.py` line 446), which is a separate, explicitly
-  human-triggered HTTP endpoint gated on `git_status` already being `merged`/`tagged_and_merged`
-  (i.e., `git_node` already ran and already refused to push). This cleanly preserves the
-  "agent can merge locally, only a human pushes" property end-to-end, including in the new
-  cloud-publish surface — the new endpoint is additive risk surface, but it does not weaken the
-  no-autonomous-publish guarantee, because it still requires a separate explicit POST that only
-  succeeds after a human has already approved both HITL gates.
-- The EC2/Caddy path is real, not aspirational: `docker-compose.demo.yml` was validated during
-  this audit with `docker compose config` (Compose v5.1.4) — the merged config correctly shows
-  `app` with no `ports:` key and a `caddy` service on 80/443 reverse-proxying to `app:8000`.
-  The commit history (`884ec8b`, `80e6a83`, dated after the demo work) and their commit messages
-  ("Demo works on local host and also deployed on aws ec2 instance. tested and working.")
-  indicate this was actually run against a live EC2 instance, not just written and never
-  exercised — though this audit cannot independently re-verify a live EC2 box from the repo
-  alone.
+**Since last audit:** the prior audit's #4 ("decide and either build or drop the Docker Hub path")
+**resolved toward build-and-document**. `docs/deploy/DEPLOY_DEMO.md` and `docs/CHEATSHEET_AWS.md`
+document the registry path as the primary deploy: build once on a fast machine via
+`docker buildx --platform linux/arm64 --push` to `anudeepreddy332/content-agent:demo`, then the EC2
+box only ever *pulls* — avoiding rebuilding the embedding-model-baking image on a small VM. This
+is the path the live demo actually uses (`DECISIONS.md` 2026-06-19).
 
-**Gaps:**
-- **No Docker Hub / registry path exists.** A repo-wide search for
-  `docker hub|dockerhub|docker\.io|registry|ECR` (excluding the unrelated B4 "in-memory
-  registry" hits) finds nothing. There is no CI job that builds and pushes an image anywhere
-  (`ci.yml` only lints and tests Python, it never runs `docker build`). The deployment model in
-  both `docs/deploy/DEPLOY.md` and `docs/deploy/DEPLOY_DEMO.md` is "clone the repo onto the VM and `docker compose
-  build` from source" — meaning every deploy rebuilds from a git checkout on the target
-  machine rather than pulling a pre-built, scanned, versioned image. This works, but it is not
-  the registry-based deployment path the task description's framing ("EC2/Caddy/Docker Hub")
-  implies should exist; if a Docker Hub path was intended, it has not been built.
-- No staging environment in the literal sense. `FREEZE.md` already documents this as a known,
-  accepted gap ("B6 staging/publishing validation — INTENT MET via fork-based validation + HITL
-  promotion gate; literal separate staging-branch environment DEFERRED post-freeze") — the fork
-  itself (`themachinist-website-fork`, Netlify-deployed) plays the staging role for content, but
-  there is no staging deployment of the *application* itself (no separate compose/VM that gets
-  exercised before a prod-equivalent deploy).
-- Rollback is scripted but not drilled in CI — there is no test (manual or automated) that runs
-  `rollback_publish.sh` as part of any pipeline; its correctness rests entirely on the two
-  manual fork validations recorded in `DECISIONS.md`. A future change to `git_node`'s commit
-  message format or branch-naming convention could silently break the script's `--grep` match
-  (line 25) with nothing catching it until an actual rollback is needed.
-- B4 (registry volatility on restart) and single-worker throughput are both carried forward as
-  accepted limitations rather than fixed — correctly disclosed in `FREEZE.md`, but still true
-  today; nothing in the EC2/demo work changes this.
+**What's real (carried forward):** two detailed runbooks (`DEPLOY.md` loopback/SSH-tunnel freeze
+posture, `DEPLOY_DEMO.md` Caddy + public port); scripted human-gated rollback
+(`rollback_publish.sh`, debugged against a fork, no auto-push); the publish-safety property
+preserved end-to-end (grep confirms `git push` appears nowhere in `git_node`; the only push is the
+separate, human-triggered `ui_publish` endpoint gated on `git_status` already being merged); the
+live EC2/Caddy/sslip.io topology validated via `docker compose config` (app has no host port,
+Caddy is the sole public surface).
 
-**Verdict:** the publish-safety property (the single most important "production" guarantee in
-this project) is genuinely solid and verifiably preserved end-to-end including in the new cloud
-path. The deployment *mechanics* (runbook quality, rollback scripting, network posture) are
-good. What's missing is the registry/image-supply-chain piece and CI-verified rollback.
+**Residual gaps:**
+- The registry path is **documented and manually executed**, not **CI-automated or scanned**.
+  `ci.yml` never runs `docker build`; there is no image vulnerability scan, no immutable
+  digest-pinned promotion. The supply chain is "an operator runs `buildx` by hand and pushes."
+- No staging environment for the *application* (the website fork plays content-staging; the app
+  itself has no pre-prod deploy that gets exercised first).
+- `rollback_publish.sh` has no automated test — a future change to `git_node`'s commit-message
+  format or branch naming could silently break its `--grep` match; correctness rests on two manual
+  fork validations in `DECISIONS.md`.
+- B4 registry volatility and single-worker throughput carried forward as accepted limitations.
+
+**Verdict:** the publish-safety guarantee — the single most important production property here — is
+genuinely solid and verifiably preserved end-to-end including in the cloud path. The registry gap
+from the last audit is closed at the "documented + live-executed" level, but not at the "CI-built,
+scanned, immutable" level. **PARTIAL**, improved.
 
 ---
 
-## Pending items — prioritized
+## Gaps table — current state (prioritized)
 
-| # | Item | Blocks production? | Priority | Rough effort |
-|---|------|---------------------|----------|---------------|
-| 1 | Wire a cheap subset of the eval gate into per-PR CI (at minimum: `evals/verifier_golden_test.py`, ~$0.02) so a grounding regression can't merge silently | **Yes** | Do now | 0.5 day (add a `pull_request`-triggered job with a `secrets`-gated cost; or a scheduled nightly run against `main` as a cheaper compromise) |
-| 2 | Any monitoring/alerting at all — at minimum an external uptime check on `/health` and an alert on `git_status: failed` in telemetry | **Yes**, for unattended operation; **No** for a supervised demo | Do now if this runs unattended; defer if always human-watched | 0.5–1 day (e.g. a free uptime-checker pinging `/health`, plus a log-based alert) |
-| 3 | Fix `tools/query_kb.py`'s three `print()` error paths to use the structlog logger like every other module | No | Do now (cheap) | 30 minutes |
-| 4 | Decide and either build or explicitly drop the Docker Hub / image-registry deploy path | No | Defer (current source-build-on-VM path works) | 1 day if built (CI image build + push + VM pulls instead of building) |
-| 5 | Rate limiting / per-token spend cap on `POST /runs` and `POST /ui/runs` | No (single-operator demo; token isn't public) | Defer unless the token is ever shared beyond one operator | 0.5 day |
-| 6 | Add a CI smoke test (or a documented manual checklist with no test) that exercises `scripts/rollback_publish.sh` against a throwaway fork repo | No | Defer | 0.5 day |
-| 7 | Rehydrate the API's in-memory `REGISTRY` from the SqliteSaver checkpoint on startup (closes the B4 limitation) | No (documented, mitigated by "don't restart mid-review") | Defer (already scoped as post-freeze in `FREEZE.md`) | 1–2 days |
-| 8 | Explicit CORS policy decision (even if the answer is "same-origin only, by design") documented in `api/server.py` | No | Defer | 1 hour |
-| 9 | Token-in-query-param exposure on `/ui/runs/{id}/events` and `/preview` — rotate or scope tokens if this demo is ever exposed beyond one operator's own session | No (already disclosed in-code as an accepted tradeoff) | Defer | n/a unless threat model changes |
+| # | Item | Blocks production? | Status since last audit | Priority |
+|---|------|---------------------|--------------------------|----------|
+| 1 | PR-CI grounding gate (verifier fixture) | — | **DONE** (`eval-gate` job) | needs branch-protection rule to be merge-blocking |
+| 2 | query_kb `print()` → structlog | — | **DONE** | — |
+| 3 | Uptime-check runbook + ERROR-level publish-failure logs | — | **DONE** (runbook + greppable logs) | — |
+| 4 | Docker Hub / registry deploy path | — | **DONE** (documented + live) | not CI-automated/scanned |
+| 5 | LangSmith cross-node tracing + token/cost | — | **DONE** (default-on when configured) | off unless creds set |
+| 6 | Full 20-topic SV/UVR benchmark in automatic CI | No | Unchanged (manual `workflow_dispatch`) | Defer (noise-band trade) |
+| 7 | Automated alerting (cost/`git_status: failed`/down) | Yes for unattended; No for supervised | Partially mitigated (greppable ERROR logs + runbook) | Do now *if* unattended; else Defer |
+| 8 | Rate limiting / per-day spend cap on run endpoints | No (single-operator) | Unchanged | Defer until token shared |
+| 9 | CI image build + vulnerability scan + immutable promotion | No | Unchanged | Defer (manual buildx works) |
+| 10 | CI-drilled `rollback_publish.sh` (throwaway-fork smoke) | No | Unchanged | Defer |
+| 11 | Rehydrate API `REGISTRY` from checkpoint on restart (B4) | No (mitigated) | Unchanged | Defer (post-freeze) |
+| 12 | Per-tenant identity / token scoping & rotation | No (single-operator) | Unchanged | Defer (re-architecture) |
+| 13 | Horizontal scale / HA (`max_workers=1`, single VM) | No (one-article editorial use) | Unchanged | Defer (re-architecture) |
+| 14 | Explicit CORS policy decision documented | No | Unchanged | Defer (1h) |
 
-**Overall read:** this is a notably more rigorous project than most portfolio pieces — the
-reliability and security work in particular is backed by real tests that independently verify
-the claims, not just docstrings asserting them. The honest gaps are concentrated in exactly the
-places the task description predicted: monitoring is absent, and the eval gates — while real
-and well-built — are not load-bearing in the automated pipeline that actually decides what
-reaches `main`.
+**Overall read:** all four of the prior audit's do-now items shipped and are verified in source,
+plus LangSmith tracing added a real observability layer. Eval moved from "no automatic grounding
+gate" to "cheap gate is automatic"; Observability is effectively complete for scope; Monitoring
+moved off MISSING but is still manual/operator-provisioned; Reliability and the publish-safety
+property remain the strongest, test-backed guarantees. The honest remaining gaps are exactly the
+multi-tenant / HA / unattended-operation items — all correctly disclosed as accepted scope cuts,
+none of which block a supervised single-operator demo.
+
+---
+
+## Final verdict
+
+**This project is production-ready for a supervised, single-operator demo and is a strong
+senior/staff-level portfolio showcase; the only pre-demo blocker is housekeeping (commit or stash
+the working-tree lint cleanup), and every remaining gap — automated alerting, rate limiting,
+horizontal scale/HA, per-tenant identity, CI-built/scanned images — is an accurately-disclosed,
+correctly-deferred requirement for unattended multi-tenant operation, not for the demo.**
