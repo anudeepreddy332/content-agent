@@ -13,8 +13,6 @@ grounding verification → reflection → human approval → live publish.
 
 📄 [Full case study](https://themachinist.org/content-agent)
 
-Part of the multi-phase agentic AI engineering journey → themachinist.org
-
 ---
 
 ## What this does
