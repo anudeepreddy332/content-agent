@@ -12,11 +12,45 @@ Usage:
 
 import sys
 import json
+import math
 import argparse
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tools.query_kb import query_kb
+
+
+def reciprocal_rank(sources: list[str], expected_set: set[str], max_k: int) -> float:
+    """Reciprocal rank of the first relevant result within the top `max_k`.
+
+    A result at (1-indexed) rank i is relevant iff its source is in
+    `expected_set`. Returns 1/rank of the first relevant hit, or 0.0 if none
+    appears within `max_k`. Pure — no KB/network access.
+    """
+    for i, source in enumerate(sources[:max_k], start=1):
+        if source in expected_set:
+            return 1.0 / i
+    return 0.0
+
+
+def ndcg_at_k(sources: list[str], expected_set: set[str], k: int) -> float:
+    """Normalized DCG@k with binary relevance keyed on source.
+
+    DCG@k = Σ_{i=1..min(k, len(sources))} rel_i / log2(i+1), where rel_i is 1 if
+    the result at rank i has a source in `expected_set` else 0.
+    IDCG@k = Σ_{i=1..min(len(expected_set), k)} 1/log2(i+1) (the ideal ranking
+    puts every relevant source first). Returns DCG/IDCG, or 0.0 when IDCG == 0.
+    Pure — no KB/network access.
+    """
+    dcg = 0.0
+    for i, source in enumerate(sources[:k], start=1):
+        if source in expected_set:
+            dcg += 1.0 / math.log2(i + 1)
+
+    ideal_hits = min(len(expected_set), k)
+    idcg = sum(1.0 / math.log2(i + 1) for i in range(1, ideal_hits + 1))
+
+    return dcg / idcg if idcg > 0 else 0.0
 
 # Golden set - each query has ground truth: which source should appear in top-k
 # and what concepts must be in the returned text.
@@ -279,6 +313,9 @@ def run_retrieval_eval(k_values: list[int] = None) -> dict:
 
     # Initialize results
     results = {f"recall@{k}": 0 for k in k_values}
+    results["mrr"] = 0
+    for k in k_values:
+        results[f"ndcg@{k}"] = 0
     results["concept_hit_rate"] = 0
     results["out_of_scope_rejection_rate"] = 0
     results["per_query"] = []
@@ -287,6 +324,8 @@ def run_retrieval_eval(k_values: list[int] = None) -> dict:
     # Separate counters
     in_domain_queries = 0
     in_domain_recall_hits = {k: 0 for k in k_values}
+    rr_sum = 0.0
+    ndcg_sums = {k: 0.0 for k in k_values}
     concept_eligible = 0
     concept_hits = 0
     oos_eligible = 0
@@ -308,6 +347,8 @@ def run_retrieval_eval(k_values: list[int] = None) -> dict:
             "retrieved_sources": sources,
             "retrieved_distances": distances,
             "recall_at_k": {},
+            "reciprocal_rank": None,
+            "ndcg_at_k": {},
             "concepts_found": [],
             "out_of_scope_violation": False,
         }
@@ -326,6 +367,18 @@ def run_retrieval_eval(k_values: list[int] = None) -> dict:
 
                 if hit:
                     in_domain_recall_hits[k] += 1
+
+            # Rank-sensitive metrics reuse the same retrieved `sources` list —
+            # no extra query_kb call. RR uses the first relevant hit within
+            # max_k; nDCG@k rewards ranking relevant sources higher.
+            rr = reciprocal_rank(sources, expected_set, max_k)
+            rr_sum += rr
+            query_result["reciprocal_rank"] = round(rr, 3)
+
+            for k in k_values:
+                nk = ndcg_at_k(sources, expected_set, k)
+                ndcg_sums[k] += nk
+                query_result["ndcg_at_k"][f"ndcg@{k}"] = round(nk, 3)
 
         else:
             # Out-of-scope: recall not applicable
@@ -358,8 +411,12 @@ def run_retrieval_eval(k_values: list[int] = None) -> dict:
     for k in k_values:
         if in_domain_queries > 0:
             results[f"recall@{k}"] = round(in_domain_recall_hits[k] / in_domain_queries, 3)
+            results[f"ndcg@{k}"] = round(ndcg_sums[k] / in_domain_queries, 3)
         else:
             results[f"recall@{k}"] = None
+            results[f"ndcg@{k}"] = None
+
+    results["mrr"] = round(rr_sum / in_domain_queries, 3) if in_domain_queries > 0 else None
 
     results["concept_hit_rate"] = round(concept_hits / concept_eligible, 3) if concept_eligible > 0 else None
     results["out_of_scope_rejection_rate"] = round(oos_rejections / oos_eligible, 3) if oos_eligible > 0 else None
@@ -400,6 +457,21 @@ def main():
             print(f"  recall@{k}: {score:.1%}  {bar}")
         else:
             print(f"  recall@{k}: N/A (no in-domain queries)")
+
+    mrr = results.get("mrr")
+    if mrr is not None:
+        bar = "█" * int(mrr * 20)
+        print(f"  MRR: {mrr:.1%}  {bar}")
+    else:
+        print("  MRR: N/A (no in-domain queries)")
+
+    for k in args.k:
+        score = results.get(f"ndcg@{k}")
+        if score is not None:
+            bar = "█" * int(score * 20)
+            print(f"  nDCG@{k}: {score:.1%}  {bar}")
+        else:
+            print(f"  nDCG@{k}: N/A (no in-domain queries)")
 
     print(f"  concept hit rate: {results['concept_hit_rate'] if results['concept_hit_rate'] is not None else 'N/A'}")
     print(f"  out-of-scope rejection rate: {results['out_of_scope_rejection_rate'] if results['out_of_scope_rejection_rate'] is not None else 'N/A'}")
