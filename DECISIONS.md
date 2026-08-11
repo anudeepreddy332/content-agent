@@ -6,6 +6,43 @@ Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing
 ---
 Date: 2026-08-11
 
+Decision: Adopt MiniLM-safe 224-content-token children with 32-token overlap and bounded,
+source-aware post-retrieval context expansion as the candidate retrieval implementation. This is
+an implementation decision only: the default production collection is not migrated by this
+change and the feature remains review-only until its stacked evaluator PR is merged.
+
+Reason: The prior 400-token `cl100k_base` chunks exposed 64/73 (87.7%) chunks to MiniLM's
+256-token sequence limit. The candidate made all 139 isolated children safe (0% truncation) and
+the corrected evaluator's draft-depth evidence coverage recovered from raw-child fragmentation.
+The implementation retains all scored retrieval behavior: MiniLM, Qdrant dense search, BM25,
+and RRF (`k=60`) are unchanged. Expansion happens only after the raw top-10 child ranking.
+
+Action: Index child chunks from the actual MiniLM tokenizer (224 content tokens plus its two
+special tokens). Retrieve ten raw children, group only same-source siblings, expand selected
+children by one neighbor on each side, merge overlapping source-local windows, remove exact
+boundary overlap, and hard-cap each emitted window at 2400 characters. Draft receives the first
+three windows and verifier receives the first five. Raw `query_kb()` behavior is preserved;
+context windows and context-budget/diversity telemetry are additive.
+
+Evidence: Isolated collection `safe_chunk_context_61de06d`: at draft depth @3, corrected
+source recall / source nDCG / concept coverage / concept pass changed from baseline
+0.950 / 0.946 / 0.822 / 0.833 to raw safe children 0.950 / 0.934 / 0.714 / 0.700, then to
+expanded windows 0.967 / 0.947 / 0.847 / 0.833. At verifier depth @5, expanded coverage/pass
+were 0.864/0.867 versus baseline 0.867/0.900; source recall/nDCG improved to 0.983/0.956 from
+0.967/0.954. Mean expanded draft context is 6,620 characters (~1,655 estimated tokens) and
+verifier context is 9,330 (~2,333), bounded well below the available model context.
+
+Residual risk: MRR is 0.961 versus the baseline 0.978. Two ranking-sensitive golden queries
+remain (`vanishing gradient problem in deep networks`; the XGBoost gradient/Hessian query), and
+the ReAct hallucinated-observation query loses top-3 concept coverage under the 2400-character
+cap. They are documented in the per-query comparison and are not hidden by the aggregate gate.
+
+Status: Candidate accepted for review only. Do not change model, RRF, production collection,
+consumer top-k, prompts, reranking, or retrieval topology as part of this decision.
+
+---
+Date: 2026-08-11
+
 Decision: Retrieval evaluation semantics corrected; no production chunking or retrieval-architecture
 change accepted. All pre-2026-08-11 `recall@k`, nDCG, concept-hit, and OOS-rejection figures remain
 historical / legacy evaluator semantics, not directly comparable to the corrected source-level
