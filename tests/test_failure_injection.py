@@ -1,6 +1,7 @@
 """B2: every documented fault mode degrades gracefully (or crashes LOUDLY where
 it must — M4 lesson: 'fail loud' can be silently defeated by per-node except)."""
 import pytest
+import json
 from openai import AuthenticationError, RateLimitError, APITimeoutError
 
 import agent.nodes as nodes
@@ -127,6 +128,20 @@ def test_verify_malformed_output_degrades_gracefully(base_state, monkeypatch):
     assert result["grounding_score"] == 0
     assert result["iteration_metrics"][-1]["N"] == 0, \
         "parse failure must still produce an iteration_metrics entry"
+
+
+def test_verify_node_preserves_the_model_extracted_verdict_set(base_state, monkeypatch):
+    verdicts = [
+        {"claim": claim, "source_url": "https://example.com/gd",
+         "confidence": 0.9, "status": "verified", "specificity": "substantive"}
+        for claim in ("gradient descent updates parameters", "support vectors define a margin", "trees split feature space")
+    ]
+    monkeypatch.setattr(nodes, "_get_client", lambda: FakeLLMClient(response=fake_response(json.dumps(verdicts))))
+    result = nodes.verify_node(base_state)
+    assert [item["claim"] for item in result["grounding_report"]] == [
+        "gradient descent updates parameters", "support vectors define a margin", "trees split feature space",
+    ]
+    assert result["iteration_metrics"][-1]["N"] == 3
 
 
 def test_draft_malformed_output_degrades_gracefully(base_state, monkeypatch):
