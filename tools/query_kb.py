@@ -179,11 +179,13 @@ def invalidate_bm25() -> None:
 
 
 
-def _bm25_query(query: str, n_results: int) -> list[dict]:
+def _bm25_query(query: str, n_results: int, *, include_scores: bool = False) -> list[dict]:
     """
     Run BM25 retrieval over the in-memory index.
     Returns top-n results as {text, source, distance} dicts.
     distance is set to 0.0 — BM25 doesn't produce distances, only scores.
+    `include_scores` is reserved for evaluator diagnostics; normal hybrid retrieval
+    deliberately retains its existing public result shape.
     """
     global _bm25, _bm25_docs, _bm25_metas
 
@@ -205,12 +207,15 @@ def _bm25_query(query: str, n_results: int) -> list[dict]:
         if scores[idx] == 0.0:
             # BM25 score of 0 = no term overlap at all — not worth including
             continue
-        results.append({
+        result = {
             "text": _bm25_docs[idx],
             "source": _bm25_metas[idx].get("source", "unknown"),
             "chunk_index": _bm25_metas[idx].get("chunk_index", 0),
             "distance": 0.0,
-        })
+        }
+        if include_scores:
+            result["bm25_score"] = float(scores[idx])
+        results.append(result)
 
     return results
 
@@ -276,42 +281,17 @@ def _reciprocal_rank_fusion(
 
     return output
 
-# Public interface
-
-def query_kb(query: str, n_results: int = 5) -> list[dict]:
-    """
-    Hybrid query: Qdrant dense + BM25, fused via RRF.
-
-    Args:
-        query:     Natural language query string
-        n_results: Number of results to return after fusion
-
-    Returns:
-        List of {text, source, distance, rrf_score} dicts, best first.
-        Returns [] if collection is empty or Qdrant is unreachable.
-
-    Failure modes:
-        - Qdrant not running: logs error, returns []
-        - Collection empty: returns []
-        - BM25 not installed: falls back to dense-only
-        - Encoder load fails: logs error, returns []
-    """
-    if not _collection_exists():
-        return []
+def _dense_query(query: str, n_results: int) -> list[dict] | None:
+    """Return raw dense candidates, or None when dense retrieval fails."""
     encoder = _get_encoder()
     client = _get_client()
     collection = _collection_name()
-    fetch_n = min(n_results * 2, _count())
-
-
-    # Dense retrieval via Qdrant
-
     try:
         query_vector = encoder.encode(query).tolist()
         search_results = client.search(
             collection_name=collection,
             query_vector=query_vector,
-            limit=fetch_n,
+            limit=n_results,
             with_payload=True,
         )
         dense_results: list[dict] = []
@@ -326,32 +306,94 @@ def query_kb(query: str, n_results: int = 5) -> list[dict]:
                 "source": payload.get("source", "unknown"),
                 "chunk_index": payload.get("chunk_index", 0),
                 "distance": distance,
+                "dense_similarity": round(float(hit.score), 4),
             })
-
-
     except Exception as e:
         log.error("query_kb.search_error", error=str(e))
-        return []
+        return None
 
+    return dense_results
+
+
+def _without_dense_diagnostics(results: list[dict]) -> list[dict]:
+    """Keep query_kb()'s existing result shape when dense-only fallback is used."""
+    return [
+        {key: value for key, value in result.items() if key != "dense_similarity"}
+        for result in results
+    ]
+
+
+def _retrieve_components(query: str, n_results: int, *, include_bm25_scores: bool = False) -> tuple[list[dict], list[dict], list[dict]]:
+    """Retrieve hybrid results plus raw dense/BM25 components for diagnostics."""
+    if not _collection_exists():
+        return [], [], []
+
+    fetch_n = min(n_results * 2, _count())
+    dense_results = _dense_query(query, fetch_n)
+    if dense_results is None:
+        return [], [], []
 
     # BM25 retrieval
     try:
-        bm25_results = _bm25_query(query, n_results=fetch_n)
+        bm25_results = _bm25_query(
+            query,
+            n_results=fetch_n,
+            include_scores=include_bm25_scores,
+        )
     except ImportError:
         log.warning("query_kb.bm25_unavailable",
                     note="rank_bm25 not installed — falling back to dense-only")
-        return dense_results[:n_results]
+        return _without_dense_diagnostics(dense_results[:n_results]), dense_results, []
     except Exception as e:
         log.error("query_kb.bm25_error", error=str(e),
                   note="falling back to dense-only")
-        return dense_results[:n_results]
+        return _without_dense_diagnostics(dense_results[:n_results]), dense_results, []
 
-    # Fusion
     if not bm25_results:
-        # BM25 found nothing (all scores 0) — dense only
-        return dense_results[:n_results]
+        return _without_dense_diagnostics(dense_results[:n_results]), dense_results, []
 
-    return _reciprocal_rank_fusion(dense_results, bm25_results, k=60, n=n_results)
+    hybrid_results = _reciprocal_rank_fusion(dense_results, bm25_results, k=60, n=n_results)
+    return hybrid_results, dense_results, bm25_results
+
+
+# Public interface
+
+def query_kb(query: str, n_results: int = 5) -> list[dict]:
+    """Hybrid Qdrant dense + BM25 retrieval, fused via unchanged RRF(k=60)."""
+    hybrid_results, _, _ = _retrieve_components(query, n_results)
+    return hybrid_results
+
+
+def query_kb_diagnostics(query: str, n_results: int = 5) -> dict:
+    """Return raw ranker signals for evaluator diagnostics without changing query_kb().
+
+    The mixed RRF result's `distance` is not an OOS confidence score: BM25-only
+    candidates carry a synthetic 0.0 distance. This private diagnostic surface
+    exposes ranker-native values so calibration can be evaluated separately.
+    """
+    hybrid_results, dense_results, bm25_results = _retrieve_components(
+        query,
+        n_results,
+        include_bm25_scores=True,
+    )
+    dense_top = dense_results[0] if dense_results else None
+    bm25_top = bm25_results[0] if bm25_results else None
+
+    return {
+        "dense_top1_distance": dense_top.get("distance") if dense_top else None,
+        "dense_top1_similarity": dense_top.get("dense_similarity") if dense_top else None,
+        "bm25_top_score": bm25_top.get("bm25_score") if bm25_top else None,
+        "hybrid_top1_rrf_score": hybrid_results[0].get("rrf_score") if hybrid_results else None,
+        "hybrid_results": [
+            {
+                "rank": rank,
+                "source": result.get("source"),
+                "chunk_index": result.get("chunk_index"),
+                "rrf_score": result.get("rrf_score"),
+            }
+            for rank, result in enumerate(hybrid_results, start=1)
+        ],
+    }
 
 
 def warmup() -> dict:
@@ -374,7 +416,6 @@ def warmup() -> dict:
         "encoder_load_ms": int((t1-t0) * 1000),
         "bm25_build_ms": int((t2-t1) * 1000),
     }
-
 
 
 
