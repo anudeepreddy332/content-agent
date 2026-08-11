@@ -27,7 +27,7 @@ def test_contract_rejects_multi_item_single_claim_response():
         _parse_verifier_verdicts("[" + VALID[1:-1] + "," + VALID[1:-1] + "]", expected_count=1)
 
 
-def test_production_contract_preserves_three_claim_verdicts_and_order():
+def test_parser_preserves_three_verdicts_and_order_when_a_caller_knows_count():
     raw = __import__("json").dumps([_verdict("first"), _verdict("second"), _verdict("third")])
     assert [item["claim"] for item in _parse_verifier_verdicts(raw, expected_count=3)] == [
         "first", "second", "third",
@@ -35,12 +35,12 @@ def test_production_contract_preserves_three_claim_verdicts_and_order():
 
 
 @pytest.mark.parametrize("count", [2, 4])
-def test_production_contract_rejects_count_mismatch(count):
+def test_parser_rejects_count_mismatch_when_a_caller_knows_count(count):
     raw = __import__("json").dumps([_verdict(str(index)) for index in range(count)])
     with pytest.raises(ValueError, match="expected 3"):
         _parse_verifier_verdicts(raw, expected_count=3)
 
 
-def test_production_contract_validates_twelve_verdicts_without_narrowing_batch_semantics():
+def test_parser_validates_twelve_verdicts_without_narrowing_batch_semantics():
     raw = __import__("json").dumps([_verdict(f"claim-{index}") for index in range(12)])
     assert len(_parse_verifier_verdicts(raw, expected_count=12)) == 12
