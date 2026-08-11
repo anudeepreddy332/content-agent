@@ -6,7 +6,7 @@ Uses the production verify prompt and client so the result reflects the real ver
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from agent.nodes import _get_client, _llm_call, DEEPSEEK_MODEL, _extract_json_array
+from agent.nodes import _get_client, _llm_call, DEEPSEEK_MODEL, _parse_verifier_verdicts
 
 VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text(encoding="utf-8")
 
@@ -74,6 +74,7 @@ def verify_one(claim: str) -> dict:
         'Return a JSON array. Each element:\n'
         '{"claim":"...","source_url":"..." or null,"confidence":0.0-1.0,'
         '"status":"verified"|"weak"|"unverified","specificity":"substantive"|"generic"}\n'
+        "Return exactly ONE verdict for the single draft claim. Do not extract claims from sources. "
         "Return ONLY the JSON array. No preamble."
     )
     r = _llm_call(client, model=DEEPSEEK_MODEL,
@@ -82,7 +83,7 @@ def verify_one(claim: str) -> dict:
                   temperature=0.1, max_tokens=500)
     raw = r.choices[0].message.content.strip()
     try:
-        arr = _extract_json_array(raw)
+        arr = _parse_verifier_verdicts(raw, expected_count=1)
         return arr[0] if arr else {"status": "EMPTY", "raw": raw[:500]}
     except Exception as e:
         return {"status": "PARSE_FAIL", "err": str(e), "raw": raw[:500]}
