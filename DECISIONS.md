@@ -4,6 +4,56 @@ Purpose: Prevent future chats from re-litigating solved problems.
 Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing architecture changes.
 
 ---
+Date: 2026-08-11
+
+Decision: Retrieval evaluation semantics corrected; no production chunking or retrieval-architecture
+change accepted. All pre-2026-08-11 `recall@k`, nDCG, concept-hit, and OOS-rejection figures remain
+historical / legacy evaluator semantics, not directly comparable to the corrected source-level
+metrics below.
+
+Discovery: The old `recall@k` asked whether *any* expected source appeared in the top-k, so it
+was hit/success@k rather than true multi-source recall. Its chunk-level DCG assigned a gain to
+every returned chunk from a relevant source while IDCG counted only unique expected sources;
+therefore repeated sibling chunks could yield nDCG > 1. Its OOS gate read a fused result's
+`distance`, even though BM25-only records carry synthetic `0.0` before RRF fusion; that value is
+not a calibrated dense confidence.
+
+Action: `scripts/retrieval_eval.py` now exposes `hit@k`, `source_recall@k`, source-level nDCG
+(only the first relevant occurrence earns gain while retaining its original rank),
+`concept_coverage@k`, the retained >=67% `concept_pass@k`, and source-diversity diagnostics.
+`tools/query_kb.py` adds a diagnostic-only raw-component path returning dense top-1
+distance/similarity, BM25 top score, and hybrid RRF score without changing public `query_kb()`
+results. `out_of_scope_rejection_rate` is deprecated/non-gating until a calibrated hybrid policy
+exists.
+
+Evidence: New isolated baseline `eval_correctness_baseline_61de06d` (unchanged 400
+cl100k/50 chunker, 73 chunks, 64/73 = 87.7% MiniLM truncation risk) measured hit@1/3/5/8/10
+= 0.967/1.000/1.000/1.000/1.000; source_recall =
+0.883/0.950/0.967/0.983/0.983; MRR = 0.978; source nDCG =
+0.967/0.946/0.954/0.961/0.961; concept_coverage =
+0.636/0.822/0.867/0.892/0.892; and mean duplicate-source slots =
+0.000/1.314/2.000/3.486/4.457. Detached experimental candidate
+`eval_correctness_candidate_224_61de06d` (224 MiniLM tokens/32 overlap only, 139 chunks,
+0% truncation) measured source_recall = 0.850/0.950/0.967/0.983/0.983, MRR = 0.961,
+source nDCG = 0.933/0.934/0.943/0.951/0.951, concept_coverage =
+0.511/0.706/0.828/0.872/0.892, and duplicate-source slots =
+0.000/1.343/2.543/4.429/5.543.
+
+Classification: CLASS C — MIXED. Ten in-domain queries retained source ranking but lost
+top-3/top-5 evidence coverage; their coverage commonly recovered by top-8/top-10 while sibling
+occupancy grew. Two queries showed source-ranking loss: `vanishing gradient problem in deep
+networks` lost one expected source by top-3, and the XGBoost gradient/Hessian query moved its
+first relevant source from rank 1 to rank 3. The required per-query source/chunk/concept evidence
+is in the evaluator output comparison generated for this run.
+
+Next experiment (not implemented): MiniLM-safe child chunks + hybrid retrieval + post-retrieval
+neighboring-context expansion, assessed with the corrected evaluator and a predeclared check for
+the two ranking-regression queries.
+
+Status: Accepted evaluator repair only. Do not merge the experimental 224/32 chunking code or
+change the production collection, top-k, model, RRF constant, reranking, or retrieval topology.
+
+---
 Date: 2026-06-20
 
 Decision: LangSmith tracing made DEFAULT-ON when configured (feature/langsmith-fixes),

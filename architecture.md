@@ -246,9 +246,11 @@ Note: the previously listed `tools/verify_claim.py` does not exist. Verification
   rather than deleted as a reference implementation if Docling's Python support changes.
 - Self-improvement: ingesting HITL-approved articles back into the KB is planned, not yet wired.
 - Seed content: `scripts/ingest.py` against `/kb/seed_docs/` (20 `.md` seed docs committed).
-- Retrieval health (verified): recall@1 0.967, recall@3 1.0, recall@5 1.0, concept-hit 0.867,
-  OOS rejection 0.8 on a 35-query adversarial golden set
-  (`docs/archive/retrieval-eval-qdrant/retrieval_eval_qdrant.json`).
+- Historical / legacy evaluator semantics: the archived `recall@1 0.967`, `recall@3 1.0`,
+  `recall@5 1.0`, concept-hit `0.867`, and OOS rejection `0.8` measured any-source hit,
+  duplicate-credit nDCG, and fused distance respectively. They are retained for history, not as
+  current gates. Corrected source-level baseline and raw OOS diagnostic policy: DECISIONS.md
+  (2026-08-11).
 
 ---
 
