@@ -40,6 +40,8 @@ from observability.tracing import is_tracing_enabled
 import html as html_module
 import re
 import datetime
+from typing import Literal
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text()
 REFLECT_SYSTEM = Path("prompts/reflect_system.md").read_text()
@@ -167,6 +169,23 @@ def _extract_json_array(raw: str) -> list:
         if isinstance(parsed, list):
             return parsed
     raise ValueError("no JSON array found in verifier output")
+
+
+class _VerifierVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    claim: str
+    source_url: str | None
+    confidence: float = Field(ge=0.0, le=1.0)
+    status: Literal["verified", "weak", "unverified"]
+    specificity: Literal["substantive", "generic"]
+
+
+def _parse_verifier_verdicts(raw: str, *, expected_count: int | None = None) -> list[dict]:
+    """Strictly parse verifier output; malformed or incomplete results fail loudly."""
+    items = _extract_json_array(raw)
+    if expected_count is not None and len(items) != expected_count:
+        raise ValueError(f"expected {expected_count} verifier verdict(s), got {len(items)}")
+    return [_VerifierVerdict.model_validate(item).model_dump() for item in items]
 
 
 def _cost(usage) -> float:
@@ -771,8 +790,8 @@ def verify_node(state: AgentState) -> dict:
     raw = claim_response.choices[0].message.content.strip()
 
     try:
-        grounding_report = _extract_json_array(raw)
-    except (json.JSONDecodeError, ValueError) as e:
+        grounding_report = _parse_verifier_verdicts(raw)
+    except (json.JSONDecodeError, ValueError, ValidationError) as e:
         log.error("verify.parse_failed", run_id=state["run_id"], error=str(e),
                   raw_preview=raw[:300])
         grounding_report = []
@@ -1725,5 +1744,4 @@ def route_after_hitl(state: AgentState) -> str:
         return "draft"
     else:   # rejected or unknown
         return END
-
 
