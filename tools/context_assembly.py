@@ -22,8 +22,8 @@ def _common_boundary_overlap(left: str, right: str) -> int:
     return 0
 
 
-def _join_children(children: list[dict], max_chars: int) -> tuple[str, int, int]:
-    """Join ordered children once, removing exact overlap and enforcing a hard cap."""
+def _join_children(children: list[dict]) -> tuple[str, int]:
+    """Join ordered children once, removing exact overlap without truncating."""
     assembled = ""
     duplicate_chars_removed = 0
     for child in children:
@@ -37,8 +37,49 @@ def _join_children(children: list[dict], max_chars: int) -> tuple[str, int, int]
         duplicate_chars_removed += overlap
         assembled += text[overlap:]
 
-    truncated_chars = max(0, len(assembled) - max_chars)
-    return assembled[:max_chars], duplicate_chars_removed, truncated_chars
+    return assembled, duplicate_chars_removed
+
+
+def _seed_preserving_window(
+    children: list[dict],
+    seed_indices: set[int],
+    max_chars: int,
+) -> tuple[str, int, dict]:
+    """Preserve every seed child, then admit neighbours by proximity.
+
+    If seed text alone is wider than the nominal cap, the output deliberately
+    exceeds that cap rather than cutting a retrieved seed.  The explicit
+    overflow fields let callers detect this rare safety exception.
+    """
+    by_index = {child["chunk_index"]: child for child in children}
+    selected_indices = set(seed_indices)
+    selected = [by_index[index] for index in sorted(selected_indices)]
+    text, duplicate_chars_removed = _join_children(selected)
+    seed_chars = len(text)
+    seed_budget_exceeded = seed_chars > max_chars
+
+    if not seed_budget_exceeded:
+        neighbour_indices = sorted(
+            (index for index in by_index if index not in selected_indices),
+            key=lambda index: (min(abs(index - seed) for seed in seed_indices), index),
+        )
+        for index in neighbour_indices:
+            candidate_indices = selected_indices | {index}
+            candidate = [by_index[item] for item in sorted(candidate_indices)]
+            candidate_text, candidate_duplicates = _join_children(candidate)
+            if len(candidate_text) <= max_chars:
+                selected_indices = candidate_indices
+                text = candidate_text
+                duplicate_chars_removed = candidate_duplicates
+
+    full_text, _ = _join_children(children)
+    return text, duplicate_chars_removed, {
+        "chunk_indices": sorted(selected_indices),
+        "seed_chars": seed_chars,
+        "outer_neighbor_chars_omitted": max(0, len(full_text) - len(text)),
+        "seed_budget_exceeded": seed_budget_exceeded,
+        "seed_budget_overflow_chars": max(0, seed_chars - max_chars),
+    }
 
 
 def _merge_seed_intervals(seed_intervals: list[tuple[int, int, dict]]) -> list[tuple[int, int, list[dict]]]:
@@ -101,8 +142,10 @@ def assemble_evidence_windows(
                 for index in range(start, end + 1)
                 if index in children_by_index
             ]
-            text, duplicate_chars_removed, truncated_chars = _join_children(
+            seed_indices = {seed["chunk_index"] for seed in interval_seeds}
+            text, duplicate_chars_removed, budget = _seed_preserving_window(
                 window_children,
+                seed_indices,
                 max_window_chars,
             )
             if not text:
@@ -115,14 +158,18 @@ def assemble_evidence_windows(
                 "text": text,
                 "source": source,
                 "chunk_index": start,
-                "chunk_indices": [child["chunk_index"] for child in window_children],
-                "seed_chunk_indices": sorted({seed["chunk_index"] for seed in interval_seeds}),
+                "chunk_indices": budget["chunk_indices"],
+                "seed_chunk_indices": sorted(seed_indices),
                 "seed_ranks": sorted(seed["_retrieval_rank"] for seed in interval_seeds),
                 "best_child_rank": best_seed["_retrieval_rank"],
                 "distance": best_seed.get("distance"),
                 "rrf_score": best_seed.get("rrf_score"),
                 "duplicate_chars_removed": duplicate_chars_removed,
-                "truncated_chars": truncated_chars,
+                "truncated_chars": budget["outer_neighbor_chars_omitted"],
+                "outer_neighbor_chars_omitted": budget["outer_neighbor_chars_omitted"],
+                "seed_chars": budget["seed_chars"],
+                "seed_budget_exceeded": budget["seed_budget_exceeded"],
+                "seed_budget_overflow_chars": budget["seed_budget_overflow_chars"],
                 "context_chars": len(text),
                 "max_window_chars": max_window_chars,
             })
@@ -147,6 +194,12 @@ def context_budget_stats(windows: list[dict], n_windows: int) -> dict:
         "unique_sources": len({window.get("source") for window in selected}),
         "duplicate_chars_removed": sum(window.get("duplicate_chars_removed", 0) for window in selected),
         "truncated_chars": sum(window.get("truncated_chars", 0) for window in selected),
+        "seed_budget_exceeded_windows": sum(
+            1 for window in selected if window.get("seed_budget_exceeded", False)
+        ),
+        "seed_budget_overflow_chars": sum(
+            window.get("seed_budget_overflow_chars", 0) for window in selected
+        ),
         "max_window_chars": max(
             (window.get("max_window_chars", MAX_EVIDENCE_WINDOW_CHARS) for window in selected),
             default=MAX_EVIDENCE_WINDOW_CHARS,

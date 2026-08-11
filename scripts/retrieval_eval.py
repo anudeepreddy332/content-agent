@@ -103,6 +103,8 @@ def summarize_context_budget(values: list[dict]) -> dict:
         "unique_sources",
         "duplicate_chars_removed",
         "truncated_chars",
+        "seed_budget_exceeded_windows",
+        "seed_budget_overflow_chars",
     )
     return {
         f"mean_{field}": round(sum(value[field] for value in values) / len(values), 3)

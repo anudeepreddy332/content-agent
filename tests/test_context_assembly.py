@@ -100,13 +100,77 @@ def test_context_budget_cap_is_deterministic():
         source_children,
         max_window_chars=24,
     )
-    assert windows[0]["context_chars"] == 24
-    assert windows[0]["truncated_chars"] == 76
+    assert windows[0]["context_chars"] == 100
+    assert windows[0]["seed_budget_exceeded"] is True
+    assert windows[0]["seed_budget_overflow_chars"] == 76
     stats = context_budget_stats(windows, n_windows=1)
     assert stats["evidence_windows"] == 1
-    assert stats["total_context_chars"] == 24
-    assert stats["estimated_context_tokens"] == 6
+    assert stats["total_context_chars"] == 100
+    assert stats["estimated_context_tokens"] == 25
     assert stats["max_window_chars"] == 24
+
+
+def test_middle_seed_survives_cap_before_outer_neighbors():
+    source_children = {
+        "a": [
+            {"source": "a", "chunk_index": 0, "text": "L" * 120},
+            {"source": "a", "chunk_index": 1, "text": "MIDDLE-SEED-EVIDENCE"},
+            {"source": "a", "chunk_index": 2, "text": "R" * 120},
+        ]
+    }
+    window = assemble_evidence_windows([_seed("a", 1)], source_children, max_window_chars=100)[0]
+    assert "MIDDLE-SEED-EVIDENCE" in window["text"]
+    assert window["chunk_indices"] == [1]
+    assert window["outer_neighbor_chars_omitted"] > 0
+    assert window["context_chars"] <= 100
+
+
+def test_first_and_last_seed_survive_cap_pressure():
+    source_children = {
+        "a": [
+            {"source": "a", "chunk_index": 0, "text": "FIRST-SEED"},
+            {"source": "a", "chunk_index": 1, "text": "x" * 120},
+            {"source": "a", "chunk_index": 2, "text": "LAST-SEED"},
+        ]
+    }
+    first = assemble_evidence_windows([_seed("a", 0)], source_children, max_window_chars=40)[0]
+    last = assemble_evidence_windows([_seed("a", 2)], source_children, max_window_chars=40)[0]
+    assert "FIRST-SEED" in first["text"]
+    assert "LAST-SEED" in last["text"]
+
+
+def test_multiple_seed_chunks_are_never_silently_cut_when_they_exceed_budget():
+    source_children = {
+        "a": [
+            {"source": "a", "chunk_index": 0, "text": "FIRST-SEED" * 10},
+            {"source": "a", "chunk_index": 1, "text": "SECOND-SEED" * 10},
+            {"source": "a", "chunk_index": 2, "text": "outer-neighbour"},
+        ]
+    }
+    window = assemble_evidence_windows(
+        [_seed("a", 0), _seed("a", 1)], source_children, max_window_chars=80,
+    )[0]
+    assert "FIRST-SEED" in window["text"]
+    assert "SECOND-SEED" in window["text"]
+    assert window["seed_budget_exceeded"] is True
+    assert window["seed_budget_overflow_chars"] > 0
+
+
+def test_react_style_seed_region_keeps_late_required_evidence_under_cap_pressure():
+    source_children = {
+        "react": [
+            {"source": "react", "chunk_index": 0, "text": "intro " * 300},
+            {"source": "react", "chunk_index": 1, "text": "hallucination grounding"},
+            {"source": "react", "chunk_index": 2, "text": "filler " * 300},
+            {"source": "react", "chunk_index": 3, "text": "fabricated observations action parsing"},
+        ]
+    }
+    window = assemble_evidence_windows(
+        [_seed("react", 1), _seed("react", 3)], source_children, max_window_chars=120,
+    )[0]
+    for concept in ("hallucination", "grounding", "fabricated observations", "action parsing"):
+        assert concept in window["text"]
+    assert window["seed_budget_exceeded"] is False
 
 
 def test_retrieve_node_uses_ten_children_and_preserves_three_five_consumer_budgets(
