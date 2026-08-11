@@ -556,15 +556,19 @@ def _build_source_context(web_sources: list, kb_results: list) -> str:
                  1500 chars covers ~78% of a typical result and the full
                  lower quartile. 98% of results were cut at the old 500-char
                  limit, which is why obvious claims were marked unverified.
-      KB_CHARS:  Each evidence window is hard-capped at 2400 characters. This
-                 raises the old 2000-char child cap by only ~500 tokens across
-                 five verifier windows, leaving >53k of the 64k context budget
-                 after the existing web-source allowance.
+      KB_CHARS:  Context assembly owns the 2400-character evidence-window
+                 budget. A window marked ``seed_budget_exceeded`` deliberately
+                 exceeds it to preserve retrieved seed evidence, and must reach
+                 the consumer intact. This raises the old 2000-char child cap
+                 by only ~500 tokens across five verifier windows, leaving >53k
+                 of the 64k context budget after the existing web-source allowance.
       Context budget at these limits (worst-case, 5+5 sources):
         source tokens  ~4375  |  total input ~5695  |  headroom 54k / 64k
         cost delta per verify call: +$0.00074 (+14.3%)
     """
-    # The window constructor applies the same 2400-character hard cap.
+    # Context assembly is authoritative for evidence-window budgeting. Retain
+    # this cap for legacy/raw results, but never override an explicit,
+    # telemetered seed-preserving overflow from that layer.
     WEB_CHARS = 1500
     KB_CHARS = MAX_EVIDENCE_WINDOW_CHARS
 
@@ -572,7 +576,9 @@ def _build_source_context(web_sources: list, kb_results: list) -> str:
     for s in web_sources[:5]:
         parts.append(f"[WEB] {s['url']}\n{s['content'][:WEB_CHARS]}")
     for k in kb_results[:5]:
-        parts.append(f"[KB] {k['source']}\n{k['text'][:KB_CHARS]}")
+        text = k["text"]
+        kb_text = text if k.get("seed_budget_exceeded") else text[:KB_CHARS]
+        parts.append(f"[KB] {k['source']}\n{kb_text}")
     return "\n\n".join(parts) if parts else "No sources available."
 
 def _build_citations(grounding_report: list, web_sources: list) -> str:
@@ -1740,4 +1746,3 @@ def route_after_hitl(state: AgentState) -> str:
         return "draft"
     else:   # rejected or unknown
         return END
-

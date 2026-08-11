@@ -6,6 +6,28 @@ Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing
 ---
 Date: 2026-08-11
 
+Decision: Context assembly is the sole owner of KB evidence-window budgeting. The final
+source-context formatter preserves a window only when assembly explicitly marks
+`seed_budget_exceeded`; otherwise it retains its existing 2400-character defensive cap.
+
+Problem: The seed-preserving assembler correctly allowed an overflow when cutting it would
+remove a retrieved seed, but `_build_source_context()` then unconditionally sliced every KB
+window to 2400 characters. A deterministic end-to-end fixture retained early and late seeds in
+the assembled overflow while the late seed disappeared from the actual formatted LLM context.
+
+Trade-off: A rare overflow can increase the prompt beyond the nominal per-window budget, but
+only for retrieved seed text already bounded by the top-10-child / top-five-window path. Existing
+`seed_budget_exceeded` and `seed_budget_overflow_chars` telemetry make this explicit. Normal and
+legacy/raw windows remain capped; retrieval, ranking, source locality, and prompts are unchanged.
+
+Rollback: Revert this formatter exception and its regression tests together, restoring the prior
+defensive slice; doing so knowingly reinstates the reproduced seed-loss defect.
+
+Status: Candidate-only correction. Production collection and deployment remain unchanged.
+
+---
+Date: 2026-08-11
+
 Decision: Adopt MiniLM-safe 224-content-token children with 32-token overlap and bounded,
 source-aware post-retrieval context expansion as the candidate retrieval implementation. This is
 an implementation decision only: the default production collection is not migrated by this

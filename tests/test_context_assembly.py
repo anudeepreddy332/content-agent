@@ -3,6 +3,7 @@ import json
 from types import SimpleNamespace
 
 import agent.nodes as nodes
+import tools.query_kb as query_kb
 from main import _write_telemetry
 from tools.context_assembly import assemble_evidence_windows, context_budget_stats
 from tools.save_to_kb import _chunk_text
@@ -154,6 +155,41 @@ def test_multiple_seed_chunks_are_never_silently_cut_when_they_exceed_budget():
     assert "SECOND-SEED" in window["text"]
     assert window["seed_budget_exceeded"] is True
     assert window["seed_budget_overflow_chars"] > 0
+
+
+def test_seed_overflow_reaches_final_source_context(monkeypatch):
+    """A seed-preserved overflow must survive the actual LLM source formatter."""
+    early_seed = "EARLY-SEED-SENTINEL " + ("e" * 2_300)
+    late_seed = ("l" * 200) + " LATE-SEED-SENTINEL"
+    source_children = {
+        "source-a": [
+            {"source": "source-a", "chunk_index": 0, "text": early_seed},
+            {"source": "source-a", "chunk_index": 1, "text": "outer neighbour " * 20},
+            {"source": "source-a", "chunk_index": 2, "text": late_seed},
+        ]
+    }
+    ranked_children = [_seed("source-a", 0), _seed("source-a", 2)]
+    monkeypatch.setattr(query_kb, "_source_children", lambda source: source_children[source])
+
+    windows = query_kb.assemble_child_context(ranked_children, n_windows=1)
+
+    assert windows[0]["seed_budget_exceeded"] is True
+    assert "EARLY-SEED-SENTINEL" in windows[0]["text"]
+    assert "LATE-SEED-SENTINEL" in windows[0]["text"]
+
+    source_context = nodes._build_source_context([], windows)
+
+    assert "EARLY-SEED-SENTINEL" in source_context
+    assert "LATE-SEED-SENTINEL" in source_context
+
+
+def test_final_source_context_keeps_normal_window_cap():
+    source_context = nodes._build_source_context(
+        [],
+        [{"source": "source-a", "text": "x" * 2_500, "seed_budget_exceeded": False}],
+    )
+
+    assert source_context == "[KB] source-a\n" + ("x" * 2_400)
 
 
 def test_react_style_seed_region_keeps_late_required_evidence_under_cap_pressure():
