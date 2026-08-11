@@ -26,6 +26,7 @@ def base_state():
                          "content": "gradient descent content", "score": 0.9}],
         "kb_results": [{"text": "kb chunk", "source": "gd.md",
                         "chunk_index": 0, "distance": 0.1, "rrf_score": 0.03}],
+        "kb_context_stats": {},
         "grounding_report": [],
         "grounding_score": 0.0,
         "reflection_score": 0,
@@ -85,6 +86,5 @@ def openai_error(cls, status: int):
         return cls(request=req)
     resp = httpx.Response(status, request=req)
     return cls("injected", response=resp, body=None)
-
 
 

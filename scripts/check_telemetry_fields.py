@@ -12,6 +12,7 @@ REQUIRED_FIELDS = [
     "grounding_score", "grounding_breakdown", "grounding_report",
     "reflection_score", "reflection_notes",
     "web_sources_count", "kb_results_count",
+    "kb_context_stats",
     "web_sources", "kb_results", "attribution",
     "total_cost_usd", "total_tokens",
     "latency_ms", "error_log",
@@ -49,6 +50,12 @@ if report and any("source_kind" not in r for r in report):
     sys.exit(1)
 if any("chunk_index" not in k for k in data.get("kb_results", [])):
     print("FAIL: kb_results entries missing chunk_index")
+    sys.exit(1)
+
+context_stats = data.get("kb_context_stats")
+required_context_fields = {"candidate_children", "candidate_unique_sources", "draft", "verifier"}
+if not isinstance(context_stats, dict) or not required_context_fields <= set(context_stats):
+    print("FAIL: kb_context_stats is missing child-depth or consumer budget diagnostics")
     sys.exit(1)
 
 

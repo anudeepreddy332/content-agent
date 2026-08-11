@@ -47,6 +47,7 @@ def test_retrieve_tavily_empty_results(base_state, monkeypatch):
 
     monkeypatch.setattr(nodes, "web_search", empty_search)
     monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: base_state["kb_results"])
+    monkeypatch.setattr(nodes, "assemble_child_context", lambda children, n_windows: children[:n_windows])
 
     result = nodes.retrieve_node(base_state)
 
@@ -64,6 +65,7 @@ def test_retrieve_tavily_errors_logged_not_fatal(base_state, monkeypatch):
 
     monkeypatch.setattr(nodes, "web_search", exploding_search)
     monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: [])
+    monkeypatch.setattr(nodes, "assemble_child_context", lambda children, n_windows: children[:n_windows])
 
     result = nodes.retrieve_node(base_state)  # must not raise
 
@@ -99,6 +101,7 @@ def test_retrieve_survives_kb_down(base_state, monkeypatch):
                         [{"title": "t", "url": f"https://e.com/{query[:10]}",
                           "content": "c", "score": 0.9}])
     monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: [])
+    monkeypatch.setattr(nodes, "assemble_child_context", lambda children, n_windows: children[:n_windows])
     result = nodes.retrieve_node(base_state)
     assert result["kb_results"] == []
     assert result["web_sources"], "web path unaffected by KB outage"

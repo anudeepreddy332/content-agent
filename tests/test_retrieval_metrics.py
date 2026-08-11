@@ -168,3 +168,23 @@ def test_public_query_kb_keeps_the_hybrid_response_shape(monkeypatch):
         lambda query, n_results, include_bm25_scores=False: (hybrid, dense, []),
     )
     assert query_kb_module.query_kb("q", n_results=5) == hybrid
+
+
+def test_expanded_context_evaluator_uses_ten_raw_children(monkeypatch):
+    golden = [{
+        "query": "q", "expected_sources": ["a"], "required_concepts": ["evidence"], "difficulty": "easy",
+    }]
+    captured = []
+    monkeypatch.setattr(retrieval_eval, "GOLDEN_SET", golden)
+    monkeypatch.setattr(
+        retrieval_eval,
+        "query_kb_context",
+        lambda query, n_children, n_windows: captured.append((n_children, n_windows)) or [{
+            "source": "a", "text": "evidence", "chunk_index": 0,
+            "chunk_indices": [0, 1], "seed_chunk_indices": [0], "seed_ranks": [1],
+        }],
+    )
+    results = run_retrieval_eval(k_values=[1, 3], expanded_context=True)
+    assert captured == [(10, 3)]
+    assert results["metric_semantics"]["retrieval_unit"] == "expanded evidence windows"
+    assert results["per_query"][0]["retrieved_results"][0]["chunk_indices"] == [0, 1]
