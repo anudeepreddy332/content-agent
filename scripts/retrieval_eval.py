@@ -17,7 +17,8 @@ import argparse
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from tools.query_kb import query_kb, query_kb_diagnostics
+from tools.query_kb import query_kb, query_kb_context, query_kb_diagnostics
+from tools.context_assembly import context_budget_stats
 
 
 CONCEPT_PASS_THRESHOLD = 2 / 3
@@ -91,6 +92,25 @@ def source_diversity_at_k(sources: list[str], k: int) -> tuple[int, int]:
     slots = sources[:k]
     unique_sources = len(set(slots))
     return unique_sources, len(slots) - unique_sources
+
+
+def summarize_context_budget(values: list[dict]) -> dict:
+    """Return mean and maximum bounded-context diagnostics across queries."""
+    fields = (
+        "evidence_windows",
+        "total_context_chars",
+        "estimated_context_tokens",
+        "unique_sources",
+        "duplicate_chars_removed",
+        "truncated_chars",
+    )
+    return {
+        f"mean_{field}": round(sum(value[field] for value in values) / len(values), 3)
+        for field in fields
+    } | {
+        f"max_{field}": max(value[field] for value in values)
+        for field in fields
+    }
 
 # Golden set - each query has ground truth: which source should appear in top-k
 # and what concepts must be in the returned text.
@@ -337,7 +357,11 @@ GOLDEN_SET = [
     },
 ]
 
-def run_retrieval_eval(k_values: list[int] = None) -> dict:
+def run_retrieval_eval(
+    k_values: list[int] = None,
+    *,
+    expanded_context: bool = False,
+) -> dict:
     """Evaluate source ranking, concept evidence, diversity, and raw OOS signals.
 
     `recall@k` is retained as a historical alias for the old any-source metric;
@@ -352,6 +376,7 @@ def run_retrieval_eval(k_values: list[int] = None) -> dict:
         "metric_semantics": {
             "recall@k": "legacy any-source hit@k; retained for historical comparison only",
             "out_of_scope_rejection_rate": "deprecated non-gating metric; fused distance is not calibrated",
+            "retrieval_unit": "expanded evidence windows" if expanded_context else "raw retrieved child chunks",
         },
         "mrr": None,
         "concept_hit_rate": None,
@@ -382,9 +407,17 @@ def run_retrieval_eval(k_values: list[int] = None) -> dict:
     unique_source_sums = {k: 0.0 for k in k_values}
     duplicate_slot_sums = {k: 0.0 for k in k_values}
     oos_queries = 0
+    context_budget_values = {"draft": [], "verifier": []}
 
     for item in GOLDEN_SET:
-        retrieved = query_kb(item["query"], n_results=max_k)
+        if expanded_context:
+            retrieved = query_kb_context(
+                item["query"],
+                n_children=10,
+                n_windows=max_k,
+            )
+        else:
+            retrieved = query_kb(item["query"], n_results=max_k)
         sources = [result.get("source", "unknown") for result in retrieved]
         is_in_domain = bool(item["expected_sources"])
         query_result = {
@@ -393,15 +426,34 @@ def run_retrieval_eval(k_values: list[int] = None) -> dict:
             "expected_sources": item["expected_sources"],
             "retrieved_sources": sources,
             "retrieved_distances": [result.get("distance") for result in retrieved],
-            "retrieved_results": [
-                {"rank": rank, "source": result.get("source", "unknown"), "chunk_index": result.get("chunk_index")}
-                for rank, result in enumerate(retrieved, start=1)
-            ],
+            "retrieved_results": [],
             "recall_at_k": {}, "hit_at_k": {}, "source_recall_at_k": {},
             "reciprocal_rank": None, "ndcg_at_k": {}, "concepts_found": [],
             "concepts_found_at_k": {}, "concept_coverage_at_k": {}, "concept_pass_at_k": {},
             "source_diversity_at_k": {}, "oos_diagnostics": None,
+            "context_budget": None,
         }
+        for rank, result in enumerate(retrieved, start=1):
+            retrieved_result = {
+                "rank": rank,
+                "source": result.get("source", "unknown"),
+                "chunk_index": result.get("chunk_index"),
+            }
+            if expanded_context:
+                retrieved_result.update({
+                    "chunk_indices": result.get("chunk_indices", []),
+                    "seed_chunk_indices": result.get("seed_chunk_indices", []),
+                    "seed_ranks": result.get("seed_ranks", []),
+                })
+            query_result["retrieved_results"].append(retrieved_result)
+
+        if expanded_context:
+            query_result["context_budget"] = {
+                "draft": context_budget_stats(retrieved, n_windows=3),
+                "verifier": context_budget_stats(retrieved, n_windows=5),
+            }
+            context_budget_values["draft"].append(query_result["context_budget"]["draft"])
+            context_budget_values["verifier"].append(query_result["context_budget"]["verifier"])
 
         if is_in_domain:
             in_domain_queries += 1
@@ -468,6 +520,11 @@ def run_retrieval_eval(k_values: list[int] = None) -> dict:
     results["in_domain_queries"] = in_domain_queries
     results["concept_eligible_queries"] = concept_eligible
     results["out_of_scope_queries"] = oos_queries
+    if expanded_context:
+        results["context_budget"] = {
+            consumer: summarize_context_budget(values)
+            for consumer, values in context_budget_values.items()
+        }
     return results
 
 
@@ -479,11 +536,19 @@ def main():
     parser.add_argument(
         "--output", type=str, default="outputs/retrieval_eval.json"
     )
+    parser.add_argument(
+        "--expanded-context",
+        action="store_true",
+        help="Evaluate source-aware evidence windows assembled from ten raw child candidates",
+    )
     args = parser.parse_args()
 
     print("Running retrieval eval...")
 
-    results = run_retrieval_eval(k_values=args.k)
+    results = run_retrieval_eval(
+        k_values=args.k,
+        expanded_context=args.expanded_context,
+    )
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)

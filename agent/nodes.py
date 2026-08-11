@@ -21,7 +21,8 @@ load_dotenv()
 
 from agent.state import AgentState, DraftSections
 from tools.web_search import web_search
-from tools.query_kb import query_kb
+from tools.context_assembly import MAX_EVIDENCE_WINDOW_CHARS, context_budget_stats
+from tools.query_kb import assemble_child_context, query_kb
 from config import (
     DEEPSEEK_MODEL,
     DEEPSEEK_BASE_URL,
@@ -509,7 +510,17 @@ def retrieve_node(state: AgentState) -> dict:
     # KB query — use topic + first 100 chars of problem_framing for richer context
     problem_framing_preview = state.get("draft_sections", {}).get("problem_framing", "")[:100]
     kb_query = f"{topic} {problem_framing_preview}".strip()
-    kb_results = query_kb(query=kb_query, n_results=5)
+    # Retrieve ten MiniLM-safe children, then form bounded source-local evidence
+    # windows. Raw child retrieval stays available through query_kb() for
+    # diagnostics and evaluator work; only LLM context uses expanded windows.
+    kb_children = query_kb(query=kb_query, n_results=10)
+    kb_results = assemble_child_context(kb_children, n_windows=5)
+    kb_context_stats = {
+        "candidate_children": len(kb_children),
+        "candidate_unique_sources": len({child.get("source") for child in kb_children}),
+        "draft": context_budget_stats(kb_results, n_windows=3),
+        "verifier": context_budget_stats(kb_results, n_windows=5),
+    }
 
     latency = int((time.time() - t_start) * 1000)
     existing_latency = state.get("latency_ms", {})
@@ -521,7 +532,9 @@ def retrieve_node(state: AgentState) -> dict:
         "retrieve.complete",
         run_id=state["run_id"],
         web_sources=len(web_sources),
+        kb_children=len(kb_children),
         kb_results=len(kb_results),
+        kb_context_stats=kb_context_stats,
         latency_ms=latency
     )
 
@@ -529,6 +542,7 @@ def retrieve_node(state: AgentState) -> dict:
     return {
         "web_sources": web_sources,
         "kb_results": kb_results,
+        "kb_context_stats": kb_context_stats,
         "latency_ms": existing_latency,
         "error_log": new_error_log,
     }
@@ -542,16 +556,17 @@ def _build_source_context(web_sources: list, kb_results: list) -> str:
                  1500 chars covers ~78% of a typical result and the full
                  lower quartile. 98% of results were cut at the old 500-char
                  limit, which is why obvious claims were marked unverified.
-      KB_CHARS:  Seed docs average ~5294 chars. 800 chars covered only 15%
-                 of a doc (intro paragraph only). 2000 chars covers ~38%,
-                 reaching algorithm-level detail in all seed docs.
+      KB_CHARS:  Each evidence window is hard-capped at 2400 characters. This
+                 raises the old 2000-char child cap by only ~500 tokens across
+                 five verifier windows, leaving >53k of the 64k context budget
+                 after the existing web-source allowance.
       Context budget at these limits (worst-case, 5+5 sources):
         source tokens  ~4375  |  total input ~5695  |  headroom 54k / 64k
         cost delta per verify call: +$0.00074 (+14.3%)
     """
-    # PHASE-1 EXPERIMENT: raised from 500 → 1500 (web) and 800 → 2000 (kb)
+    # The window constructor applies the same 2400-character hard cap.
     WEB_CHARS = 1500
-    KB_CHARS  = 2000
+    KB_CHARS = MAX_EVIDENCE_WINDOW_CHARS
 
     parts = []
     for s in web_sources[:5]:
@@ -1725,5 +1740,4 @@ def route_after_hitl(state: AgentState) -> str:
         return "draft"
     else:   # rejected or unknown
         return END
-
 
