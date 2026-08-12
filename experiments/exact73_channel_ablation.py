@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
 from hashlib import sha256
 import json
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-import numpy as np
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
@@ -233,7 +231,22 @@ def complementarity_at_k(
     displaced_from_dense = sorted(dense_expected - set(fused_sources[:k]))
     bm25_identities = {chunk.identity for chunk in bm25_chunks[:k]}
     dense_identities = {(row["source"], row["chunk_index"]) for row in dense_rows[:k]}
-    destructive_fusion = bool(bm25_expected) and bool(displaced_from_bm25)
+    fused_identities = {
+        (row["source"], row["chunk_index"]) for row in fused_rows[:k]
+    }
+    # A: BM25 held an expected source in top-k and fusion lost it.
+    bm25_expected_displaced = bool(bm25_expected) and bool(displaced_from_bm25)
+    # B: stronger dense-induced harm — a non-expected dense identity sits in
+    # the fused top-k while an expected BM25 source was displaced. Ranking
+    # provenance supports contribution, not mechanism causality.
+    dense_non_expected_in_fused = {
+        identity
+        for identity in (dense_identities & fused_identities)
+        if identity[0] not in expected
+    }
+    dense_induced_destructive_fusion = (
+        bm25_expected_displaced and bool(dense_non_expected_in_fused)
+    )
     return {
         "k": k,
         "expected_in_bm25": sorted(bm25_expected),
@@ -245,8 +258,107 @@ def complementarity_at_k(
         "expected_displaced_from_dense": displaced_from_dense,
         "chunk_identity_overlap": len(bm25_identities & dense_identities),
         "source_overlap": len(set(bm25_sources[:k]) & set(dense_sources[:k])),
-        "destructive_fusion": destructive_fusion,
+        "bm25_expected_displaced": bm25_expected_displaced,
+        "dense_induced_destructive_fusion": dense_induced_destructive_fusion,
+        "dense_non_expected_in_fused": sorted(
+            [[source, index] for source, index in dense_non_expected_in_fused]
+        ),
+        # Legacy alias retained for older consumers; prefer the A/B fields.
+        "destructive_fusion": bm25_expected_displaced,
     }
+
+
+def channel_alignment_at_k(
+    bm25_chunks: list[FrozenChunk],
+    dense_rows: list[dict[str, Any]],
+    expected_sources: list[str],
+    k: int,
+) -> dict[str, Any]:
+    """BM25↔dense chunk/source alignment at candidate depth k (no fusion)."""
+    expected = set(expected_sources)
+    bm25 = bm25_chunks[:k]
+    dense = dense_rows[:k]
+    bm25_ids = {chunk.identity for chunk in bm25}
+    dense_ids = {(row["source"], row["chunk_index"]) for row in dense}
+    bm25_sources = {chunk.source for chunk in bm25}
+    dense_sources = {row["source"] for row in dense}
+    shared_sources = bm25_sources & dense_sources
+    shared_expected_sources = expected & shared_sources
+    shared_expected_chunks = {
+        identity for identity in (bm25_ids & dense_ids) if identity[0] in expected
+    }
+    same_source_different_chunk = {
+        source
+        for source in shared_expected_sources
+        if not any(identity[0] == source for identity in shared_expected_chunks)
+    }
+    return {
+        "k": k,
+        "chunk_identity_overlap": len(bm25_ids & dense_ids),
+        "source_overlap": len(shared_sources),
+        "same_relevant_source_different_chunk": sorted(same_source_different_chunk),
+        "same_relevant_chunk_both_channels": sorted(
+            [[source, index] for source, index in shared_expected_chunks]
+        ),
+        "expected_source_chunk_reinforcement": len(shared_expected_chunks),
+        "shared_expected_source_count": len(shared_expected_sources),
+    }
+
+
+def summarize_fusion_harm(complementarity: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """Count A/B fusion-harm events per model and depth."""
+    summary: dict[str, Any] = {}
+    for label, rows in complementarity.items():
+        by_depth: dict[str, dict[str, int]] = {}
+        for k in EVALUATION_DEPTHS:
+            key = str(k)
+            by_depth[key] = {
+                "bm25_expected_displaced": sum(
+                    1 for row in rows if row["at"][key]["bm25_expected_displaced"]
+                ),
+                "dense_induced_destructive_fusion": sum(
+                    1
+                    for row in rows
+                    if row["at"][key]["dense_induced_destructive_fusion"]
+                ),
+                "query_count": len(rows),
+            }
+        summary[label] = by_depth
+    return summary
+
+
+def summarize_channel_alignment(
+    alignments: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Aggregate BM25↔dense alignment across queries for each dense model."""
+    summary: dict[str, Any] = {}
+    for label, rows in alignments.items():
+        by_depth: dict[str, Any] = {}
+        for k in (3, 5, 10):
+            key = str(k)
+            chunk_overlaps = [row["at"][key]["chunk_identity_overlap"] for row in rows]
+            source_overlaps = [row["at"][key]["source_overlap"] for row in rows]
+            same_source_diff_chunk = sum(
+                1
+                for row in rows
+                if row["at"][key]["same_relevant_source_different_chunk"]
+            )
+            same_chunk = sum(
+                1 for row in rows if row["at"][key]["same_relevant_chunk_both_channels"]
+            )
+            reinforcement = sum(
+                row["at"][key]["expected_source_chunk_reinforcement"] for row in rows
+            )
+            by_depth[key] = {
+                "mean_chunk_identity_overlap": float(sum(chunk_overlaps) / len(chunk_overlaps)),
+                "mean_source_overlap": float(sum(source_overlaps) / len(source_overlaps)),
+                "queries_same_relevant_source_different_chunk": same_source_diff_chunk,
+                "queries_same_relevant_chunk_both_channels": same_chunk,
+                "expected_source_chunk_reinforcement_total": reinforcement,
+                "query_count": len(rows),
+            }
+        summary[label] = by_depth
+    return summary
 
 
 def unique_relevant_dense_beyond_bm25(
@@ -298,10 +410,13 @@ def early_prefix_bias_evidence(
     encoder: SentenceTransformer,
     chunks_by_source: dict[str, list[FrozenChunk]],
 ) -> dict[str, Any]:
-    """Check whether MiniLM-only fusion wins align with early-prefix concept presence."""
+    """Correlate MiniLM-only concept-pass wins with prefix concept presence.
+
+    This is correlational only. It does not establish beneficial truncation.
+    """
     other_by_query = {row["query"]: row for row in other_fused["per_query"]}
-    supported: list[str] = []
-    unsupported: list[str] = []
+    prefix_present: list[str] = []
+    prefix_absent: list[str] = []
     for row in minilm_fused["per_query"]:
         other = other_by_query[row["query"]]
         minilm_pass = row["at"]["3"]["concept_pass"] == 1.0
@@ -319,21 +434,31 @@ def early_prefix_bias_evidence(
                 prefix_texts.append(minilm_visible_prefix(chunk.text, encoder))
         combined = "\n".join(prefix_texts).lower()
         if all(concept.lower() in combined for concept in concepts):
-            supported.append(row["query"])
+            prefix_present.append(row["query"])
         else:
-            unsupported.append(row["query"])
-    if supported and not unsupported:
-        verdict = "SUPPORTED"
-    elif unsupported:
-        verdict = "UNSUPPORTED"
+            prefix_absent.append(row["query"])
+    # Causal beneficial-truncation claim remains unsupported; prefix presence
+    # alone is at most correlational evidence.
+    if prefix_present and not prefix_absent:
+        correlational_status = "CORRELATIONAL_PREFIX_PRESENCE_ONLY"
     else:
-        verdict = "UNSUPPORTED"
+        correlational_status = "UNSUPPORTED"
     return {
-        "verdict": verdict,
-        "minilm_only_concept_pass_at_3": len(supported) + len(unsupported),
-        "supported_queries": supported,
-        "unsupported_queries": unsupported,
+        "question_6_status": "UNSUPPORTED",
+        "correlational_status": correlational_status,
+        "minilm_only_concept_pass_at_3": len(prefix_present) + len(prefix_absent),
+        "prefix_concepts_present_queries": prefix_present,
+        "prefix_concepts_absent_queries": prefix_absent,
     }
+
+
+def arm_ranking_fingerprint(arm: dict[str, Any]) -> str:
+    """Fingerprint one arm's per-query (source, chunk_index) rankings."""
+    rankings = {
+        row["query"]: [(r["source"], r["chunk_index"]) for r in row["retrieved"]]
+        for row in arm["per_query"]
+    }
+    return ranking_fingerprint(rankings)
 
 
 def pairwise_metric_deltas(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
@@ -397,10 +522,21 @@ def run_ablation(project_root: Path) -> dict[str, Any]:
     arms["gte_rrf"] = evaluate_channel(in_domain, gte_fused)
 
     jina_provenance = prepare_jina_snapshot()
+    # Pin Jina to CPU for deterministic forensic co-residence with MiniLM/GTE on
+    # MPS. Device isolation only; weights/pooling/RRF/evaluator unchanged.
+    # Standalone CPU and MPS Jina rankings match the recorded EXACT73-JINA-FAIL.
     jina_encoder = load_jina_or_minilm_encoder(
         JINA_SPEC,
         candidate_snapshot=Path(jina_provenance["local_package_path"]),
+        device="cpu",
     )
+    jina_provenance = {
+        **jina_provenance,
+        "inference_device": "cpu",
+        "inference_device_reason": (
+            "deterministic co-residence with MiniLM/GTE; rankings match standalone Jina fail"
+        ),
+    }
     ingest_arm(client, jina_encoder, JINA_SPEC, chunks)
 
     def jina_dense(item: dict[str, Any]) -> list[dict[str, Any]]:
@@ -422,6 +558,7 @@ def run_ablation(project_root: Path) -> dict[str, Any]:
 
     complementarity: dict[str, list[dict[str, Any]]] = {}
     unique_dense_contributions: dict[str, list[dict[str, Any]]] = {}
+    channel_alignments: dict[str, list[dict[str, Any]]] = {}
     for label, spec, encoder in (
         ("minilm", MINILM_SPEC, minilm_encoder),
         ("gte", GTE_SPEC, gte_encoder),
@@ -429,6 +566,7 @@ def run_ablation(project_root: Path) -> dict[str, Any]:
     ):
         comp_rows: list[dict[str, Any]] = []
         unique_rows: list[dict[str, Any]] = []
+        align_rows: list[dict[str, Any]] = []
         fused_by_query = {r["query"]: r for r in arms[f"{label}_rrf"]["per_query"]}
         for item in in_domain:
             bm25 = bm25_by_query[item["query"]]
@@ -443,6 +581,12 @@ def run_ablation(project_root: Path) -> dict[str, Any]:
                     bm25, dense, fused, item["expected_sources"], k
                 )
             comp_rows.append(comp_entry)
+            align_entry = {"query": item["query"], "at": {}}
+            for k in (3, 5, 10):
+                align_entry["at"][str(k)] = channel_alignment_at_k(
+                    bm25, dense, item["expected_sources"], k
+                )
+            align_rows.append(align_entry)
             unique_rows.append(
                 {
                     "query": item["query"],
@@ -453,26 +597,16 @@ def run_ablation(project_root: Path) -> dict[str, Any]:
             )
         complementarity[label] = comp_rows
         unique_dense_contributions[label] = unique_rows
+        channel_alignments[label] = align_rows
 
     ranking_fps = {
-        "bm25": ranking_fingerprint(
-            {
-                q: [(c.source, c.chunk_index) for c in bm25_by_query[q][:FUSED_DEPTH]]
-                for q in queries
-            }
-        ),
-        "minilm_dense": ranking_fingerprint(
-            {
-                row["query"]: [(r["source"], r["chunk_index"]) for r in row["retrieved"]]
-                for row in arms["minilm_dense_only"]["per_query"]
-            }
-        ),
-        "minilm_rrf": ranking_fingerprint(
-            {
-                row["query"]: [(r["source"], r["chunk_index"]) for r in row["retrieved"]]
-                for row in arms["minilm_rrf"]["per_query"]
-            }
-        ),
+        "bm25_only": arm_ranking_fingerprint(arms["bm25_only"]),
+        "minilm_dense_only": arm_ranking_fingerprint(arms["minilm_dense_only"]),
+        "gte_dense_only": arm_ranking_fingerprint(arms["gte_dense_only"]),
+        "jina_dense_only": arm_ranking_fingerprint(arms["jina_dense_only"]),
+        "minilm_rrf": arm_ranking_fingerprint(arms["minilm_rrf"]),
+        "gte_rrf": arm_ranking_fingerprint(arms["gte_rrf"]),
+        "jina_rrf": arm_ranking_fingerprint(arms["jina_rrf"]),
     }
 
     pairwise = {
@@ -499,6 +633,8 @@ def run_ablation(project_root: Path) -> dict[str, Any]:
     prefix_vs_jina = early_prefix_bias_evidence(
         arms["minilm_rrf"], arms["jina_rrf"], minilm_encoder, chunks_by_source
     )
+    alignment_summary = summarize_channel_alignment(channel_alignments)
+    fusion_harm_summary = summarize_fusion_harm(complementarity)
 
     return {
         "provenance": {
@@ -509,14 +645,23 @@ def run_ablation(project_root: Path) -> dict[str, Any]:
             "bm25_depth": BM25_DEPTH,
             "fused_depth": FUSED_DEPTH,
             "rrf_k": RRF_K,
-            "jina_local_feasibility": "JINA-LOCAL-FEASIBILITY-FAIL (~6 GB peak RSS > frozen 4 GB gate)",
+            "jina_local_feasibility": (
+                "JINA-LOCAL-FEASIBILITY-FAIL: ~6 GB peak RSS > frozen 4 GB gate"
+            ),
         },
         "fusion_reproduction_failures": fusion_failures,
         "arms": arms,
         "complementarity": complementarity,
         "unique_dense_beyond_bm25": unique_dense_contributions,
+        "channel_alignment": channel_alignments,
+        "channel_alignment_summary": alignment_summary,
+        "fusion_harm_summary": fusion_harm_summary,
         "pairwise_deltas": pairwise,
-        "early_prefix_bias": {"vs_gte": prefix_vs_gte, "vs_jina": prefix_vs_jina},
+        "early_prefix_bias": {
+            "vs_gte": prefix_vs_gte,
+            "vs_jina": prefix_vs_jina,
+            "question_6_status": "UNSUPPORTED",
+        },
         "ranking_fingerprints": ranking_fps,
         "jina_model_provenance": jina_provenance,
     }

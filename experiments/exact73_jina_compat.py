@@ -324,7 +324,12 @@ def _build_local_jina_package(model_snapshot: Path, code_snapshot: Path, config:
     return package
 
 
-def load_encoder(spec: EncoderSpec, *, candidate_snapshot: Path | None = None) -> SentenceTransformer:
+def load_encoder(
+    spec: EncoderSpec,
+    *,
+    candidate_snapshot: Path | None = None,
+    device: str | None = None,
+) -> SentenceTransformer:
     """Load MiniLM or the pre-attested, pinned Jina snapshot."""
     kwargs: dict[str, Any] = {}
     model_target: str | Path = spec.model_id
@@ -336,6 +341,8 @@ def load_encoder(spec: EncoderSpec, *, candidate_snapshot: Path | None = None) -
         kwargs["local_files_only"] = True
     elif spec.revision is not None:
         kwargs["revision"] = spec.revision
+    if device is not None:
+        kwargs["device"] = device
     encoder = SentenceTransformer(str(model_target), **kwargs)
     if spec is CANDIDATE_SPEC:
         # Do not inherit a tokenizer's unlimited sentinel as an effective limit.

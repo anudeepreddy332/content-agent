@@ -9,10 +9,11 @@ from experiments.exact73_channel_ablation import (
     DENSE_DEPTH,
     EXPECTED_FIXTURE_FINGERPRINT,
     FUSED_DEPTH,
+    arm_ranking_fingerprint,
+    channel_alignment_at_k,
     complementarity_at_k,
     ranking_fingerprint,
     unique_relevant_dense_beyond_bm25,
-    _chunks_to_rows,
     _metrics_from_retrieved,
 )
 from experiments.exact73_jina_compat import (
@@ -37,13 +38,40 @@ def test_channel_depth_constants_match_experiment_brief():
     assert FUSED_DEPTH == 5
 
 
-def test_complementarity_flags_destructive_fusion():
+def test_bm25_expected_displaced_without_dense_contribution():
+    bm25 = [FrozenChunk("expected", 0, "text")]
+    dense = [{"source": "other_expected", "chunk_index": 0, "text": "x"}]
+    fused = [{"source": "noise_from_elsewhere", "chunk_index": 0, "text": "noise"}]
+    row = complementarity_at_k(bm25, dense, fused, ["expected"], k=1)
+    assert row["bm25_expected_displaced"] is True
+    assert row["dense_induced_destructive_fusion"] is False
+
+
+def test_dense_induced_destructive_fusion_requires_non_expected_dense_in_fused():
     bm25 = [FrozenChunk("expected", 0, "text")]
     dense = [{"source": "noise", "chunk_index": 0, "text": "noise"}]
     fused = [{"source": "noise", "chunk_index": 0, "text": "noise"}]
     row = complementarity_at_k(bm25, dense, fused, ["expected"], k=1)
-    assert row["destructive_fusion"] is True
+    assert row["bm25_expected_displaced"] is True
+    assert row["dense_induced_destructive_fusion"] is True
     assert row["expected_displaced_from_bm25"] == ["expected"]
+
+
+def test_channel_alignment_detects_same_source_different_chunk():
+    bm25 = [FrozenChunk("expected", 0, "a")]
+    dense = [{"source": "expected", "chunk_index": 1, "text": "b"}]
+    row = channel_alignment_at_k(bm25, dense, ["expected"], k=1)
+    assert row["same_relevant_source_different_chunk"] == ["expected"]
+    assert row["same_relevant_chunk_both_channels"] == []
+    assert row["expected_source_chunk_reinforcement"] == 0
+
+
+def test_channel_alignment_detects_chunk_reinforcement():
+    bm25 = [FrozenChunk("expected", 2, "a")]
+    dense = [{"source": "expected", "chunk_index": 2, "text": "a"}]
+    row = channel_alignment_at_k(bm25, dense, ["expected"], k=1)
+    assert row["same_relevant_chunk_both_channels"] == [["expected", 2]]
+    assert row["expected_source_chunk_reinforcement"] == 1
 
 
 def test_unique_dense_beyond_bm25_counts_only_expected_sources():
@@ -55,6 +83,21 @@ def test_unique_dense_beyond_bm25_counts_only_expected_sources():
 def test_ranking_fingerprint_is_stable():
     rankings = {"q": [("a", 0), ("b", 1)]}
     assert ranking_fingerprint(rankings) == ranking_fingerprint(rankings)
+
+
+def test_arm_ranking_fingerprint_covers_retrieved_order():
+    arm = {
+        "per_query": [
+            {
+                "query": "q",
+                "retrieved": [
+                    {"source": "a", "chunk_index": 0},
+                    {"source": "b", "chunk_index": 1},
+                ],
+            }
+        ]
+    }
+    assert arm_ranking_fingerprint(arm) == ranking_fingerprint({"q": [("a", 0), ("b", 1)]})
 
 
 def test_rrf_fused_depth_is_deterministic():
