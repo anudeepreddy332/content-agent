@@ -100,6 +100,7 @@ def _advance(run_id: str, invoke_input, finalizing: bool):
         log.error("api.run_crash", run_id=run_id, error=str(e))
         crash = dict(REGISTRY[run_id]["initial_state"])
         crash["error_log"] = [f"pipeline crash: {e}"]
+        crash["verification_status"] = "upstream_failed"
         _write_telemetry(crash)
         with LOCK:
             REGISTRY[run_id].update(status="error", error=str(e))
@@ -186,6 +187,7 @@ def _advance_streaming(run_id, invoke_input, finalizing):
         log.error("api.stream_crash", run_id=run_id, error=str(e))
         crash = dict(REGISTRY[run_id]["initial_state"])
         crash["error_log"] = [f"pipeline crash: {e}"]
+        crash["verification_status"] = "upstream_failed"
         _write_telemetry(crash)
         with LOCK:
             REGISTRY[run_id].update(status="error", error=str(e))
@@ -485,4 +487,3 @@ def demo_index():
     if not index.exists():
         raise HTTPException(404, "demo UI not installed (static/index.html missing)")
     return FileResponse(index)
-

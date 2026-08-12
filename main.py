@@ -68,6 +68,9 @@ def _write_telemetry(state: dict):
         "reflection_score": state.get("reflection_score"),
         "reflection_notes": state.get("reflection_notes", ""),
         "grounding_score": state.get("grounding_score"),
+        # Unknown is deliberate for historical or partial states. Benchmark code
+        # must not infer a completed verification from a missing status.
+        "verification_status": state.get("verification_status", "unknown"),
         "hitl_status": state.get("hitl_status"),
         "html_review_status": state.get("html_review_status"),
         "git_status": state.get("git_status"),
@@ -106,8 +109,8 @@ def _write_telemetry(state: dict):
             "S": sum(1 for r in report if r.get("specificity") == "substantive"),
             "V": len(verified),
             "N": len(report),
-            "verified_fraction": round(len(verified) / max(len(report), 1), 3),
-            "unverified_fraction": round(len(unverified) / max(len(report), 1), 3),
+            "verified_fraction": round(len(verified) / len(report), 3) if report else None,
+            "unverified_fraction": round(len(unverified) / len(report), 3) if report else None,
         },
         # Full claim-level evidence
         "grounding_report": report,
@@ -172,6 +175,7 @@ def _build_initial_state(topic, slug, card_id, series, run_id, category="concept
         "kb_context_stats": {},
         "grounding_report": [],
         "grounding_score": 0.0,
+        "verification_status": "not_started",
         "reflection_score": 0,
         "reflection_notes": "",
         "iterations": 0,
@@ -245,6 +249,7 @@ def run(topic, card_id, series, auto):
         result = graph.invoke(initial_state)
     except Exception as e:
         initial_state["error_log"] = [f"pipeline crash: {e}"]
+        initial_state["verification_status"] = "upstream_failed"
         _write_telemetry(initial_state)
         raise
 

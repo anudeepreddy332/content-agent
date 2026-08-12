@@ -1,8 +1,9 @@
-"""Assert every required telemetry field is present in a fresh run JSON."""
-import sys
+"""Validate fields in telemetry emitted by one exact successful CLI run."""
 import json
 import subprocess
+import sys
 from pathlib import Path
+
 
 REQUIRED_FIELDS = [
     "run_id", "topic", "slug", "timestamp",
@@ -16,47 +17,86 @@ REQUIRED_FIELDS = [
     "web_sources", "kb_results", "attribution",
     "total_cost_usd", "total_tokens",
     "latency_ms", "error_log",
-    "hitl_status", "git_status",
+    "hitl_status", "git_status", "verification_status",
 ]
 
-topic = "Gradient Descent"
-proc = subprocess.run(
-    ["uv", "run", "python", "main.py", "run",
-     "--topic", topic, "--card-id", "standalone", "--series", "Test", "--auto"],
-    capture_output=True, text=True, timeout=300,
-)
 
-runs = sorted(Path("outputs/runs").glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-data = json.loads(runs[0].read_text())
-
-missing = [f for f in REQUIRED_FIELDS if f not in data]
-if missing:
-    print(f"FAIL: missing telemetry fields: {missing}")
-    sys.exit(1)
-
-# Check web_sources_count is a positive integer
-if not isinstance(data.get("web_sources_count"), int) or data["web_sources_count"] < 0:
-    print(f"FAIL: web_sources_count is invalid: {data.get('web_sources_count')}")
-    sys.exit(1)
-
-# M5 correctness checks — presence alone passed the broken retrieve_kb field.
-attr = data.get("attribution", {})
-report = data.get("grounding_report", [])
-if report and sum(attr.get(k, 0) for k in ("web", "kb", "none", "unresolved")) != len(report):
-    print(f"FAIL: attribution counts {attr} do not sum to claim count {len(report)}")
-    sys.exit(1)
-if report and any("source_kind" not in r for r in report):
-    print("FAIL: grounding_report entries missing source_kind")
-    sys.exit(1)
-if any("chunk_index" not in k for k in data.get("kb_results", [])):
-    print("FAIL: kb_results entries missing chunk_index")
-    sys.exit(1)
-
-context_stats = data.get("kb_context_stats")
-required_context_fields = {"candidate_children", "candidate_unique_sources", "draft", "verifier"}
-if not isinstance(context_stats, dict) or not required_context_fields <= set(context_stats):
-    print("FAIL: kb_context_stats is missing child-depth or consumer budget diagnostics")
-    sys.exit(1)
+class TelemetryValidationError(ValueError):
+    """The CLI result cannot be bound to valid telemetry for this invocation."""
 
 
-print("PASS: all required telemetry fields present")
+def extract_run_id(stdout: str) -> str | None:
+    for line in stdout.splitlines():
+        if line.startswith("RUN_ID="):
+            run_id = line.split("=", 1)[1].strip()
+            return run_id or None
+    return None
+
+
+def load_exact_telemetry(run_id: str, topic: str, runs_dir: Path = Path("outputs/runs")) -> dict:
+    telemetry_path = runs_dir / f"{run_id}.json"
+    if not telemetry_path.is_file():
+        raise TelemetryValidationError(f"telemetry missing for emitted RUN_ID={run_id}")
+    try:
+        data = json.loads(telemetry_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise TelemetryValidationError(f"telemetry unreadable for emitted RUN_ID={run_id}: {error}") from error
+    if data.get("run_id") != run_id:
+        raise TelemetryValidationError("telemetry run_id does not match emitted RUN_ID")
+    if data.get("topic") != topic:
+        raise TelemetryValidationError("telemetry topic does not match requested topic")
+    return data
+
+
+def telemetry_validation_error(data: dict) -> str | None:
+    missing = [field for field in REQUIRED_FIELDS if field not in data]
+    if missing:
+        return f"missing telemetry fields: {missing}"
+    if not isinstance(data.get("web_sources_count"), int) or data["web_sources_count"] < 0:
+        return f"web_sources_count is invalid: {data.get('web_sources_count')}"
+
+    attr = data.get("attribution", {})
+    report = data.get("grounding_report", [])
+    if report and sum(attr.get(kind, 0) for kind in ("web", "kb", "none", "unresolved")) != len(report):
+        return f"attribution counts {attr} do not sum to claim count {len(report)}"
+    if report and any("source_kind" not in verdict for verdict in report):
+        return "grounding_report entries missing source_kind"
+    if any("chunk_index" not in chunk for chunk in data.get("kb_results", [])):
+        return "kb_results entries missing chunk_index"
+    context_stats = data.get("kb_context_stats")
+    required_context_fields = {"candidate_children", "candidate_unique_sources", "draft", "verifier"}
+    if not isinstance(context_stats, dict) or not required_context_fields <= set(context_stats):
+        return "kb_context_stats is missing child-depth or consumer budget diagnostics"
+    return None
+
+
+def run_check(topic: str = "Gradient Descent", runs_dir: Path = Path("outputs/runs")) -> int:
+    proc = subprocess.run(
+        ["uv", "run", "python", "main.py", "run",
+         "--topic", topic, "--card-id", "standalone", "--series", "Test", "--auto"],
+        capture_output=True, text=True, timeout=300,
+    )
+    if proc.returncode != 0:
+        print(f"FAIL: CLI exited with status {proc.returncode}")
+        return 1
+
+    run_id = extract_run_id(proc.stdout)
+    if run_id is None:
+        print("FAIL: successful CLI output did not emit RUN_ID")
+        return 1
+    try:
+        data = load_exact_telemetry(run_id, topic, runs_dir)
+    except TelemetryValidationError as error:
+        print(f"FAIL: {error}")
+        return 1
+
+    error = telemetry_validation_error(data)
+    if error:
+        print(f"FAIL: {error}")
+        return 1
+    print("PASS: exact-run telemetry fields and identity validated")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(run_check())

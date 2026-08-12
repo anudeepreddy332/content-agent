@@ -41,6 +41,8 @@ from observability.tracing import is_tracing_enabled
 import html as html_module
 import re
 import datetime
+from typing import Literal
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text()
 REFLECT_SYSTEM = Path("prompts/reflect_system.md").read_text()
@@ -168,6 +170,23 @@ def _extract_json_array(raw: str) -> list:
         if isinstance(parsed, list):
             return parsed
     raise ValueError("no JSON array found in verifier output")
+
+
+class _VerifierVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    claim: str
+    source_url: str | None
+    confidence: float = Field(ge=0.0, le=1.0)
+    status: Literal["verified", "weak", "unverified"]
+    specificity: Literal["substantive", "generic"]
+
+
+def _parse_verifier_verdicts(raw: str, *, expected_count: int | None = None) -> list[dict]:
+    """Strictly parse verifier output; malformed or incomplete results fail loudly."""
+    items = _extract_json_array(raw)
+    if expected_count is not None and len(items) != expected_count:
+        raise ValueError(f"expected {expected_count} verifier verdict(s), got {len(items)}")
+    return [_VerifierVerdict.model_validate(item).model_dump() for item in items]
 
 
 def _cost(usage) -> float:
@@ -750,6 +769,7 @@ def verify_node(state: AgentState) -> dict:
         log.warning("verify.cost_gate_hit", run_id=state["run_id"],
                     cost=state["total_cost_usd"])
         return {"grounding_report": [], "grounding_score": 0.0,
+                "verification_status": "skipped_cost_gate",
                 "latency_ms": {**state.get("latency_ms", {}), "verify": 0}}
 
     client = _get_client()
@@ -791,12 +811,14 @@ def verify_node(state: AgentState) -> dict:
     # Parse grounding report
     raw = claim_response.choices[0].message.content.strip()
 
+    verification_status = "completed"
     try:
-        grounding_report = _extract_json_array(raw)
-    except (json.JSONDecodeError, ValueError) as e:
+        grounding_report = _parse_verifier_verdicts(raw)
+    except (json.JSONDecodeError, ValueError, ValidationError) as e:
         log.error("verify.parse_failed", run_id=state["run_id"], error=str(e),
                   raw_preview=raw[:300])
         grounding_report = []
+        verification_status = "parse_failed"
 
     # Remove near-exact duplicate claims before scoring.
     # Prompt instruction handles semantic duplicates; this catches string-level dupes.
@@ -840,6 +862,7 @@ def verify_node(state: AgentState) -> dict:
              unverified=n_unverified,
              substantive=n_substantive,
              substantive_verified=n_substantive_verified,
+             verification_status=verification_status,
              latency_ms=latency,
              cost=round(run_cost, 5),
              )
@@ -855,7 +878,8 @@ def verify_node(state: AgentState) -> dict:
         "W": n_weak,
         "U": n_unverified,
         "N": len(grounding_report),
-        "uvr": round(n_unverified / max(len(grounding_report), 1), 3),
+        "uvr": round(n_unverified / len(grounding_report), 3) if grounding_report else None,
+        "verification_status": verification_status,
         "grounding_score": round(grounding_score, 3),
         "m4_feedback_claims": state.get("m4_feedback_claims", 0),
         "unverified_claims": [
@@ -871,6 +895,7 @@ def verify_node(state: AgentState) -> dict:
     return {
         "grounding_report": grounding_report,
         "grounding_score": round(grounding_score, 3),
+        "verification_status": verification_status,
         "iteration_metrics": iteration_metrics,
         "total_tokens": state.get("total_tokens", 0) + claim_response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
