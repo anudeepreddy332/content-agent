@@ -22,6 +22,7 @@ load_dotenv()
 from agent.state import AgentState, DraftSections
 from tools.web_search import web_search
 from tools.query_kb import query_kb
+from experiments.gte_modernbert import EXPERIMENT_MARKER
 from config import (
     DEEPSEEK_MODEL,
     DEEPSEEK_BASE_URL,
@@ -576,7 +577,11 @@ def _build_source_context(web_sources: list, kb_results: list) -> str:
     for s in web_sources[:5]:
         parts.append(f"[WEB] {s['url']}\n{s['content'][:WEB_CHARS]}")
     for k in kb_results[:5]:
-        parts.append(f"[KB] {k['source']}\n{k['text'][:KB_CHARS]}")
+        # The GTE Gate 1 collection stores intact model-safe 512-token chunks.
+        # Preserve those chunks end-to-end for the isolated experiment only; the
+        # legacy production collection retains its independently benchmarked cap.
+        kb_text = k["text"] if k.get("experiment") == EXPERIMENT_MARKER else k["text"][:KB_CHARS]
+        parts.append(f"[KB] {k['source']}\n{kb_text}")
     return "\n\n".join(parts) if parts else "No sources available."
 
 def _build_citations(grounding_report: list, web_sources: list) -> str:

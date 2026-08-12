@@ -1,0 +1,41 @@
+{
+  "chunk_contract": {
+    "actual_chunk_count": 65,
+    "empty_chunk_count": 0,
+    "max_model_input_tokens": 514
+  },
+  "collection": {
+    "collection": "content_agent_gte_modernbert_gate1_794851d",
+    "corpus_sha256": "1d7e4fc1f3a4af518911ef073e5a5ee40a144b88c6e0654e5c2fc4a98a0b5d07",
+    "point_count": 65,
+    "source_count": 20,
+    "vector_schema": {
+      "distance": "Cosine",
+      "size": 768
+    }
+  },
+  "embedding_spec": {
+    "chunk_overlap": 64,
+    "chunk_size": 512,
+    "max_sequence_length": 8192,
+    "model_id": "Alibaba-NLP/gte-modernbert-base",
+    "output_dimension": 768,
+    "revision": "e7f32e3c00f91d699e8c43b53106206bcc72bb22",
+    "tokenizer_identity": "Alibaba-NLP/gte-modernbert-base"
+  },
+  "local_performance": {
+    "encoding_seconds": 9.969251499976963,
+    "peak_rss_bytes": 589529088,
+    "point_count": 65,
+    "warm_query_p95_ms": 13.821894087595865
+  },
+  "runtime_model": {
+    "effective_max_sequence_length": 8192,
+    "model_id": "Alibaba-NLP/gte-modernbert-base",
+    "output_dimension": 768,
+    "revision": "e7f32e3c00f91d699e8c43b53106206bcc72bb22",
+    "runtime_model_commit": "e7f32e3c00f91d699e8c43b53106206bcc72bb22",
+    "tokenizer": "Alibaba-NLP/gte-modernbert-base",
+    "tokenizer_max_length": 8192
+  }
+}
