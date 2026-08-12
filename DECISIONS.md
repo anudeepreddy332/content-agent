@@ -4,6 +4,36 @@ Purpose: Prevent future chats from re-litigating solved problems.
 Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing architecture changes.
 
 ---
+Date: 2026-08-12
+
+Decision: Evaluation gates must bind telemetry to the exact successful CLI invocation and
+must distinguish verifier completion from the unverified-claim rate (UVR).
+
+Problem: `check_telemetry_fields.py` ignored a nonzero subprocess result and selected the newest
+existing JSON by mtime, so stale valid telemetry could print PASS. The benchmark also represented
+zero verdicts as UVR 0.0 in run display, aggregate, and gate logic. A verifier parse failure could
+therefore look like a successful run with zero unverified claims.
+
+Action: Require CLI exit status 0, parse its emitted `RUN_ID`, load only
+`outputs/runs/<RUN_ID>.json`, verify that record's `run_id` and requested topic, then validate
+required fields. The mtime fallback is removed. New records carry `verification_status`:
+`completed`, `parse_failed`, `skipped_cost_gate`, or `upstream_failed`. Completed runs with
+verdicts compute normal UVR. Completed zero-verdict runs report UVR N/A: they are valid only when
+the benchmark topic explicitly sets `allow_zero_claims`; otherwise they are unscorable/incomplete.
+All non-completed statuses fail benchmark validation. Historical files lacking the new field remain
+readable but are treated as `unknown`, never inferred completed.
+
+Trade-off: Benchmark gates now reject incomplete evidence rather than presenting a misleading
+zero rate. This does not change the UVR threshold (still <=0.15), verifier prompt/rubric, topics,
+retrieval, or production telemetry history.
+
+Evidence: Deterministic regressions cover nonzero CLI plus stale telemetry, missing exact telemetry,
+run/topic mismatches, completed zero-claim opt-in and rejection paths, parse failure, aggregate N/A,
+and UVR values 0.00, 0.15, and above 0.15.
+
+Status: Accepted evaluation-integrity correction. No paid benchmark run was used to validate it.
+
+---
 Date: 2026-08-11
 
 Decision: Retrieval evaluation semantics corrected; no production chunking or retrieval-architecture

@@ -1,6 +1,9 @@
 """B4: API state machine + auth, with the graph fully mocked. $0, zero network.
 API_SYNC=1 makes run advancement inline so assertions are deterministic."""
+import json
 import os
+from pathlib import Path
+
 import pytest
 from tests.conftest import fake_response
 
@@ -121,6 +124,31 @@ def test_approve_after_terminal_409(client):
     client.post(f"/runs/{rid}/approve", headers=H)                     # draft -> html
     client.post(f"/runs/{rid}/approve", headers=H)                     # html -> complete
     assert client.post(f"/runs/{rid}/approve", headers=H).status_code == 409
+
+
+def test_poll_graph_crash_writes_upstream_failed_telemetry(tmp_path, monkeypatch):
+    """The poll endpoint must classify graph crashes before persistence."""
+    import api.server as srv
+    from fastapi.testclient import TestClient
+
+    class CrashingGraph:
+        def invoke(self, *_args, **_kwargs):
+            raise RuntimeError("injected poll failure")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(srv, "GRAPH", CrashingGraph())
+    client = TestClient(srv.app)
+
+    created = client.post("/runs", json={"topic": "Gradient Descent"}, headers=H)
+    assert created.status_code == 202
+    run_id = created.json()["run_id"]
+
+    status = client.get(f"/runs/{run_id}", headers=H).json()
+    assert status["status"] == "error"
+    assert status["error"] == "injected poll failure"
+    telemetry = json.loads((Path("outputs/runs") / f"{run_id}.json").read_text())
+    assert telemetry["verification_status"] == "upstream_failed"
+    assert telemetry["error_log"] == ["pipeline crash: injected poll failure"]
 
 
 def test_html_revise_discards_content_change(base_state, monkeypatch):
