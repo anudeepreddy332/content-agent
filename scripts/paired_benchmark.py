@@ -11,13 +11,15 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
 import subprocess
-import sys
-from dataclasses import asdict, dataclass
+import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from numbers import Real
 from pathlib import Path
 from typing import Callable
 
@@ -39,6 +41,8 @@ class ArmSpec:
     arm: str
     architecture_sha: str
     chunk_contract: dict
+    expected_source_count: int
+    expected_point_count: int
 
 
 ARMS = (
@@ -46,11 +50,15 @@ ARMS = (
         arm="baseline",
         architecture_sha=BASELINE_SHA,
         chunk_contract={"tokenizer": "cl100k_base", "content_tokens": 400, "overlap_tokens": 50},
+        expected_source_count=20,
+        expected_point_count=73,
     ),
     ArmSpec(
         arm="candidate",
         architecture_sha=CANDIDATE_SHA,
         chunk_contract={"tokenizer": "all-MiniLM-L6-v2", "content_tokens": 224, "overlap_tokens": 32},
+        expected_source_count=20,
+        expected_point_count=139,
     ),
 )
 
@@ -94,6 +102,35 @@ def load_topics(path: Path) -> list[dict]:
     return topics
 
 
+CANONICAL_TOPICS_PATH = Path(__file__).resolve().parents[1] / "evals" / "topics.json"
+
+
+def canonical_topic_hash() -> str:
+    return _sha256(load_topics(CANONICAL_TOPICS_PATH))
+
+
+def require_canonical_topics(topics: list[dict]) -> None:
+    if len(topics) != 20:
+        raise BenchmarkStateError(f"primary paired benchmark requires exactly 20 topics, got {len(topics)}")
+    if _sha256(topics) != canonical_topic_hash():
+        raise BenchmarkStateError("primary paired benchmark topics do not match the canonical topic set")
+
+
+def _usable_frozen_results(query: str, results: object) -> list[dict]:
+    if not isinstance(results, list) or not results:
+        raise BenchmarkStateError(f"frozen web evidence has no usable results for query: {query!r}")
+    for result in results:
+        if not isinstance(result, dict):
+            raise BenchmarkStateError(f"frozen web evidence has a non-object result for query: {query!r}")
+        if not all(isinstance(result.get(field), str) and result[field].strip()
+                   for field in ("title", "url", "content")):
+            raise BenchmarkStateError(f"frozen web evidence has an unusable result for query: {query!r}")
+        score = result.get("score")
+        if isinstance(score, bool) or not isinstance(score, Real) or not math.isfinite(score):
+            raise BenchmarkStateError(f"frozen web evidence has a non-finite score for query: {query!r}")
+    return results
+
+
 def benchmark_web_queries(topics: list[dict]) -> list[str]:
     """Mirror the fixed query templates used by ``retrieve_node`` exactly."""
     queries = []
@@ -123,9 +160,7 @@ def capture_frozen_web_snapshot(
     captured = {}
     for query in queries:
         results = search(query, max_results=5, force_refresh=True)
-        if not isinstance(results, list):
-            raise BenchmarkStateError(f"web capture returned invalid results for query: {query!r}")
-        captured[query] = {"max_results": 5, "results": results}
+        captured[query] = {"max_results": 5, "results": _usable_frozen_results(query, results)}
     snapshot = {
         "schema_version": 1,
         "captured_at": datetime.now(timezone.utc).isoformat(),
@@ -144,8 +179,9 @@ def load_frozen_web_snapshot(path: Path, topics: list[dict]) -> dict:
         raise BenchmarkStateError(f"frozen web snapshot is missing {len(missing)} required query result(s)")
     for query in benchmark_web_queries(topics):
         entry = snapshot["queries"].get(query)
-        if not isinstance(entry, dict) or entry.get("max_results") != 5 or not isinstance(entry.get("results"), list):
+        if not isinstance(entry, dict) or entry.get("max_results") != 5:
             raise BenchmarkStateError(f"frozen web snapshot is malformed for query: {query!r}")
+        _usable_frozen_results(query, entry.get("results"))
     return snapshot
 
 
@@ -160,11 +196,10 @@ def experiment_path(experiment_dir: Path) -> Path:
     return experiment_dir / "experiment.json"
 
 
-def initialize_experiment(experiment_dir: Path, topics: list[dict], snapshot_path: Path) -> dict:
-    """Create or verify the minimal immutable provenance record."""
+def _experiment_core(experiment_dir: Path, topics: list[dict], snapshot_path: Path) -> dict:
     snapshot = load_frozen_web_snapshot(snapshot_path, topics)
     experiment_id = experiment_dir.name
-    manifest = {
+    return {
         "schema_version": 1,
         "experiment_id": experiment_id,
         "baseline_architecture_sha": BASELINE_SHA,
@@ -182,14 +217,71 @@ def initialize_experiment(experiment_dir: Path, topics: list[dict], snapshot_pat
             for spec in ARMS
         },
     }
+
+
+def initialize_experiment(experiment_dir: Path, topics: list[dict], snapshot_path: Path) -> dict:
+    """Create or verify the minimal immutable provenance record."""
+    require_canonical_topics(topics)
+    manifest = _experiment_core(experiment_dir, topics, snapshot_path)
     path = experiment_path(experiment_dir)
     if path.exists():
         existing = load_json(path, "experiment manifest")
-        if existing != manifest:
+        if any(existing.get(field) != value for field, value in manifest.items()):
             raise BenchmarkStateError("existing experiment provenance does not match requested benchmark")
         return existing
     atomic_write_json(path, manifest)
     return manifest
+
+
+def _file_hash(path: Path) -> str:
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as error:
+        raise BenchmarkStateError(f"benchmark runtime file is unreadable: {path}") from error
+
+
+def bind_experiment_digest(
+    experiment_dir: Path,
+    manifest: dict,
+    execution_shas: dict[str, str],
+    collection_manifests: dict[str, dict],
+    runtime: Path,
+) -> dict:
+    """Bind completed units to one digest of the decision-critical run inputs."""
+    if set(execution_shas) != {spec.arm for spec in ARMS}:
+        raise BenchmarkStateError("experiment execution SHA set is incomplete")
+    if set(collection_manifests) != {spec.arm for spec in ARMS}:
+        raise BenchmarkStateError("experiment collection manifest set is incomplete")
+    runtime_hashes = {
+        "harness": _file_hash(Path(__file__)),
+        "benchmark_runtime": _file_hash(runtime / "benchmark_runtime.py"),
+        "sitecustomize": _file_hash(runtime / "sitecustomize.py"),
+    }
+    digest_inputs = {
+        "baseline_execution_sha": execution_shas["baseline"],
+        "candidate_execution_sha": execution_shas["candidate"],
+        "harness_hashes": runtime_hashes,
+        "embedding_model": EMBEDDING_MODEL,
+        "canonical_topic_hash": canonical_topic_hash(),
+        "frozen_web_snapshot_hash": manifest["frozen_web_snapshot_hash"],
+        "collection_manifest_hashes": {
+            arm: _sha256(collection_manifests[arm]) for arm in sorted(collection_manifests)
+        },
+    }
+    bound = {
+        **_experiment_core(experiment_dir, load_topics(CANONICAL_TOPICS_PATH), Path(manifest["frozen_web_snapshot"])),
+        "execution_shas": execution_shas,
+        "harness_hashes": runtime_hashes,
+        "collection_manifest_hashes": digest_inputs["collection_manifest_hashes"],
+        "experiment_digest": _sha256(digest_inputs),
+    }
+    path = experiment_path(experiment_dir)
+    existing = load_json(path, "experiment manifest")
+    if existing != manifest and existing != bound:
+        raise BenchmarkStateError("existing experiment provenance has incompatible bound inputs")
+    if existing != bound:
+        atomic_write_json(path, bound)
+    return bound
 
 
 def _git(repo_root: Path, *args: str) -> str:
@@ -236,9 +328,13 @@ def collection_manifest_path(experiment_dir: Path, arm: str) -> Path:
     return experiment_dir / "collections" / f"{arm}.json"
 
 
-def _collection_point_count(client, name: str) -> int:
+def _collection_properties(client, name: str) -> tuple[int, int, str]:
     try:
-        return int(client.get_collection(collection_name=name).points_count)
+        info = client.get_collection(collection_name=name)
+        vectors = info.config.params.vectors
+        size = int(vectors.size)
+        distance = getattr(vectors.distance, "value", vectors.distance)
+        return int(info.points_count), size, str(distance).lower()
     except Exception as error:
         raise BenchmarkStateError(f"cannot inspect disposable collection {name!r}") from error
 
@@ -256,6 +352,8 @@ def validate_collection_manifest(
     name: str,
     source_count: int,
     point_count: int,
+    vector_size: int,
+    distance: str,
     execution_sha: str,
 ) -> None:
     expected = {
@@ -268,6 +366,8 @@ def validate_collection_manifest(
         "embedding_model": EMBEDDING_MODEL,
         "source_count": source_count,
         "point_count": point_count,
+        "vector_size": vector_size,
+        "distance": distance,
     }
     if manifest != expected:
         raise BenchmarkStateError(f"collection manifest does not prove {spec.arm} collection identity")
@@ -285,23 +385,36 @@ def prepare_collection(
     name = collection_name(experiment_dir.name, spec.arm)
     if not name.startswith("paired_"):
         raise BenchmarkStateError("benchmark collection name is not disposable")
+    if source_count != spec.expected_source_count:
+        raise BenchmarkStateError(
+            f"{spec.arm} seed corpus count {source_count} != expected {spec.expected_source_count}"
+        )
     path = collection_manifest_path(experiment_dir, spec.arm)
     names = _collection_names(client)
     if name in names:
-        point_count = _collection_point_count(client, name)
-        if point_count > 0:
-            if not path.exists():
-                raise BenchmarkStateError(f"refusing unexpected nonempty collection: {name}")
-            manifest = load_json(path, "collection manifest")
-            validate_collection_manifest(manifest, spec, name, source_count, point_count, execution_sha)
-            return manifest
-        if path.exists():
-            raise BenchmarkStateError(f"refusing manifest-proven collection with zero points: {name}")
+        point_count, vector_size, distance = _collection_properties(client, name)
+        if point_count != spec.expected_point_count:
+            raise BenchmarkStateError(
+                f"{spec.arm} collection point count {point_count} != expected {spec.expected_point_count}"
+            )
+        if vector_size != 384 or distance != "cosine":
+            raise BenchmarkStateError(f"{spec.arm} collection vector config is not MiniLM 384 cosine")
+        if not path.exists():
+            raise BenchmarkStateError(f"refusing unexpected nonempty collection: {name}")
+        manifest = load_json(path, "collection manifest")
+        validate_collection_manifest(
+            manifest, spec, name, source_count, point_count, vector_size, distance, execution_sha,
+        )
+        return manifest
 
     ingest(name)
-    point_count = _collection_point_count(client, name)
-    if point_count <= 0:
-        raise BenchmarkStateError(f"ingest did not create a nonempty disposable collection: {name}")
+    point_count, vector_size, distance = _collection_properties(client, name)
+    if point_count != spec.expected_point_count:
+        raise BenchmarkStateError(
+            f"{spec.arm} ingest point count {point_count} != expected {spec.expected_point_count}"
+        )
+    if vector_size != 384 or distance != "cosine":
+        raise BenchmarkStateError(f"{spec.arm} ingest collection vector config is not MiniLM 384 cosine")
     manifest = {
         "schema_version": 1,
         "arm": spec.arm,
@@ -312,6 +425,8 @@ def prepare_collection(
         "embedding_model": EMBEDDING_MODEL,
         "source_count": source_count,
         "point_count": point_count,
+        "vector_size": vector_size,
+        "distance": distance,
     }
     atomic_write_json(path, manifest)
     return manifest
@@ -324,17 +439,31 @@ def install_runtime(experiment_dir: Path) -> Path:
     source = Path(__file__).with_name("benchmark_runtime.py")
     shutil.copyfile(source, runtime / "benchmark_runtime.py")
     (runtime / "sitecustomize.py").write_text(
-        "from benchmark_runtime import install_frozen_web_search\ninstall_frozen_web_search()\n",
+        "from benchmark_runtime import (\n"
+        "    install_benchmark_guards,\n"
+        "    install_frozen_web_search,\n"
+        ")\n"
+        "install_frozen_web_search()\n"
+        "install_benchmark_guards()\n",
         encoding="utf-8",
     )
     return runtime
 
 
-def arm_environment(runtime: Path, snapshot_path: Path, collection: str, qdrant_url: str) -> dict[str, str]:
+def arm_environment(
+    runtime: Path,
+    snapshot_path: Path,
+    collection: str,
+    qdrant_url: str,
+    consumption_path: Path | None = None,
+) -> dict[str, str]:
     env = dict(os.environ)
     env["CONTENT_AGENT_FROZEN_WEB_SNAPSHOT"] = str(snapshot_path.resolve())
+    env["CONTENT_AGENT_FROZEN_WEB_SNAPSHOT_HASH"] = _sha256(load_json(snapshot_path, "frozen web snapshot"))
     env["QDRANT_COLLECTION"] = collection
     env["QDRANT_URL"] = qdrant_url
+    if consumption_path is not None:
+        env["CONTENT_AGENT_FROZEN_WEB_CONSUMPTION"] = str(consumption_path.resolve())
     env["PYTHONPATH"] = str(runtime) + os.pathsep + env.get("PYTHONPATH", "")
     return env
 
@@ -343,14 +472,50 @@ def unit_path(experiment_dir: Path, topic: dict, arm: str) -> Path:
     return experiment_dir / "units" / f"topic-{int(topic['id']):02d}-{arm}.json"
 
 
-def _claim_total(telemetry: dict) -> int:
-    return sum(telemetry.get(key, 0) for key in ("claims_verified", "claims_weak", "claims_unverified"))
+def failed_attempt_path(experiment_dir: Path, topic: dict, arm: str) -> Path:
+    attempt_id = f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')}-{uuid.uuid4().hex[:8]}"
+    return experiment_dir / "attempts" / f"topic-{int(topic['id']):02d}-{arm}-{attempt_id}.json"
+
+
+def _nonnegative_count(value: object, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise BenchmarkStateError(f"{label} must be a nonnegative integer")
+    return value
+
+
+def _finite_nonnegative_number(value: object, label: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or value < 0:
+        raise BenchmarkStateError(f"{label} must be a finite nonnegative number")
+    return float(value)
+
+
+def _claim_counts(telemetry: dict) -> dict[str, int]:
+    counts = {
+        "verified": _nonnegative_count(telemetry.get("claims_verified"), "claims_verified"),
+        "weak": _nonnegative_count(telemetry.get("claims_weak"), "claims_weak"),
+        "unverified": _nonnegative_count(telemetry.get("claims_unverified"), "claims_unverified"),
+    }
+    counts["total"] = sum(counts.values())
+    return counts
+
+
+def _validate_frozen_consumption(telemetry: dict, topic: dict, snapshot_hash: str) -> dict:
+    frozen = telemetry.get("frozen_web")
+    if not isinstance(frozen, dict) or frozen.get("snapshot_hash") != snapshot_hash:
+        raise BenchmarkStateError("telemetry did not consume the expected frozen web snapshot")
+    queries = frozen.get("queries")
+    expected_queries = sorted(benchmark_web_queries([topic]))
+    if not isinstance(queries, list) or queries != expected_queries:
+        raise BenchmarkStateError("telemetry did not consume the exact frozen web query set")
+    return {"snapshot_hash": snapshot_hash, "queries": queries}
 
 
 def unit_from_telemetry(
     spec: ArmSpec,
     topic: dict,
     execution_sha: str,
+    experiment_digest: str,
+    snapshot_hash: str,
     run_id: str,
     telemetry: dict,
 ) -> dict:
@@ -361,16 +526,25 @@ def unit_from_telemetry(
         raise BenchmarkStateError("telemetry lacks evaluation-integrity fields")
     if telemetry["verification_status"] != "completed":
         raise BenchmarkStateError(f"verification_status={telemetry['verification_status']}")
-    total = _claim_total(telemetry)
+    counts = _claim_counts(telemetry)
+    total = counts["total"]
     if total <= 0:
         raise BenchmarkStateError("completed benchmark unit has no scorable verifier verdicts")
-    uvr = telemetry.get("claims_unverified", 0) / total
+    uvr = counts["unverified"] / total
     grounded_depth = telemetry.get("grounded_depth")
-    if not isinstance(grounded_depth, dict) or not isinstance(grounded_depth.get("SV"), (int, float)):
-        raise BenchmarkStateError("telemetry lacks a numeric grounded-depth SV")
+    if not isinstance(grounded_depth, dict):
+        raise BenchmarkStateError("telemetry lacks grounded-depth claim counts")
+    sv = _nonnegative_count(grounded_depth.get("SV"), "grounded_depth.SV")
+    substantive = _nonnegative_count(grounded_depth.get("S"), "grounded_depth.S")
+    grounded_verified = _nonnegative_count(grounded_depth.get("V"), "grounded_depth.V")
+    grounded_total = _nonnegative_count(grounded_depth.get("N"), "grounded_depth.N")
+    if grounded_total != total or grounded_verified != counts["verified"] or sv > substantive or sv > grounded_verified:
+        raise BenchmarkStateError("grounded-depth claim counts do not match verifier counts")
+    cost_usd = _finite_nonnegative_number(telemetry["total_cost_usd"], "total_cost_usd")
     errors = telemetry["error_log"]
     if not isinstance(errors, list):
         raise BenchmarkStateError("telemetry error_log is invalid")
+    frozen_web = _validate_frozen_consumption(telemetry, topic, snapshot_hash)
     return {
         "schema_version": 1,
         "status": "completed",
@@ -379,16 +553,26 @@ def unit_from_telemetry(
         "arm": spec.arm,
         "architecture_sha": spec.architecture_sha,
         "execution_sha": execution_sha,
+        "experiment_digest": experiment_digest,
         "run_id": run_id,
         "verification_status": telemetry["verification_status"],
         "uvr": uvr,
-        "sv": grounded_depth["SV"],
-        "cost_usd": telemetry["total_cost_usd"],
+        "sv": sv,
+        "claims": counts,
+        "cost_usd": cost_usd,
         "errors": errors,
+        "frozen_web": frozen_web,
     }
 
 
-def validate_unit(record: dict, spec: ArmSpec, topic: dict, execution_sha: str) -> dict:
+def validate_unit(
+    record: dict,
+    spec: ArmSpec,
+    topic: dict,
+    execution_sha: str,
+    experiment_digest: str,
+    snapshot_hash: str,
+) -> dict:
     expected = {
         "schema_version": 1,
         "status": "completed",
@@ -397,6 +581,7 @@ def validate_unit(record: dict, spec: ArmSpec, topic: dict, execution_sha: str) 
         "arm": spec.arm,
         "architecture_sha": spec.architecture_sha,
         "execution_sha": execution_sha,
+        "experiment_digest": experiment_digest,
         "verification_status": "completed",
     }
     for field, value in expected.items():
@@ -404,23 +589,53 @@ def validate_unit(record: dict, spec: ArmSpec, topic: dict, execution_sha: str) 
             raise BenchmarkStateError(f"unit result {field} does not match expected {spec.arm} evidence")
     if not isinstance(record.get("run_id"), str) or not record["run_id"]:
         raise BenchmarkStateError("unit result is missing RUN_ID")
-    if not isinstance(record.get("uvr"), (int, float)) or not 0 <= record["uvr"] <= 1:
+    if isinstance(record.get("uvr"), bool) or not isinstance(record.get("uvr"), Real) or not math.isfinite(record["uvr"]) or not 0 <= record["uvr"] <= 1:
         raise BenchmarkStateError("unit result has invalid UVR")
-    if not isinstance(record.get("sv"), (int, float)):
-        raise BenchmarkStateError("unit result has invalid SV")
+    counts = record.get("claims")
+    if not isinstance(counts, dict):
+        raise BenchmarkStateError("unit result has invalid claim counts")
+    validated_counts = {
+        key: _nonnegative_count(counts.get(key), f"unit claims.{key}")
+        for key in ("verified", "weak", "unverified", "total")
+    }
+    if validated_counts["total"] != sum(validated_counts[key] for key in ("verified", "weak", "unverified")):
+        raise BenchmarkStateError("unit result claim total is inconsistent")
+    if validated_counts["total"] <= 0:
+        raise BenchmarkStateError("unit result claim total is unscorable")
+    if record["uvr"] != validated_counts["unverified"] / validated_counts["total"]:
+        raise BenchmarkStateError("unit result UVR does not match claim counts")
+    if _nonnegative_count(record.get("sv"), "unit sv") > validated_counts["verified"]:
+        raise BenchmarkStateError("unit result SV exceeds verified claim count")
+    _finite_nonnegative_number(record.get("cost_usd"), "unit cost_usd")
     if not isinstance(record.get("errors"), list):
         raise BenchmarkStateError("unit result has invalid errors")
+    frozen = record.get("frozen_web")
+    if not isinstance(frozen, dict) or frozen.get("snapshot_hash") != snapshot_hash:
+        raise BenchmarkStateError("unit result frozen snapshot identity does not match")
+    if frozen.get("queries") != sorted(benchmark_web_queries([topic])):
+        raise BenchmarkStateError("unit result frozen query consumption does not match")
     return record
 
 
-def load_valid_unit(experiment_dir: Path, spec: ArmSpec, topic: dict, execution_sha: str) -> dict | None:
+def load_valid_unit(
+    experiment_dir: Path,
+    spec: ArmSpec,
+    topic: dict,
+    execution_sha: str,
+    experiment_digest: str,
+    snapshot_hash: str,
+) -> dict | None:
     path = unit_path(experiment_dir, topic, spec.arm)
     if not path.exists():
         return None
-    return validate_unit(load_json(path, "unit result"), spec, topic, execution_sha)
+    return validate_unit(
+        load_json(path, "unit result"), spec, topic, execution_sha, experiment_digest, snapshot_hash,
+    )
 
 
-def _failure_record(spec: ArmSpec, topic: dict, execution_sha: str, error: Exception) -> dict:
+def _failure_record(
+    spec: ArmSpec, topic: dict, execution_sha: str, experiment_digest: str, error: Exception,
+) -> dict:
     return {
         "schema_version": 1,
         "status": "failed",
@@ -429,6 +644,7 @@ def _failure_record(spec: ArmSpec, topic: dict, execution_sha: str, error: Excep
         "arm": spec.arm,
         "architecture_sha": spec.architecture_sha,
         "execution_sha": execution_sha,
+        "experiment_digest": experiment_digest,
         "run_id": None,
         "verification_status": "unknown",
         "uvr": None,
@@ -443,18 +659,25 @@ def execute_unit(
     spec: ArmSpec,
     topic: dict,
     execution_sha: str,
+    experiment_digest: str,
+    snapshot_hash: str,
     invoke: Callable[[ArmSpec, dict], tuple[str, dict]],
 ) -> tuple[dict, bool]:
     """Run exactly one arm/topic or return the one valid matching saved result."""
-    existing = load_valid_unit(experiment_dir, spec, topic, execution_sha)
+    existing = load_valid_unit(experiment_dir, spec, topic, execution_sha, experiment_digest, snapshot_hash)
     if existing is not None:
         return existing, True
     path = unit_path(experiment_dir, topic, spec.arm)
     try:
         run_id, telemetry = invoke(spec, topic)
-        record = unit_from_telemetry(spec, topic, execution_sha, run_id, telemetry)
+        record = unit_from_telemetry(
+            spec, topic, execution_sha, experiment_digest, snapshot_hash, run_id, telemetry,
+        )
     except Exception as error:
-        atomic_write_json(path, _failure_record(spec, topic, execution_sha, error))
+        atomic_write_json(
+            failed_attempt_path(experiment_dir, topic, spec.arm),
+            _failure_record(spec, topic, execution_sha, experiment_digest, error),
+        )
         raise BenchmarkStateError(f"benchmark unit failed for topic {topic['id']} {spec.arm}: {error}") from error
     atomic_write_json(path, record)
     return record, False
@@ -464,17 +687,28 @@ def execute_units(
     experiment_dir: Path,
     topics: list[dict],
     execution_shas: dict[str, str],
+    experiment_digest: str,
+    snapshot_hash: str,
     invoke: Callable[[ArmSpec, dict], tuple[str, dict]],
 ) -> list[tuple[dict, bool]]:
     """Execute topic × arm cells in a deterministic order, stopping on the first failure."""
     completed = []
-    for topic in topics:
-        for spec in ARMS:
-            completed.append(execute_unit(experiment_dir, spec, topic, execution_shas[spec.arm], invoke))
+    for index, topic in enumerate(topics):
+        arms = ARMS if index % 2 == 0 else tuple(reversed(ARMS))
+        for spec in arms:
+            completed.append(execute_unit(
+                experiment_dir, spec, topic, execution_shas[spec.arm], experiment_digest, snapshot_hash, invoke,
+            ))
     return completed
 
 
-def paired_aggregate(experiment_dir: Path, topics: list[dict], execution_shas: dict[str, str]) -> dict:
+def paired_aggregate(
+    experiment_dir: Path,
+    topics: list[dict],
+    execution_shas: dict[str, str],
+    experiment_digest: str,
+    snapshot_hash: str,
+) -> dict:
     """Compute the primary paired gates without turning model variance into retries."""
     rows = []
     failures = []
@@ -484,7 +718,9 @@ def paired_aggregate(experiment_dir: Path, topics: list[dict], execution_shas: d
         pair = {}
         for spec in ARMS:
             try:
-                pair[spec.arm] = load_valid_unit(experiment_dir, spec, topic, execution_shas[spec.arm])
+                pair[spec.arm] = load_valid_unit(
+                    experiment_dir, spec, topic, execution_shas[spec.arm], experiment_digest, snapshot_hash,
+                )
                 if pair[spec.arm] is None:
                     raise BenchmarkStateError("unit result is missing")
             except BenchmarkStateError as error:
@@ -554,7 +790,8 @@ def invoke_arm(
 ) -> tuple[str, dict]:
     """Run one arm CLI and read only telemetry named by that CLI's RUN_ID."""
     worktree = worktrees[spec.arm]
-    env = arm_environment(runtime, snapshot_path, collections[spec.arm], qdrant_url)
+    consumption_path = runtime / "consumption" / f"{spec.arm}-{topic['id']}-{uuid.uuid4().hex}.json"
+    env = arm_environment(runtime, snapshot_path, collections[spec.arm], qdrant_url, consumption_path)
     proc = subprocess.run(
         ["uv", "run", "python", "main.py", "run", "--topic", topic["topic"],
          "--card-id", topic["card_id"], "--series", topic["series"], "--auto"],
@@ -565,6 +802,7 @@ def invoke_arm(
     run_id = _extract_run_id(proc.stdout)
     path = worktree / "outputs" / "runs" / f"{run_id}.json"
     telemetry = load_json(path, "exact arm telemetry")
+    telemetry["frozen_web"] = load_json(consumption_path, "frozen web consumption")
     return run_id, telemetry
 
 
@@ -581,6 +819,7 @@ def default_ingest(worktree: Path, collection: str, qdrant_url: str) -> None:
 def run_benchmark(experiment_dir: Path, topics_path: Path, repo_root: Path, qdrant_url: str) -> dict:
     """Prepare isolated arms and execute the paired benchmark when separately authorized."""
     topics = load_topics(topics_path)
+    require_canonical_topics(topics)
     snapshot_path = experiment_dir / "frozen_web.json"
     manifest = initialize_experiment(experiment_dir, topics, snapshot_path)
     worktree_info = {spec.arm: ensure_arm_worktree(repo_root, experiment_dir, spec) for spec in ARMS}
@@ -598,13 +837,21 @@ def run_benchmark(experiment_dir: Path, topics_path: Path, repo_root: Path, qdra
         )
         collections[spec.arm] = collection_manifest["collection_name"]
     runtime = install_runtime(experiment_dir)
+    manifest = bind_experiment_digest(experiment_dir, manifest, execution_shas, {
+        spec.arm: load_json(collection_manifest_path(experiment_dir, spec.arm), "collection manifest")
+        for spec in ARMS
+    }, runtime)
+    experiment_digest = manifest["experiment_digest"]
+    snapshot_hash = manifest["frozen_web_snapshot_hash"]
     execute_units(
         experiment_dir,
         topics,
         execution_shas,
+        experiment_digest,
+        snapshot_hash,
         lambda spec, topic: invoke_arm(spec, topic, worktrees, runtime, snapshot_path, collections, qdrant_url),
     )
-    aggregate = paired_aggregate(experiment_dir, topics, execution_shas)
+    aggregate = paired_aggregate(experiment_dir, topics, execution_shas, experiment_digest, snapshot_hash)
     aggregate["experiment_id"] = manifest["experiment_id"]
     atomic_write_json(experiment_dir / "paired_aggregate.json", aggregate)
     if not aggregate["gate_pass"]:

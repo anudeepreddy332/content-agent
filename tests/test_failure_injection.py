@@ -5,6 +5,7 @@ import json
 from openai import AuthenticationError, RateLimitError, APITimeoutError
 
 import agent.nodes as nodes
+from scripts import benchmark_runtime
 from tests.conftest import FakeLLMClient, fake_response, openai_error
 
 # ---------- Fault 1: DeepSeek auth / timeout / rate limit ----------
@@ -73,6 +74,25 @@ def test_retrieve_tavily_errors_logged_not_fatal(base_state, monkeypatch):
     tavily_errors = [e for e in result["error_log"] if "Tavily" in e]
     assert len(tavily_errors) >= 6, "3 first-pass + 3 refresh errors all captured"
     assert result["web_sources"] == []
+
+
+def test_snapshot_mode_tavily_error_invalidates_retrieval(base_state, monkeypatch):
+    """The benchmark runtime turns a swallowed snapshot error into a hard failure."""
+    from agent import graph
+
+    monkeypatch.setenv(benchmark_runtime.SNAPSHOT_ENV, "/tmp/no-such-frozen-web.json")
+    monkeypatch.setattr(nodes, "retrieve_node", nodes.retrieve_node)
+    monkeypatch.setattr(nodes, "web_search", nodes.web_search)
+    monkeypatch.setattr(graph, "retrieve_node", graph.retrieve_node)
+    benchmark_runtime._snapshot = None
+    benchmark_runtime._snapshot_path = None
+    benchmark_runtime.install_frozen_web_search()
+    benchmark_runtime.install_benchmark_guards()
+    monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: [])
+    monkeypatch.setattr(nodes, "assemble_child_context", lambda children, n_windows: children[:n_windows])
+
+    with pytest.raises(benchmark_runtime.FrozenWebEvidenceError, match="BENCHMARK_FROZEN_WEB_FAILURE"):
+        nodes.retrieve_node(base_state)
 
 
 # ---------- Fault 3: Qdrant down ----------
