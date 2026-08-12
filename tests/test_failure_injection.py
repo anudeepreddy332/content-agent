@@ -126,8 +126,10 @@ def test_verify_malformed_output_degrades_gracefully(base_state, monkeypatch):
 
     assert result["grounding_report"] == []
     assert result["grounding_score"] == 0
+    assert result["verification_status"] == "parse_failed"
     assert result["iteration_metrics"][-1]["N"] == 0, \
         "parse failure must still produce an iteration_metrics entry"
+    assert result["iteration_metrics"][-1]["uvr"] is None
 
 
 def test_verify_node_preserves_the_model_extracted_verdict_set(base_state, monkeypatch):
@@ -165,6 +167,7 @@ def test_verify_cost_gate_skips_llm_entirely(base_state, monkeypatch):
 
     assert sentinel.calls == 0, "cost gate must fire BEFORE the LLM call"
     assert result["grounding_report"] == []
+    assert result["verification_status"] == "skipped_cost_gate"
 
 
 def test_reflect_cost_gate_skips_llm(base_state, monkeypatch):
