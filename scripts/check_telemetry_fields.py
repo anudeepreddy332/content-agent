@@ -13,6 +13,7 @@ REQUIRED_FIELDS = [
     "grounding_score", "grounding_breakdown", "grounding_report",
     "reflection_score", "reflection_notes",
     "web_sources_count", "kb_results_count",
+    "kb_context_stats",
     "web_sources", "kb_results", "attribution",
     "total_cost_usd", "total_tokens",
     "latency_ms", "error_log",
@@ -62,6 +63,10 @@ def telemetry_validation_error(data: dict) -> str | None:
         return "grounding_report entries missing source_kind"
     if any("chunk_index" not in chunk for chunk in data.get("kb_results", [])):
         return "kb_results entries missing chunk_index"
+    context_stats = data.get("kb_context_stats")
+    required_context_fields = {"candidate_children", "candidate_unique_sources", "draft", "verifier"}
+    if not isinstance(context_stats, dict) or not required_context_fields <= set(context_stats):
+        return "kb_context_stats is missing child-depth or consumer budget diagnostics"
     return None
 
 

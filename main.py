@@ -116,6 +116,7 @@ def _write_telemetry(state: dict):
         "grounding_report": report,
         "web_sources_count": len(state.get("web_sources", []) or []),
         "kb_results_count": len(state.get("kb_results", []) or []),
+        "kb_context_stats": state.get("kb_context_stats", {}),
 
         "web_sources": [
             {"url": s.get("url"), "score": s.get("score"),
@@ -126,6 +127,7 @@ def _write_telemetry(state: dict):
         # KB-verified claims were not reconstructable (only a count was stored).
         "kb_results": [
             {"source": k.get("source"), "chunk_index": k.get("chunk_index", 0),
+             "chunk_indices": k.get("chunk_indices", [k.get("chunk_index", 0)]),
              "distance": k.get("distance"), "rrf_score": k.get("rrf_score"),
              "text": (k.get("text") or "")[:2000]}
             for k in (state.get("kb_results", []) or [])
@@ -170,6 +172,7 @@ def _build_initial_state(topic, slug, card_id, series, run_id, category="concept
         "draft_markdown": "",
         "web_sources": [],
         "kb_results": [],
+        "kb_context_stats": {},
         "grounding_report": [],
         "grounding_score": 0.0,
         "verification_status": "not_started",

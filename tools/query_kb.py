@@ -40,9 +40,11 @@ load_dotenv()
 
 # Qdrant client
 from qdrant_client import QdrantClient
+from qdrant_client.models import FieldCondition, Filter, MatchValue
 from sentence_transformers import SentenceTransformer
 
 from observability.logger import get_logger
+from tools.context_assembly import assemble_evidence_windows
 
 log = get_logger("query_kb")
 
@@ -364,6 +366,71 @@ def query_kb(query: str, n_results: int = 5) -> list[dict]:
     return hybrid_results
 
 
+def _source_children(source: str) -> list[dict]:
+    """Load one source's indexed child sequence in document order for expansion."""
+    client = _get_client()
+    children: list[dict] = []
+    offset = None
+    source_filter = Filter(
+        must=[FieldCondition(key="source", match=MatchValue(value=source))]
+    )
+    while True:
+        points, next_offset = client.scroll(
+            collection_name=_collection_name(),
+            scroll_filter=source_filter,
+            limit=100,
+            offset=offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        for point in points:
+            payload = point.payload or {}
+            text = payload.get("text", "")
+            chunk_index = payload.get("chunk_index")
+            if text and isinstance(chunk_index, int):
+                children.append({"text": text, "chunk_index": chunk_index})
+        if next_offset is None:
+            break
+        offset = next_offset
+    return sorted(children, key=lambda child: child["chunk_index"])
+
+
+def assemble_child_context(children: list[dict], *, n_windows: int = 5) -> list[dict]:
+    """Expand already-ranked raw children without changing their retrieval scores."""
+    if not children:
+        return []
+    try:
+        source_children = {
+            source: _source_children(source)
+            for source in {child.get("source") for child in children if child.get("source")}
+        }
+        return assemble_evidence_windows(
+            children,
+            source_children,
+            max_windows=n_windows,
+        )
+    except Exception as error:
+        log.error(
+            "query_kb.context_assembly_error",
+            error=str(error),
+            note="falling back to raw child results",
+        )
+        return children[:n_windows]
+
+
+def query_kb_context(
+    query: str,
+    *,
+    n_children: int = 10,
+    n_windows: int = 5,
+) -> list[dict]:
+    """Query raw children then return source-aware expanded evidence windows."""
+    return assemble_child_context(
+        query_kb(query, n_results=n_children),
+        n_windows=n_windows,
+    )
+
+
 def query_kb_diagnostics(query: str, n_results: int = 5) -> dict:
     """Return raw ranker signals for evaluator diagnostics without changing query_kb().
 
@@ -416,8 +483,6 @@ def warmup() -> dict:
         "encoder_load_ms": int((t1-t0) * 1000),
         "bm25_build_ms": int((t2-t1) * 1000),
     }
-
-
 
 
 

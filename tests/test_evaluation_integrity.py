@@ -42,6 +42,12 @@ def _telemetry(
         "reflection_notes": "",
         "web_sources_count": 0,
         "kb_results_count": 0,
+        "kb_context_stats": {
+            "candidate_children": 0,
+            "candidate_unique_sources": 0,
+            "draft": {},
+            "verifier": {},
+        },
         "web_sources": [],
         "kb_results": [],
         "attribution": {},

@@ -34,6 +34,7 @@ def smoke_test():
         "draft_markdown": "",
         "web_sources": [],
         "kb_results": [],
+        "kb_context_stats": {},
         "grounding_report": [],
         "grounding_score": 0.0,
         "reflection_score": 0,

@@ -5,8 +5,10 @@ Replaces ChromaDB with Qdrant as the storage backend.
 Public interface is identical:
     save_to_kb(text, source, metadata) → bool
 
-Chunking strategy: unchanged from Step 3
-    400-token chunks, 50-token overlap, tiktoken cl100k_base tokenizer.
+Chunking strategy:
+    224 content-token children with 32-token overlap, measured with the
+    all-MiniLM-L6-v2 tokenizer.  The model adds two special tokens to each
+    embedded child, keeping every vector input within its 256-token limit.
 
 Embedding model: all-MiniLM-L6-v2 (384 dimensions)
     Must stay in sync with query_kb.py — same model, same dimension.
@@ -22,7 +24,6 @@ Point IDs:
 
 import os
 import uuid
-import tiktoken
 
 from dotenv import load_dotenv
 from tools.query_kb import invalidate_bm25
@@ -35,10 +36,8 @@ from sentence_transformers import SentenceTransformer
 
 _client: QdrantClient | None = None
 _encoder: SentenceTransformer | None = None
-_tokenizer = tiktoken.get_encoding("cl100k_base")
-
-CHUNK_SIZE = 400    # tokens
-CHUNK_OVERLAP = 50  # tokens
+CHUNK_SIZE = 224
+CHUNK_OVERLAP = 32
 
 def _get_client() -> QdrantClient:
     global _client
@@ -83,21 +82,44 @@ def _ensure_collection() -> None:
 
 
 
-def _chunk_text(text: str) -> list[str]:
+def _chunk_text(text: str, encoder: SentenceTransformer | None = None) -> list[str]:
     """
-    Split text into overlapping token chunks.
-    Returns list of text strings, each ~CHUNK_SIZE tokens.
+    Split text into MiniLM-tokenizer-aligned overlapping child chunks.
+
+    Offset mapping retains source text rather than decoding token IDs, which
+    makes overlapping child text deterministic for post-retrieval expansion.
     """
-    tokens = _tokenizer.encode(text)
+    if not text.strip():
+        return []
+
+    encoder = encoder or _get_encoder()
+    tokenizer = encoder.tokenizer
+    special_token_overhead = tokenizer.num_special_tokens_to_add(pair=False)
+    max_content_tokens = encoder.max_seq_length - special_token_overhead
+    content_token_limit = min(CHUNK_SIZE, max_content_tokens)
+    if content_token_limit <= CHUNK_OVERLAP:
+        raise ValueError("Chunk overlap must be smaller than the content-token limit")
+
+    encoded = tokenizer(
+        text,
+        add_special_tokens=False,
+        return_offsets_mapping=True,
+        truncation=False,
+    )
+    offsets = [offset for offset in encoded["offset_mapping"] if offset[1] > offset[0]]
     chunks = []
     start = 0
 
-    while start < len(tokens):
-        end = start + CHUNK_SIZE
-        chunk_tokens = tokens[start:end]
-        chunk_text = _tokenizer.decode(chunk_tokens)
-        chunks.append(chunk_text)
-        start += CHUNK_SIZE - CHUNK_OVERLAP
+    while start < len(offsets):
+        # A final span no longer than the overlap is already contained in the
+        # preceding child; indexing it would add only a duplicate sibling.
+        if chunks and len(offsets) - start <= CHUNK_OVERLAP:
+            break
+        end = min(start + content_token_limit, len(offsets))
+        char_start = offsets[start][0]
+        char_end = offsets[end - 1][1]
+        chunks.append(text[char_start:char_end])
+        start += content_token_limit - CHUNK_OVERLAP
 
     return chunks
 
@@ -122,14 +144,13 @@ def save_to_kb(text: str, source: str, metadata: dict | None = None) -> bool:
         - Empty text: returns False immediately
         - Embedding failure: returns False
     """
-    chunks = _chunk_text(text)
-    if not chunks:
-        print(f"[save_to_kb] No chunks produced for source: {source}")
-        return False
-
     try:
-        _ensure_collection()
         encoder = _get_encoder()
+        chunks = _chunk_text(text, encoder)
+        if not chunks:
+            print(f"[save_to_kb] No chunks produced for source: {source}")
+            return False
+        _ensure_collection()
         client = _get_client()
         collection = _collection_name()
         embeddings = encoder.encode(chunks, show_progress_bar=False)

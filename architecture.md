@@ -78,7 +78,8 @@ class AgentState(TypedDict):
 
     # Retrieval
     web_sources: list   # [{title, url, content, score}]      (from Tavily)
-    kb_results: list    # [{text, source, distance, rrf_score}] (from Qdrant+BM25+RRF)
+    kb_results: list    # bounded source-aware evidence windows from ranked Qdrant+BM25+RRF children
+    kb_context_stats: dict # candidate depth, source diversity, draft/verifier context budgets
 
     # Verification
     grounding_report: list   # [{claim, source_url, confidence, status}]
@@ -125,8 +126,11 @@ class AgentState(TypedDict):
      deduped by URL, sorted by score, top 10.
   2. Freshness gate: if first-pass sources are sparse (<3) or low average Tavily score
      (< `TAVILY_MIN_AVG_SCORE`, currently 0.5), re-run all queries with `force_refresh=True`.
-  3. Qdrant KB query (dense + BM25, fused via RRF), top 5.
-- Output: `web_sources`, `kb_results`, `latency_ms`, `error_log`.
+  3. Qdrant KB query (dense + BM25, fused via RRF), raw top 10 MiniLM-safe children.
+  4. Source-local context assembly: expand children by ±1 sibling, merge overlapping windows,
+     remove exact boundary overlap, and cap each window at 2400 characters. The first three
+     windows feed drafting and the first five feed verification.
+- Output: `web_sources`, bounded `kb_results`, `kb_context_stats`, `latency_ms`, `error_log`.
 - Tools: `web_search` (Tavily), `query_kb` (Qdrant). Tavily errors are caught per-query
   into `error_log` and do not crash the node.
 
@@ -219,7 +223,7 @@ def query_kb(query: str, n_results: int = 5) -> list[dict]:
 
 # tools/save_to_kb.py
 def save_to_kb(text: str, source: str, metadata: dict | None = None) -> bool:
-    """Qdrant ingest with 400/50 tiktoken chunking. Invalidates the BM25 index.
+    """Qdrant ingest with 224 MiniLM-tokenizer content tokens / 32 overlap. Invalidates BM25.
        NOTE: not yet wired into the pipeline (see §13, self-improvement)."""
 
 # tools/archive/document_ingest.py.archived
@@ -240,7 +244,10 @@ Note: the previously listed `tools/verify_claim.py` does not exist. Verification
 - Retrieval: dense (all-MiniLM-L6-v2, 384-dim, cosine) + BM25, fused via RRF (k=60).
 - Content: evergreen AI/ML concepts (definitions, formulas, architectures, theory).
 - NOT in KB: recent events, model releases, benchmark numbers, paper findings (those go to Tavily).
-- Chunking: 400 tokens, 50-token overlap (tiktoken cl100k_base), consistent across save and ingest.
+- Chunking: 224 MiniLM-tokenizer content tokens with a 32-token overlap. This leaves room for
+  MiniLM's two special tokens under its 256-token sequence limit. Qdrant stores child `source`
+  and `chunk_index` metadata; retrieval ranking stays child-level and source-aware context is
+  assembled only after ranking.
 - Multi-format ingest: implemented in `tools/archive/document_ingest.py.archived`, but the
   Docling dependency was dropped at M6 (runtime-blocked on Python 3.14, §13) — kept archived
   rather than deleted as a reference implementation if Docling's Python support changes.
@@ -299,6 +306,11 @@ Every run writes a JSON record to `outputs/runs/<run_id>.json` (written even on 
     "weak_count": 2,
     "mean_confidence_verified": 0.9,
     "mean_confidence_unverified": 0.1
+  },
+  "kb_context_stats": {
+    "candidate_children": 10,
+    "draft": { "evidence_windows": 3, "total_context_chars": 7200 },
+    "verifier": { "evidence_windows": 5, "total_context_chars": 12000 }
   },
   "grounding_report": [ { "claim": "...", "source_url": "...", "confidence": 0.9, "status": "verified" } ]
 }
