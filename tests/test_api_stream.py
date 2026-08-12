@@ -138,3 +138,31 @@ def test_stream_resume_requires_awaiting_review(client):
     client.post(f"/ui/runs/{rid}/approve", headers=H)
     _drain(client, rid)                       # terminal
     assert client.post(f"/ui/runs/{rid}/approve", headers=H).status_code == 409
+
+
+def test_stream_graph_crash_writes_upstream_failed_telemetry(tmp_path, monkeypatch):
+    """The streaming endpoint must classify graph crashes before persistence."""
+    import api.server as srv
+    from fastapi.testclient import TestClient
+
+    class CrashingStreamGraph:
+        def stream(self, *_args, **_kwargs):
+            raise RuntimeError("injected stream failure")
+            yield  # pragma: no cover -- makes this a generator for GRAPH.stream
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(srv, "GRAPH", CrashingStreamGraph())
+    client = TestClient(srv.app)
+
+    created = client.post("/ui/runs", json={"topic": "Gradient Descent"}, headers=H)
+    assert created.status_code == 202
+    run_id = created.json()["run_id"]
+
+    status = client.get(f"/runs/{run_id}", headers=H).json()
+    assert status["status"] == "error"
+    assert status["error"] == "injected stream failure"
+    telemetry = json.loads((tmp_path / "outputs" / "runs" / f"{run_id}.json").read_text())
+    assert telemetry["verification_status"] == "upstream_failed"
+    assert telemetry["error_log"] == ["pipeline crash: injected stream failure"]
+    events = _drain(client, run_id)
+    assert {event["event"] for event in events} >= {"error", "segment_end"}
