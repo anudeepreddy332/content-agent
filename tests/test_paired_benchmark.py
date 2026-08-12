@@ -1,5 +1,7 @@
 """Deterministic coverage for the resumable paired benchmark harness."""
 import json
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -242,6 +244,68 @@ def test_snapshot_adapter_does_not_change_production_search_when_disabled(monkey
     benchmark_runtime.install_frozen_web_search()
 
     assert web_search.web_search is sentinel
+
+
+def test_child_bootstrap_imports_arm_before_sitecustomize_and_cannot_use_live_tavily(tmp_path):
+    snapshot_path = _snapshot(tmp_path / "frozen_web.json")
+    runtime = paired.install_runtime(tmp_path / "runtime_parent")
+    arm = tmp_path / "arm"
+    (arm / "tools").mkdir(parents=True)
+    (arm / "agent").mkdir()
+    (arm / "tools" / "__init__.py").write_text("", encoding="utf-8")
+    (arm / "agent" / "__init__.py").write_text("", encoding="utf-8")
+    (arm / "tools" / "web_search.py").write_text(
+        "def web_search(*args, **kwargs):\n"
+        "    raise AssertionError('live Tavily call attempted')\n",
+        encoding="utf-8",
+    )
+    (arm / "agent" / "nodes.py").write_text(
+        "from tools.web_search import web_search\n"
+        "def retrieve_node(state):\n"
+        "    return {'error_log': []}\n",
+        encoding="utf-8",
+    )
+    (arm / "agent" / "graph.py").write_text(
+        "from agent.nodes import retrieve_node\n",
+        encoding="utf-8",
+    )
+    consumption_path = tmp_path / "consumption.json"
+    env = paired.arm_environment(
+        runtime,
+        snapshot_path,
+        "paired_test",
+        "http://qdrant.test",
+        consumption_path,
+        arm_checkout=arm,
+    )
+    query = paired.benchmark_web_queries([TOPIC])[0]
+    child = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from benchmark_runtime import FrozenWebEvidenceError\n"
+            "from tools import web_search\n"
+            f"assert web_search.web_search({query!r}, force_refresh=True)[0]['content'] == 'x'\n"
+            "try:\n"
+            "    web_search.web_search('missing frozen query', force_refresh=True)\n"
+            "except FrozenWebEvidenceError:\n"
+            "    print('missing-fails-closed')\n"
+            "else:\n"
+            "    raise AssertionError('missing frozen evidence did not fail closed')",
+        ],
+        cwd=arm,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert child.returncode == 0, child.stderr
+    assert child.stdout.strip() == "missing-fails-closed"
+    assert paired.load_json(consumption_path, "consumption") == {
+        "snapshot_hash": paired._sha256(paired.load_json(snapshot_path, "snapshot")),
+        "queries": [query],
+    }
 
 
 def test_interruption_after_one_unit_resumes_from_valid_record(tmp_path):

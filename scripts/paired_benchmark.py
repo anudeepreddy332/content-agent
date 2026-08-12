@@ -528,6 +528,7 @@ def arm_environment(
     qdrant_url: str,
     consumption_path: Path | None = None,
     deepseek_config: dict[str, str] | None = None,
+    arm_checkout: Path | None = None,
 ) -> dict[str, str]:
     env = dict(os.environ)
     env["CONTENT_AGENT_FROZEN_WEB_SNAPSHOT"] = str(snapshot_path.resolve())
@@ -538,7 +539,13 @@ def arm_environment(
         env.update(deepseek_config)
     if consumption_path is not None:
         env["CONTENT_AGENT_FROZEN_WEB_CONSUMPTION"] = str(consumption_path.resolve())
-    env["PYTHONPATH"] = str(runtime) + os.pathsep + env.get("PYTHONPATH", "")
+    paths = [str(runtime.resolve())]
+    if arm_checkout is not None:
+        paths.insert(0, str(arm_checkout.resolve()))
+    existing_pythonpath = env.get("PYTHONPATH", "")
+    if existing_pythonpath:
+        paths.append(existing_pythonpath)
+    env["PYTHONPATH"] = os.pathsep.join(paths)
     return env
 
 
@@ -877,7 +884,7 @@ def invoke_arm(
     worktree = worktrees[spec.arm]
     consumption_path = runtime / "consumption" / f"{spec.arm}-{topic['id']}-{uuid.uuid4().hex}.json"
     env = arm_environment(
-        runtime, snapshot_path, collections[spec.arm], qdrant_url, consumption_path, deepseek_config,
+        runtime, snapshot_path, collections[spec.arm], qdrant_url, consumption_path, deepseek_config, worktree,
     )
     proc = subprocess.run(
         ["uv", "run", "python", "main.py", "run", "--topic", topic["topic"],
