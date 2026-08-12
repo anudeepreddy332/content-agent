@@ -234,7 +234,9 @@ def test_force_refresh_uses_same_frozen_evidence_for_both_arms(tmp_path, monkeyp
 def test_snapshot_adapter_does_not_change_production_search_when_disabled(monkeypatch):
     from tools import web_search
 
-    sentinel = lambda *args, **kwargs: []
+    def sentinel(*args, **kwargs):
+        return []
+
     monkeypatch.delenv(benchmark_runtime.SNAPSHOT_ENV, raising=False)
     monkeypatch.setattr(web_search, "web_search", sentinel)
     benchmark_runtime.install_frozen_web_search()
