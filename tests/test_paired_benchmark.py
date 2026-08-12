@@ -54,6 +54,56 @@ def _write_unit(root: Path, spec: paired.ArmSpec, topic: dict, *, uvr_verified=1
     paired.atomic_write_json(paired.unit_path(root, topic, spec.arm), record)
 
 
+def _canonical_topics() -> list[dict]:
+    return paired.load_topics(paired.CANONICAL_TOPICS_PATH)
+
+
+def _write_aggregate_manifest(root: Path, digest: str = TEST_DIGEST) -> None:
+    paired.atomic_write_json(paired.experiment_path(root), {
+        "experiment_digest": digest,
+        "frozen_web_snapshot_hash": TEST_SNAPSHOT_HASH,
+        "execution_shas": _execution_shas(),
+    })
+
+
+def _write_complete_primary(root: Path, *, candidate_verified=17, candidate_unverified=3, candidate_sv=5):
+    topics = _canonical_topics()
+    _write_aggregate_manifest(root)
+    for topic in topics:
+        _write_unit(root, paired.ARMS[0], topic, sv=4)
+        _write_unit(
+            root, paired.ARMS[1], topic,
+            uvr_verified=candidate_verified, uvr_unverified=candidate_unverified, sv=candidate_sv,
+        )
+    return topics
+
+
+def _bound_experiment(root: Path, deepseek_config: dict[str, str]) -> dict:
+    topics = _canonical_topics()
+    snapshot_path = _snapshot(root / "frozen_web.json", topics)
+    manifest = paired.initialize_experiment(root, topics, snapshot_path)
+    runtime = paired.install_runtime(root)
+    source_inventory = paired.expected_benchmark_sources()
+    collections = {
+        spec.arm: {
+            "schema_version": 1,
+            "arm": spec.arm,
+            "collection_name": paired.collection_name(root.name, spec.arm),
+            "architecture_sha": spec.architecture_sha,
+            "execution_sha": spec.architecture_sha,
+            "chunk_contract": spec.chunk_contract,
+            "embedding_model": paired.EMBEDDING_MODEL,
+            "source_count": 20,
+            "point_count": spec.expected_point_count,
+            "vector_size": 384,
+            "distance": "cosine",
+            "source_inventory_digest": paired._sha256(sorted(source_inventory)),
+        }
+        for spec in paired.ARMS
+    }
+    return paired.bind_experiment_digest(root, manifest, _execution_shas(), collections, runtime, deepseek_config)
+
+
 def test_capture_once_per_exact_query_and_snapshot_validates(tmp_path):
     calls = []
 
@@ -82,6 +132,30 @@ def test_experiment_provenance_binds_architecture_topics_and_snapshot(tmp_path):
     assert manifest["frozen_web_snapshot_hash"] == paired._sha256(paired.load_json(snapshot_path, "snapshot"))
     assert manifest["arms"]["baseline"]["collection_name"] != manifest["arms"]["candidate"]["collection_name"]
     assert paired.initialize_experiment(tmp_path / "experiment", topics, snapshot_path) == manifest
+
+
+@pytest.mark.parametrize("changed", [
+    {"DEEPSEEK_MODEL": "deepseek-reasoner", "DEEPSEEK_BASE_URL": "https://api.deepseek.com/v1"},
+    {"DEEPSEEK_MODEL": "deepseek-chat", "DEEPSEEK_BASE_URL": "https://alternate.deepseek.example/v1"},
+])
+def test_changed_effective_deepseek_config_invalidates_saved_unit(tmp_path, changed):
+    initial = {"DEEPSEEK_MODEL": "deepseek-chat", "DEEPSEEK_BASE_URL": "https://api.deepseek.com/v1"}
+    bound = _bound_experiment(tmp_path, initial)
+    topic = _canonical_topics()[0]
+    record = paired.unit_from_telemetry(
+        paired.ARMS[0], topic, paired.ARMS[0].architecture_sha,
+        bound["experiment_digest"], TEST_SNAPSHOT_HASH, "baseline-1", _telemetry("baseline-1", topic),
+    )
+    paired.atomic_write_json(paired.unit_path(tmp_path, topic, "baseline"), record)
+    rebound = _bound_experiment(tmp_path, changed)
+
+    assert rebound["deepseek"] == changed
+    assert rebound["experiment_digest"] != bound["experiment_digest"]
+    with pytest.raises(paired.BenchmarkStateError, match="experiment_digest"):
+        paired.load_valid_unit(
+            tmp_path, paired.ARMS[0], topic, paired.ARMS[0].architecture_sha,
+            rebound["experiment_digest"], TEST_SNAPSHOT_HASH,
+        )
 
 
 def test_missing_frozen_query_cannot_call_live_tavily(tmp_path, monkeypatch):
@@ -271,10 +345,11 @@ def test_failed_unit_is_saved_separately_and_reruns_without_manual_deletion(tmp_
 
 
 class _FakeQdrant:
-    def __init__(self, points, *, vector_size=384, distance="cosine"):
+    def __init__(self, points, *, vector_size=384, distance="cosine", sources=None):
         self.points = points
         self.vector_size = vector_size
         self.distance = distance
+        self.sources = sources or {}
 
     def get_collections(self):
         return SimpleNamespace(collections=[SimpleNamespace(name=name) for name in self.points])
@@ -291,6 +366,16 @@ class _FakeQdrant:
                 )
             ),
         )
+
+    def scroll(self, collection_name, offset=None, limit=256, with_payload=None, with_vectors=False):
+        source_values = self.sources.get(collection_name, sorted(paired.expected_benchmark_sources()))
+        start = int(offset or 0)
+        end = min(start + limit, self.points[collection_name])
+        records = [
+            SimpleNamespace(payload={"source": source_values[index % len(source_values)]})
+            for index in range(start, end)
+        ]
+        return records, (end if end < self.points[collection_name] else None)
 
 
 def test_unproven_nonempty_collection_and_manifest_count_mismatch_fail(tmp_path):
@@ -313,9 +398,12 @@ def test_unproven_nonempty_collection_and_manifest_count_mismatch_fail(tmp_path)
         "point_count": 9,
         "vector_size": 384,
         "distance": "cosine",
+        "source_inventory_digest": paired._sha256(sorted(paired.expected_benchmark_sources())),
     }
     with pytest.raises(paired.BenchmarkStateError, match="does not prove"):
-        paired.validate_collection_manifest(manifest, spec, name, 20, 10, 384, "cosine", spec.architecture_sha)
+        paired.validate_collection_manifest(
+            manifest, spec, name, 20, 10, 384, "cosine", paired.expected_benchmark_sources(), spec.architecture_sha,
+        )
 
 
 @pytest.mark.parametrize("source_count,vector_size,distance", [
@@ -356,17 +444,42 @@ def test_collection_preparation_uses_distinct_disposable_arm_names(tmp_path):
     assert candidate["point_count"] == 139
 
 
+@pytest.mark.parametrize("source_values", [
+    sorted(paired.expected_benchmark_sources())[:-1],
+    sorted(paired.expected_benchmark_sources())[:-1] + ["gradient-descent"],
+])
+def test_partial_or_duplicate_indexed_source_inventory_is_rejected(tmp_path, source_values):
+    spec = paired.ARMS[0]
+    name = paired.collection_name(tmp_path.name, spec.arm)
+    client = _FakeQdrant({name: spec.expected_point_count}, sources={name: source_values})
+
+    with pytest.raises(paired.BenchmarkStateError, match="source inventory"):
+        paired.prepare_collection(tmp_path, spec, spec.architecture_sha, 20, client, lambda _name: None)
+
+
+def test_exact_indexed_source_inventory_and_collection_contract_pass(tmp_path):
+    spec = paired.ARMS[0]
+    client = _FakeQdrant({})
+
+    def ingest(name):
+        client.points[name] = spec.expected_point_count
+
+    manifest = paired.prepare_collection(tmp_path, spec, spec.architecture_sha, 20, client, ingest)
+    assert manifest["source_inventory_digest"] == paired._sha256(sorted(paired.expected_benchmark_sources()))
+    assert paired.prepare_collection(tmp_path, spec, spec.architecture_sha, 20, client, ingest) == manifest
+
+
 @pytest.mark.parametrize("candidate_verified,candidate_unverified,expected", [
     (17, 3, True),   # exactly 0.15 passes
     (16, 4, False),  # 0.20 fails
 ])
 def test_candidate_uvr_gate_boundary(tmp_path, candidate_verified, candidate_unverified, expected):
-    _write_unit(tmp_path, paired.ARMS[0], TOPIC, uvr_verified=17, uvr_unverified=3, sv=4)
-    _write_unit(tmp_path, paired.ARMS[1], TOPIC,
-                uvr_verified=candidate_verified, uvr_unverified=candidate_unverified, sv=4)
+    topics = _write_complete_primary(
+        tmp_path, candidate_verified=candidate_verified, candidate_unverified=candidate_unverified, candidate_sv=4,
+    )
 
     aggregate = paired.paired_aggregate(
-        tmp_path, [TOPIC], _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
+        tmp_path, topics, _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
     )
     assert aggregate["gate_pass"] is expected
 
@@ -376,52 +489,51 @@ def test_candidate_uvr_gate_boundary(tmp_path, candidate_verified, candidate_unv
     lambda canonical: canonical[:1],
 ])
 def test_truncated_primary_topic_set_cannot_pass(topics):
-    canonical = paired.load_topics(paired.CANONICAL_TOPICS_PATH)
+    canonical = _canonical_topics()
     with pytest.raises(paired.BenchmarkStateError, match="exactly 20"):
-        paired.require_canonical_topics(topics(canonical))
+        paired.paired_aggregate(
+            experiment_dir=Path("unused"), topics=topics(canonical), execution_shas={},
+            experiment_digest="x", snapshot_hash="x",
+        )
 
 
 def test_invalid_verification_status_cannot_green_light_pair(tmp_path):
-    _write_unit(tmp_path, paired.ARMS[0], TOPIC)
-    bad = paired.unit_from_telemetry(
-        paired.ARMS[1], TOPIC, paired.ARMS[1].architecture_sha, TEST_DIGEST, TEST_SNAPSHOT_HASH, "candidate-1",
-        _telemetry("candidate-1", TOPIC),
-    )
+    topics = _write_complete_primary(tmp_path)
+    path = paired.unit_path(tmp_path, topics[0], "candidate")
+    bad = paired.load_json(path, "candidate unit")
     bad["verification_status"] = "parse_failed"
-    paired.atomic_write_json(paired.unit_path(tmp_path, TOPIC, "candidate"), bad)
+    paired.atomic_write_json(path, bad)
 
     aggregate = paired.paired_aggregate(
-        tmp_path, [TOPIC], _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
+        tmp_path, topics, _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
     )
     assert aggregate["gate_pass"] is False
     assert any("verification_status" in failure for failure in aggregate["gate_failures"])
 
 
 def test_na_uvr_cannot_green_light_pair(tmp_path):
-    _write_unit(tmp_path, paired.ARMS[0], TOPIC)
-    _write_unit(tmp_path, paired.ARMS[1], TOPIC)
-    path = paired.unit_path(tmp_path, TOPIC, "candidate")
+    topics = _write_complete_primary(tmp_path)
+    path = paired.unit_path(tmp_path, topics[0], "candidate")
     record = json.loads(path.read_text())
     record["uvr"] = None
     paired.atomic_write_json(path, record)
 
     aggregate = paired.paired_aggregate(
-        tmp_path, [TOPIC], _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
+        tmp_path, topics, _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
     )
     assert aggregate["gate_pass"] is False
     assert any("invalid UVR" in failure for failure in aggregate["gate_failures"])
 
 
 def test_nan_sv_cannot_green_light_pair(tmp_path):
-    _write_unit(tmp_path, paired.ARMS[0], TOPIC)
-    _write_unit(tmp_path, paired.ARMS[1], TOPIC)
-    path = paired.unit_path(tmp_path, TOPIC, "candidate")
+    topics = _write_complete_primary(tmp_path)
+    path = paired.unit_path(tmp_path, topics[0], "candidate")
     record = json.loads(path.read_text())
     record["sv"] = float("nan")
     paired.atomic_write_json(path, record)
 
     aggregate = paired.paired_aggregate(
-        tmp_path, [TOPIC], _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
+        tmp_path, topics, _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
     )
     assert aggregate["gate_pass"] is False
     assert any("sv" in failure.lower() for failure in aggregate["gate_failures"])
@@ -444,21 +556,47 @@ def test_invalid_claim_counts_cannot_create_unit(field, value):
 
 
 def test_paired_sv_aggregation_and_per_topic_deltas(tmp_path):
-    topics = [TOPIC, {**TOPIC, "id": 2, "topic": "Backpropagation"}]
-    _write_unit(tmp_path, paired.ARMS[0], topics[0], sv=4)
-    _write_unit(tmp_path, paired.ARMS[1], topics[0], sv=5)
-    _write_unit(tmp_path, paired.ARMS[0], topics[1], sv=6)
-    _write_unit(tmp_path, paired.ARMS[1], topics[1], sv=7)
+    topics = _write_complete_primary(tmp_path)
 
     aggregate = paired.paired_aggregate(
         tmp_path, topics, _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
     )
 
     assert aggregate["gate_pass"] is True
-    assert aggregate["baseline_aggregate_sv"] == 5
-    assert aggregate["candidate_aggregate_sv"] == 6
-    assert [row["delta_sv"] for row in aggregate["topic_pairs"]] == [1, 1]
+    assert aggregate["experiment_digest"] == TEST_DIGEST
+    assert aggregate["total_primary_units"] == 40
+    assert aggregate["baseline_aggregate_sv"] == 4
+    assert aggregate["candidate_aggregate_sv"] == 5
+    assert len(aggregate["topic_pairs"]) == 20
+    assert [row["delta_sv"] for row in aggregate["topic_pairs"]] == [1] * 20
     assert all("delta_uvr" in row for row in aggregate["topic_pairs"])
+
+
+def test_nineteen_pairs_cannot_aggregate(tmp_path):
+    topics = _write_complete_primary(tmp_path)
+    paired.unit_path(tmp_path, topics[-1], "candidate").unlink()
+
+    aggregate = paired.paired_aggregate(
+        tmp_path, topics, _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
+    )
+
+    assert aggregate["gate_pass"] is False
+    assert any("19/20" in failure for failure in aggregate["gate_failures"])
+
+
+def test_mixed_experiment_digest_cannot_aggregate(tmp_path):
+    topics = _write_complete_primary(tmp_path)
+    path = paired.unit_path(tmp_path, topics[0], "candidate")
+    record = paired.load_json(path, "candidate unit")
+    record["experiment_digest"] = "other-experiment"
+    paired.atomic_write_json(path, record)
+
+    aggregate = paired.paired_aggregate(
+        tmp_path, topics, _execution_shas(), TEST_DIGEST, TEST_SNAPSHOT_HASH,
+    )
+
+    assert aggregate["gate_pass"] is False
+    assert any("experiment_digest" in failure for failure in aggregate["gate_failures"])
 
 
 def test_arm_order_alternates_baseline_candidate_then_candidate_baseline(tmp_path):

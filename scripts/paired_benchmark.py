@@ -23,6 +23,8 @@ from numbers import Real
 from pathlib import Path
 from typing import Callable
 
+from dotenv import dotenv_values
+
 
 BASELINE_SHA = "794851dded770ce87d111e73735d000e23597eb1"
 CANDIDATE_SHA = "470e7834cd781d85c4c447b81bb1651106ff766d"
@@ -219,6 +221,22 @@ def _experiment_core(experiment_dir: Path, topics: list[dict], snapshot_path: Pa
     }
 
 
+def effective_deepseek_config(repo_root: Path | None = None) -> dict[str, str]:
+    """Resolve the non-secret DeepSeek settings that each arm will receive."""
+    dotenv = dotenv_values((repo_root or Path.cwd()) / ".env")
+
+    def value(name: str, default: str) -> str:
+        configured = os.getenv(name) or dotenv.get(name) or default
+        if not isinstance(configured, str) or not configured.strip():
+            raise BenchmarkStateError(f"effective {name} is invalid")
+        return configured
+
+    return {
+        "DEEPSEEK_MODEL": value("DEEPSEEK_MODEL", "deepseek-chat"),
+        "DEEPSEEK_BASE_URL": value("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
+    }
+
+
 def initialize_experiment(experiment_dir: Path, topics: list[dict], snapshot_path: Path) -> dict:
     """Create or verify the minimal immutable provenance record."""
     require_canonical_topics(topics)
@@ -246,12 +264,17 @@ def bind_experiment_digest(
     execution_shas: dict[str, str],
     collection_manifests: dict[str, dict],
     runtime: Path,
+    deepseek_config: dict[str, str],
 ) -> dict:
     """Bind completed units to one digest of the decision-critical run inputs."""
     if set(execution_shas) != {spec.arm for spec in ARMS}:
         raise BenchmarkStateError("experiment execution SHA set is incomplete")
     if set(collection_manifests) != {spec.arm for spec in ARMS}:
         raise BenchmarkStateError("experiment collection manifest set is incomplete")
+    if set(deepseek_config) != {"DEEPSEEK_MODEL", "DEEPSEEK_BASE_URL"} or not all(
+        isinstance(value, str) and value.strip() for value in deepseek_config.values()
+    ):
+        raise BenchmarkStateError("experiment DeepSeek configuration is invalid")
     runtime_hashes = {
         "harness": _file_hash(Path(__file__)),
         "benchmark_runtime": _file_hash(runtime / "benchmark_runtime.py"),
@@ -262,6 +285,7 @@ def bind_experiment_digest(
         "candidate_execution_sha": execution_shas["candidate"],
         "harness_hashes": runtime_hashes,
         "embedding_model": EMBEDDING_MODEL,
+        "deepseek": deepseek_config,
         "canonical_topic_hash": canonical_topic_hash(),
         "frozen_web_snapshot_hash": manifest["frozen_web_snapshot_hash"],
         "collection_manifest_hashes": {
@@ -273,6 +297,7 @@ def bind_experiment_digest(
         "execution_shas": execution_shas,
         "harness_hashes": runtime_hashes,
         "collection_manifest_hashes": digest_inputs["collection_manifest_hashes"],
+        "deepseek": deepseek_config,
         "experiment_digest": _sha256(digest_inputs),
     }
     path = experiment_path(experiment_dir)
@@ -324,6 +349,14 @@ def verify_same_seed_corpus(baseline_worktree: Path, candidate_worktree: Path) -
     return len(baseline)
 
 
+def expected_benchmark_sources() -> frozenset[str]:
+    """Return the exact source identifiers produced by the fixed seed ingester."""
+    sources = frozenset(Path(name).stem for name, _ in _source_signature(Path(__file__).parents[1] / "kb" / "seed_docs"))
+    if len(sources) != 20:
+        raise BenchmarkStateError(f"benchmark seed source inventory is not the canonical 20, got {len(sources)}")
+    return sources
+
+
 def collection_manifest_path(experiment_dir: Path, arm: str) -> Path:
     return experiment_dir / "collections" / f"{arm}.json"
 
@@ -337,6 +370,34 @@ def _collection_properties(client, name: str) -> tuple[int, int, str]:
         return int(info.points_count), size, str(distance).lower()
     except Exception as error:
         raise BenchmarkStateError(f"cannot inspect disposable collection {name!r}") from error
+
+
+def _collection_source_inventory(client, name: str) -> frozenset[str]:
+    """Read every point payload to prove the collection indexed every seed source."""
+    sources = set()
+    offset = None
+    try:
+        while True:
+            points, offset = client.scroll(
+                collection_name=name,
+                offset=offset,
+                limit=256,
+                with_payload=["source"],
+                with_vectors=False,
+            )
+            for point in points:
+                payload = getattr(point, "payload", None)
+                source = payload.get("source") if isinstance(payload, dict) else None
+                if not isinstance(source, str) or not source:
+                    raise BenchmarkStateError(f"collection {name!r} has a point without a usable source payload")
+                sources.add(source)
+            if offset is None:
+                break
+    except BenchmarkStateError:
+        raise
+    except Exception as error:
+        raise BenchmarkStateError(f"cannot read source payloads from disposable collection {name!r}") from error
+    return frozenset(sources)
 
 
 def _collection_names(client) -> set[str]:
@@ -354,6 +415,7 @@ def validate_collection_manifest(
     point_count: int,
     vector_size: int,
     distance: str,
+    source_inventory: frozenset[str],
     execution_sha: str,
 ) -> None:
     expected = {
@@ -368,6 +430,7 @@ def validate_collection_manifest(
         "point_count": point_count,
         "vector_size": vector_size,
         "distance": distance,
+        "source_inventory_digest": _sha256(sorted(source_inventory)),
     }
     if manifest != expected:
         raise BenchmarkStateError(f"collection manifest does not prove {spec.arm} collection identity")
@@ -390,6 +453,7 @@ def prepare_collection(
             f"{spec.arm} seed corpus count {source_count} != expected {spec.expected_source_count}"
         )
     path = collection_manifest_path(experiment_dir, spec.arm)
+    expected_sources = expected_benchmark_sources()
     names = _collection_names(client)
     if name in names:
         point_count, vector_size, distance = _collection_properties(client, name)
@@ -399,11 +463,14 @@ def prepare_collection(
             )
         if vector_size != 384 or distance != "cosine":
             raise BenchmarkStateError(f"{spec.arm} collection vector config is not MiniLM 384 cosine")
+        source_inventory = _collection_source_inventory(client, name)
+        if source_inventory != expected_sources:
+            raise BenchmarkStateError(f"{spec.arm} collection source inventory does not match the canonical seeds")
         if not path.exists():
             raise BenchmarkStateError(f"refusing unexpected nonempty collection: {name}")
         manifest = load_json(path, "collection manifest")
         validate_collection_manifest(
-            manifest, spec, name, source_count, point_count, vector_size, distance, execution_sha,
+            manifest, spec, name, source_count, point_count, vector_size, distance, source_inventory, execution_sha,
         )
         return manifest
 
@@ -415,6 +482,9 @@ def prepare_collection(
         )
     if vector_size != 384 or distance != "cosine":
         raise BenchmarkStateError(f"{spec.arm} ingest collection vector config is not MiniLM 384 cosine")
+    source_inventory = _collection_source_inventory(client, name)
+    if source_inventory != expected_sources:
+        raise BenchmarkStateError(f"{spec.arm} ingest source inventory does not match the canonical seeds")
     manifest = {
         "schema_version": 1,
         "arm": spec.arm,
@@ -427,6 +497,7 @@ def prepare_collection(
         "point_count": point_count,
         "vector_size": vector_size,
         "distance": distance,
+        "source_inventory_digest": _sha256(sorted(source_inventory)),
     }
     atomic_write_json(path, manifest)
     return manifest
@@ -456,12 +527,15 @@ def arm_environment(
     collection: str,
     qdrant_url: str,
     consumption_path: Path | None = None,
+    deepseek_config: dict[str, str] | None = None,
 ) -> dict[str, str]:
     env = dict(os.environ)
     env["CONTENT_AGENT_FROZEN_WEB_SNAPSHOT"] = str(snapshot_path.resolve())
     env["CONTENT_AGENT_FROZEN_WEB_SNAPSHOT_HASH"] = _sha256(load_json(snapshot_path, "frozen web snapshot"))
     env["QDRANT_COLLECTION"] = collection
     env["QDRANT_URL"] = qdrant_url
+    if deepseek_config is not None:
+        env.update(deepseek_config)
     if consumption_path is not None:
         env["CONTENT_AGENT_FROZEN_WEB_CONSUMPTION"] = str(consumption_path.resolve())
     env["PYTHONPATH"] = str(runtime) + os.pathsep + env.get("PYTHONPATH", "")
@@ -710,6 +784,14 @@ def paired_aggregate(
     snapshot_hash: str,
 ) -> dict:
     """Compute the primary paired gates without turning model variance into retries."""
+    require_canonical_topics(topics)
+    manifest = load_json(experiment_path(experiment_dir), "experiment manifest")
+    if manifest.get("experiment_digest") != experiment_digest:
+        raise BenchmarkStateError("aggregate experiment digest does not match the current experiment")
+    if manifest.get("frozen_web_snapshot_hash") != snapshot_hash:
+        raise BenchmarkStateError("aggregate frozen-web snapshot does not match the current experiment")
+    if manifest.get("execution_shas") != execution_shas:
+        raise BenchmarkStateError("aggregate execution SHAs do not match the current experiment")
     rows = []
     failures = []
     baseline_sv = []
@@ -718,11 +800,12 @@ def paired_aggregate(
         pair = {}
         for spec in ARMS:
             try:
-                pair[spec.arm] = load_valid_unit(
+                unit = load_valid_unit(
                     experiment_dir, spec, topic, execution_shas[spec.arm], experiment_digest, snapshot_hash,
                 )
-                if pair[spec.arm] is None:
+                if unit is None:
                     raise BenchmarkStateError("unit result is missing")
+                pair[spec.arm] = unit
             except BenchmarkStateError as error:
                 failures.append(f"topic {topic['id']} {spec.arm}: {error}")
         if set(pair) != {"baseline", "candidate"}:
@@ -753,15 +836,16 @@ def paired_aggregate(
         })
     baseline_mean_sv = sum(baseline_sv) / len(baseline_sv) if baseline_sv else None
     candidate_mean_sv = sum(candidate_sv) / len(candidate_sv) if candidate_sv else None
-    if len(rows) != len(topics):
-        failures.append(f"only {len(rows)}/{len(topics)} topic pairs are valid and scorable")
+    if len(rows) != 20:
+        failures.append(f"only {len(rows)}/20 topic pairs are valid and scorable")
     if baseline_mean_sv is None or candidate_mean_sv is None:
         failures.append("paired aggregate SV is unavailable")
     elif candidate_mean_sv < baseline_mean_sv:
         failures.append(f"candidate aggregate SV {candidate_mean_sv:.3f} < baseline {baseline_mean_sv:.3f}")
     return {
         "schema_version": 1,
-        "total_primary_units": len(topics) * len(ARMS),
+        "experiment_digest": experiment_digest,
+        "total_primary_units": 40,
         "topic_pairs": rows,
         "baseline_aggregate_sv": baseline_mean_sv,
         "candidate_aggregate_sv": candidate_mean_sv,
@@ -787,11 +871,14 @@ def invoke_arm(
     snapshot_path: Path,
     collections: dict[str, str],
     qdrant_url: str,
+    deepseek_config: dict[str, str],
 ) -> tuple[str, dict]:
     """Run one arm CLI and read only telemetry named by that CLI's RUN_ID."""
     worktree = worktrees[spec.arm]
     consumption_path = runtime / "consumption" / f"{spec.arm}-{topic['id']}-{uuid.uuid4().hex}.json"
-    env = arm_environment(runtime, snapshot_path, collections[spec.arm], qdrant_url, consumption_path)
+    env = arm_environment(
+        runtime, snapshot_path, collections[spec.arm], qdrant_url, consumption_path, deepseek_config,
+    )
     proc = subprocess.run(
         ["uv", "run", "python", "main.py", "run", "--topic", topic["topic"],
          "--card-id", topic["card_id"], "--series", topic["series"], "--auto"],
@@ -837,10 +924,11 @@ def run_benchmark(experiment_dir: Path, topics_path: Path, repo_root: Path, qdra
         )
         collections[spec.arm] = collection_manifest["collection_name"]
     runtime = install_runtime(experiment_dir)
+    deepseek_config = effective_deepseek_config(repo_root)
     manifest = bind_experiment_digest(experiment_dir, manifest, execution_shas, {
         spec.arm: load_json(collection_manifest_path(experiment_dir, spec.arm), "collection manifest")
         for spec in ARMS
-    }, runtime)
+    }, runtime, deepseek_config)
     experiment_digest = manifest["experiment_digest"]
     snapshot_hash = manifest["frozen_web_snapshot_hash"]
     execute_units(
@@ -849,7 +937,9 @@ def run_benchmark(experiment_dir: Path, topics_path: Path, repo_root: Path, qdra
         execution_shas,
         experiment_digest,
         snapshot_hash,
-        lambda spec, topic: invoke_arm(spec, topic, worktrees, runtime, snapshot_path, collections, qdrant_url),
+        lambda spec, topic: invoke_arm(
+            spec, topic, worktrees, runtime, snapshot_path, collections, qdrant_url, deepseek_config,
+        ),
     )
     aggregate = paired_aggregate(experiment_dir, topics, execution_shas, experiment_digest, snapshot_hash)
     aggregate["experiment_id"] = manifest["experiment_id"]
