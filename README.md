@@ -160,7 +160,7 @@ content-agent/
 |------|--------|-------------|
 | 1 — Logging + core nodes | ✓ complete | structlog, verify_node, reflect_node, smoke_test passing |
 | 2 — Full pipeline | ✓ complete | html_gen_node, git_node, main.py CLI |
-| 3 — Evals + benchmark | ✓ complete | Prompt evals, retrieval golden set (100% recall@3), 5-round benchmark |
+| 3 — Evals + benchmark | ✓ complete | Prompt evals, retrieval golden set (historical legacy hit@3 = 100%; corrected source metrics in DECISIONS.md), 5-round benchmark |
 | 4 — Qdrant + Docling | ✓ complete | Qdrant migration, BM25+RRF, multi-format ingest (Docling later dropped, M6) |
 | 5 — API + fault injection | ✓ complete | FastAPI durable HITL API (B4), 5 fault modes tested (B2) |
 | 6 — Docker + AWS | ✓ complete | Containerized (B5), tested on EC2 + Caddy + Docker Hub (see demo video above) |

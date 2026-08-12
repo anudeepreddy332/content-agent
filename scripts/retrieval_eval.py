@@ -1,6 +1,6 @@
 """
-Measures retrieval accuracy (recall@k, concept-hit rate, out-of-scope rejection
-rate) against a fixed 35-query golden set, evaluated against whatever is
+Measures source-level retrieval quality and concept evidence coverage against a
+fixed 35-query golden set, evaluated against whatever is
 currently in the KB. To compare across corpus sizes, re-run this script after
 each ingest stage and diff the JSON reports by hand — there is no built-in
 loop or plotting; each invocation is a single point-in-time measurement.
@@ -17,7 +17,10 @@ import argparse
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from tools.query_kb import query_kb
+from tools.query_kb import query_kb, query_kb_diagnostics
+
+
+CONCEPT_PASS_THRESHOLD = 2 / 3
 
 
 def reciprocal_rank(sources: list[str], expected_set: set[str], max_k: int) -> float:
@@ -33,24 +36,61 @@ def reciprocal_rank(sources: list[str], expected_set: set[str], max_k: int) -> f
     return 0.0
 
 
+def hit_at_k(sources: list[str], expected_set: set[str], k: int) -> float:
+    """Return 1 when any expected source appears in the top-k, else 0."""
+    return float(bool(expected_set.intersection(sources[:k])))
+
+
+def source_recall_at_k(sources: list[str], expected_set: set[str], k: int) -> float:
+    """Return the fraction of unique expected sources retrieved within the top-k."""
+    if not expected_set:
+        return 0.0
+    return len(expected_set.intersection(sources[:k])) / len(expected_set)
+
+
 def ndcg_at_k(sources: list[str], expected_set: set[str], k: int) -> float:
     """Normalized DCG@k with binary relevance keyed on source.
 
-    DCG@k = Σ_{i=1..min(k, len(sources))} rel_i / log2(i+1), where rel_i is 1 if
-    the result at rank i has a source in `expected_set` else 0.
+    DCG@k = Σ_{i=1..min(k, len(sources))} rel_i / log2(i+1), where only the
+    first occurrence of an expected source receives relevance credit. This keeps
+    source-level labels aligned with chunk-level retrieval while preserving the
+    rank penalty for repeated sibling chunks.
     IDCG@k = Σ_{i=1..min(len(expected_set), k)} 1/log2(i+1) (the ideal ranking
     puts every relevant source first). Returns DCG/IDCG, or 0.0 when IDCG == 0.
     Pure — no KB/network access.
     """
     dcg = 0.0
+    credited_sources: set[str] = set()
     for i, source in enumerate(sources[:k], start=1):
-        if source in expected_set:
+        if source in expected_set and source not in credited_sources:
             dcg += 1.0 / math.log2(i + 1)
+            credited_sources.add(source)
 
     ideal_hits = min(len(expected_set), k)
     idcg = sum(1.0 / math.log2(i + 1) for i in range(1, ideal_hits + 1))
 
-    return dcg / idcg if idcg > 0 else 0.0
+    return min(1.0, dcg / idcg) if idcg > 0 else 0.0
+
+
+def concepts_in_text(text: str, required_concepts: list[str]) -> list[str]:
+    """Return required concepts found by the historical deterministic substring rule."""
+    lowered = text.lower()
+    return [concept for concept in required_concepts if concept.lower() in lowered]
+
+
+def concept_coverage_at_k(results: list[dict], required_concepts: list[str], k: int) -> tuple[list[str], float]:
+    """Return found concepts and their fraction in the concatenated top-k evidence."""
+    if not required_concepts:
+        return [], 0.0
+    found = concepts_in_text(" ".join(result.get("text", "") for result in results[:k]), required_concepts)
+    return found, len(found) / len(required_concepts)
+
+
+def source_diversity_at_k(sources: list[str], k: int) -> tuple[int, int]:
+    """Return unique source count and duplicate source slots without compressing ranks."""
+    slots = sources[:k]
+    unique_sources = len(set(slots))
+    return unique_sources, len(slots) - unique_sources
 
 # Golden set - each query has ground truth: which source should appear in top-k
 # and what concepts must be in the returned text.
@@ -298,134 +338,136 @@ GOLDEN_SET = [
 ]
 
 def run_retrieval_eval(k_values: list[int] = None) -> dict:
+    """Evaluate source ranking, concept evidence, diversity, and raw OOS signals.
+
+    `recall@k` is retained as a historical alias for the old any-source metric;
+    new comparisons must use `hit@k` and `source_recall@k` explicitly.
     """
-    Run retrieval evaluation on a golden set.
-
-    Args:
-        k_values: List of k values for recall@k
-
-    Returns:
-        dict with metrics and per-query details.
-    """
-
     if k_values is None:
-        k_values = [1,3,5]
-
-    # Initialize results
-    results = {f"recall@{k}": 0 for k in k_values}
-    results["mrr"] = 0
-    for k in k_values:
-        results[f"ndcg@{k}"] = 0
-    results["concept_hit_rate"] = 0
-    results["out_of_scope_rejection_rate"] = 0
-    results["per_query"] = []
-    results["total_queries"] = len(GOLDEN_SET)
-
-    # Separate counters
-    in_domain_queries = 0
-    in_domain_recall_hits = {k: 0 for k in k_values}
-    rr_sum = 0.0
-    ndcg_sums = {k: 0.0 for k in k_values}
-    concept_eligible = 0
-    concept_hits = 0
-    oos_eligible = 0
-    oos_rejections = 0
-
+        k_values = [1, 3, 5]
+    k_values = sorted(set(k_values))
     max_k = max(k_values)
+    legacy_concept_k = 5 if 5 in k_values else max_k
+    results = {
+        "metric_semantics": {
+            "recall@k": "legacy any-source hit@k; retained for historical comparison only",
+            "out_of_scope_rejection_rate": "deprecated non-gating metric; fused distance is not calibrated",
+        },
+        "mrr": None,
+        "concept_hit_rate": None,
+        "out_of_scope_rejection_rate": None,
+        "per_query": [],
+        "total_queries": len(GOLDEN_SET),
+    }
+    for k in k_values:
+        results.update({
+            f"recall@{k}": None,
+            f"hit@{k}": None,
+            f"source_recall@{k}": None,
+            f"ndcg@{k}": None,
+            f"concept_coverage@{k}": None,
+            f"concept_pass@{k}": None,
+            f"unique_sources@{k}": None,
+            f"duplicate_source_slots@{k}": None,
+        })
+
+    in_domain_queries = 0
+    hit_sums = {k: 0.0 for k in k_values}
+    source_recall_sums = {k: 0.0 for k in k_values}
+    ndcg_sums = {k: 0.0 for k in k_values}
+    rr_sum = 0.0
+    concept_eligible = 0
+    concept_coverage_sums = {k: 0.0 for k in k_values}
+    concept_pass_sums = {k: 0.0 for k in k_values}
+    unique_source_sums = {k: 0.0 for k in k_values}
+    duplicate_slot_sums = {k: 0.0 for k in k_values}
+    oos_queries = 0
 
     for item in GOLDEN_SET:
-        # Retrieve docs
         retrieved = query_kb(item["query"], n_results=max_k)
-        sources = [r["source"] for r in retrieved]
-        distances = [r.get("distance") for r in retrieved[:max_k]]
-        combined_text = " ".join(r["text"] for r in retrieved).lower()
-
+        sources = [result.get("source", "unknown") for result in retrieved]
+        is_in_domain = bool(item["expected_sources"])
         query_result = {
             "query": item["query"],
             "difficulty": item["difficulty"],
             "expected_sources": item["expected_sources"],
             "retrieved_sources": sources,
-            "retrieved_distances": distances,
-            "recall_at_k": {},
-            "reciprocal_rank": None,
-            "ndcg_at_k": {},
-            "concepts_found": [],
-            "out_of_scope_violation": False,
+            "retrieved_distances": [result.get("distance") for result in retrieved],
+            "retrieved_results": [
+                {"rank": rank, "source": result.get("source", "unknown"), "chunk_index": result.get("chunk_index")}
+                for rank, result in enumerate(retrieved, start=1)
+            ],
+            "recall_at_k": {}, "hit_at_k": {}, "source_recall_at_k": {},
+            "reciprocal_rank": None, "ndcg_at_k": {}, "concepts_found": [],
+            "concepts_found_at_k": {}, "concept_coverage_at_k": {}, "concept_pass_at_k": {},
+            "source_diversity_at_k": {}, "oos_diagnostics": None,
         }
-
-        # Recall for in-domain queries
-        is_in_domain = bool(item["expected_sources"])
 
         if is_in_domain:
             in_domain_queries += 1
             expected_set = set(item["expected_sources"])
-
             for k in k_values:
-                top_k_sources = set(sources[:k])
-                hit = bool(expected_set.intersection(top_k_sources))
-                query_result["recall_at_k"][f"recall@{k}"] = hit
-
-                if hit:
-                    in_domain_recall_hits[k] += 1
-
-            # Rank-sensitive metrics reuse the same retrieved `sources` list —
-            # no extra query_kb call. RR uses the first relevant hit within
-            # max_k; nDCG@k rewards ranking relevant sources higher.
+                hit = hit_at_k(sources, expected_set, k)
+                source_recall = source_recall_at_k(sources, expected_set, k)
+                ndcg = ndcg_at_k(sources, expected_set, k)
+                query_result["recall_at_k"][f"recall@{k}"] = bool(hit)
+                query_result["hit_at_k"][f"hit@{k}"] = hit
+                query_result["source_recall_at_k"][f"source_recall@{k}"] = round(source_recall, 3)
+                query_result["ndcg_at_k"][f"ndcg@{k}"] = round(ndcg, 3)
+                hit_sums[k] += hit
+                source_recall_sums[k] += source_recall
+                ndcg_sums[k] += ndcg
             rr = reciprocal_rank(sources, expected_set, max_k)
             rr_sum += rr
             query_result["reciprocal_rank"] = round(rr, 3)
-
-            for k in k_values:
-                nk = ndcg_at_k(sources, expected_set, k)
-                ndcg_sums[k] += nk
-                query_result["ndcg_at_k"][f"ndcg@{k}"] = round(nk, 3)
-
         else:
-            # Out-of-scope: recall not applicable
             for k in k_values:
                 query_result["recall_at_k"][f"recall@{k}"] = None
+                query_result["hit_at_k"][f"hit@{k}"] = None
+                query_result["source_recall_at_k"][f"source_recall@{k}"] = None
 
-
-        # Concept check (only if required_concepts non-empty)
-        if item["required_concepts"]:
+        required_concepts = item["required_concepts"]
+        if required_concepts:
             concept_eligible += 1
-            concepts_found = [c for c in item["required_concepts"] if c.lower() in combined_text]
-            query_result["concepts_found"] = concepts_found
+            for k in k_values:
+                found, coverage = concept_coverage_at_k(retrieved, required_concepts, k)
+                concept_pass = float(coverage >= CONCEPT_PASS_THRESHOLD)
+                query_result["concepts_found_at_k"][f"concepts@{k}"] = found
+                query_result["concept_coverage_at_k"][f"concept_coverage@{k}"] = round(coverage, 3)
+                query_result["concept_pass_at_k"][f"concept_pass@{k}"] = concept_pass
+                concept_coverage_sums[k] += coverage
+                concept_pass_sums[k] += concept_pass
+            query_result["concepts_found"] = query_result["concepts_found_at_k"][f"concepts@{legacy_concept_k}"]
 
-            # Require at least 67% of concepts present
-            if len(concepts_found) >= len(item["required_concepts"]) * 0.67:
-                concept_hits += 1
+        for k in k_values:
+            unique_sources, duplicate_slots = source_diversity_at_k(sources, k)
+            query_result["source_diversity_at_k"][f"unique_sources@{k}"] = unique_sources
+            query_result["source_diversity_at_k"][f"duplicate_source_slots@{k}"] = duplicate_slots
+            unique_source_sums[k] += unique_sources
+            duplicate_slot_sums[k] += duplicate_slots
 
-        # Out-of-scope rejection check
-        if "min_distance_threshold" in item and not is_in_domain:
-            oos_eligible += 1
-            # Expect smallest distance (most similar) to be > threshold
-            if distances and distances[0] > item["min_distance_threshold"]:
-                oos_rejections += 1
-            else:
-                query_result["out_of_scope_violation"] = True
-
+        if not is_in_domain and "min_distance_threshold" in item:
+            oos_queries += 1
+            query_result["oos_diagnostics"] = query_kb_diagnostics(item["query"], n_results=max_k)
         results["per_query"].append(query_result)
 
-    # Normalize metrics
     for k in k_values:
-        if in_domain_queries > 0:
-            results[f"recall@{k}"] = round(in_domain_recall_hits[k] / in_domain_queries, 3)
+        if in_domain_queries:
+            results[f"recall@{k}"] = round(hit_sums[k] / in_domain_queries, 3)
+            results[f"hit@{k}"] = round(hit_sums[k] / in_domain_queries, 3)
+            results[f"source_recall@{k}"] = round(source_recall_sums[k] / in_domain_queries, 3)
             results[f"ndcg@{k}"] = round(ndcg_sums[k] / in_domain_queries, 3)
-        else:
-            results[f"recall@{k}"] = None
-            results[f"ndcg@{k}"] = None
+        if concept_eligible:
+            results[f"concept_coverage@{k}"] = round(concept_coverage_sums[k] / concept_eligible, 3)
+            results[f"concept_pass@{k}"] = round(concept_pass_sums[k] / concept_eligible, 3)
+        results[f"unique_sources@{k}"] = round(unique_source_sums[k] / len(GOLDEN_SET), 3)
+        results[f"duplicate_source_slots@{k}"] = round(duplicate_slot_sums[k] / len(GOLDEN_SET), 3)
 
-    results["mrr"] = round(rr_sum / in_domain_queries, 3) if in_domain_queries > 0 else None
-
-    results["concept_hit_rate"] = round(concept_hits / concept_eligible, 3) if concept_eligible > 0 else None
-    results["out_of_scope_rejection_rate"] = round(oos_rejections / oos_eligible, 3) if oos_eligible > 0 else None
-
-    # Add metadata
+    results["mrr"] = round(rr_sum / in_domain_queries, 3) if in_domain_queries else None
+    results["concept_hit_rate"] = results[f"concept_pass@{legacy_concept_k}"]
     results["in_domain_queries"] = in_domain_queries
     results["concept_eligible_queries"] = concept_eligible
-    results["out_of_scope_queries"] = oos_eligible
-
+    results["out_of_scope_queries"] = oos_queries
     return results
 
 
@@ -451,36 +493,34 @@ def main():
     print(f"{'─' * 50}")
 
     for k in args.k:
-        score = results.get(f"recall@{k}")
-        if score is not None:
-            bar = "█" * int(score * 20)
-            print(f"  recall@{k}: {score:.1%}  {bar}")
-        else:
-            print(f"  recall@{k}: N/A (no in-domain queries)")
+        print(f"  hit@{k}: {results[f'hit@{k}']:.1%}")
+        print(f"  source_recall@{k}: {results[f'source_recall@{k}']:.1%}")
 
     mrr = results.get("mrr")
     if mrr is not None:
-        bar = "█" * int(mrr * 20)
-        print(f"  MRR: {mrr:.1%}  {bar}")
+        print(f"  MRR: {mrr:.1%}")
     else:
         print("  MRR: N/A (no in-domain queries)")
 
     for k in args.k:
         score = results.get(f"ndcg@{k}")
         if score is not None:
-            bar = "█" * int(score * 20)
-            print(f"  nDCG@{k}: {score:.1%}  {bar}")
+            print(f"  source nDCG@{k}: {score:.1%}")
         else:
             print(f"  nDCG@{k}: N/A (no in-domain queries)")
 
-    print(f"  concept hit rate: {results['concept_hit_rate'] if results['concept_hit_rate'] is not None else 'N/A'}")
-    print(f"  out-of-scope rejection rate: {results['out_of_scope_rejection_rate'] if results['out_of_scope_rejection_rate'] is not None else 'N/A'}")
+    for k in args.k:
+        print(f"  concept coverage@{k}: {results[f'concept_coverage@{k}']:.1%}")
+        print(f"  concept pass@{k}: {results[f'concept_pass@{k}']:.1%}")
+        print(f"  mean unique sources@{k}: {results[f'unique_sources@{k}']}")
+        print(f"  mean duplicate source slots@{k}: {results[f'duplicate_source_slots@{k}']}")
+    print("  out-of-scope rejection: deprecated/non-gating; raw diagnostics recorded per OOS query")
     print(f"\nFull report: {out_path}")
 
     # Flag in-domain failures
     failures = [
         q for q in results["per_query"]
-        if q["expected_sources"] and not q["recall_at_k"].get("recall@3", False)
+        if q["expected_sources"] and not q["hit_at_k"].get("hit@3", False)
     ]
     if failures:
         print(f"\n[WARN] {len(failures)} in-domain queries missed at recall@3:")
@@ -489,17 +529,7 @@ def main():
             print(f"    expected: {f['expected_sources']}")
             print(f"    got:      {f['retrieved_sources'][:3]}")
 
-    # Flag out-of-scope violations (false positives)
-    oos_violations = [
-        q for q in results["per_query"]
-        if q.get("out_of_scope_violation", False)
-    ]
-    if oos_violations:
-        print(f"\n[ERROR] {len(oos_violations)} out-of-scope queries had distance <= threshold (false positives):")
-        for v in oos_violations[:5]:
-            print(f"  {v['query']}")
-            print(f"    distances: {v['retrieved_distances'][:3]}")
-            print(f"    got: {v['retrieved_sources'][:2]}")
+    print("\nOOS diagnostics are reported without a rejection gate; calibration remains separate work.")
 
 
 if __name__ == "__main__":
