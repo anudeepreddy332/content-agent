@@ -6,6 +6,33 @@ Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing
 ---
 Date: 2026-08-12
 
+Decision: The paired baseline/candidate benchmark must run from immutable arm
+SHAs with frozen web evidence, isolated Qdrant collections, and atomic
+topic-by-arm evidence records.
+
+Problem: A long live benchmark could mix changing Tavily results, production
+collection state, stale telemetry, or partial reruns, making an apparent
+retrieval comparison untrustworthy.
+
+Action: Capture each deterministic benchmark query once into an explicit
+snapshot; benchmark subprocesses consume it through a runtime-only adapter that
+never falls back to live Tavily, including on force refresh. Use detached
+worktrees at the baseline and candidate SHAs, uniquely named `paired_`
+collections whose manifests prove arm, SHA, chunk contract, model, source count,
+and point count. Persist each scorable `topic × arm` result atomically and resume
+only exact valid records. Gate all 40 units on valid/scorable evidence, candidate
+UVR <= 0.15 per topic, and candidate aggregate SV >= baseline aggregate SV.
+
+Trade-off: The harness deliberately stops on corrupt, mismatched, incomplete,
+or probabilistically poor evidence instead of silently refreshing it. It does
+not change retrieval, prompts, verifier behavior, or the existing UVR threshold.
+
+Status: Accepted benchmark infrastructure. No paid capture or benchmark run was
+performed while building the harness.
+
+---
+Date: 2026-08-12
+
 Decision: Evaluation gates must bind telemetry to the exact successful CLI invocation and
 must distinguish verifier completion from the unverified-claim rate (UVR).
 
