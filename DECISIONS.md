@@ -3,6 +3,154 @@
 Purpose: Prevent future chats from re-litigating solved problems.
 Rules: Never delete old decisions. Rejected ideas stay. Consult before proposing architecture changes.
 
+New material decisions use stable IDs and, where applicable, record the question, evidence, exact
+SHA/branch/artifact, alternatives, reasoning, status, confidence, and supersession relationship.
+Older entries are preserved in their original format; later evidence supersedes their current
+conclusion without rewriting their history.
+
+---
+Decision ID: D-2026-08-13-04
+Date: 2026-08-13
+
+Decision: Adopt the enterprise validation sequence and independent ownership model as repository
+governance.
+
+Problem / question: Multiple architecture, experiment and implementation agents need one rule for
+what evidence earns a state transition and who may approve it.
+
+Decision and reasoning: Applicable work proceeds through variable isolation, isolated validation,
+dependency integration, focused deterministic tests, full regression, subsystem evaluation,
+causal validation where applicable, full E2E, performance/scale where applicable, and
+security/failure-path validation where applicable. Merge/cutover occurs only after every applicable
+frozen gate passes. No threshold lowering after results, retry-until-lucky, or aggregate score that
+hides a critical individual regression is allowed.
+
+The Architect/Auditor investigates, prioritizes, isolates variables, designs architecture and freezes
+gates. The independent Reviewer challenges the design/evidence, approves or tightens specifications,
+and reviews implementation; agents do not self-approve. The Implementation Agent implements only the
+approved contract, runs its gates, reports evidence, and stops rather than redesigning or moving
+thresholds. Repository evidence is authoritative; conversation memory is not.
+
+Evidence: Independent Reviewer directive dated 2026-08-13; canonical rules in
+`docs/EXPERIMENT_LEDGER.md` and `PROJECT_STATUS.md`.
+
+Alternatives considered: Per-agent memory files (rejected: divergent truth); updating canonical docs
+after every conversation turn (rejected: churn without validated state transition); allowing an
+implementation agent to approve its own design (rejected: no independent control).
+
+Status: Accepted governance. Update canonical state only after a material validated transition.
+
+Confidence: 0.99
+
+Supersedes / superseded by: Adds a repository-wide governance contract; does not erase earlier
+experiment-specific rules.
+
+---
+Decision ID: D-2026-08-13-03
+Date: 2026-08-13
+
+Decision: Keep the existing MiniLM+BM25+RRF retrieval baseline serving while the known truncation
+defect and replacement research remain open and isolated.
+
+Problem / question: MiniLM's serving chunks exceed its effective input limit, but removing measured
+truncation did not automatically improve retrieval/product-quality metrics. Subsequent exact-73
+diagnostics explain mechanisms without completing a replacement cutover gate.
+
+Evidence: Corrected baseline/candidate comparison in the 2026-08-11 decision; hardened seven-arm
+ablation `b9f9d1d`; common-identity rank diagnostic `4f6637e`; unique-membership crossover
+`de60706`; compact records in `docs/EXPERIMENT_LEDGER.md`.
+
+Relevant baseline / branches: Production baseline `794851d`; evidence branch
+`experiment/exact73-retrieval-channel-ablation`; exact-73 fixture fingerprint
+`4a1d5d1d67b56867c71497cb58ed4964d356a122a14d47ef822c227dba5924e4`.
+
+Alternatives considered: Adopt tokenizer-aligned `224/32` chunking because it removes truncation
+(rejected: mixed/regressive quality); cut over to GTE (rejected: fused baseline remains stronger);
+cut over to Jina (rejected: invalid/infeasible under the frozen local gate); redesign fusion from
+diagnostics alone (rejected: not evaluated end-to-end).
+
+Reasoning: Tokenizer safety and retrieval acceptance are separate gates. The current baseline is
+imperfect but remains the strongest fully evidenced serving option. Evaluator/fixture repair must
+precede further release conclusions.
+
+Status: Accepted serving/research separation. Known truncation defect remains OPEN. No retrieval
+cutover authorized.
+
+Confidence: 0.97
+
+Supersedes / superseded by: Supersedes the unqualified current applicability of the 2026-06-07
+"retrieval is healthy and not the bottleneck" conclusion. That earlier conclusion remains historical.
+
+---
+Decision ID: D-2026-08-13-02
+Date: 2026-08-13
+
+Decision: Approve and freeze the P0-1 Active-Content Execution / Credential-Exposure Boundary
+architecture in `architecture.md`.
+
+Problem / question: At baseline `794851d`, model/web-influenced Markdown, HTML and citation URLs can
+reach same-origin active rendering; Gate-2 preview is unsandboxed; bearer credentials appear in
+event/preview URLs; raw generated HTML is persisted before final approval; and publish is not bound
+to the exact reviewed artifact and commit.
+
+Evidence: Exact-baseline source trace through `static/index.html`, `api/server.py`, `agent/nodes.py`,
+`prompts/html_template.md`, `prompts/html_revise_system.md`, and `Caddyfile`; compatibility inventory
+over 450 historical HTML artifacts; independent Reviewer approval dated 2026-08-13.
+
+Alternatives considered: Browser-only sanitization (rejected: duplicates policy and leaves server
+persistence/publication unsafe); keep same-origin new-tab preview with a capability token (rejected:
+active origin and credential boundary remain); treat HITL as an XSS control (rejected: approval does
+not neutralize active content); redesign retrieval in the same mission (rejected: independent scope).
+
+Reasoning: One server-side trusted rendering boundary, inert sandboxed review, header-authenticated
+streaming, canonical server-built citations, and exact hash/commit binding form the smallest coherent
+boundary. Deterministic exploit/browser gates are frozen before implementation.
+
+Status: `ARCHITECTURE APPROVED`; implementation not validated, not merged, not deployed. This
+decision authorizes implementation only after the canonical-state documentation branch is reviewed.
+
+Confidence: 0.96
+
+Supersedes / superseded by: Supersedes the current applicability of the 2026-06-17 demo UI/preview
+security tradeoff and the 2026-06-20 audit's supervised-demo release conclusion. Historical entries
+remain preserved.
+
+---
+Decision ID: D-2026-08-13-01
+Date: 2026-08-13
+
+Decision: Establish one canonical engineering-state system in Git.
+
+Problem / question: `PROJECT_STATUS.md` and `architecture.md` were stale; `FREEZE.md` is historical;
+`DECISIONS.md` preserves material history but is not a concise current-state view; experiment evidence
+was scattered across archived files and evidence branches. Fresh agents could reach contradictory
+conclusions.
+
+Decision and roles:
+
+- `PROJECT_STATUS.md`: concise current state only.
+- `architecture.md`: accepted architecture contract only.
+- `DECISIONS.md`: append-only material decision history.
+- `docs/EXPERIMENT_LEDGER.md`: one compact evidence/experiment index.
+- `FREEZE.md`: preserved historical v5 freeze record, not a live status file.
+- `README.md`: navigation to the canonical surfaces, not an independent status authority.
+
+Evidence: Read of every tracked root state document and every file under `docs/`/`docs/archive/` at
+`794851d`; branch/ref inspection including current retrieval evidence branches.
+
+Alternatives considered: Turn `FREEZE.md` into live state (rejected: destroys historical evidence);
+use `docs/PRODUCTION_READINESS.md` as current status (rejected: fixed June 2026 audit scope and
+superseded conclusions); create separate Architect/Reviewer/Cursor memory files (rejected: divergent
+truth); copy detailed reports into a new ledger (rejected: duplication).
+
+Status: Accepted. Documentation synchronization is review-required and does not itself approve a
+product merge or deployment.
+
+Confidence: 0.99
+
+Supersedes / superseded by: Supersedes the prior README label that grouped all root documents as
+undifferentiated "canonical living docs"; preserves every older decision and freeze record.
+
 ---
 Date: 2026-08-12
 

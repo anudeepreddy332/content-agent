@@ -1,5 +1,11 @@
 # content-agent — Production Readiness Audit (FINAL)
 
+> **Historical audit snapshot (2026-06-20).** "FINAL" means final for that supervised-demo
+> audit, not current enterprise-release approval. Subsequent evidence supersedes several conclusions,
+> including active-content/credential safety, verifier/evaluation integrity, and enterprise blockers.
+> Current authority: `PROJECT_STATUS.md`; accepted target architecture: `architecture.md`; decision
+> history: `DECISIONS.md`.
+
 Scope: read-only audit of `main` at tip `9a1ee17` (cleanup + docs-sync + LangSmith-fixes all
 merged), re-run after the prior audit's four "do-now" fixes landed (tag `v7-audit-fixes`) and
 after LangSmith tracing was made default-on with token/cost attached. Every claim cites the

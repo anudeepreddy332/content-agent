@@ -1,5 +1,10 @@
 # content-agent: an AI writing system with a human in control
 
+> **Historical portfolio narrative.** This document describes the June 2026 supervised demo and is
+> not the current engineering-state or enterprise-release authority. Some durability, attribution,
+> security, and production-readiness statements are superseded. Read `PROJECT_STATUS.md`,
+> `architecture.md`, and `docs/EXPERIMENT_LEDGER.md` for current accepted state and evidence.
+
 ## The one-line version
 
 Type a topic, press Enter, and watch an article get researched, drafted, fact-checked, and published to a live website within minutes, with a person approving the work at two checkpoints before anything goes public.

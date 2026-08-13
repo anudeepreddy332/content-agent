@@ -1,394 +1,328 @@
-# architecture.md — Content Agent (Phase 4A)
-## The Machinist · AI/Tech Article Drafting Pipeline
-## Status: Phase 4A implemented and reliable (100/100 benchmark runs, 0 failures).
-##         Contract updated 2026-06-07 to reflect verified implementation reality.
-##         Active milestone: M1 (retrieval freshness baseline). Roadmap: see agent.md (M1–M6, B1–B9).
+# Content Agent — Accepted Architecture Contract
 
----
+_Accepted contract synchronized 2026-08-13. Baseline:
+`794851dded770ce87d111e73735d000e23597eb1`._
 
-## 0. How to read this file
+## 0. Authority and status
 
-This is the system contract. Sections describe what the code actually does today, verified against the implementation during the 2026-06-07 production-readiness audit. Where current behavior is a known gap with a scheduled fix, it is flagged inline and collected in §13. Do not treat aspirational items as built.
+This file contains accepted architecture only. Candidate ideas and experiment hypotheses do not
+belong here until independent review accepts them. Material decision history remains in
+`DECISIONS.md`; current implementation/release state remains in `PROJECT_STATUS.md`.
 
----
+The P0-1 architecture below is **APPROVED and frozen**. Its implementation is **not yet validated,
+not merged, and not deployed**. Descriptions under "current baseline" are current code; descriptions
+under "P0-1 accepted target" are the authorized implementation contract.
 
-## 1. Big Picture
+## 1. Current accepted system and serving baseline
 
-This agent takes a topic as input and produces a publish-ready HTML article for
-themachinist.org, optionally pushed to a feature branch on the themachinist-website repo.
+The repository remains a supervised, single-operator system:
 
-```
-[You: topic + intent]
-        │
-        ▼
-[RETRIEVE NODE] — Tavily (web, with 7-day cache + freshness gate)
-        │          + Qdrant KB (dense + BM25 + RRF, evergreen concepts)
-        ▼
-[DRAFT NODE] — DeepSeek generates a structured 4-section draft, source-aware:
-        │       reads web_sources/kb_results and is instructed to assert only
-        │       what the retrieved sources can support (M3 LOCKED 2026-06-09,
-        │       see DECISIONS.md — retrieve-then-draft is now PERMANENT).
-        ▼
-[VERIFY NODE] — Every factual claim extracted and scored for source grounding (0.0–1.0)
-        │
-        ▼
-[REFLECT NODE] — Agent scores its own draft (1–10, advisory only)
-        │          Composite gate: rewrite if grounding < 0.60, OR
-        │          (reflection < 7 AND grounding < 0.75). Max 2 iterations.
-        ▼
-[HITL GATE 1 — CONTENT] full draft + grounding report + reflection + warnings
-        │      approve / reject / feedback→draft   (auto-approve via HITL_AUTO_APPROVE=1)
-        ▼
-[HTML GEN NODE] — Produces themachinist.org-compliant HTML
-        │          (3 sections rendered deterministically, technical_dive via LLM)
-        ▼
-[HITL GATE 2 — LAYOUT] rendered HTML; content is FROZEN here
-        │      approve→git / request_changes→html_revise→(loop) / reject→END
-        ▼
-[GIT NODE] — Dry-run by default. Only acts when GIT_PUSH_ENABLED=true.
-        │      Writes to themachinist-website repo, feature/article-<slug> branch,
-        │      diffs vs main, tags-before-merge on changed files, prunes to last 5 tags.
-        ▼
-[DONE — article HTML in outputs/articles/; live on Netlify only if git push was enabled]
+```text
+retrieve -> draft -> verify -> reflect -> optional revise (maximum 2)
+         -> human gate 1 -> HTML generation -> human gate 2
+         -> local Git integration -> separate human-triggered publish
 ```
 
----
+- Retrieval: Tavily web search plus Qdrant `all-MiniLM-L6-v2` dense search and BM25, fused with
+  RRF `k=60`.
+- Generation/verification/reflection: DeepSeek through the existing LangGraph nodes.
+- Review: two mandatory human gates.
+- Execution: FastAPI with SqliteSaver checkpoints and a volatile in-memory run registry.
+- Publication: Git integration into a website checkout plus a distinct publish endpoint.
 
-## 2. State Schema (as implemented in agent/state.py)
+The serving retrieval baseline stays unchanged. The known MiniLM truncation defect remains open;
+the `224/32` tokenizer-safe candidate and the exact-73 alternative-model diagnostics have not earned
+cutover. Retrieval research is isolated from this security mission.
+
+## 2. Current P0-1 threat boundary
+
+Treat all of the following as untrusted:
+
+- web pages and retrieved excerpts;
+- every model response, including verifier URLs and HTML;
+- reviewer feedback that later reaches a model;
+- historical/generated article files that were not produced under the trusted policy.
+
+The trusted computing base is deliberately narrow:
+
+- the server-side rendering/sanitization policy;
+- repository-authored immutable article shell and CSS;
+- canonical retrieved-source records after server validation;
+- the reviewer application shell;
+- exact artifact hashes, Git object IDs, and expected remote refs verified by server code.
+
+No human approval converts raw model output into trusted HTML. Only successful passage through the
+authoritative server policy does.
+
+## 3. P0-1 accepted target
+
+### 3.1 One authoritative rendering boundary
+
+Add one canonical module, `agent/html_policy.py`. It is the only authority for:
+
+- Markdown-to-review rendering;
+- untrusted fragment sanitization;
+- controlled class validation;
+- citation URL validation/normalization/resolution;
+- deterministic article-shell assembly;
+- JSON-LD serialization;
+- policy versioning and SHA-256 generation.
+
+It exposes immutable `TrustedFragment` and `TrustedArticle` values. Raw model HTML may exist only in
+a local variable between the model return and the immediate sanitizer call. It must never be logged,
+checkpointed, placed in `AgentState`, returned by an API, archived, or written into either Git
+repository.
+
+Mandatory sequence:
+
+1. Obtain the model fragment locally.
+2. Sanitize it immediately and discard the raw candidate.
+3. Fail closed on sanitizer exceptions or structural invariant loss.
+4. Assemble the full document from escaped scalar fields, trusted fragments, trusted citations,
+   and the immutable server-owned shell.
+5. Compute `html_sha256` over exact UTF-8 bytes.
+6. Only that `TrustedArticle` may enter state, an interrupt, review, archive, or Git.
+
+`html_revise_node` may receive only the sanitized article-body fragment. It never receives or
+rewrites the document head, CSP, metadata, navigation, CSS, citations, footer, or JSON-LD.
+
+### 3.2 Sanitizer and renderer dependencies
+
+Pin direct dependencies:
+
+- `nh3==0.3.6`
+- `markdown-it-py==4.2.0`
+
+Pin browser-test dependencies:
+
+- `playwright==1.62.0`
+- `pytest-playwright==0.9.0`
+
+Gate-1 Markdown uses:
 
 ```python
-from typing import TypedDict, Literal
-
-class DraftSections(TypedDict):
-    problem_framing: str
-    technical_dive: str
-    code_snippets: str
-    takeaways: str
-
-class AgentState(TypedDict):
-    # Input
-    topic: str
-    slug: str
-    series_context: str
-    card_id: str
-
-    # Draft (4 sections, not 5)
-    draft_sections: DraftSections
-    draft_markdown: str
-
-    # Retrieval
-    web_sources: list   # [{title, url, content, score}]      (from Tavily)
-    kb_results: list    # [{text, source, distance, rrf_score}] (from Qdrant+BM25+RRF)
-
-    # Verification
-    grounding_report: list   # [{claim, source_url, confidence, status}]
-    grounding_score: float   # mean confidence across all claims
-
-    # Reflection
-    reflection_score: int    # 1–10 (advisory)
-    reflection_notes: str
-    iterations: int          # max 2
-
-    # HITL
-    hitl_status: Literal["pending", "approved", "rejected", "feedback"]
-    hitl_feedback: str | None
-    html_review_status: Literal["approved", "rejected", "changes"] | None  
-    html_feedback: str | None   # P2 layout note for html_revise 
-
-    # Output
-    html_output: str | None
-    html_filename: str | None
-    branch_name: str | None
-    git_status: Literal["not_started", "pushed", "merged", "tagged_and_merged", "failed"] | None
-
-    # Telemetry
-    run_id: str
-    prompt_version: str       # currently static "v1.0" — see §13
-    total_tokens: int
-    total_cost_usd: float
-    latency_ms: dict          # {draft, retrieve, verify, reflect, html_gen, git}
-
-    # Error log (non-fatal errors accumulate here, surfaced at HITL)
-    error_log: list[str]
+MarkdownIt("js-default", {
+    "html": False,
+    "linkify": False,
+    "typographer": False,
+})
 ```
 
----
+Disable image and strikethrough rules. Pass its output through the same configured `nh3.Cleaner`.
+Strip comments and require sanitizer idempotence: `clean(cleaned) == cleaned`. Regex is not a
+security boundary.
 
-## 3. Node Definitions (verified against agent/nodes.py)
+### 3.3 Untrusted fragment HTML policy
 
-### 3.1 retrieve_node (runs FIRST — entry point, M3 locked 2026-06-09)
-- Input: `topic`, `draft_sections.problem_framing` (preview for KB query, empty on iteration 1),
-  `error_log`.
-- Action:
-  1. Tavily search over 3 fixed query angles (`explained technical`,
-     `failure modes limitations production`, `implementation Python example`),
-     deduped by URL, sorted by score, top 10.
-  2. Freshness gate: if first-pass sources are sparse (<3) or low average Tavily score
-     (< `TAVILY_MIN_AVG_SCORE`, currently 0.5), re-run all queries with `force_refresh=True`.
-  3. Qdrant KB query (dense + BM25, fused via RRF), top 5.
-- Output: `web_sources`, `kb_results`, `latency_ms`, `error_log`.
-- Tools: `web_search` (Tavily), `query_kb` (Qdrant). Tavily errors are caught per-query
-  into `error_log` and do not crash the node.
+Allowed elements:
 
-### 3.2 draft_node (runs SECOND, source-aware since M3)
-- Input: `topic`, `series_context`, `card_id`, `hitl_feedback` (on revision), `web_sources`,
-  `kb_results`, `grounding_report` (on revision, M4 grounding feedback).
-- Action: Calls DeepSeek with `prompts/draft_system.md` to produce a 4-key `draft_sections`
-  dict (`problem_framing`, `technical_dive`, `code_snippets`, `takeaways`). Builds a
-  "GROUNDING SOURCES" block from `web_sources`/`kb_results` and instructs the model to assert
-  specific claims only where a source supports them, generalizing otherwise. On revision
-  iterations, also injects the previous iteration's unverified claims with ground/generalize/cut
-  instructions (M4). Parses JSON, strips code fences, degrades gracefully on parse failure
-  (preserves raw for debugging).
-- Output: `draft_sections`, `draft_markdown`, `m4_feedback_claims`, increments `iterations`,
-  accrues tokens/cost/latency.
+`h2`, `h3`, `h4`, `p`, `ul`, `ol`, `li`, `pre`, `code`, `strong`, `em`, `blockquote`,
+`table`, `thead`, `tbody`, `tr`, `th`, `td`, `hr`, `br`, `div`, `span`, `sup`, `sub`.
 
-### 3.3 verify_node
-- Input: `draft_markdown`, `web_sources`, `kb_results`.
-- Action: DeepSeek extracts every verifiable claim and assigns `source_url`, `confidence`
-  (0.0–1.0), and `status` (verified/weak/unverified) against the provided sources.
-  Verification is inline in this node (there is no separate `verify_claim` tool).
-  `prompts/verify_system.md` excludes self-referential code-description claims and instructs
-  single-extraction of duplicate claims; `_deduplicate_grounding_report` removes string-level
-  duplicates (difflib at 0.85). `grounding_score` is the mean confidence.
-  Cost gate: if total cost ≥ `COST_GATE_USD`, returns empty report and skips the call.
-- Output: `grounding_report`, `grounding_score`, tokens/cost/latency.
+Allowed attributes:
 
-### 3.4 reflect_node
-- Input: `draft_markdown`, `grounding_report` summary, `grounding_score`.
-- Action: DeepSeek self-evaluates structure, technical depth, grounding, and clarity, returning
-  a 1–10 score plus notes (`prompts/reflect_system.md`). Cost-gated like verify.
-- Gate (in `route_after_reflect`, not in this node): force a rewrite if
-  `grounding_score < GROUNDING_FLOOR` (0.60, hard floor), OR
-  (`reflection_score < REFLECTION_THRESHOLD` (7) AND `grounding_score < 0.75`).
-  Always proceed to HITL once `iterations >= MAX_ITERATIONS` (2) or the cost gate trips.
-  Rationale: LLMs inflate self-scores, so grounding is the hard floor and reflection is advisory.
-- Output: `reflection_score`, `reflection_notes`, tokens/cost/latency.
+- `class` on `div`, `span`, `pre`, and `code`, limited to the controlled classes below;
+- `scope="row"` or `scope="col"` on `th`;
+- no other attributes.
 
-### 3.5 hitl_node
-- Input: full state.
-- Action: Renders the draft, a grounding table (claim → status → confidence → source),
-  the reflection score and notes, and any `error_log` warnings (rich console). Prompts for
-  `a` (approve) / `r` (reject) / `f` (feedback). `HITL_AUTO_APPROVE=1` bypasses the prompt
-  (used by `--auto` and the benchmark).
-- Output: `hitl_status`, `hitl_feedback`.
-- Current reality: blocking `input()`, graph compiled without a checkpointer, so HITL is
-  in-process only (no resume across restarts). Durable HITL is scheduled for B4 (API).
+Controlled classes:
 
-### 3.6 html_gen_node
-- Input: `draft_sections`, `web_sources`, `grounding_report`, `topic`, `slug`, `series_context`.
-- Action: Loads `prompts/html_template.md`. Renders `problem_framing`, `code_snippets`, and
-  `takeaways` deterministically in Python (no LLM); renders `technical_dive` via a dedicated
-  DeepSeek HTML-conversion call. Builds citations from the grounding report (falling back to
-  top web sources). Substitutes template placeholders, fixes LD+JSON entity escaping, and
-  validates programmatically (DOCTYPE, `id="main"`, `<h1>`, no unreplaced `{{...}}`).
-  Validation warnings go to `error_log`, they do not block. Cost-gated.
-- Output: `html_output`, `html_filename` (written to `outputs/articles/`, suffixed on collision).
+`callout`, `callout-info`, `callout-key`, `callout-label`, `sl-definition`, `sl-code-block`,
+`sl-code-header`, `sl-code-label`, `sl-code-lang`, `language-python`, `language-text`,
+`language-json`, `language-bash`, `language-sql`.
 
-### 3.6.5 hitl_html_node + html_revise_node (P2)
-- hitl_html_node: gate 2. Reviews rendered HTML for design/structure/formatting/positioning.
-  approve→git, reject→END, request_changes→html_revise. CLI/API/auto-approve modes mirror hitl_node.
-- html_revise_node: one temperature-0 LLM pass applying the layout note to html_output, then
-  loops to hitl_html. Content-freeze guard (visible-word-multiset) discards any drifting
-  revision and keeps the original. No production path bypasses either gate.
+Untrusted fragments may not contain anchors. Trusted server code builds citations separately.
 
-### 3.7 git_node
-- Input: `html_output`, `html_filename`, `slug`, `topic`.
-- Action: Dry-run unless `GIT_PUSH_ENABLED=true`. When enabled: writes HTML into the repo at
-  `THEMACHINIST_REPO_PATH`, creates `feature/article-<slug>`, commits, diffs vs `main`,
-  tags `v-<YYYYMMDD>-<slug>` before merge when existing files change (pruning to last 5 tags),
-  merges with `--no-ff`, deletes the feature branch, and restores the original branch in a
-  `finally` block. Every git operation is wrapped so failure logs to `error_log` and never
-  crashes the pipeline (HTML is already saved locally).
-- Output: `branch_name`, `git_status` ("dry_run" / "merged" / "tagged_and_merged" / "failed").
+Forbidden content includes every script or event handler; `style` and inline style; `iframe`,
+`object`, `embed`; forms and controls; `meta`, `link`, `base`; SVG and MathML; images, media,
+canvas and sources; `template`, `noscript`; all URL-bearing attributes; IDs, names, `data-*`,
+`contenteditable`, `autofocus`, `tabindex`; and external fonts or subresources.
 
----
+The trusted shell may add fixed navigation links, fixed non-linking/non-animated inline SVG, one
+immutable inline CSS block, trusted citation anchors, and one non-executable
+`application/ld+json` block. Generated articles contain no executable JavaScript, external fonts,
+stylesheets, scripts, images, media, frames, or other subresource requests.
 
-## 4. Tool Signatures (as implemented in tools/)
+### 3.4 Gate 1
 
-```python
-# tools/web_search.py
-def web_search(query: str, max_results: int = 5, force_refresh: bool = False) -> list[dict]:
-    """Tavily search with a 7-day file cache. Returns [{title, url, content, score}].
-       force_refresh bypasses and overwrites the cache."""
+- Render draft Markdown on the server into `draft_review_html`.
+- Embedded Markdown HTML is disabled; Markdown-created anchors are stripped.
+- The interrupt contains only trusted review HTML, policy version, grounding metadata, and
+  canonical source descriptions. The browser does not render raw Markdown.
+- Remove the CDN `marked` dependency.
+- Render the trusted document in `<iframe sandbox="" referrerpolicy="no-referrer">`.
+- Parent-page dynamic text uses `textContent`, `createElement`, and `replaceChildren`. Dynamic
+  `innerHTML` is forbidden.
 
-# tools/query_kb.py
-def query_kb(query: str, n_results: int = 5) -> list[dict]:
-    """Qdrant dense + BM25, fused via Reciprocal Rank Fusion (k=60).
-       Returns [{text, source, distance, rrf_score}]. [] if Qdrant unreachable or empty."""
+### 3.5 Gate 2
 
-# tools/save_to_kb.py
-def save_to_kb(text: str, source: str, metadata: dict | None = None) -> bool:
-    """Qdrant ingest with 400/50 tiktoken chunking. Invalidates the BM25 index.
-       NOTE: not yet wired into the pipeline (see §13, self-improvement)."""
+Gate 2 uses exactly:
 
-# tools/archive/document_ingest.py.archived
-def ingest_document(path: str | Path) -> list[dict]:
-    """Docling multi-format parser (PDF/DOCX/PPTX/XLSX/HTML) + .md/.txt fast path.
-       NOTE: Docling is non-functional on Python 3.14 (see §13). .md/.txt work today."""
+```html
+<iframe sandbox="" referrerpolicy="no-referrer"></iframe>
 ```
 
-Note: the previously listed `tools/verify_claim.py` does not exist. Verification is inline in `verify_node`.
+No `allow-*` sandbox token is permitted. Only `TrustedArticle.html` may be assigned to `srcdoc`.
+The document has an opaque origin, cannot execute scripts, submit forms, open popups, navigate the
+top page, download, or make subresource requests.
 
----
+Remove the new-tab preview control and delete `/ui/runs/{run_id}/preview`. Replace it only with an
+in-page expand/collapse control that changes container CSS. Do not use `blob:`, `data:`, a query
+token, or another capability URL. A future new-tab requirement requires a separately reviewed
+untrusted-preview origin.
 
-## 5. KB Design
+### 3.6 Authenticated streaming and bearer handling
 
-- Storage: Qdrant (Docker), `/kb/qdrant_data/`, started via `docker-compose up -d`.
-- Collection: `machinist_evergreen`.
-- Legacy: ChromaDB data preserved at `/kb/chroma_db/`; retrieval baseline at `docs/archive/retrieval-baseline-chromadb/`.
-- Retrieval: dense (all-MiniLM-L6-v2, 384-dim, cosine) + BM25, fused via RRF (k=60).
-- Content: evergreen AI/ML concepts (definitions, formulas, architectures, theory).
-- NOT in KB: recent events, model releases, benchmark numbers, paper findings (those go to Tavily).
-- Chunking: 400 tokens, 50-token overlap (tiktoken cl100k_base), consistent across save and ingest.
-- Multi-format ingest: implemented in `tools/archive/document_ingest.py.archived`, but the
-  Docling dependency was dropped at M6 (runtime-blocked on Python 3.14, §13) — kept archived
-  rather than deleted as a reference implementation if Docling's Python support changes.
-- Self-improvement: ingesting HITL-approved articles back into the KB is planned, not yet wired.
-- Seed content: `scripts/ingest.py` against `/kb/seed_docs/` (20 `.md` seed docs committed).
-- Historical / legacy evaluator semantics: the archived `recall@1 0.967`, `recall@3 1.0`,
-  `recall@5 1.0`, concept-hit `0.867`, and OOS rejection `0.8` measured any-source hit,
-  duplicate-credit nDCG, and fused distance respectively. They are retained for history, not as
-  current gates. Corrected source-level baseline and raw OOS diagnostic policy: DECISIONS.md
-  (2026-08-11).
+Replace `EventSource` with authenticated streaming `fetch`:
 
----
+- `GET /ui/runs/{run_id}/events`
+- `Authorization: Bearer <token>`
+- `TextDecoderStream` plus an SSE frame parser
+- no query-string authentication
 
-## 6. Output Schema (HTML generator contract)
+Use `AbortController` when replacing a stream and stop on `segment_end`. On `401`/`403`, do not
+retry; clear the in-memory credential and return to login. On network/EOF before `segment_end`,
+retry at most three times after 0.5, 1, and 2 seconds, polling authenticated run state before each
+retry. Run state is authoritative because the queue is not replayable; do not claim
+`Last-Event-ID` support.
 
-| Section | HTML element | Rendered by |
-|---|---|---|
-| Title | `<h1>` in `.sl-header` | template substitution |
-| Problem Framing | first `<h2>` + `<div class="sl-definition">` | Python (deterministic) |
-| Technical Deep-Dive | `<h2>` sections with `<p>`, `<ul>`, callouts | LLM HTML conversion |
-| Code Snippets | `<pre><code>` blocks with language label | Python (deterministic) |
-| Takeaways | final `<h2>` with `.callout.callout-key` | Python (deterministic) |
-| Sources | `<div class="sl-sources">` numbered citations | Python from grounding report |
+Copy the password-field value into closure memory and immediately clear the field. Never store it
+in URL, local/session storage, DOM attributes, telemetry, or logs. Redact authorization material
+from errors.
 
-Programmatic pre-ship checks: DOCTYPE present, `id="main"` present, `<h1>` present, no unreplaced `{{PLACEHOLDER}}` tokens. Failures are logged as warnings, not hard blocks.
+### 3.7 Canonical citation policy
 
----
+Rendered links come only from canonical retrieved server records, never from a verifier string.
 
-## 7. Telemetry Requirements (eval harness input)
+Clickable citations must be absolute HTTPS, have no credentials or fragment, use port 443/default,
+and use a valid public hostname or globally routable IP. Reject localhost, `.local`, private or
+reserved addresses, control characters, backslashes, malformed percent encoding, and values over
+2,048 characters.
 
-Every run writes a JSON record to `outputs/runs/<run_id>.json` (written even on a top-level crash):
+Normalize by trimming ASCII whitespace; parsing with `urlsplit`; lowercasing scheme and IDNA host;
+removing default port 443; using `/` for an empty path; preserving path case and query exactly; and
+removing the fragment. A verifier candidate resolves only by exact normalized equality with a
+canonical retrieved source. Substring and fuzzy URL matching are forbidden.
 
-```json
-{
-  "run_id": "uuid",
-  "topic": "...",
-  "slug": "...",
-  "timestamp": "ISO8601",
-  "prompt_version": "v1.0",
-  "iterations": 1,
-  "reflection_score": 8,
-  "reflection_notes": "...",
-  "grounding_score": 0.84,
-  "hitl_status": "approved",
-  "git_status": "dry_run",
-  "total_tokens": 4821,
-  "total_cost_usd": 0.0029,
-  "latency_ms": { "draft": 0, "retrieve": 0, "verify": 0, "reflect": 0, "html_gen": 0, "git": 0 },
-  "error_log": [],
-  "claims_verified": 12,
-  "claims_weak": 2,
-  "claims_unverified": 1,
-  "grounding_breakdown": {
-    "unverified_no_source": 1,
-    "unverified_has_source": 0,
-    "weak_count": 2,
-    "mean_confidence_verified": 0.9,
-    "mean_confidence_unverified": 0.1
-  },
-  "grounding_report": [ { "claim": "...", "source_url": "...", "confidence": 0.9, "status": "verified" } ]
-}
+Render `grounding_report.source_ref`, never `source_url`. Emit the canonical stored URL and force
+`target="_blank" rel="noopener noreferrer nofollow"`. KB references and unresolved sources are
+non-clickable text. The server does not follow citation redirects.
+
+### 3.8 Exact approval, artifact, and publication binding
+
+Add state fields:
+
+- `article_body_html`
+- `html_sha256`
+- `html_policy_version`
+- `approved_html_sha256`
+- `git_commit_sha`
+- `publish_expected_remote_sha`
+
+The enforced invariant is:
+
+```text
+approved_html_sha256
+  == SHA256(state.html_output UTF-8 bytes)
+  == SHA256(local archive bytes)
+  == SHA256(git show <git_commit_sha>:<article_path>)
 ```
 
-Primary experiment metric is claim-level unverified-rate, not `grounding_score` (the scalar has high run-to-run variance; see DECISIONS.md).
+- Stop archiving in `html_gen_node`.
+- Gate-2 approval records the server's current hash; ignore client-submitted hashes.
+- Clear approval on every regeneration or revision.
+- After approval, atomically write exact UTF-8 bytes to archive and repository and verify read-back.
+- Commit and retain the exact commit SHA.
+- Publish `<git_commit_sha>:refs/heads/main`, never ambient mutable `main`.
+- Require remote main still equals `publish_expected_remote_sha`; otherwise fail with conflict and
+  push nothing.
+- After a push, verify remote main equals `git_commit_sha`.
 
----
+This proves Git artifact/commit equivalence. It does not prove a hosting provider deployed that
+commit; deployment identity is a later release gate.
 
-## 8. Git Integration Rules (enforced in git_node)
+### 3.9 CSP and headers
 
-- Publish is opt-in: `GIT_PUSH_ENABLED=true` required, otherwise dry-run.
-- Branch naming: `feature/article-<slug>`. Never commit directly to `main`.
-- Commit message: `feat: add <topic> article [content-agent]`.
-- Diff vs `main` decides strategy: new file only → merge; existing files changed → tag then merge.
-- Tag format: `v-<YYYYMMDD>-<slug>`, prune to last 5.
-- After merge: delete feature branch; restore the original branch even on failure.
+Split the reviewer UI into external `static/app.js` and `static/app.css`. Its response CSP is:
 
----
+```text
+default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self';
+frame-src 'self'; img-src 'self' data:; font-src 'self'; object-src 'none';
+base-uri 'none'; form-action 'self'; frame-ancestors 'none'; worker-src 'none';
+media-src 'none'
+```
 
-## 9. Evaluation Topics (matches evals/topics.json)
+Also send `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`,
+`X-Frame-Options: DENY`, a restrictive `Permissions-Policy`,
+`Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and
+`Cache-Control: no-store`. SSE also sends `X-Accel-Buffering: no`. Apply the policy in FastAPI and
+Caddy. Add HSTS only after the real TLS hostname is verified.
 
-The 20 benchmark topics in `evals/topics.json` are the canonical set (ids 1–20). They match the
-list previously documented here. Four are current grounding-failure topics under investigation:
-CatBoost (#9), ReAct (#16), Embedding Models (#17), Multi-Agent Systems (#20).
+Every generated article embeds a meta CSP that denies everything except the exact SHA-256 hash of
+its immutable inline CSS. It specifies `script-src 'none'`, `img-src 'none'`, `connect-src 'none'`,
+`frame-src 'none'`, `object-src 'none'`, `base-uri 'none'`, and `form-action 'none'`.
 
----
+### 3.10 JSON and scalar handling
 
-## 10. Phase 4A → 4B Entry Gate (SUPERSEDED)
+Escape every scalar placeholder. Serialize JSON-LD with `json.dumps`, additionally escaping `<`,
+`>`, `&`, U+2028, and U+2029. Never repair JSON-LD by reversing HTML entities in a completed
+document.
 
-The original numeric gate (reflection < 7 on >30%, grounding < 0.75 on >30%, HITL rejection
-> 40%, runtime > 5 min) is retained for history but is superseded by the milestone roadmap and
-the locked multi-agent decision.
+## 4. Frozen deterministic acceptance gates
 
-Locked decision (DECISIONS.md, 2026-06-07): multi-agent (Phase 4B specialization) is DEFERRED.
-Evidence: retrieval is healthy (recall@3 = 1.0), many topics already reach 0.85–0.94 grounding
-single-agent, and the failure mode is over-claiming / thin sources, which a multi-agent verifier
-would not fix. Revisit only if, after M2 (source-aware drafting) and fresh retrieval, grounding
-still fails on >30% of runs while adequate evidence is demonstrably present in the retrieved set.
+Implementation starts from exact baseline `794851d` in a clean worktree. It must pass:
 
-The roadmap that replaces this gate lives in agent.md: Phase 4A milestones M1–M6, Phase 4B
-milestones B1–B9 (B = deployment, automation, autonomy gating, not multi-agent).
+1. Lock consistency and the existing fatal Ruff tier.
+2. `pytest tests/` only; repository-root pytest is prohibited because it collects a paid,
+   top-level evaluator.
+3. Pinned headless Chromium security tests with no provider/network calls.
+4. Exploit fixtures for scripts, SVG/MathML, event attributes, `srcdoc`, forms, CSS imports/URLs,
+   link/meta/base, malformed markup, encoded schemes, private URLs, and JSON-LD breakouts.
+5. Browser proof that no iframe script executes, popup/top navigation occurs, attacker request is
+   emitted, or request URL contains a token.
+6. Static proof of no dynamic `innerHTML`, no query authentication, both empty sandboxes, and no
+   preview endpoint.
+7. Sanitizer idempotence and exact visible-text/code preservation through layout revision.
+8. Byte/hash equivalence across approval, archive, Git blob, exact commit, and pushed ref.
+9. Fail-closed behavior on any exploit survival, hash mismatch, remote-ref race, unsafe CSP token,
+   dependency incompatibility, paid-call attempt, or browser failure.
 
----
+No threshold lowering, retry-until-green, or aggregate-score masking is allowed.
 
-## 11. Future Integration Hook (OpenClaw)
+## 5. Authorized implementation file boundary
 
-Entry point is `main.py run --topic "..." --series "..."`. A future OpenClaw WhatsApp trigger
-maps directly to this CLI. Deterministic tasks (git, file I/O, HTML templating) → OpenClaw;
-probabilistic tasks (drafting, reflection, grounding) → DeepSeek via this pipeline. No pipeline
-change needed, only a new entry-point wrapper. Note: any non-CLI entry point must first close
-the path-sanitization gap in §13 (B1).
+Existing files:
 
----
+- `agent/nodes.py`, `agent/state.py`
+- `api/server.py`
+- `static/index.html`
+- `prompts/html_template.md`, `prompts/html_revise_system.md`
+- `Caddyfile`, `pyproject.toml`, `uv.lock`
+- `.github/workflows/ci.yml`
+- relevant existing tests under `tests/`
 
-## 12. Build Status
+New files:
 
-Step labels below are historical. Current planning uses the milestone IDs in agent.md.
+- `agent/html_policy.py`
+- `static/app.js`, `static/app.css`
+- focused HTML-policy, security-boundary, artifact-equivalence, and browser-security tests
 
-| Step | Status | Deliverable |
-|------|--------|-------------|
-| 1 | merged | structlog, real verify_node, real reflect_node, smoke_test |
-| 2 | merged | html_gen_node, git_node (dry-run guarded), main.py CLI |
-| 3 | merged | prompt evals, retrieval golden set (recall@3 = 1.0), 5-round / 100-run benchmark, gate report |
-| 4 | merged | Qdrant migration, BM25 + RRF, document_ingest (Docling, runtime-blocked), retrieval_eval_qdrant |
-| 5 | in progress | FastAPI wrapper, failure injection (5 fault modes) — now tracked as B4 / B2 |
-| 6 | planned | app container, compose app service, cloud — now tracked as B5 |
+No retrieval, verifier-rubric, tenant, deployment-target, or unrelated code is authorized.
 
-M1-M6 and B1-B9 are all complete (see PROJECT_STATUS.md / agent.md for current status; this
-table's step labels are historical and superseded by the milestone roadmap).
+## 6. Stop conditions
 
----
+Stop and return `ARCHITECTURE-BLOCKED` if the base differs; unrelated work overlaps an authorized
+file; the pinned sanitizer cannot run on Python 3.14/target platforms; a legitimate feature needs
+model-controlled active content; sandbox/CSP behavior fails in supported Chromium; visible content
+must change during layout-only revision; artifact bytes change after approval; publication would
+require force-push or a changed remote parent; target deployment changes become necessary; any paid
+call is required; or passing requires weakening this policy.
 
-## 13. Known contradictions and current-reality notes (with scheduled fix)
+## 7. Deferred risks and capabilities
 
-These are real gaps between this contract's intent and current behavior. Each has an owning milestone.
-Item 1 below (drafting blind to retrieval) was the original #1 here and is RESOLVED — M3
-(2026-06-09, DECISIONS.md) permanently locked retrieve-then-draft; see §1 and §3.1-3.2 above.
-Items 2-5 are carried forward unrenumbered from the original audit; check PROJECT_STATUS.md/
-agent.md before assuming any of them are still open, since M6/B1/B4 are recorded as complete
-there and this list has not been re-audited line-by-line against that.
-
-2. Multi-format ingest is non-functional on the declared runtime: `pyproject.toml` requires
-   Python >=3.14, Docling requires 3.11–3.13. Only `.md`/`.txt` ingest works today.
-   Fix: M6 (pin runtime to 3.13 or drop Docling and document `.md`/`.txt`-only).
-3. `prompt_version` is a static "v1.0" stamped into every run even though prompts have changed,
-   which breaks exact run reconstruction. Fix: M6 (content-hash versioning).
-4. `topic` → `slug` → filename is not sanitized for `/` or `..`; safe for single-user CLI,
-   a path-traversal risk under any API/automation entry point. Fix: B1.
-5. HITL is in-process only (blocking input, no checkpointer), so it cannot resume across
-   restarts. Fix: B4 (durable, async-safe HITL behind the API).
-6. Self-improvement (ingesting approved articles back into the KB) is described in §5 but not
-   wired into the graph. Track under a later milestone before enabling autonomy (B9).
+P0-1 blocks active-content execution and bearer exposure. It does not make model text semantically
+trustworthy. Web/reviewer prompt injection can still influence prose, reasoning, and source
+selection while producing inert HTML. Also deferred: P0-2 verifier/evaluator integrity; P0-3
+identity/tenant isolation; durable registry/queue recovery; HA/scale; dependency supply-chain
+hardening; browser parser differentials beyond the frozen test matrix; and hosting-provider deploy
+identity.

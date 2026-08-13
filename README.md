@@ -1,8 +1,12 @@
 # content-agent
 
-**A production-grade, single-agent LangGraph pipeline that researches a topic, drafts a
-grounded HTML article, verifies every claim against its sources, and publishes it — with a
-human approving both the content and the rendered layout before anything goes live.**
+**A supervised, single-operator LangGraph content pipeline that researches a topic, drafts a
+grounded HTML article, verifies claims, and requires human review before publication.**
+
+> **Current engineering status:** enterprise production is **BLOCKED**. The P0-1
+> active-content/credential-boundary architecture is approved, but its implementation is not yet
+> validated, merged, or deployed. Read `PROJECT_STATUS.md` before relying on historical demo or
+> production-readiness claims.
 
 ## 🎥 Live Demo
 
@@ -25,7 +29,20 @@ HITL (layout) → Git (local merge only — a human always does the actual `git 
 Source-aware drafting (retrieve runs before draft, not after) was locked at M3 — see
 `DECISIONS.md`, 2026-06-09.
 
-Read `architecture.md` before touching any code.
+## Canonical engineering state
+
+Read these in order before changing code:
+
+| File | Authoritative role |
+| --- | --- |
+| `PROJECT_STATUS.md` | Concise current state, priority, blockers, and authorized mission. |
+| `architecture.md` | Accepted architecture contract, including the frozen P0-1 implementation boundary. |
+| `DECISIONS.md` | Append-only material decision history; superseded conclusions remain visible. |
+| `docs/EXPERIMENT_LEDGER.md` | Compact index of meaningful experiments and release evidence. |
+| `FREEZE.md` | Historical v5 freeze record; not current status. |
+
+Repository evidence is authoritative. Agent or conversation memory is not. Update these files only
+after a material validated state transition, not after every discussion.
 
 ---
 
@@ -98,8 +115,10 @@ change.
 
 ```
 content-agent/
-├── architecture.md          ← Contract. Read this first.
-├── DECISIONS.md / PROJECT_STATUS.md / FREEZE.md   ← canonical living docs
+├── PROJECT_STATUS.md        ← Current state. Read this first.
+├── architecture.md          ← Accepted architecture contract
+├── DECISIONS.md             ← Append-only material decisions
+├── FREEZE.md                ← Historical v5 freeze record
 ├── main.py                  ← CLI entry point
 ├── Dockerfile  Caddyfile  docker-compose.{yml,prod.yml,demo.yml}
 ├── agent/
@@ -142,6 +161,7 @@ content-agent/
 ├── tests/                   ← pytest suite, $0/mocked, runs in CI on every push
 ├── .github/workflows/       ← ci.yml (lint+test+eval-gate), eval.yml (manual full sweep)
 ├── docs/
+│   ├── EXPERIMENT_LEDGER.md  ← compact canonical evidence index
 │   ├── CASE_STUDY.md  CHEATSHEET_AWS.md  CHEATSHEET_LOCAL.md  PRODUCTION_READINESS.md
 │   ├── deploy/           ← DEPLOY.md, DEPLOY_DEMO.md, RECOVERY.md
 │   └── archive/          ← historical gate reports + retrieval-eval evidence
@@ -165,5 +185,5 @@ content-agent/
 | 5 — API + fault injection | ✓ complete | FastAPI durable HITL API (B4), 5 fault modes tested (B2) |
 | 6 — Docker + AWS | ✓ complete | Containerized (B5), tested on EC2 + Caddy + Docker Hub (see demo video above) |
 
-Step labels are historical; see PROJECT_STATUS.md for the current milestone state (M1-M6,
-B1-B9, P2, P-demo all complete) and agent.md for the full roadmap.
+Step labels are historical and do not imply current enterprise-release approval. See
+`PROJECT_STATUS.md` for the current priority, blockers, and authorized mission.

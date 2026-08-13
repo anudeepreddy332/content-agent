@@ -1,70 +1,94 @@
 # PROJECT STATUS
 
-_Last updated: 2026-06-20 — LangSmith default-on + token usage/cost attached (feature/langsmith-fixes)_
+_Canonical current-state snapshot. Last synchronized: 2026-08-13._
 
-## Current Phase
-POST-FREEZE phase P2 — COMPLETE. P2.1 (content-frozen HTML HITL gate + html_revise),
-P2.2 (index.html Learning Log auto-update), P2.3 (MAX_ITERATIONS experiment — REJECT, stays 2)
-all closed; P2.3 produced no code change (experiment reverted). P-demo (interactive SSE UI +
-cloud publish) is COMPLETE and LIVE on EC2. A production-readiness audit and its do-now fixes
-are merged to main (v7-audit-fixes). A repo cleanup (file reorg + docstring/dead-code pass) and
-this docs-sync pass are on unmerged feature branches awaiting review.
+This file answers what is true now. It is not a history log. Material history remains in
+`DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
+remains preserved in `FREEZE.md`.
 
-## Bird's-eye view
-retrieve → draft → verify → reflect → [revise ≤2] → HITL → html_gen → git. Deployed as a
-non-root container (FastAPI + SqliteSaver durable HITL, bearer auth) with network-isolated
-Qdrant, single-VM compose. SV primary / UVR≤0.15 gate / prompt hash sha-6687240c8cd8. Publish
-= HITL + local merge + supervised human push; rollback = one documented command.
+## Authoritative baseline
 
-## Completed   (append)
-- Grounding arc M1-M5, M6a (prompt hashing). B1-B8 (DECISIONS 2026-06-12 … 2026-06-16).
-- P2.1 second HITL gate, P2.2 index.html auto-update, P2.3 MAX_ITERATIONS reject (2026-06-17).
-- P-demo: SSE streaming UI (api/server.py additive /ui/runs* + static/index.html), cloud
-  publish endpoint, live rehearsal passed (2026-06-18). See DECISIONS 2026-06-17/06-18.
-- Production-readiness audit (docs/PRODUCTION_READINESS.md) + its 4 do-now fixes: PR-only
-  grounding-regression CI gate, uptime-check runbook + ERROR-level publish-failure log,
-  query_kb.py structlog migration, Docker Hub deploy path documented. Tagged v7-audit-fixes.
-- **Cloud deploy LIVE (2026-06-19):** EC2 + Caddy (TLS reverse proxy) + Docker Hub
-  (`anudeepreddy332/content-agent:demo`, built via `docker buildx --platform linux/arm64
-  --push`, pulled on the box per docs/deploy/DEPLOY_DEMO.md's primary path) + sslip.io for TLS
-  without real DNS. Live demo: https://54-221-24-43.sslip.io — the app container has no direct
-  public port; Caddy is the only public surface (docker-compose.demo.yml `!reset` on `ports`).
-- Repo cleanup (feature/cleanup, unmerged): 93 tracked files (down from ~140) — deleted 9
-  tmp/ scratch scripts + 29 stale benchmark JSON dumps + 2 dead docs + 1 orphaned prompt;
-  relocated root markdown into docs/ + docs/deploy/, retrieval-baseline evidence + kept-for-
-  record scripts into docs/archive/ + scripts/archive/ + tools/archive/; fixed 5 docstring/
-  behavior mismatches and removed 3 dead imports in scripts/+tools/. Docker build re-verified
-  green after the reorg.
-- Docs-sync, repo cleanup, and opt-in LangSmith tracing (LANGSMITH_TRACING=1 AND-gate) all
-  merged to main.
-- **LangSmith default-on + token usage/cost (2026-06-20, feature/langsmith-fixes, unmerged):**
-  `setup_langsmith_tracing()` now enables on `LANGCHAIN_API_KEY`+`LANGCHAIN_PROJECT` alone (no
-  flag needed); `LANGSMITH_TRACING="0"` force-off override added. `_get_client()` wraps the
-  DeepSeek client with `langsmith.wrappers.wrap_openai()` when tracing is on; `_llm_call()`
-  attaches DeepSeek's real per-token cost to each traced run's `usage_metadata` (LangSmith has
-  no built-in `deepseek-chat` price entry). See DECISIONS 2026-06-20. Off-path verified
-  zero-`langsmith`-import; full suite green (62 passed); smoke test passed with tracing off.
+- Accepted production-code baseline: `794851dded770ce87d111e73735d000e23597eb1` (`origin/main`).
+- System shape at that baseline: single-operator LangGraph pipeline with Tavily plus Qdrant/BM25/RRF
+  retrieval, DeepSeek drafting/verification/reflection, two human review gates, local Git integration,
+  and a separate human-triggered publish endpoint.
+- Serving retrieval baseline: the existing `all-MiniLM-L6-v2` dense channel plus BM25, fused with
+  RRF `k=60`, over the current serving corpus/chunk contract. This is retained because no replacement
+  has passed every required product-quality and integration gate.
+- Current branch authorized by this synchronization: `chore/canonical-engineering-state`,
+  documentation only, review required, no merge authorized by this file.
 
-## Currently active
-feature/langsmith-fixes (unmerged) is the tip of work — see Completed above and DECISIONS.md.
+## Enterprise-production decision
 
-## Current blocker
-None. Reminder carried from feature/cleanup: the Docker image was rebuilt and verified to
-build locally after the reorg, but if any further code changes land before the image is
-re-pushed to Docker Hub, re-push and re-pull-test on EC2 before trusting the live demo URL.
+**BLOCKED.** The repository is a useful supervised single-operator prototype, but the accepted
+baseline is not approved for enterprise production, shared public operation, or multi-customer
+onboarding.
 
-## Repository state
-- main: v7-audit-fixes (production-readiness audit + do-now fixes + cheatsheet docs merged).
-- feature/cleanup and feature/docs-sync: both unmerged, this status reflects their content.
-- Current file tree (post-cleanup): see README.md's "Project structure" section for the full
-  layout — docs/ (CASE_STUDY, cheatsheets, audit report), docs/deploy/ (DEPLOY*, RECOVERY),
-  docs/archive/ (gate reports, retrieval-eval evidence), scripts/archive/ + tools/archive/
-  (kept-for-record / blocked-dependency code). Dockerfile/compose/Caddyfile stayed at root.
-- scripts/archive/p2_3_analyze.py, scripts/archive/p2_3_reach.py kept for the record (moved
-  into scripts/archive/ during the feature/cleanup reorg); no production code change from P2.3.
-- Standing limitations unchanged (FREEZE.md): B4 registry volatility (now spans 2 pause
-  points), 5-tag rollback window, local-merge-no-auto-push, single-worker throughput.
+The prior `docs/PRODUCTION_READINESS.md` conclusion was scoped to a June 2026 supervised demo and is
+historical evidence, not a current enterprise-release decision.
 
-## Operating points (confirmed)
-MAX_ITERATIONS=2, REFLECTION_THRESHOLD=7, GROUNDING_FLOOR=0.60, COST_GATE_USD=0.10.
-SV primary / UVR<=0.15 gate. prompt_version sha-6687240c8cd8. HITL mandatory on BOTH gates.
+## Accepted priority order
+
+1. **P0-1 — Active-content execution and credential exposure boundary**
+   - Architecture: **APPROVED and frozen**.
+   - Implementation: **not yet validated, not merged, not deployed**.
+   - Current code still renders model/web-influenced active content in the same-origin reviewer UI,
+     exposes bearer credentials in SSE/preview URLs, trusts model-provided citation URLs, and does
+     not bind publication to the exact reviewed artifact and commit.
+   - Authoritative implementation contract: `architecture.md`, section "P0-1 accepted target".
+
+2. **P0-2 — Verifier semantics and evaluation integrity**
+   - The exact-run telemetry and explicit verification-status correction is merged at the baseline.
+   - Still open: verifier failure/empty-verdict states are not consistently enforced before HITL or
+     publication; benchmark and telemetry coherence can still false-pass; required evaluation
+     provenance is not yet tied to one final integration SHA.
+
+3. **P0-3 — Identity and tenant boundary**
+   - `MISSING ENTERPRISE CAPABILITY / ENTERPRISE MULTI-CUSTOMER RELEASE BLOCKER`.
+   - This is not classified as a malfunction of the declared single-operator prototype.
+
+4. **P1 — Durable execution and immutable approval/publish binding beyond P0-1**
+   - Includes durable run discovery/recovery, concurrency/queue ownership, high availability, and
+     deployment identity beyond the exact-artifact/exact-commit binding included in P0-1.
+
+## Current authorized mission
+
+After independent review of this documentation branch, the next product mission is implementation
+of the already-approved P0-1 contract. The implementation agent may implement that specification
+only; it may not redesign the architecture, relax frozen gates, merge, publish, or deploy without a
+new authorization.
+
+## Parallel retrieval research
+
+- Known MiniLM truncation risk remains **OPEN**.
+- Tokenizer-aligned `224/32` child chunking removed measured truncation but produced mixed/regressive
+  product-quality results; it is **not** an accepted serving fix.
+- Exact-73 diagnostics at `b9f9d1d`, `4f6637e`, and `de60706` clarify channel behavior but authorize
+  no production cutover.
+- Research must remain isolated from serving. Evaluator/fixture repair precedes further quality
+  conclusions. No model, chunking, fusion, threshold, corpus, or collection change is accepted.
+
+## Latest accepted evidence
+
+- Independent architecture/audit review on 2026-08-13: P0-1 architecture accepted; current release
+  remains blocked.
+- Main integration baseline `794851d`: deterministic test/lint evidence exists, while final-SHA live
+  evaluation provenance and several fail-closed semantics remain incomplete.
+- Retrieval evidence and classifications are indexed in `docs/EXPERIMENT_LEDGER.md`; detailed
+  historical reports remain under `docs/archive/` and on their evidence branches.
+
+## Explicitly not accepted
+
+- Current reviewer rendering as safe.
+- Current bearer transport as safe.
+- Current citation attribution as authoritative.
+- Enterprise production readiness, multi-tenancy, HA, or unattended autonomy.
+- Naive tokenizer-aligned rechunking, GTE, Jina, or a new fusion design as the serving replacement.
+- `N=0`, incomplete, stale, incoherent, or non-final-SHA evaluation evidence as a release pass.
+- The June 2026 live-demo URL, Docker tag, or deployment state as verified current.
+
+## Operating rule
+
+No threshold lowering after results, no retry-until-lucky, and no aggregate score may hide a
+critical individual regression. A pass at one gate is evidence for that gate only; it is not merge
+or cutover approval.
