@@ -1382,20 +1382,43 @@ def _norm_code_text(text: str) -> str:
     return _nfc(text).strip("\n")
 
 
-def _revision_content_key(html_str: str) -> tuple[str, tuple[str, ...], tuple[str, ...]]:
-    """Exact ordered fingerprint of revision-visible prose and code.
+def _compact_revision_events(events: list[tuple[str, str]]) -> tuple[tuple[str, str], ...]:
+    """Merge adjacent TEXT events (NFC + whitespace collapse). Code events stay in place."""
+    out: list[tuple[str, str]] = []
+    text_acc: list[str] = []
 
-    Returns (visible_text, code_blocks, inline_codes). Layout/markup is ignored;
-    there is no word-count tolerance and no bag-of-words comparison.
+    def flush_text() -> None:
+        if not text_acc:
+            return
+        merged = _norm_visible_text(" ".join(text_acc))
+        text_acc.clear()
+        if merged:
+            out.append(("text", merged))
+
+    for kind, value in events:
+        if kind == "text":
+            text_acc.append(value)
+        else:
+            flush_text()
+            out.append((kind, value))
+    flush_text()
+    return tuple(out)
+
+
+def _revision_content_key(html_str: str) -> tuple[tuple[str, str], ...]:
+    """Ordered stream of visible prose and code. Layout/markup is ignored.
+
+    Events are ("text", ...), ("inline", ...), or ("block", ...) in document order.
+    Adjacent text events are merged after NFC/whitespace collapse so wrapping a
+    sentence in <strong> does not change the stream; moving code relative to
+    prose does.
     """
     from html.parser import HTMLParser
 
     class _Canon(HTMLParser):
         def __init__(self):
             super().__init__(convert_charrefs=True)
-            self.visible: list[str] = []
-            self.blocks: list[str] = []
-            self.inlines: list[str] = []
+            self.events: list[tuple[str, str]] = []
             self.pre = 0
             self.code = 0
             self.buf: list[str] = []
@@ -1415,31 +1438,25 @@ def _revision_content_key(html_str: str) -> tuple[str, tuple[str, ...], tuple[st
                 self.code -= 1
                 if self.code == 0:
                     text = _norm_code_text("".join(self.buf))
-                    if self.pre:
-                        self.blocks.append(text)
-                    else:
-                        self.inlines.append(text)
+                    kind = "block" if self.pre else "inline"
+                    self.events.append((kind, text))
                     self.buf = []
             elif tag == "pre" and self.pre:
                 self.pre -= 1
                 if self.code == 0 and self.buf:
-                    self.blocks.append(_norm_code_text("".join(self.buf)))
+                    self.events.append(("block", _norm_code_text("".join(self.buf))))
                     self.buf = []
 
         def handle_data(self, data):
             if self.code or self.pre:
                 self.buf.append(data)
             else:
-                self.visible.append(data)
+                self.events.append(("text", data))
 
     parser = _Canon()
     parser.feed(html_str or "")
     parser.close()
-    return (
-        _norm_visible_text(" ".join(parser.visible)),
-        tuple(parser.blocks),
-        tuple(parser.inlines),
-    )
+    return _compact_revision_events(parser.events)
 
 
 def html_revise_node(state: AgentState) -> dict:

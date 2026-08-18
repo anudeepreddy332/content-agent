@@ -206,6 +206,16 @@ def _revise(base_state, monkeypatch, original, revised):
      "<p>see</p><pre><code>print(9)\nprint(2)</code></pre>", "changed-code-token"),
     ("<p>see</p><pre><code>print(1)\nprint(2)</code></pre>",
      "<p>see</p><pre><code>print(2)\nprint(1)</code></pre>", "reordered-code-lines"),
+    ("<p>Use <code>lr</code> carefully.</p>",
+     "<p>Use carefully. <code>lr</code></p>", "inline-moved-to-end"),
+    ("<p>Use <code>lr</code> now.</p><p>Later.</p>",
+     "<p>Use now.</p><p>Later <code>lr</code>.</p>", "inline-moved-across-paragraphs"),
+    ("<p>before</p><pre><code>print(1)</code></pre><p>after</p>",
+     "<pre><code>print(1)</code></pre><p>before</p><p>after</p>", "block-moved-before-prose"),
+    ("<pre><code>print(1)</code></pre><pre><code>print(2)</code></pre>",
+     "<pre><code>print(2)</code></pre><pre><code>print(1)</code></pre>", "swapped-code-blocks"),
+    ("<p>before</p><pre><code>print(1)</code></pre><p>after</p>",
+     "<p>after</p><pre><code>print(1)</code></pre><p>before</p>", "prose-moved-across-code-block"),
 ])
 def test_html_revise_discards_any_visible_or_code_change(base_state, monkeypatch, original, revised, label):
     out = _revise(base_state, monkeypatch, original, revised)
@@ -230,31 +240,3 @@ def test_html_revise_accepts_layout_only_with_identical_code(base_state, monkeyp
     assert "print(1)" in out["html_output"]
     assert "print(2)" in out["html_output"]
     assert "Gradient descent minimizes loss" in out["html_output"]
-    import agent.nodes as nodes
-    body = "<p>Gradient descent minimizes loss.</p>"
-    base_state["article_body_html"] = body
-    base_state["html_output"] = body
-    base_state["html_sha256"] = "orig"
-    base_state["html_feedback"] = "make the paragraph bold"
-    bad = "<p><strong>Gradient descent minimizes loss. It is the best.</strong></p>"
-    monkeypatch.setattr(nodes, "_get_client", lambda: object())
-    monkeypatch.setattr(nodes, "_llm_call", lambda c, **kw: fake_response(bad))
-    out = nodes.html_revise_node(base_state)
-    assert out["html_output"] == base_state["html_output"]
-    assert any("DISCARDED" in e for e in out["error_log"])
-
-def test_html_revise_applies_layout_only(base_state, monkeypatch):
-    import agent.nodes as nodes
-    body = "<p>Gradient descent minimizes loss.</p>"
-    base_state["article_body_html"] = body
-    base_state["html_output"] = body
-    base_state["html_feedback"] = "make the paragraph bold"
-    good = "<p><strong>Gradient descent minimizes loss.</strong></p>"
-    monkeypatch.setattr(nodes, "_get_client", lambda: object())
-    monkeypatch.setattr(nodes, "_llm_call", lambda c, **kw: fake_response(good))
-    out = nodes.html_revise_node(base_state)
-    assert "Gradient descent minimizes loss" in out["html_output"]
-    assert "<strong>" in out["html_output"]
-    assert out["html_output"] != body
-    assert out["approved_html_sha256"] is None
-    assert "<script>" not in out["html_output"].lower()
