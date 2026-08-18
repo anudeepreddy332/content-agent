@@ -331,18 +331,17 @@ def _parse_ipv4_number(part: str) -> int | None:
     """WHATWG IPv4-number parser. None means the part is not a valid IPv4 number."""
     if not part:
         return None
-    if part[:2].lower() == "0x":
-        body = part[2:]
-        if not body or any(c not in "0123456789abcdefABCDEF" for c in body):
-            return None
-        return int(body, 16)
-    if len(part) > 1 and part[0] == "0":
-        if any(c not in "01234567" for c in part):
-            return None
-        return int(part, 8)
-    if any(c not in "0123456789" for c in part):
+    if len(part) >= 2 and part[:2].lower() == "0x":
+        radix, body, digits = 16, part[2:], "0123456789abcdefABCDEF"
+    elif len(part) >= 2 and part[0] == "0":
+        radix, body, digits = 8, part[1:], "01234567"
+    else:
+        radix, body, digits = 10, part, "0123456789"
+    if not body:
+        return 0
+    if any(c not in digits for c in body):
         return None
-    return int(part, 10)
+    return int(body, radix)
 
 
 def _ipv4_parts(host: str) -> list[str]:
@@ -353,10 +352,14 @@ def _ipv4_parts(host: str) -> list[str]:
 
 
 def _ends_in_a_number(host: str) -> bool:
+    """WHATWG ends-in-a-number checker. True forces IPv4 parse (failure rejects the host)."""
     parts = _ipv4_parts(host)
     if not parts:
         return False
-    return _parse_ipv4_number(parts[-1]) is not None
+    last = parts[-1]
+    if last and all("0" <= c <= "9" for c in last):
+        return True
+    return last != "" and _parse_ipv4_number(last) is not None
 
 
 def _parse_whatwg_ipv4(host: str) -> ipaddress.IPv4Address | None:

@@ -226,9 +226,27 @@ LEGACY_LOOPBACK = [
     "https://127.0.0.0x1/x",
 ]
 
+WHATWG_IPV4_EDGE_CASES = [
+    "https://0x/x",
+    "https://0X/x",
+    "https://0x.0x/x",
+    "https://0X.0X/x",
+    "https://0x./x",
+    "https://0X./x",
+    "https://0x.0x./x",
+    "https://0X.0X./x",
+    "https://09/x",
+    "https://09./x",
+]
+
 
 @pytest.mark.parametrize("url", LEGACY_LOOPBACK)
 def test_legacy_numeric_ipv4_loopback_rejected(url):
+    assert normalize_citation_url(url) is None
+
+
+@pytest.mark.parametrize("url", WHATWG_IPV4_EDGE_CASES)
+def test_whatwg_ipv4_edge_hosts_rejected(url):
     assert normalize_citation_url(url) is None
 
 

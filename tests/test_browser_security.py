@@ -21,7 +21,7 @@ from agent.html_policy import (
     sanitize_fragment,
 )
 from tests.test_api_stream import FakeStreamGraph, _interrupt
-from tests.test_html_policy import LEGACY_LOOPBACK, _article
+from tests.test_html_policy import LEGACY_LOOPBACK, WHATWG_IPV4_EDGE_CASES, _article
 
 pytest.importorskip("playwright")
 from playwright.sync_api import sync_playwright
@@ -222,7 +222,7 @@ def test_chromium_rejects_legacy_ipv4_citation_hrefs(pw_page):
     web = [
         {"title": "Good", "url": "https://example.com/gd", "score": 0.9},
     ]
-    for url in LEGACY_LOOPBACK:
+    for url in [*LEGACY_LOOPBACK, *WHATWG_IPV4_EDGE_CASES]:
         host = pw_page.evaluate(
             """(u) => {
                 try { return new URL(u).hostname; }
