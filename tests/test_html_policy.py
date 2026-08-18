@@ -13,10 +13,13 @@ from agent.html_policy import (
     render_citations_html,
     render_markdown_fragment,
     render_markdown_review_html,
+    resolve_verifier_url,
+    safe_grounding_rows,
     sanitize_fragment,
     serialize_json_ld,
     sha256_utf8,
 )
+from agent.nodes import _resolve_attributions
 
 EXPLOITS = {
     "script": '<script>alert(1)</script><p>ok</p>',
@@ -209,3 +212,115 @@ def test_trusted_article_has_no_active_subresources():
 def test_fail_closed_on_empty_required_section():
     with pytest.raises(PolicyError):
         _article(problem_framing=TrustedFragment(html=""))
+
+
+LEGACY_LOOPBACK = [
+    "https://127.1/x",
+    "https://0177.0.0.1/x",
+    "https://2130706433/x",
+    "https://0x7f000001/x",
+    "https://0x7f.0.0.1/x",
+    "https://127.0.1/x",
+    "https://0x7f.1/x",
+    "https://0177.1/x",
+    "https://127.0.0.0x1/x",
+]
+
+
+@pytest.mark.parametrize("url", LEGACY_LOOPBACK)
+def test_legacy_numeric_ipv4_loopback_rejected(url):
+    assert normalize_citation_url(url) is None
+
+
+@pytest.mark.parametrize("url", [
+    "https://-example.com/x",
+    "https://example-.com/x",
+    "https://example..com/x",
+    "https://exa_mple.com/x",
+    "https://" + ("a" * 64) + ".com/x",
+    "https://" + ".".join(["a" * 63] * 4) + "/x",
+])
+def test_malformed_dns_hosts_rejected(url):
+    assert normalize_citation_url(url) is None
+
+
+@pytest.mark.parametrize("url,expected", [
+    ("https://example.com/x", "https://example.com/x"),
+    ("https://sub.example.co.uk/path", "https://sub.example.co.uk/path"),
+    (" HTTPS://Example.COM/a/B?q=1#frag ", "https://example.com/a/B?q=1"),
+    ("https://8.8.8.8/lookup", "https://8.8.8.8/lookup"),
+])
+def test_public_https_hosts_accepted(url, expected):
+    assert normalize_citation_url(url) == expected
+
+
+def test_exact_url_attribution_path_query_slash():
+    retrieved = "https://example.com/Docs/A?q=One"
+    web = [{"title": "Docs", "url": retrieved, "score": 0.9}]
+    canonical = {"https://example.com/Docs/A?q=One": web[0]}
+
+    assert resolve_verifier_url("HTTPS://Example.com/Docs/A?q=One#frag", canonical) == retrieved
+    mismatches = [
+        "https://example.com/docs/a?q=One",
+        "https://example.com/Docs/A?q=one",
+        "https://example.com/Docs/A/?q=One",
+        "https://example.com/Docs/B?q=One",
+        "https://example.com/Docs/A?q=Two",
+    ]
+    for candidate in mismatches:
+        assert resolve_verifier_url(candidate, canonical) is None
+        report = _resolve_attributions(
+            [{"claim": "c", "source_url": candidate}],
+            web,
+            [],
+        )
+        assert report[0]["source_ref"] is None, candidate
+        assert report[0]["source_kind"] == "unresolved", candidate
+
+    matched = _resolve_attributions(
+        [{"claim": "c", "source_url": "HTTPS://Example.com/Docs/A?q=One#unused"}],
+        web,
+        [],
+    )
+    assert matched[0]["source_kind"] == "web"
+    assert matched[0]["source_ref"] == retrieved
+
+
+def test_source_ref_authority_ignores_source_url():
+    web = [{"title": "Good", "url": "https://example.com/gd", "score": 0.9}]
+    clickable = build_citation_items(
+        [{"claim": "c", "status": "verified", "source_kind": "web",
+          "source_ref": "https://example.com/gd", "source_url": "https://evil.example/x"}],
+        web,
+        [],
+    )
+    assert clickable[0]["url"] == "https://example.com/gd"
+    assert "<a " in render_citations_html(clickable)
+
+    invalid_ref = build_citation_items(
+        [{"claim": "c", "status": "verified", "source_kind": "web",
+          "source_ref": "https://evil.example/x", "source_url": "https://example.com/gd"}],
+        web,
+        [],
+    )
+    assert invalid_ref[0]["url"] is None
+    assert invalid_ref[0]["label"] == "Unresolved source"
+    assert "<a " not in render_citations_html(invalid_ref)
+
+    missing_ref = build_citation_items(
+        [{"claim": "c", "status": "verified", "source_kind": "web",
+          "source_ref": None, "source_url": "https://example.com/gd"}],
+        web,
+        [],
+    )
+    assert missing_ref[0]["url"] is None
+    assert missing_ref[0]["label"] == "Unresolved source"
+    assert "<a " not in render_citations_html(missing_ref)
+
+    rows = safe_grounding_rows(
+        [{"claim": "c", "status": "verified", "source_kind": "web",
+          "source_ref": None, "source_url": "https://example.com/gd"}],
+        web,
+    )
+    assert rows[0]["source_url"] is None
+    assert rows[0]["source_label"] == "Unresolved source"

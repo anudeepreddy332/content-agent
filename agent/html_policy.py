@@ -327,19 +327,112 @@ def _ip_is_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     return False
 
 
-def _hostname_allowed(host: str) -> bool:
+def _parse_ipv4_number(part: str) -> int | None:
+    """WHATWG IPv4-number parser. None means the part is not a valid IPv4 number."""
+    if not part:
+        return None
+    if part[:2].lower() == "0x":
+        body = part[2:]
+        if not body or any(c not in "0123456789abcdefABCDEF" for c in body):
+            return None
+        return int(body, 16)
+    if len(part) > 1 and part[0] == "0":
+        if any(c not in "01234567" for c in part):
+            return None
+        return int(part, 8)
+    if any(c not in "0123456789" for c in part):
+        return None
+    return int(part, 10)
+
+
+def _ipv4_parts(host: str) -> list[str]:
+    parts = host.split(".")
+    if parts and parts[-1] == "" and len(parts) > 1:
+        parts.pop()
+    return parts
+
+
+def _ends_in_a_number(host: str) -> bool:
+    parts = _ipv4_parts(host)
+    if not parts:
+        return False
+    return _parse_ipv4_number(parts[-1]) is not None
+
+
+def _parse_whatwg_ipv4(host: str) -> ipaddress.IPv4Address | None:
+    """Parse browser-recognized dotted/octal/hex/decimal IPv4 forms. None if invalid."""
+    parts = _ipv4_parts(host)
+    if not parts or len(parts) > 4:
+        return None
+    nums: list[int] = []
+    for part in parts:
+        value = _parse_ipv4_number(part)
+        if value is None:
+            return None
+        nums.append(value)
+    last_max = {1: 0xFFFFFFFF, 2: 0xFFFFFF, 3: 0xFFFF, 4: 0xFF}[len(nums)]
+    if nums[-1] > last_max:
+        return None
+    if any(v > 255 for v in nums[:-1]):
+        return None
+    n = len(nums)
+    if n == 1:
+        ip_int = nums[0]
+    elif n == 2:
+        ip_int = (nums[0] << 24) | nums[1]
+    elif n == 3:
+        ip_int = (nums[0] << 24) | (nums[1] << 16) | nums[2]
+    else:
+        ip_int = (nums[0] << 24) | (nums[1] << 16) | (nums[2] << 8) | nums[3]
+    return ipaddress.IPv4Address(ip_int)
+
+
+def _dns_hostname_allowed(host: str) -> bool:
+    if not host or len(host) > 253:
+        return False
+    labels = host.split(".")
+    if any(len(label) == 0 or len(label) > 63 for label in labels):
+        return False
+    for label in labels:
+        if label.startswith("-") or label.endswith("-"):
+            return False
+        if any(c not in "abcdefghijklmnopqrstuvwxyz0123456789-" for c in label):
+            return False
+    return True
+
+
+def _canonical_host(host: str) -> str | None:
+    """Validate host and return the form written into a citation URL, or None."""
     if not host or host.startswith("[") or "\\" in host:
-        return False
-    lowered = host.rstrip(".").lower()
-    if lowered in {"localhost", "localhost."} or lowered.endswith(".localhost"):
-        return False
-    if lowered.endswith(".local"):
-        return False
+        return None
     try:
-        ip = ipaddress.ip_address(host)
-        return _ip_is_public(ip)
+        host_idna = host.encode("idna").decode("ascii").lower().rstrip(".")
+    except Exception:
+        return None
+    if not host_idna:
+        return None
+    if host_idna == "localhost" or host_idna.endswith(".localhost") or host_idna.endswith(".local"):
+        return None
+    try:
+        ip = ipaddress.ip_address(host_idna)
     except ValueError:
-        return True
+        ip = None
+    if isinstance(ip, ipaddress.IPv6Address):
+        if not _ip_is_public(ip):
+            return None
+        return f"[{ip.compressed}]"
+    if _ends_in_a_number(host_idna):
+        ipv4 = _parse_whatwg_ipv4(host_idna)
+        if ipv4 is None or not _ip_is_public(ipv4):
+            return None
+        return str(ipv4)
+    if isinstance(ip, ipaddress.IPv4Address):
+        if not _ip_is_public(ip):
+            return None
+        return str(ip)
+    if not _dns_hostname_allowed(host_idna):
+        return None
+    return host_idna
 
 
 def _percent_encoding_valid(text: str) -> bool:
@@ -381,17 +474,14 @@ def normalize_citation_url(candidate: str) -> str | None:
     host = parts.hostname
     if not host:
         return None
-    try:
-        host_idna = host.encode("idna").decode("ascii").lower()
-    except Exception:
-        return None
-    if not _hostname_allowed(host_idna):
+    host_canon = _canonical_host(host)
+    if not host_canon:
         return None
     if parts.port not in (None, 443):
         return None
     path = parts.path if parts.path else "/"
     query = parts.query
-    normalized = urlunsplit(("https", host_idna, path, query, ""))
+    normalized = urlunsplit(("https", host_canon, path, query, ""))
     if len(normalized) > 2048:
         return None
     return normalized
@@ -450,9 +540,7 @@ def build_citation_items(
             seen.add(key)
             items.append({"kind": "kb", "label": label, "url": None, "claim": claim})
             continue
-        preferred = str(ref or "")
-        fallback = str(entry.get("source_url") or "")
-        resolved = resolve_verifier_url(preferred, canonical) or resolve_verifier_url(fallback, canonical)
+        resolved = resolve_verifier_url(str(ref or ""), canonical)
         if resolved:
             if resolved in seen:
                 continue
@@ -532,9 +620,7 @@ def safe_grounding_rows(
             if label.startswith("kb:"):
                 label = label[3:]
         else:
-            preferred = str(ref or "")
-            fallback = str(entry.get("source_url") or "")
-            resolved = resolve_verifier_url(preferred, canonical) or resolve_verifier_url(fallback, canonical)
+            resolved = resolve_verifier_url(str(ref or ""), canonical)
             if resolved:
                 label = _label_for_url(resolved, canonical.get(resolved))
                 clickable = True

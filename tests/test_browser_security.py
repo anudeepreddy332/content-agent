@@ -14,11 +14,14 @@ from types import SimpleNamespace
 
 from agent.html_policy import (
     assemble_trusted_article,
+    build_citation_items,
+    normalize_citation_url,
+    render_citations_html,
     render_markdown_review_html,
     sanitize_fragment,
 )
 from tests.test_api_stream import FakeStreamGraph, _interrupt
-from tests.test_html_policy import _article
+from tests.test_html_policy import LEGACY_LOOPBACK, _article
 
 pytest.importorskip("playwright")
 from playwright.sync_api import sync_playwright
@@ -201,3 +204,57 @@ def test_popup_and_top_navigation_blocked(pw_page):
     )
     pw_page.wait_for_timeout(200)
     assert "evil.example" not in pw_page.url
+
+
+def test_chromium_rejects_legacy_ipv4_citation_hrefs(pw_page):
+    """Attack hosts Chromium maps to loopback must never become clickable citations."""
+    import ipaddress
+
+    blocked = []
+
+    def _abort(route):
+        blocked.append(route.request.url)
+        route.abort()
+
+    pw_page.route("https://**", _abort)
+    pw_page.route("http://**", _abort)
+
+    web = [
+        {"title": "Good", "url": "https://example.com/gd", "score": 0.9},
+    ]
+    for url in LEGACY_LOOPBACK:
+        host = pw_page.evaluate(
+            """(u) => {
+                try { return new URL(u).hostname; }
+                catch (e) { return null; }
+            }""",
+            url,
+        )
+        if host:
+            try:
+                ip = ipaddress.ip_address(host)
+            except ValueError:
+                ip = None
+            else:
+                assert ip.is_loopback or ip.is_private or not ip.is_global
+        assert normalize_citation_url(url) is None
+        items = build_citation_items(
+            [{
+                "claim": "c",
+                "status": "verified",
+                "source_kind": "web",
+                "source_ref": url,
+                "source_url": "https://example.com/gd",
+            }],
+            web + [{"title": "Loop", "url": url, "score": 0.1}],
+            [],
+        )
+        html = render_citations_html(items)
+        assert items[0]["url"] is None
+        assert "<a " not in html
+        assert "Unresolved source" in html
+        assert f'href="{url}"' not in html
+
+    pw_page.set_content("<!DOCTYPE html><html><body>ok</body></html>", wait_until="domcontentloaded")
+    pw_page.wait_for_timeout(100)
+    assert blocked == []

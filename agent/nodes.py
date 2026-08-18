@@ -26,6 +26,7 @@ from agent.html_policy import (
     PolicyError,
     assemble_trusted_article,
     build_citation_items,
+    normalize_citation_url,
     reassemble_from_body,
     render_citations_html,
     render_markdown_review_html,
@@ -699,16 +700,21 @@ def _resolve_attributions(report: list[dict], web_sources: list, kb_results: lis
                exact-chunk disambiguation is deferred to M5b (requires verifier-
                visible source tagging, which re-baselines metrics).
 
-       Matching is normalization-tolerant (lowercase, trailing-slash strip) — safe
-       because collision risk within one run's <=15-source set is nil.
+       Web matching uses html_policy.normalize_citation_url only: scheme/host
+       case folding, IDNA, default port 443, empty path → `/`, exact path and
+       query, no fragment. Trailing-slash and path-case differences do not match.
        """
-    def _norm(u: str) -> str:
-        return (u or "").strip().lower().rstrip("/")
-
-    web_index = {_norm(s.get("url", "")): s.get("url") for s in web_sources if s.get("url")}
+    web_index: dict[str, str] = {}
+    for source in web_sources:
+        key = normalize_citation_url(str(source.get("url") or ""))
+        if key:
+            web_index[key] = key
     kb_index: dict[str, list[int]] = {}
     for k in kb_results:
         kb_index.setdefault(k.get("source", "unknown"), []).append(k.get("chunk_index", 0))
+
+    def _kb_key(name: str) -> str:
+        return (name or "").strip().lower()
 
     for entry in report:
         su = entry.get("source_url")
@@ -716,13 +722,14 @@ def _resolve_attributions(report: list[dict], web_sources: list, kb_results: lis
             entry["source_kind"] = "none"
             entry["source_ref"] = None
             continue
-        nsu = _norm(su)
-        if nsu in web_index:
+        web_key = normalize_citation_url(str(su))
+        if web_key and web_key in web_index:
             entry["source_kind"] = "web"
-            entry["source_ref"] = web_index[nsu]
+            entry["source_ref"] = web_index[web_key]
             continue
+        nsu = _kb_key(str(su))
         kb_match = next(
-            (src for src in kb_index if nsu == _norm(src) or _norm(src) in nsu or nsu in _norm(src)),
+            (src for src in kb_index if nsu == _kb_key(src) or _kb_key(src) in nsu or nsu in _kb_key(src)),
             None,
         )
         if kb_match:
