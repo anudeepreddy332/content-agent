@@ -9,6 +9,44 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-18-01
+Date: 2026-08-18
+
+Decision: Separate the audited P0-1 runtime reference from the exact authorized implementation
+base under one specific independently reviewed exception.
+
+Audited runtime reference: `794851dded770ce87d111e73735d000e23597eb1`. This remains the exact
+runtime snapshot against which the P0-1 threat boundary and architecture were audited.
+
+Authorized P0-1 implementation base: `7a606e895fe0a4bc9092659f130881bc7b52bd28`.
+Independent Git inspection verified that `7a606e8` is a direct descendant of `794851d` containing
+documentation changes only and therefore does not alter the audited runtime/product implementation.
+
+Problem / question: The canonical architecture originally required implementation to start from
+`794851d`, while the reviewed canonical-state synchronization at `7a606e8` contained the accepted
+implementation contract but no runtime changes.
+
+Reasoning: Authorizing `7a606e8` preserves the audited runtime implementation exactly while making
+the reviewed canonical documentation available at the implementation base. This is a specific
+exception, not a rule that documentation-only or arbitrary later descendants inherit authorization.
+
+Evidence: Parent/ancestry and changed-file inspection for `794851d..7a606e8`; independent Reviewer
+governance decision dated 2026-08-18.
+
+Alternatives considered: Require Cursor to start at `794851d` and separately import the contract
+(rejected: creates avoidable state divergence); authorize the next branch tip or all documentation
+descendants (rejected: weakens exact-SHA governance).
+
+Status: Accepted governance correction. Any implementation base other than exact SHA `7a606e8`
+remains `ARCHITECTURE-BLOCKED` unless independently reviewed. This decision does not itself authorize
+Cursor to begin; the independent Reviewer must inspect the correction commit.
+
+Confidence: 0.99
+
+Supersedes / superseded by: Narrows the implementation-start wording in `architecture.md`; does not
+change the audited runtime reference or any other frozen P0-1 gate.
+
+---
 Decision ID: D-2026-08-13-04
 Date: 2026-08-13
 

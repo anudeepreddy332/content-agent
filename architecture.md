@@ -1,7 +1,9 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-08-13. Baseline:
-`794851dded770ce87d111e73735d000e23597eb1`._
+_Accepted contract synchronized 2026-08-18._
+
+- **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`
+- **Authorized P0-1 implementation base:** `7a606e895fe0a4bc9092659f130881bc7b52bd28`
 
 ## 0. Authority and status
 
@@ -12,6 +14,11 @@ belong here until independent review accepts them. Material decision history rem
 The P0-1 architecture below is **APPROVED and frozen**. Its implementation is **not yet validated,
 not merged, and not deployed**. Descriptions under "current baseline" are current code; descriptions
 under "P0-1 accepted target" are the authorized implementation contract.
+
+The implementation-base SHA is a specific independently reviewed exception: `7a606e8` is a direct
+documentation-only descendant of the audited runtime reference and does not change its runtime or
+product implementation. No other descendant is authorized by implication. A different Cursor base
+is `ARCHITECTURE-BLOCKED` unless independently reviewed.
 
 ## 1. Current accepted system and serving baseline
 
@@ -164,7 +171,12 @@ Gate 2 uses exactly:
 
 No `allow-*` sandbox token is permitted. Only `TrustedArticle.html` may be assigned to `srcdoc`.
 The document has an opaque origin, cannot execute scripts, submit forms, open popups, navigate the
-top page, download, or make subresource requests.
+top page, or download through the blocked sandbox capabilities. Empty sandboxing is not the
+authoritative network-denial mechanism and does not by itself prevent subresource requests. The
+no-attacker-network-request guarantee comes from the combined trusted HTML policy: model fragments
+cannot create URL-bearing/subresource elements or CSS requests; generated and review HTML uses the
+frozen restrictive CSP, including `default-src 'none'`; and browser exploit tests must prove that no
+attacker-controlled request is emitted.
 
 Remove the new-tab preview control and delete `/ui/runs/{run_id}/preview`. Replace it only with an
 in-page expand/collapse control that changes container CSS. Do not use `blob:`, `data:`, a query
@@ -270,7 +282,8 @@ document.
 
 ## 4. Frozen deterministic acceptance gates
 
-Implementation starts from exact baseline `794851d` in a clean worktree. It must pass:
+Implementation starts from exact authorized base
+`7a606e895fe0a4bc9092659f130881bc7b52bd28` in a clean worktree. It must pass:
 
 1. Lock consistency and the existing fatal Ruff tier.
 2. `pytest tests/` only; repository-root pytest is prohibited because it collects a paid,
@@ -311,12 +324,13 @@ No retrieval, verifier-rubric, tenant, deployment-target, or unrelated code is a
 
 ## 6. Stop conditions
 
-Stop and return `ARCHITECTURE-BLOCKED` if the base differs; unrelated work overlaps an authorized
-file; the pinned sanitizer cannot run on Python 3.14/target platforms; a legitimate feature needs
-model-controlled active content; sandbox/CSP behavior fails in supported Chromium; visible content
-must change during layout-only revision; artifact bytes change after approval; publication would
-require force-push or a changed remote parent; target deployment changes become necessary; any paid
-call is required; or passing requires weakening this policy.
+Stop and return `ARCHITECTURE-BLOCKED` if the implementation base differs from exact SHA
+`7a606e895fe0a4bc9092659f130881bc7b52bd28`; unrelated work overlaps an authorized file; the pinned
+sanitizer cannot run on Python 3.14/target platforms; a legitimate feature needs model-controlled
+active content; sandbox/CSP behavior fails in supported Chromium; visible content must change during
+layout-only revision; artifact bytes change after approval; publication would require force-push or
+a changed remote parent; target deployment changes become necessary; any paid call is required; or
+passing requires weakening this policy.
 
 ## 7. Deferred risks and capabilities
 

@@ -1,17 +1,23 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-08-13._
+_Canonical current-state snapshot. Last synchronized: 2026-08-18._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
-## Authoritative baseline
+## Authoritative SHA roles
 
-- Accepted production-code baseline: `794851dded770ce87d111e73735d000e23597eb1` (`origin/main`).
-- System shape at that baseline: single-operator LangGraph pipeline with Tavily plus Qdrant/BM25/RRF
-  retrieval, DeepSeek drafting/verification/reflection, two human review gates, local Git integration,
-  and a separate human-triggered publish endpoint.
+- **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`. This remains the exact
+  runtime snapshot against which the P0-1 threat boundary and architecture were audited.
+- **Authorized P0-1 implementation base:** `7a606e895fe0a4bc9092659f130881bc7b52bd28`.
+  Independent Git inspection verified that it is a direct documentation-only descendant of the
+  audited runtime reference and does not alter runtime/product implementation. This is a specific
+  reviewed exception; no arbitrary later descendant is authorized. Any different Cursor base is
+  `ARCHITECTURE-BLOCKED` unless independently reviewed.
+- System shape at the audited runtime reference: single-operator LangGraph pipeline with Tavily plus
+  Qdrant/BM25/RRF retrieval, DeepSeek drafting/verification/reflection, two human review gates,
+  local Git integration, and a separate human-triggered publish endpoint.
 - Serving retrieval baseline: the existing `all-MiniLM-L6-v2` dense channel plus BM25, fused with
   RRF `k=60`, over the current serving corpus/chunk contract. This is retained because no replacement
   has passed every required product-quality and integration gate.
@@ -86,6 +92,10 @@ new authorization.
 - Naive tokenizer-aligned rechunking, GTE, Jina, or a new fusion design as the serving replacement.
 - `N=0`, incomplete, stale, incoherent, or non-final-SHA evaluation evidence as a release pass.
 - The June 2026 live-demo URL, Docker tag, or deployment state as verified current.
+- The proposed S3/event-driven ingestion, Postgres metadata truth, Qdrant-derived-index,
+  deterministic-identity/idempotent-ingestion, heterogeneous parsing, structure-aware chunking,
+  retrieval-scale, tenant/ACL, and model-tier program as accepted architecture. It remains
+  `ROADMAP INPUT — NOT ACCEPTED ARCHITECTURE` for a separate Architect mission.
 
 ## Operating rule
 
