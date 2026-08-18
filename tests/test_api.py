@@ -180,3 +180,81 @@ def test_html_revise_applies_layout_only(base_state, monkeypatch):
     assert out["html_output"] != body
     assert out["approved_html_sha256"] is None
     assert "<script>" not in out["html_output"].lower()
+
+
+def _revise(base_state, monkeypatch, original, revised):
+    import agent.nodes as nodes
+    base_state["article_body_html"] = original
+    base_state["html_output"] = original
+    base_state["html_sha256"] = "orig"
+    base_state["html_feedback"] = "layout only"
+    monkeypatch.setattr(nodes, "_get_client", lambda: object())
+    monkeypatch.setattr(nodes, "_llm_call", lambda c, **kw: fake_response(revised))
+    return nodes.html_revise_node(base_state)
+
+
+@pytest.mark.parametrize("original,revised,label", [
+    ("<p>Gradient descent minimizes loss.</p>",
+     "<p>Gradient descent minimizes error.</p>", "changed-word"),
+    ("<p>Gradient descent minimizes loss.</p>",
+     "<p>Gradient descent loss.</p>", "removed-word"),
+    ("<p>Gradient descent minimizes loss.</p>",
+     "<p>Gradient descent minimizes loss quickly.</p>", "added-word"),
+    ("<p>Gradient descent minimizes loss.</p>",
+     "<p>Loss minimizes gradient descent.</p>", "reordered-words"),
+    ("<p>see</p><pre><code>print(1)\nprint(2)</code></pre>",
+     "<p>see</p><pre><code>print(9)\nprint(2)</code></pre>", "changed-code-token"),
+    ("<p>see</p><pre><code>print(1)\nprint(2)</code></pre>",
+     "<p>see</p><pre><code>print(2)\nprint(1)</code></pre>", "reordered-code-lines"),
+])
+def test_html_revise_discards_any_visible_or_code_change(base_state, monkeypatch, original, revised, label):
+    out = _revise(base_state, monkeypatch, original, revised)
+    assert out["html_output"] == original, label
+    assert any("DISCARDED" in e for e in out["error_log"]), label
+
+
+def test_html_revise_accepts_layout_only_with_identical_code(base_state, monkeypatch):
+    original = (
+        "<p>Gradient descent minimizes loss.</p>"
+        "<pre><code>print(1)\nprint(2)</code></pre>"
+        "<p>Use <code>lr</code> carefully.</p>"
+    )
+    revised = (
+        "<div class=\"callout callout-info\"><p>Gradient descent minimizes loss.</p></div>"
+        "<div class=\"sl-code-block\"><pre><code class=\"language-python\">print(1)\nprint(2)</code></pre></div>"
+        "<p>Use <em><code>lr</code></em> carefully.</p>"
+    )
+    out = _revise(base_state, monkeypatch, original, revised)
+    assert not any("DISCARDED" in e for e in out["error_log"])
+    assert out["html_output"] != original
+    assert "print(1)" in out["html_output"]
+    assert "print(2)" in out["html_output"]
+    assert "Gradient descent minimizes loss" in out["html_output"]
+    import agent.nodes as nodes
+    body = "<p>Gradient descent minimizes loss.</p>"
+    base_state["article_body_html"] = body
+    base_state["html_output"] = body
+    base_state["html_sha256"] = "orig"
+    base_state["html_feedback"] = "make the paragraph bold"
+    bad = "<p><strong>Gradient descent minimizes loss. It is the best.</strong></p>"
+    monkeypatch.setattr(nodes, "_get_client", lambda: object())
+    monkeypatch.setattr(nodes, "_llm_call", lambda c, **kw: fake_response(bad))
+    out = nodes.html_revise_node(base_state)
+    assert out["html_output"] == base_state["html_output"]
+    assert any("DISCARDED" in e for e in out["error_log"])
+
+def test_html_revise_applies_layout_only(base_state, monkeypatch):
+    import agent.nodes as nodes
+    body = "<p>Gradient descent minimizes loss.</p>"
+    base_state["article_body_html"] = body
+    base_state["html_output"] = body
+    base_state["html_feedback"] = "make the paragraph bold"
+    good = "<p><strong>Gradient descent minimizes loss.</strong></p>"
+    monkeypatch.setattr(nodes, "_get_client", lambda: object())
+    monkeypatch.setattr(nodes, "_llm_call", lambda c, **kw: fake_response(good))
+    out = nodes.html_revise_node(base_state)
+    assert "Gradient descent minimizes loss" in out["html_output"]
+    assert "<strong>" in out["html_output"]
+    assert out["html_output"] != body
+    assert out["approved_html_sha256"] is None
+    assert "<script>" not in out["html_output"].lower()

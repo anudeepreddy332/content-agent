@@ -1367,16 +1367,83 @@ def html_gen_node(state: AgentState) -> dict:
     }
 
 
-def _visible_words(html_str: str) -> list:
-    """Lowercased word tokens of the visible text (tags stripped) — used to prove an HTML
-    revision changed only markup/layout, never content."""
-    text = html_module.unescape(re.sub(r"<[^>]+>", " ", html_str or ""))
-    return re.findall(r"\w+", text.lower())
+def _nfc(text: str) -> str:
+    import unicodedata
+    return unicodedata.normalize("NFC", text or "")
+
+
+def _norm_visible_text(text: str) -> str:
+    """Unicode NFC plus HTML-equivalent whitespace collapsing. Order is preserved."""
+    return re.sub(r"\s+", " ", _nfc(text)).strip()
+
+
+def _norm_code_text(text: str) -> str:
+    """Unicode NFC only. Internal whitespace, newlines, and token order are significant."""
+    return _nfc(text).strip("\n")
+
+
+def _revision_content_key(html_str: str) -> tuple[str, tuple[str, ...], tuple[str, ...]]:
+    """Exact ordered fingerprint of revision-visible prose and code.
+
+    Returns (visible_text, code_blocks, inline_codes). Layout/markup is ignored;
+    there is no word-count tolerance and no bag-of-words comparison.
+    """
+    from html.parser import HTMLParser
+
+    class _Canon(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.visible: list[str] = []
+            self.blocks: list[str] = []
+            self.inlines: list[str] = []
+            self.pre = 0
+            self.code = 0
+            self.buf: list[str] = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "pre":
+                self.pre += 1
+                if self.code == 0:
+                    self.buf = []
+            elif tag == "code":
+                self.code += 1
+                if self.code == 1:
+                    self.buf = []
+
+        def handle_endtag(self, tag):
+            if tag == "code" and self.code:
+                self.code -= 1
+                if self.code == 0:
+                    text = _norm_code_text("".join(self.buf))
+                    if self.pre:
+                        self.blocks.append(text)
+                    else:
+                        self.inlines.append(text)
+                    self.buf = []
+            elif tag == "pre" and self.pre:
+                self.pre -= 1
+                if self.code == 0 and self.buf:
+                    self.blocks.append(_norm_code_text("".join(self.buf)))
+                    self.buf = []
+
+        def handle_data(self, data):
+            if self.code or self.pre:
+                self.buf.append(data)
+            else:
+                self.visible.append(data)
+
+    parser = _Canon()
+    parser.feed(html_str or "")
+    parser.close()
+    return (
+        _norm_visible_text(" ".join(parser.visible)),
+        tuple(parser.blocks),
+        tuple(parser.inlines),
+    )
 
 
 def html_revise_node(state: AgentState) -> dict:
     """Layout revision of the sanitized article-body fragment only. Trusted shell is immutable."""
-    from collections import Counter
     t0 = time.time()
     log = get_logger("html_revise")
     original_body = state.get("article_body_html") or ""
@@ -1428,11 +1495,15 @@ def html_revise_node(state: AgentState) -> dict:
                 "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
     del raw_revised
 
-    before, after = Counter(_visible_words(original_body)), Counter(_visible_words(revised_frag.html))
-    drift = sum((before - after).values()) + sum((after - before).values())
-    if drift > 2 or not revised_frag.html.strip():
-        errors.append(f"html_revise: revision DISCARDED (content drift={drift} words); kept original")
-        log.warning("html_revise.discarded", run_id=state["run_id"], drift=drift)
+    if not revised_frag.html.strip():
+        errors.append("html_revise: revision DISCARDED (empty body); kept original")
+        log.warning("html_revise.discarded", run_id=state["run_id"], reason="empty")
+        return {**base_out, "html_output": original_html, "article_body_html": original_body,
+                "html_sha256": state.get("html_sha256"),
+                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
+    if _revision_content_key(original_body) != _revision_content_key(revised_frag.html):
+        errors.append("html_revise: revision DISCARDED (visible text/code changed); kept original")
+        log.warning("html_revise.discarded", run_id=state["run_id"], reason="content_changed")
         return {**base_out, "html_output": original_html, "article_body_html": original_body,
                 "html_sha256": state.get("html_sha256"),
                 "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
@@ -1450,7 +1521,7 @@ def html_revise_node(state: AgentState) -> dict:
                 "html_sha256": state.get("html_sha256"),
                 "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
 
-    log.info("html_revise.applied", run_id=state["run_id"], drift=drift, cost=cost,
+    log.info("html_revise.applied", run_id=state["run_id"], cost=cost,
              html_sha256=article.sha256)
     return {
         **base_out,
