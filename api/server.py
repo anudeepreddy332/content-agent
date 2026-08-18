@@ -36,6 +36,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse, FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 # HITL mode + mandatory review must be set BEFORE the graph/nodes decide behavior.
@@ -47,6 +48,7 @@ from langgraph.types import Command
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from agent.graph import build_graph
+from agent.html_policy import REVIEWER_APP_CSP
 from main import _build_initial_state, _make_slug, _write_telemetry
 from observability.logger import get_logger
 from observability.tracing import setup_langsmith_tracing
@@ -267,6 +269,27 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="content-agent HITL API", lifespan=lifespan)
 
+REVIEWER_SECURITY_HEADERS = {
+    "Content-Security-Policy": REVIEWER_APP_CSP,
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Permissions-Policy": "geolocation=(), camera=(), microphone=(), payment=(), usb=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Cache-Control": "no-store",
+}
+
+
+@app.middleware("http")
+async def reviewer_security_headers(request, call_next):
+    response = await call_next(request)
+    for key, value in REVIEWER_SECURITY_HEADERS.items():
+        response.headers[key] = value
+    if request.url.path.endswith("/events"):
+        response.headers["X-Accel-Buffering"] = "no"
+    return response
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -379,16 +402,8 @@ def ui_feedback(run_id: str, body: Feedback):
     return _resume_stream(run_id, {"action": "feedback", "feedback": body.feedback})
 
 
-@app.get("/ui/runs/{run_id}/events")
-async def ui_events(run_id: str, token: str = ""):
-    # EventSource cannot set headers, so the bearer token arrives as a query
-    # param. Same fail-closed compare_digest check as require_auth. (Query-param
-    # tokens can land in access logs; acceptable for a single-user demo.)
-    expected = os.environ.get("API_BEARER_TOKEN")
-    if not expected:
-        raise HTTPException(503, "API_BEARER_TOKEN not configured on the server")
-    if not hmac.compare_digest(token, expected):
-        raise HTTPException(401, "invalid or missing token")
+@app.get("/ui/runs/{run_id}/events", dependencies=[Depends(require_auth)])
+async def ui_events(run_id: str):
     with LOCK:
         reg = REGISTRY.get(run_id)
     if not reg:
@@ -415,37 +430,23 @@ async def ui_events(run_id: str, token: str = ""):
     return StreamingResponse(gen(), media_type="text/event-stream")
 
 
-@app.get("/ui/runs/{run_id}/preview", include_in_schema=False)
-def ui_preview(run_id: str, token: str = ""):
-    """Render the run's current html_output so a reviewer can open the
-    not-yet-published article in a new tab at gate 2. Same query-param
-    bearer check as the SSE endpoint (EventSource/plain links can't set
-    headers)."""
-    expected = os.environ.get("API_BEARER_TOKEN")
-    if not expected:
-        raise HTTPException(503, "API_BEARER_TOKEN not configured on the server")
-    if not hmac.compare_digest(token, expected):
-        raise HTTPException(401, "invalid or missing token")
-    with LOCK:
-        reg = REGISTRY.get(run_id)
-        if not reg:
-            raise HTTPException(404, "unknown run_id")
-        html = (reg.get("result") or {}).get("html_output")
-        if not html:
-            payload = reg.get("interrupt_payload") or {}
-            if payload.get("type") == "hitl_html_review":
-                html = payload.get("html_output")
-    if not html:
-        raise HTTPException(404, "no html_output available for this run")
-    return Response(content=html, media_type="text/html")
+def _ls_remote_main_sha(repo_path: str, remote: str) -> str:
+    proc = subprocess.run(
+        ["git", "ls-remote", remote, "refs/heads/main"],
+        cwd=repo_path, capture_output=True, text=True, timeout=30,
+    )
+    if proc.returncode != 0:
+        raise HTTPException(500, proc.stderr.strip() or "git ls-remote failed")
+    line = (proc.stdout or "").splitlines()[0] if proc.stdout else ""
+    sha = line.split()[0] if line else ""
+    if len(sha) != 40:
+        raise HTTPException(500, "could not read remote main SHA")
+    return sha
 
 
 @app.post("/ui/runs/{run_id}/publish", dependencies=[Depends(require_auth)])
 def ui_publish(run_id: str):
-    """Human-triggered cloud publish: push the fork clone's local merge
-    (already made by git_node, which never pushes) to its remote so Netlify
-    redeploys. git_node itself is untouched — this is a separate, explicit
-    step, preserving the no-autonomous-publish property."""
+    """Push the approved commit SHA to remote main. Never force-push; never push ambient main."""
     from config import THEMACHINIST_REPO_PATH
 
     with LOCK:
@@ -458,13 +459,29 @@ def ui_publish(run_id: str):
             raise HTTPException(409, f"run git_status is {git_status!r}, "
                                       "not 'merged' or 'tagged_and_merged'")
         slug = result.get("slug")
+        git_commit_sha = result.get("git_commit_sha")
+        expected_remote = result.get("publish_expected_remote_sha")
+
+    if not git_commit_sha or not expected_remote:
+        raise HTTPException(409, "missing git_commit_sha or publish_expected_remote_sha")
 
     remote = os.environ.get("PUBLISH_REMOTE", "origin")
     netlify_base = os.environ.get("NETLIFY_BASE_URL", "https://tmw-demo-site.netlify.app").rstrip("/")
 
     try:
+        remote_sha = _ls_remote_main_sha(THEMACHINIST_REPO_PATH, remote)
+    except HTTPException:
+        raise
+    except (subprocess.TimeoutExpired, OSError) as e:
+        log.error("ui.publish_error", run_id=run_id, remote=remote, error=str(e))
+        raise HTTPException(500, f"git ls-remote could not run: {e}")
+
+    if remote_sha != expected_remote:
+        raise HTTPException(409, "remote main changed since approval; push aborted")
+
+    try:
         proc = subprocess.run(
-            ["git", "push", remote, "main"],
+            ["git", "push", remote, f"{git_commit_sha}:refs/heads/main"],
             cwd=THEMACHINIST_REPO_PATH, capture_output=True, text=True, timeout=30,
         )
     except (subprocess.TimeoutExpired, OSError) as e:
@@ -476,9 +493,19 @@ def ui_publish(run_id: str):
                    returncode=proc.returncode, stderr=proc.stderr)
         raise HTTPException(500, proc.stderr.strip() or "git push failed")
 
+    try:
+        after = _ls_remote_main_sha(THEMACHINIST_REPO_PATH, remote)
+    except HTTPException:
+        raise
+    except (subprocess.TimeoutExpired, OSError) as e:
+        raise HTTPException(500, f"git ls-remote could not run after push: {e}")
+    if after != git_commit_sha:
+        raise HTTPException(500, "remote main does not match approved git_commit_sha")
+
     live_url = f"{netlify_base}/{slug}"
-    log.info("ui.publish", run_id=run_id, slug=slug, remote=remote, live_url=live_url)
-    return {"live_url": live_url}
+    log.info("ui.publish", run_id=run_id, slug=slug, remote=remote,
+             git_commit_sha=git_commit_sha, live_url=live_url)
+    return {"live_url": live_url, "git_commit_sha": git_commit_sha}
 
 
 @app.get("/", include_in_schema=False)
@@ -487,3 +514,6 @@ def demo_index():
     if not index.exists():
         raise HTTPException(404, "demo UI not installed (static/index.html missing)")
     return FileResponse(index)
+
+
+app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")

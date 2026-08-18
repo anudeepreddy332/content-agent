@@ -13,6 +13,7 @@ Each node signature: (state: AgentState) -> dict
 import os
 import json
 import time
+import hashlib
 from pathlib import Path
 from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
 from dotenv import load_dotenv
@@ -20,6 +21,19 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 load_dotenv()
 
 from agent.state import AgentState, DraftSections
+from agent.html_policy import (
+    HTML_POLICY_VERSION,
+    PolicyError,
+    assemble_trusted_article,
+    build_citation_items,
+    normalize_citation_url,
+    reassemble_from_body,
+    render_citations_html,
+    render_markdown_review_html,
+    safe_grounding_rows,
+    sanitize_fragment,
+    sha256_utf8,
+)
 from tools.web_search import web_search
 from tools.query_kb import query_kb
 from config import (
@@ -579,57 +593,45 @@ def _build_source_context(web_sources: list, kb_results: list) -> str:
         parts.append(f"[KB] {k['source']}\n{k['text'][:KB_CHARS]}")
     return "\n\n".join(parts) if parts else "No sources available."
 
-def _build_citations(grounding_report: list, web_sources: list) -> str:
-    """
-    Builds the <ol> HTML block for the sources section of the article,
-    Called by html_gen_node - output is HTML, not plain text.
+def _build_citations(grounding_report: list, web_sources: list, kb_results: list | None = None) -> str:
+    """Trusted citation HTML. Verifier strings are not URL authority."""
+    items = build_citation_items(grounding_report, web_sources, kb_results)
+    return render_citations_html(items)
 
-    Priority order:
-        1. grounding_report entries with status "verified" or "weak", deduped by URL
-        2. If none, fall back to top-3 web_sources by score
-        3. If web_sources also empty, return a single fallback <li>
-    """
-    import urllib.parse
 
-    def _domain(url: str) -> str:
+def _capture_remote_main_sha() -> str | None:
+    """Best-effort local tracking-ref snapshot. Does not contact a paid provider."""
+    try:
+        import git
+        from config import THEMACHINIST_REPO_PATH
+        repo = git.Repo(str(THEMACHINIST_REPO_PATH))
+        remote = os.environ.get("PUBLISH_REMOTE", "origin")
         try:
-            parsed = urllib.parse.urlparse(url)
-            domain = parsed.netloc.replace("www.", "")
-            return domain if domain else url
+            return repo.commit(f"{remote}/main").hexsha
         except Exception:
-            return url
+            if "main" in repo.heads:
+                return repo.heads.main.commit.hexsha
+    except Exception:
+        return None
+    return None
 
-    seen_urls: set[str] = set()
-    items: list[str] = []
 
-    for entry in grounding_report:
-        if entry.get("status") not in ("verified", "weak"):
-            continue
-        url = entry.get("source_url")
-        if not url or url in seen_urls:
-            continue
-        seen_urls.add(url)
-        items.append(
-            f'<li><a href="{url}" target="_blank" rel="noopener noreferrer">'
-            f'{_domain(url)}</a></li>'
-        )
-    if not items:
-        sorted_sources = sorted(web_sources, key=lambda s: s.get("score", 0), reverse=True)
-        for s in sorted_sources[:3]:
-            url = s.get("url", "")
-            if not url or url in seen_urls:
-                continue
-            seen_urls.add(url)
-            title = s.get("title") or _domain(url)
-            items.append(
-                f'<li><a href="{url}" target="_blank" rel="noopener noreferrer">'
-                f'{title}</a></li>'
-            )
+def _atomic_write_utf8(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = text.encode("utf-8")
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_bytes(data)
+    os.replace(tmp, path)
 
-    if not items:
-        return "<li>Sources retrieved via Tavily web search.</li>"
 
-    return "\n                    ".join(items)
+_ALLOWED_CODE_LANG = {
+    "python": "language-python",
+    "text": "language-text",
+    "json": "language-json",
+    "bash": "language-bash",
+    "sh": "language-bash",
+    "sql": "language-sql",
+}
 
 
 
@@ -698,16 +700,21 @@ def _resolve_attributions(report: list[dict], web_sources: list, kb_results: lis
                exact-chunk disambiguation is deferred to M5b (requires verifier-
                visible source tagging, which re-baselines metrics).
 
-       Matching is normalization-tolerant (lowercase, trailing-slash strip) — safe
-       because collision risk within one run's <=15-source set is nil.
+       Web matching uses html_policy.normalize_citation_url only: scheme/host
+       case folding, IDNA, default port 443, empty path → `/`, exact path and
+       query, no fragment. Trailing-slash and path-case differences do not match.
        """
-    def _norm(u: str) -> str:
-        return (u or "").strip().lower().rstrip("/")
-
-    web_index = {_norm(s.get("url", "")): s.get("url") for s in web_sources if s.get("url")}
+    web_index: dict[str, str] = {}
+    for source in web_sources:
+        key = normalize_citation_url(str(source.get("url") or ""))
+        if key:
+            web_index[key] = key
     kb_index: dict[str, list[int]] = {}
     for k in kb_results:
         kb_index.setdefault(k.get("source", "unknown"), []).append(k.get("chunk_index", 0))
+
+    def _kb_key(name: str) -> str:
+        return (name or "").strip().lower()
 
     for entry in report:
         su = entry.get("source_url")
@@ -715,13 +722,14 @@ def _resolve_attributions(report: list[dict], web_sources: list, kb_results: lis
             entry["source_kind"] = "none"
             entry["source_ref"] = None
             continue
-        nsu = _norm(su)
-        if nsu in web_index:
+        web_key = normalize_citation_url(str(su))
+        if web_key and web_key in web_index:
             entry["source_kind"] = "web"
-            entry["source_ref"] = web_index[nsu]
+            entry["source_ref"] = web_index[web_key]
             continue
+        nsu = _kb_key(str(su))
         kb_match = next(
-            (src for src in kb_index if nsu == _norm(src) or _norm(src) in nsu or nsu in _norm(src)),
+            (src for src in kb_index if nsu == _kb_key(src) or _kb_key(src) in nsu or nsu in _kb_key(src)),
             None,
         )
         if kb_match:
@@ -1005,12 +1013,15 @@ def hitl_node(state: AgentState) -> dict:
             "run_id": state["run_id"],
             "topic": state["topic"],
             "slug": state["slug"],
-            "draft_markdown": state["draft_markdown"],
-            "grounding_report": state.get("grounding_report", []),
+            "draft_review_html": render_markdown_review_html(state.get("draft_markdown") or ""),
+            "html_policy_version": HTML_POLICY_VERSION,
             "grounding_score": state.get("grounding_score", 0.0),
             "reflection_score": state.get("reflection_score", 0),
             "reflection_notes": state.get("reflection_notes", ""),
-            "error_log": state.get("error_log", []),
+            "review_claims": safe_grounding_rows(
+                state.get("grounding_report", []),
+                state.get("web_sources", []),
+            ),
         }) or {}
         action = decision.get("action")
         if action == "approve":
@@ -1088,12 +1099,14 @@ def _render_code_snippets(raw: str) -> str:
 
     blocks = []
     for lang, content in matches:
-        lang = lang.strip() or "text"
+        lang_key = (lang.strip() or "text").lower()
+        lang_class = _ALLOWED_CODE_LANG.get(lang_key, "language-text")
+        label = lang_key.upper() if lang_key in _ALLOWED_CODE_LANG else "TEXT"
         escaped = html_module.escape(content.strip())
         blocks.append(
             f'<div class="sl-code-block">'
-            f'<div class="sl-code-label">{lang.upper()}</div>'
-            f'<pre><code class="language-{lang}">{escaped}</code></pre>'
+            f'<div class="sl-code-label">{label}</div>'
+            f'<pre><code class="{lang_class}">{escaped}</code></pre>'
             f'</div>'
         )
     return "\n\n".join(blocks)
@@ -1167,7 +1180,14 @@ def hitl_html_node(state: AgentState) -> dict:
         return {"html_review_status": "rejected"}
 
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
-        return {"html_review_status": "approved"}
+        html = state.get("html_output") or ""
+        sha = state.get("html_sha256") or (sha256_utf8(html) if html else None)
+        if not html or not sha or sha != sha256_utf8(html):
+            return {"html_review_status": "rejected"}
+        return {
+            "html_review_status": "approved",
+            "approved_html_sha256": sha,
+        }
 
     if os.environ.get("HITL_MODE") == "api":
         from langgraph.types import interrupt
@@ -1178,12 +1198,21 @@ def hitl_html_node(state: AgentState) -> dict:
             "slug": state["slug"],
             "html_filename": state.get("html_filename"),
             "html_output": state.get("html_output"),
+            "html_sha256": state.get("html_sha256"),
+            "html_policy_version": state.get("html_policy_version") or HTML_POLICY_VERSION,
             "validation_warnings": [e for e in state.get("error_log", []) if "html_gen" in e],
             "grounding_score": state.get("grounding_score", 0.0),
         }) or {}
         action = decision.get("action")
         if action == "approve":
-            return {"html_review_status": "approved"}
+            html = state.get("html_output") or ""
+            sha = state.get("html_sha256")
+            if not html or not sha or sha != sha256_utf8(html):
+                return {"html_review_status": "rejected"}
+            return {
+                "html_review_status": "approved",
+                "approved_html_sha256": sha,
+            }
         # /feedback endpoint sends action="feedback"; accept "request_changes" as an alias.
         if action in ("request_changes", "feedback"):
             note = (decision.get("feedback") or "").strip()
@@ -1207,7 +1236,14 @@ def hitl_html_node(state: AgentState) -> dict:
     while True:
         choice = input("\n[a]pprove (publish) / [c]hanges to LAYOUT (revise) / [r]eject (discard): ").strip().lower()
         if choice == "a":
-            return {"html_review_status": "approved"}
+            html = state.get("html_output") or ""
+            sha = state.get("html_sha256") or (sha256_utf8(html) if html else None)
+            if not html or not sha or sha != sha256_utf8(html):
+                return {"html_review_status": "rejected"}
+            return {
+                "html_review_status": "approved",
+                "approved_html_sha256": sha,
+            }
         if choice == "r":
             return {"html_review_status": "rejected"}
         if choice == "c":
@@ -1231,149 +1267,106 @@ def route_after_html_review(state: AgentState) -> str:
 
 # NODE: html_gen_node
 
-def html_gen_node(state: AgentState) -> dict:
-    log = get_logger("html_gen_node")
-    t_start = time.time()
-
-    if state.get("total_cost_usd", 0) >= COST_GATE_USD:
-        log.warning("html_gen.cost_gate_hit", run_id=state["run_id"])
-        return {"html_output": None, "html_filename": None,
-                "latency_ms": {**state.get("latency_ms", {}), "html_gen": 0}}
-
-    template_raw = Path("prompts/html_template.md").read_text(encoding='utf-8')
-
-    if "```html" in template_raw:
-        template = template_raw.split("```html", 1)[1]
-        template = template.split("```", 1)[0].strip()
-    else:
-        template = template_raw.strip()
-
-
-
-    client = _get_client()
-    draft = state.get("draft_sections", {})
-    topic = state["topic"]
-    topic_raw = topic
-    run_id = state["run_id"]
-
-    # Python renders 3 sections deterministically (no LLM, no tokens)
-    problem_framing_html = _render_problem_framing(
-        draft.get("problem_framing", "No problem framing available.")
-    )
-    code_snippets_html = _render_code_snippets(draft.get("code_snippets", ""))
-    takeaways_html = _render_takeaways(draft.get("takeaways", ""))
-
-    # LLM renders only technical_dive (mixed prose/headings/callouts — genuinely complex)
-    log.info("html_gen.technical_dive_start", run_id=run_id)
-    technical_dive_html, td_tokens, td_cost = _render_technical_dive_via_llm(
-        topic=topic,
-        technical_dive=draft.get("technical_dive", ""),
-        client=client,
-        run_id=run_id,
-    )
-
-    citations_html = _build_citations(
-        state.get("grounding_report", []),
-        state.get("web_sources", []),
-    )
-
-    topic_short = topic.lower()
-
-    word_count = len(state.get("draft_markdown", "").split())
-    read_time = str(max(5, word_count // 200))
-
+def _article_shell_fields(state: AgentState) -> dict:
+    draft = state.get("draft_sections") or {}
     series_context = state.get("series_context", "Learning Log")
-    if "·" in series_context:
-        series_label = series_context.split("·")[0].strip()
-    else:
-        series_label = series_context
-    breadcrumb_section = series_label
-
-    # Meta description: first 155 chars of problem_framing, ending at a sentence boundary
+    series_label = series_context.split("·")[0].strip() if "·" in series_context else series_context
     raw_pf = draft.get("problem_framing", "")
     meta_desc = raw_pf[:155]
     if len(raw_pf) > 155 and "." in meta_desc:
         meta_desc = meta_desc[:meta_desc.rfind(".") + 1]
-    meta_desc = html_module.escape(meta_desc)
-
-    # Substitute all placeholders — order matters for ones that appear multiple times
-
-    html = template
-    html = html.replace("{{TOPIC}}", html_module.escape(topic))
-    html = html.replace("{{TOPIC_SHORT}}", html_module.escape(topic_short))
-    html = html.replace("{{SLUG}}", state["slug"])
-    html = html.replace("{{META_DESCRIPTION}}", meta_desc)
-    html = html.replace("{{SERIES_LABEL}}", html_module.escape(series_label))
-    html = html.replace("{{BREADCRUMB_SECTION}}", html_module.escape(breadcrumb_section))
-    html = html.replace("{{DIFFICULTY}}", "Intermediate")
-    html = html.replace("{{READ_TIME}}", read_time)
-    html = html.replace("{{PROBLEM_FRAMING}}", problem_framing_html)
-    html = html.replace("{{TECHNICAL_DIVE}}", technical_dive_html)
-    html = html.replace("{{CODE_SNIPPETS}}", code_snippets_html)
-    html = html.replace("{{TAKEAWAYS}}", takeaways_html)
-    html = html.replace("{{SOURCES}}", citations_html)
+    word_count = len((state.get("draft_markdown") or "").split())
+    return {
+        "topic": state["topic"],
+        "slug": state["slug"],
+        "meta_description": meta_desc,
+        "series_label": series_label,
+        "breadcrumb_section": series_label,
+        "read_time": str(max(5, word_count // 200)),
+    }
 
 
-    # Fix HTML entities inside the LD+JSON block — JSON must not contain &amp; etc.
-    import re
-    def _fix_ldjson(match):
-        return match.group(0).replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
-    html = re.sub(
-        r'<script type="application/ld\+json">.*?</script>',
-        _fix_ldjson,
-        html,
-        flags=re.DOTALL
-    )
+def html_gen_node(state: AgentState) -> dict:
+    log = get_logger("html_gen_node")
+    t_start = time.time()
+    filename = f"{state['slug']}.html"
+    existing_latency = dict(state.get("latency_ms") or {})
+    error_log = list(state.get("error_log") or [])
 
-    # Validate
-    errors = []
-    if "<!DOCTYPE html>" not in html:
-        errors.append("Missing DOCTYPE")
-    if 'id="main"' not in html:
-        errors.append('Missing id="main"')
-    if "<h1>" not in html:
-        errors.append("Missing h1")
-    remaining = re.findall(r'\{\{[A-Z_]+\}\}', html)
-    if remaining:
-        errors.append(f"Unreplaced placeholders: {remaining}")
+    if state.get("total_cost_usd", 0) >= COST_GATE_USD:
+        log.warning("html_gen.cost_gate_hit", run_id=state["run_id"])
+        existing_latency["html_gen"] = 0
+        return {"html_output": None, "html_filename": None, "article_body_html": None,
+                "html_sha256": None, "html_policy_version": HTML_POLICY_VERSION,
+                "approved_html_sha256": None,
+                "latency_ms": existing_latency}
+
+    client = _get_client()
+    draft = state.get("draft_sections", {})
+    topic = state["topic"]
+    run_id = state["run_id"]
+    td_tokens, td_cost = 0, 0.0
+
+    try:
+        framing = sanitize_fragment(_render_problem_framing(
+            draft.get("problem_framing", "No problem framing available.")
+        ))
+        code = sanitize_fragment(_render_code_snippets(draft.get("code_snippets", "")))
+        takeaways = sanitize_fragment(_render_takeaways(draft.get("takeaways", "")))
+
+        log.info("html_gen.technical_dive_start", run_id=run_id)
+        raw_td, td_tokens, td_cost = _render_technical_dive_via_llm(
+            topic=topic,
+            technical_dive=draft.get("technical_dive", ""),
+            client=client,
+            run_id=run_id,
+        )
+        dive = sanitize_fragment(raw_td)
+        del raw_td
+
+        citations_html = _build_citations(
+            state.get("grounding_report", []),
+            state.get("web_sources", []),
+            state.get("kb_results", []),
+        )
+        article = assemble_trusted_article(
+            **_article_shell_fields(state),
+            problem_framing=framing,
+            technical_dive=dive,
+            code_snippets=code,
+            takeaways=takeaways,
+            citations_html=citations_html,
+        )
+    except PolicyError as exc:
+        existing_latency["html_gen"] = int((time.time() - t_start) * 1000)
+        error_log.append(f"[html_gen] policy failure: {exc}")
+        log.error("html_gen.policy_failed", run_id=run_id, error=str(exc))
+        return {
+            "html_output": None,
+            "html_filename": None,
+            "article_body_html": None,
+            "html_sha256": None,
+            "html_policy_version": HTML_POLICY_VERSION,
+            "approved_html_sha256": None,
+            "total_tokens": state.get("total_tokens", 0) + td_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
+            "latency_ms": existing_latency,
+            "error_log": error_log,
+        }
 
     latency = int((time.time() - t_start) * 1000)
-
-    # PUBLISHED filename — ALWAYS the canonical <slug>.html. git_node writes this into
-    # the website repo via state["html_filename"], so republishing the same topic targets
-    # the same file and git sees a MODIFICATION (-> tagged_and_merged), not a new file.
-    # B6 finding: previously this name took a run-id suffix whenever a LOCAL archive copy
-    # already existed, leaking local-archive collision-avoidance into the published URL.
-    filename = f"{state['slug']}.html"
-
-    # LOCAL archive copy (debug history) — decoupled from the published name. Keep a
-    # per-run-unique name here so we never clobber a prior run's HTML in outputs/articles/.
-    # This path is write-only and never reaches git_node.
-    archive_name = filename
-    archive_path = Path("outputs/articles") / archive_name
-    if archive_path.exists():
-        suffix = state["run_id"].split("-")[-1][:6]
-        archive_name = f"{state['slug']}-{suffix}.html"
-    archive_path = Path("outputs/articles") / archive_name
-    archive_path.parent.mkdir(parents=True, exist_ok=True)
-    archive_path.write_text(html, encoding="utf-8")
-
-
-    existing_latency = state.get("latency_ms", {})
     existing_latency["html_gen"] = latency
-
-    error_log = state.get("error_log", [])
-    if errors:
-        error_log.append(f"[html_gen] Validation warnings: {errors}")
-
     log.info("html_gen.complete", run_id=run_id, filename=filename,
-             archive=archive_name,
-             validation_errors=errors, latency_ms=latency,
+             html_sha256=article.sha256, latency_ms=latency,
              td_tokens=td_tokens, td_cost=round(td_cost, 5))
-
     return {
-        "html_output": html,
+        "html_output": article.html,
         "html_filename": filename,
+        "article_body_html": article.body_html,
+        "html_sha256": article.sha256,
+        "html_policy_version": article.policy_version,
+        "approved_html_sha256": None,
+        "publish_expected_remote_sha": _capture_remote_main_sha(),
         "total_tokens": state.get("total_tokens", 0) + td_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
         "latency_ms": existing_latency,
@@ -1381,69 +1374,190 @@ def html_gen_node(state: AgentState) -> dict:
     }
 
 
-def _visible_words(html_str: str) -> list:
-    """Lowercased word tokens of the visible text (tags stripped) — used to prove an HTML
-    revision changed only markup/layout, never content."""
-    text = html_module.unescape(re.sub(r"<[^>]+>", " ", html_str or ""))
-    return re.findall(r"\w+", text.lower())
+def _nfc(text: str) -> str:
+    import unicodedata
+    return unicodedata.normalize("NFC", text or "")
+
+
+def _norm_visible_text(text: str) -> str:
+    """Unicode NFC plus HTML-equivalent whitespace collapsing. Order is preserved."""
+    return re.sub(r"\s+", " ", _nfc(text)).strip()
+
+
+def _norm_code_text(text: str) -> str:
+    """Unicode NFC only. Internal whitespace, newlines, and token order are significant."""
+    return _nfc(text).strip("\n")
+
+
+def _compact_revision_events(events: list[tuple[str, str]]) -> tuple[tuple[str, str], ...]:
+    """Merge adjacent TEXT events (NFC + whitespace collapse). Code events stay in place."""
+    out: list[tuple[str, str]] = []
+    text_acc: list[str] = []
+
+    def flush_text() -> None:
+        if not text_acc:
+            return
+        merged = _norm_visible_text(" ".join(text_acc))
+        text_acc.clear()
+        if merged:
+            out.append(("text", merged))
+
+    for kind, value in events:
+        if kind == "text":
+            text_acc.append(value)
+        else:
+            flush_text()
+            out.append((kind, value))
+    flush_text()
+    return tuple(out)
+
+
+def _revision_content_key(html_str: str) -> tuple[tuple[str, str], ...]:
+    """Ordered stream of visible prose and code. Layout/markup is ignored.
+
+    Events are ("text", ...), ("inline", ...), or ("block", ...) in document order.
+    Adjacent text events are merged after NFC/whitespace collapse so wrapping a
+    sentence in <strong> does not change the stream; moving code relative to
+    prose does.
+    """
+    from html.parser import HTMLParser
+
+    class _Canon(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.events: list[tuple[str, str]] = []
+            self.pre = 0
+            self.code = 0
+            self.buf: list[str] = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "pre":
+                self.pre += 1
+                if self.code == 0:
+                    self.buf = []
+            elif tag == "code":
+                self.code += 1
+                if self.code == 1:
+                    self.buf = []
+
+        def handle_endtag(self, tag):
+            if tag == "code" and self.code:
+                self.code -= 1
+                if self.code == 0:
+                    text = _norm_code_text("".join(self.buf))
+                    kind = "block" if self.pre else "inline"
+                    self.events.append((kind, text))
+                    self.buf = []
+            elif tag == "pre" and self.pre:
+                self.pre -= 1
+                if self.code == 0 and self.buf:
+                    self.events.append(("block", _norm_code_text("".join(self.buf))))
+                    self.buf = []
+
+        def handle_data(self, data):
+            if self.code or self.pre:
+                self.buf.append(data)
+            else:
+                self.events.append(("text", data))
+
+    parser = _Canon()
+    parser.feed(html_str or "")
+    parser.close()
+    return _compact_revision_events(parser.events)
 
 
 def html_revise_node(state: AgentState) -> dict:
-    """
-    P2 layout revision. Applies the reviewer's design/structure/formatting/positioning note to
-    the already-rendered HTML via ONE constrained LLM pass, then loops back to hitl_html.
-    Content is frozen after the draft gate; this pass must not alter text/claims/code/sources.
-    A word-multiset guard ENFORCES that: if the visible word content changes, the revision is
-    DISCARDED and the original HTML is kept (with a warning), so the freeze can't be violated
-    even by a misbehaving model.
-    """
-    from collections import Counter
+    """Layout revision of the sanitized article-body fragment only. Trusted shell is immutable."""
     t0 = time.time()
     log = get_logger("html_revise")
-    original = state["html_output"]
+    original_body = state.get("article_body_html") or ""
+    original_html = state.get("html_output") or ""
     note = state.get("html_feedback") or ""
+    errors = list(state.get("error_log") or [])
+    citations_html = _build_citations(
+        state.get("grounding_report", []),
+        state.get("web_sources", []),
+        state.get("kb_results", []),
+    )
 
     system = Path("prompts/html_revise_system.md").read_text(encoding="utf-8")
     user = (
-        "Apply ONLY these design/structure/formatting/positioning changes. Do NOT add, remove, "
-        "reword, or reorder any sentence, claim, code line, or source — the article text is FROZEN.\n\n"
+        "Apply ONLY these design/structure/formatting/positioning changes to the ARTICLE BODY "
+        "fragment. Do NOT add, remove, reword, or reorder any sentence, claim, or code line. "
+        "Do NOT include <html>, <head>, <body>, navigation, CSS, citations, footer, or JSON-LD. "
+        "Return ONLY the revised body HTML fragment.\n\n"
         f"CHANGES REQUESTED:\n{note}\n\n"
-        f"CURRENT HTML (return the COMPLETE revised document, HTML only, no commentary):\n{original}"
+        f"CURRENT BODY HTML:\n{original_body}"
     )
     client = _get_client()
     resp = _llm_call(client, model=DEEPSEEK_MODEL,
                      messages=[{"role": "system", "content": system},
                                {"role": "user", "content": user}],
                      temperature=0)
-    revised = re.sub(r"^```(?:html)?\s*|\s*```$", "", resp.choices[0].message.content.strip()).strip()
-
+    raw_revised = re.sub(r"^```(?:html)?\s*|\s*```$", "", resp.choices[0].message.content.strip()).strip()
     usage = resp.usage
     cost = round(usage.prompt_tokens / 1_000_000 * DEEPSEEK_INPUT_COST_PER_M
                  + usage.completion_tokens / 1_000_000 * DEEPSEEK_OUTPUT_COST_PER_M, 6)
 
-    # Content-freeze guard.
-    before, after = Counter(_visible_words(original)), Counter(_visible_words(revised))
-    drift = sum((before - after).values()) + sum((after - before).values())
-    looks_like_html = ("<html" in revised.lower()) or revised.lower().startswith("<!doctype")
-    errors = list(state.get("error_log", []))
-    if drift > 2 or not looks_like_html:
-        errors.append(f"html_revise: revision DISCARDED (content drift={drift} words / valid_html={looks_like_html}); kept original")
-        log.warning("html_revise.discarded", run_id=state["run_id"], drift=drift, valid_html=looks_like_html)
-        out_html = original
-    else:
-        log.info("html_revise.applied", run_id=state["run_id"], drift=drift, cost=cost)
-        out_html = revised
-
     lat = dict(state.get("latency_ms", {}))
     lat["html_revise"] = int((time.time() - t0) * 1000)
-    return {
-        "html_output": out_html,
+    base_out = {
         "html_feedback": None,
+        "approved_html_sha256": None,
         "total_tokens": state.get("total_tokens", 0) + usage.total_tokens,
         "total_cost_usd": round(state.get("total_cost_usd", 0.0) + cost, 6),
         "latency_ms": lat,
+    }
+    try:
+        revised_frag = sanitize_fragment(raw_revised)
+    except PolicyError as exc:
+        del raw_revised
+        errors.append(f"html_revise: revision DISCARDED (sanitizer: {exc}); kept original")
+        log.warning("html_revise.discarded", run_id=state["run_id"], reason="sanitizer")
+        return {**base_out, "html_output": original_html, "article_body_html": original_body,
+                "html_sha256": state.get("html_sha256"),
+                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
+    del raw_revised
+
+    if not revised_frag.html.strip():
+        errors.append("html_revise: revision DISCARDED (empty body); kept original")
+        log.warning("html_revise.discarded", run_id=state["run_id"], reason="empty")
+        return {**base_out, "html_output": original_html, "article_body_html": original_body,
+                "html_sha256": state.get("html_sha256"),
+                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
+    if _revision_content_key(original_body) != _revision_content_key(revised_frag.html):
+        errors.append("html_revise: revision DISCARDED (visible text/code changed); kept original")
+        log.warning("html_revise.discarded", run_id=state["run_id"], reason="content_changed")
+        return {**base_out, "html_output": original_html, "article_body_html": original_body,
+                "html_sha256": state.get("html_sha256"),
+                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
+
+    try:
+        article = reassemble_from_body(
+            **_article_shell_fields(state),
+            body_html=revised_frag.html,
+            citations_html=citations_html,
+        )
+    except PolicyError as exc:
+        errors.append(f"html_revise: revision DISCARDED (reassemble: {exc}); kept original")
+        log.warning("html_revise.discarded", run_id=state["run_id"], reason="reassemble")
+        return {**base_out, "html_output": original_html, "article_body_html": original_body,
+                "html_sha256": state.get("html_sha256"),
+                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
+
+    log.info("html_revise.applied", run_id=state["run_id"], cost=cost,
+             html_sha256=article.sha256)
+    return {
+        **base_out,
+        "html_output": article.html,
+        "article_body_html": article.body_html,
+        "html_sha256": article.sha256,
+        "html_policy_version": article.policy_version,
+        "publish_expected_remote_sha": _capture_remote_main_sha(),
         "error_log": errors,
     }
+
+
 
 
 _CATEGORY_LABELS = {
@@ -1547,29 +1661,48 @@ def git_node(state: AgentState) -> dict:
     html_content = state.get("html_output")
     topic = state.get("topic", slug)
 
-    existing_latency = state.get("latency_ms", {})
+    existing_latency = dict(state.get("latency_ms") or {})
     existing_latency["git"] = 0
-    error_log = state.get("error_log", [])
+    error_log = list(state.get("error_log") or [])
 
-    # Dry-run guard — if GIT_PUSH_ENABLED is not "true", log intent and skip
-    git_push_enabled = os.environ.get("GIT_PUSH_ENABLED", "false").lower() == "true"
-    if not git_push_enabled:
-        log.info("git.dry_run", run_id=state["run_id"], branch=branch,
-                 note="GIT_PUSH_ENABLED is not true — skipping git operations")
+    def _fail(msg: str) -> dict:
+        log.error("git.failed", run_id=state["run_id"], error=msg)
+        error_log.append(f"[git_node] {msg}")
         return {
             "branch_name": branch,
-            "git_status": "dry_run",
+            "git_status": "failed",
+            "git_commit_sha": None,
             "latency_ms": existing_latency,
             "error_log": error_log,
         }
 
-    # Validate
     if not html_content or not filename:
-        log.error("git.missing_content", run_id=state["run_id"])
-        error_log.append("[git_node] No HTML content or filename — nothing to push")
+        return _fail("No HTML content or filename — nothing to push")
+
+    current_sha = sha256_utf8(html_content)
+    approved = state.get("approved_html_sha256")
+    declared = state.get("html_sha256")
+    if not approved or approved != current_sha or declared != current_sha:
+        return _fail("approved_html_sha256 does not match current trusted HTML")
+
+    archive_path = Path("outputs/articles") / filename
+    try:
+        _atomic_write_utf8(archive_path, html_content)
+        archived = archive_path.read_bytes()
+        if hashlib.sha256(archived).hexdigest() != current_sha or archived != html_content.encode("utf-8"):
+            return _fail("archive bytes do not match approved HTML")
+    except Exception as e:
+        return _fail(f"archive write failed: {e}")
+
+    git_push_enabled = os.environ.get("GIT_PUSH_ENABLED", "false").lower() == "true"
+    if not git_push_enabled:
+        log.info("git.dry_run", run_id=state["run_id"], branch=branch,
+                 note="GIT_PUSH_ENABLED is not true — skipping git operations")
+        existing_latency["git"] = int((time.time() - t_start) * 1000)
         return {
             "branch_name": branch,
-            "git_status": "failed",
+            "git_status": "dry_run",
+            "git_commit_sha": None,
             "latency_ms": existing_latency,
             "error_log": error_log,
         }
@@ -1581,11 +1714,13 @@ def git_node(state: AgentState) -> dict:
         return {
             "branch_name": branch,
             "git_status": "failed",
+            "git_commit_sha": None,
             "latency_ms": existing_latency,
             "error_log": error_log,
         }
 
     git_status = "failed"
+    git_commit_sha = None
     repo = None
     original_branch = "main"
 
@@ -1594,8 +1729,11 @@ def git_node(state: AgentState) -> dict:
         original_branch = repo.active_branch.name
 
         # 1. Write html to the website repo
-        dest_path = repo_path/filename
-        dest_path.write_text(html_content, encoding='utf-8')
+        dest_path = repo_path / filename
+        _atomic_write_utf8(dest_path, html_content)
+        written = dest_path.read_bytes()
+        if hashlib.sha256(written).hexdigest() != current_sha or written != html_content.encode("utf-8"):
+            raise RuntimeError("git workspace bytes do not match approved HTML")
 
         # P2.2: insert/update the Learning Log card in index.html (same commit).
         index_ok, _index_action = _update_index_html(
@@ -1653,8 +1791,15 @@ def git_node(state: AgentState) -> dict:
         # 6. Delete the feature branch
         repo.delete_head(branch, force=True)
 
+        git_commit_sha = repo.heads.main.commit.hexsha
+        blob = repo.commit(git_commit_sha).tree / filename
+        committed = blob.data_stream.read()
+        if hashlib.sha256(committed).hexdigest() != current_sha:
+            raise RuntimeError("committed article bytes do not match approved HTML")
+
         log.info("git.success", run_id=state["run_id"], branch=branch,
-             status=git_status, changed_files=len(changed_files),
+             status=git_status, git_commit_sha=git_commit_sha,
+             changed_files=len(changed_files),
              new_files=len(new_files))
 
     except GitCommandError as e:
@@ -1679,6 +1824,7 @@ def git_node(state: AgentState) -> dict:
     return {
         "branch_name": branch,
         "git_status": git_status,
+        "git_commit_sha": git_commit_sha,
         "latency_ms": existing_latency,
         "error_log": error_log,
     }
