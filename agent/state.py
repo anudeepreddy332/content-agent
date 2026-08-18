@@ -51,6 +51,12 @@ class AgentState(TypedDict):
     # Output
     html_output: str | None
     html_filename: str | None
+    article_body_html: str | None
+    html_sha256: str | None
+    html_policy_version: str | None
+    approved_html_sha256: str | None
+    git_commit_sha: str | None
+    publish_expected_remote_sha: str | None
     branch_name: str | None
     git_status: Literal["not_started", "pushed", "merged", "tagged_and_merged", "failed"] | None
 

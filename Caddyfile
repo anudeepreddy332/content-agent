@@ -1,3 +1,15 @@
 {$DEMO_DOMAIN} {
-    reverse_proxy app:8000
+	header {
+		Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-src 'self'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; worker-src 'none'; media-src 'none'"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=(), usb=()"
+		Cross-Origin-Opener-Policy same-origin
+		Cross-Origin-Resource-Policy same-origin
+		Cache-Control no-store
+	}
+	@sse path_regexp ^/ui/runs/.+/events$
+	header @sse X-Accel-Buffering no
+	reverse_proxy app:8000
 }

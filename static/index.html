@@ -4,78 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>content-agent · live pipeline</title>
-<style>
-  :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#30363d;
-    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
-    --yellow:#d29922; --red:#f85149; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
-       font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
-  header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;
-         align-items:baseline;gap:14px}
-  header h1{font-size:18px;margin:0;letter-spacing:.3px}
-  header .sub{color:var(--muted);font-size:13px}
-  main{max-width:1100px;margin:0 auto;padding:24px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;
-        padding:18px;margin-bottom:18px}
-  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
-  input,textarea{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);
-        border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit}
-  textarea{resize:vertical;min-height:72px}
-  .row{display:flex;gap:14px;flex-wrap:wrap}
-  .row>div{flex:1;min-width:220px}
-  button{background:var(--accent);color:#06101f;border:0;border-radius:8px;
-         padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer}
-  button.secondary{background:#21262d;color:var(--fg);border:1px solid var(--line)}
-  button.danger{background:var(--red);color:#1b0606}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-  .hidden{display:none}
-  /* step tracker */
-  .steps{display:flex;flex-direction:column;gap:8px}
-  .step{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;
-        background:var(--panel2);border:1px solid transparent}
-  .step .dot{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
-  .step.active{border-color:var(--accent)}
-  .step.active .dot{background:var(--accent);box-shadow:0 0 0 4px rgba(88,166,255,.18)}
-  .step.done .dot{background:var(--green)}
-  .step .name{font-weight:600;text-transform:capitalize}
-  .step .meta{margin-left:auto;color:var(--muted);font-size:12px;font-family:var(--mono)}
-  .step .spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--accent);
-        border-radius:50%;animation:spin .7s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  /* grounding table */
-  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
-  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-  td:first-child{max-width:360px;word-break:break-word;line-height:1.5}
-  th{color:var(--muted);font-weight:600}
-  .tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px}
-  .tag.verified{background:rgba(63,185,80,.16);color:var(--green)}
-  .tag.weak{background:rgba(210,153,34,.16);color:var(--yellow)}
-  .tag.unverified{background:rgba(248,81,73,.16);color:var(--red)}
-  #g1meta{margin:10px 0 14px}
-  #g1grounding{margin-top:22px}
-  #g1grounding h3{font-size:13px;color:var(--muted);font-weight:600;margin:0 0 6px;
-        text-transform:uppercase;letter-spacing:.4px}
-  .draft{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:20px 22px;
-         max-height:460px;overflow:auto;line-height:1.7;font-size:14.5px}
-  .draft h1,.draft h2,.draft h3{font-size:16px;margin:22px 0 10px;line-height:1.4}
-  .draft h1:first-child,.draft h2:first-child,.draft h3:first-child{margin-top:0}
-  .draft p{margin:0 0 14px}
-  .draft ul,.draft ol{margin:0 0 14px;padding-left:22px}
-  .draft li{margin-bottom:6px}
-  .draft pre{background:#0a0e14;padding:12px 14px;border-radius:6px;overflow:auto;margin:0 0 14px}
-  .draft code{font-size:13px}
-  iframe{width:100%;height:480px;border:1px solid var(--line);border-radius:8px;background:#fff}
-  .pill{display:inline-block;font-family:var(--mono);font-size:12px;color:var(--muted)}
-  .warn{color:var(--yellow);font-size:13px;margin-top:8px}
-  .ok{color:var(--green)} .bad{color:var(--red)}
-  h2.section{font-size:15px;margin:0 0 4px} .muted{color:var(--muted);font-size:13px}
-  code{font-family:var(--mono);background:#0a0e14;padding:2px 6px;border-radius:5px}
-  a{color:var(--accent)}
-</style>
+<link rel="stylesheet" href="/static/app.css"/>
 </head>
 <body>
 <header>
@@ -84,7 +13,6 @@
 </header>
 <main>
 
-  <!-- ===== setup ===== -->
   <section class="card" id="setup">
     <div class="row">
       <div>
@@ -106,259 +34,55 @@
         <input id="siteBase" placeholder="https://your-site.netlify.app"/>
       </div>
     </div>
-    <div class="btns"><button id="go">Generate article</button>
+    <div class="btns"><button id="go" type="button">Generate article</button>
       <span class="pill" id="runPill"></span></div>
   </section>
 
-  <!-- ===== pipeline ===== -->
   <section class="card hidden" id="pipeline">
     <h2 class="section">Pipeline</h2>
     <div class="muted" id="pipeSub">running…</div>
     <div class="steps" id="steps"></div>
   </section>
 
-  <!-- ===== gate 1: content ===== -->
   <section class="card hidden" id="gate1">
-    <h2 class="section">Gate 1 &middot; Content review</h2>
+    <h2 class="section">Gate 1 · Content review</h2>
     <div class="muted" id="g1meta"></div>
-    <div class="draft" id="g1draft"></div>
+    <iframe id="g1frame" sandbox="" referrerpolicy="no-referrer" title="draft review"></iframe>
     <div id="g1grounding"></div>
-    <label>Revision feedback (optional &rarr; sends the draft back to revise)</label>
+    <label>Revision feedback (optional → sends the draft back to revise)</label>
     <textarea id="g1fb" placeholder="e.g. tighten the problem framing; add a failure mode"></textarea>
     <div class="btns">
-      <button data-act="approve" data-gate="1">Approve content</button>
-      <button class="secondary" data-act="feedback" data-gate="1">Request changes</button>
-      <button class="danger" data-act="reject" data-gate="1">Reject</button>
+      <button type="button" data-act="approve" data-gate="1">Approve content</button>
+      <button type="button" class="secondary" data-act="feedback" data-gate="1">Request changes</button>
+      <button type="button" class="danger" data-act="reject" data-gate="1">Reject</button>
     </div>
   </section>
 
-  <!-- ===== gate 2: layout ===== -->
   <section class="card hidden" id="gate2">
-    <h2 class="section">Gate 2 &middot; Layout review <span class="pill">content is frozen</span></h2>
+    <h2 class="section">Gate 2 · Layout review <span class="pill">content is frozen</span></h2>
     <div class="muted" id="g2meta"></div>
-    <p><a id="g2preview" href="#" target="_blank" rel="noopener">Open preview in new tab &#8599;</a></p>
-    <iframe id="g2frame" title="rendered article"></iframe>
+    <div class="btns"><button type="button" class="secondary" id="g2expand">Expand in-page preview</button></div>
+    <iframe id="g2frame" sandbox="" referrerpolicy="no-referrer" title="rendered article"></iframe>
     <div class="warn hidden" id="g2warn"></div>
     <label>Layout / design change only (content drift &gt; 2 words is auto-discarded)</label>
     <textarea id="g2fb" placeholder="e.g. move the sources block below takeaways; widen code blocks"></textarea>
     <div class="btns">
-      <button data-act="approve" data-gate="2">Approve &amp; publish</button>
-      <button class="secondary" data-act="feedback" data-gate="2">Request layout change</button>
-      <button class="danger" data-act="reject" data-gate="2">Reject</button>
+      <button type="button" data-act="approve" data-gate="2">Approve &amp; publish</button>
+      <button type="button" class="secondary" data-act="feedback" data-gate="2">Request layout change</button>
+      <button type="button" class="danger" data-act="reject" data-gate="2">Reject</button>
     </div>
   </section>
 
-  <!-- ===== done ===== -->
   <section class="card hidden" id="done">
     <h2 class="section">Result</h2>
     <div id="doneBody"></div>
     <div class="btns hidden" id="publishBtns">
-      <button id="publishBtn">&#128640; Publish to live</button>
+      <button type="button" id="publishBtn">Publish to live</button>
     </div>
     <div id="livePanel"></div>
   </section>
 
 </main>
-
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script>
-const $ = s => document.querySelector(s);
-const STEP_ORDER = ["retrieve","draft","verify","reflect","html_gen","html_revise","git"];
-let RUN = null, TOKEN = "", ES = null;
-
-// ---- helpers ----
-function api(path, method, body){
-  return fetch(path, {method,
-    headers:{"Authorization":"Bearer "+TOKEN, "Content-Type":"application/json"},
-    body: body ? JSON.stringify(body) : undefined});
-}
-function renderMarkdown(md){
-  try { return window.marked ? marked.parse(md) : null; } catch(e){ return null; }
-}
-function show(id){ $(id).classList.remove("hidden"); }
-function hide(id){ $(id).classList.add("hidden"); }
-
-// ---- step tracker ----
-function initSteps(){
-  $("#steps").innerHTML = "";
-  for(const n of STEP_ORDER){
-    const el = document.createElement("div");
-    el.className = "step"; el.id = "step-"+n;
-    el.innerHTML = `<span class="dot"></span><span class="name">${n.replace("_"," ")}</span>
-                    <span class="meta"></span>`;
-    // html_revise is conditional; dim it until used
-    if(n==="html_revise") el.style.opacity = ".45";
-    $("#steps").appendChild(el);
-  }
-}
-function setRunning(on){ $("#pipeSub").innerHTML = on ? `<span class="spin"></span> running…` : ""; }
-function finishNode(node, headline){
-  const el = $("#step-"+node); if(!el) return;
-  el.classList.remove("active"); el.classList.add("done");
-  const bits=[];
-  if("web_sources" in headline) bits.push(headline.web_sources+" web");
-  if("kb_results" in headline) bits.push(headline.kb_results+" kb");
-  if("claims" in headline) bits.push(headline.claims+" claims");
-  if("grounding_score" in headline) bits.push("g="+headline.grounding_score);
-  if("reflection_score" in headline) bits.push("refl "+headline.reflection_score+"/10");
-  if("iterations" in headline) bits.push("iter "+headline.iterations);
-  if("git_status" in headline) bits.push(headline.git_status);
-  if("latency_ms" in headline) bits.push(Math.round(headline.latency_ms)+"ms");
-  const m = el.querySelector(".meta"); m.textContent = bits.join(" · "); m.dataset.kept = bits.join(" · ");
-}
-
-// ---- streaming: one EventSource per compute segment ----
-function openStream(){
-  if(ES) ES.close();
-  setRunning(true);
-  ES = new EventSource(`/ui/runs/${RUN}/events?token=${encodeURIComponent(TOKEN)}`);
-  ES.onmessage = ev => {
-    const d = JSON.parse(ev.data);
-    if(d.event==="node"){ finishNode(d.node, d.headline||{}); }
-    else if(d.event==="gate"){ onGate(d.review); }
-    else if(d.event==="done"){ onDone(d); }
-    else if(d.event==="error"){ onError(d.error); }
-    else if(d.event==="segment_end"){ ES.close(); ES=null; }
-  };
-  ES.onerror = () => { /* segment closed or network hiccup; segment_end handles normal close */ };
-}
-
-// ---- gate rendering ----
-function onGate(r){
-  setRunning(false);
-  $("#pipeSub").textContent = "waiting for your review";
-  if(r.type==="hitl_review"){
-    $("#g1meta").textContent =
-      `grounding ${(r.grounding_score??0).toFixed(2)} · reflection ${r.reflection_score}/10 — ${r.reflection_notes||""}`;
-    const html = renderMarkdown(r.draft_markdown||"");
-    $("#g1draft").innerHTML = html!==null ? html
-      : "<pre>"+(r.draft_markdown||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+"</pre>";
-    renderGrounding(r.grounding_report||[]);
-    $("#g1fb").value=""; show("#gate1"); $("#gate1").scrollIntoView({behavior:"smooth"});
-  } else if(r.type==="hitl_html_review"){
-    $("#g2meta").textContent = `${r.html_filename||""} · grounding ${(r.grounding_score??0).toFixed(2)}`;
-    $("#g2preview").href = `/ui/runs/${RUN}/preview?token=${encodeURIComponent(TOKEN)}`;
-    $("#g2frame").srcdoc = r.html_output||"";
-    const w = r.validation_warnings||[];
-    if(w.length){ $("#g2warn").textContent = "warnings: "+w.join("; "); show("#g2warn"); } else hide("#g2warn");
-    $("#g2fb").value=""; show("#gate2"); $("#gate2").scrollIntoView({behavior:"smooth"});
-  }
-}
-function renderGrounding(report){
-  if(!report.length){ $("#g1grounding").innerHTML="<h3>Claims &amp; sources</h3><p class='muted'>No claims extracted.</p>"; return; }
-  const rows = report.slice(0,40).map(c=>{
-    const st=(c.status||"").toLowerCase();
-    const src=c.source_url ? `<a href="${c.source_url}" target="_blank">link</a>` : "<span class='muted'>none</span>";
-    return `<tr><td>${(c.claim||"").replace(/</g,"&lt;")}</td>
-      <td><span class="tag ${st}">${st||"?"}</span></td>
-      <td>${(c.confidence??0).toFixed(2)}</td><td>${src}</td></tr>`;
-  }).join("");
-  $("#g1grounding").innerHTML =
-    `<h3>Claims &amp; sources</h3><table><thead><tr><th>Claim</th><th>Status</th><th>Conf.</th><th>Source</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-// ---- gate actions ----
-function setGateButtons(disabled){ document.querySelectorAll("[data-act]").forEach(b=>b.disabled=disabled); }
-async function gateAction(gate, act){
-  const fb = gate==="1" ? $("#g1fb").value.trim() : $("#g2fb").value.trim();
-  if(act==="feedback" && !fb){ alert("Enter the change you want before requesting changes."); return; }
-  setGateButtons(true);
-  let path = `/ui/runs/${RUN}/${act}`, body = null;
-  if(act==="feedback"){ body = {feedback: fb}; }
-  const res = await api(path, "POST", body);
-  if(!res.ok){ const t=await res.text(); onError(`${res.status} ${t}`); setGateButtons(false); return; }
-  hide("#gate1"); hide("#gate2"); setGateButtons(false);
-  $("#pipeSub").textContent = act==="approve" ? "approved — continuing…"
-      : act==="feedback" ? "revising…" : "rejecting…";
-  openStream();   // drain the next segment
-}
-document.querySelectorAll("[data-act]").forEach(b=>{
-  b.addEventListener("click", ()=>gateAction(b.dataset.gate, b.dataset.act));
-});
-
-// ---- terminal states ----
-function onDone(d){
-  if(ES){ES.close();ES=null;}
-  hide("#gate1"); hide("#gate2");
-  const s=d.summary||{}; const base=$("#siteBase").value.trim().replace(/\/+$/,"");
-  const publishable = d.status==="complete" && (s.git_status==="merged" || s.git_status==="tagged_and_merged");
-  let link="";
-  if(publishable){
-    link=`<p class="ok">Merged locally (git_status: <code>${s.git_status}</code>). Click Publish to push
-          the fork and go live on Netlify.</p>`;
-  } else if(d.status==="complete" && s.slug && base){
-    const url=`${base}/${s.slug}.html`;
-    link=`<p class="ok">Published locally (git_status: <code>${s.git_status||"?"}</code>).</p>
-          <p>Run <code>git -C &lt;fork&gt; push origin main</code> to go live, then open:
-          <a href="${url}" target="_blank">${url}</a></p>`;
-  } else if(d.status==="complete"){
-    link=`<p class="ok">Published locally (git_status: <code>${s.git_status||"?"}</code>, file <code>${s.html_filename||"?"}</code>). Set a site base URL to get a clickable link.</p>`;
-  } else if(d.status==="rejected"){
-    link=`<p class="bad">Run ended: nothing was published.</p>`;
-  }
-  $("#doneBody").innerHTML =
-    `${link}<p class="muted">grounding ${s.grounding_score??"?"} · cost $${(s.total_cost_usd??0)}</p>`;
-  $("#livePanel").innerHTML = "";
-  $("#publishBtn").disabled = false;
-  if(publishable) show("#publishBtns"); else hide("#publishBtns");
-  $("#pipeSub").textContent="finished"; show("#done"); $("#done").scrollIntoView({behavior:"smooth"});
-  $("#go").disabled=false;
-}
-
-// ---- cloud publish (gate-2-approved runs only; separate human-triggered step) ----
-async function publishRun(){
-  $("#publishBtn").disabled = true;
-  const res = await api(`/ui/runs/${RUN}/publish`, "POST");
-  if(!res.ok){
-    const t = await res.text();
-    $("#livePanel").innerHTML = `<p class="bad">publish failed: ${res.status} ${t}</p>`;
-    $("#publishBtn").disabled = false;
-    return;
-  }
-  const j = await res.json();
-  $("#livePanel").innerHTML =
-    `<p class="ok" style="font-size:16px;font-weight:700">&#128640; LIVE &mdash;
-     <a href="${j.live_url}" target="_blank" rel="noopener">${j.live_url}</a></p>`;
-  hide("#publishBtns");
-}
-$("#publishBtn").addEventListener("click", publishRun);
-
-// ---- keyboard shortcuts: a=approve, r=reject, c=request changes (focus feedback),
-// p=publish (only while the publish button is showing). Ignored while typing in any
-// input/textarea so feedback text and the topic/token fields are never hijacked.
-document.addEventListener("keydown", (e)=>{
-  const tag = (e.target && e.target.tagName) || "";
-  if(tag==="TEXTAREA" || tag==="INPUT") return;
-  const key = e.key.toLowerCase();
-  const gate1Open = !$("#gate1").classList.contains("hidden");
-  const gate2Open = !$("#gate2").classList.contains("hidden");
-  if(gate1Open || gate2Open){
-    const gate = gate1Open ? "1" : "2";
-    if(key==="a"){ e.preventDefault(); gateAction(gate, "approve"); }
-    else if(key==="r"){ e.preventDefault(); gateAction(gate, "reject"); }
-    else if(key==="c"){ e.preventDefault(); $(gate==="1" ? "#g1fb" : "#g2fb").focus(); }
-  }
-  if(key==="p" && !$("#publishBtns").classList.contains("hidden")){
-    e.preventDefault(); publishRun();
-  }
-});
-function onError(msg){
-  if(ES){ES.close();ES=null;}
-  $("#pipeSub").innerHTML=`<span class="bad">error: ${msg}</span>`;
-  $("#go").disabled=false; setGateButtons(false);
-}
-
-// ---- start ----
-$("#go").addEventListener("click", async ()=>{
-  const topic=$("#topic").value.trim(); TOKEN=$("#token").value.trim();
-  if(!topic||!TOKEN){ alert("Topic and token are required."); return; }
-  $("#go").disabled=true; hide("#gate1"); hide("#gate2"); hide("#done");
-  initSteps(); show("#pipeline"); $("#pipeSub").textContent="running…";
-  const res=await api("/ui/runs","POST",{topic, series:$("#series").value.trim()||"Learning Log"});
-  if(!res.ok){ onError(`${res.status} ${await res.text()}`); return; }
-  const j=await res.json(); RUN=j.run_id;
-  $("#runPill").textContent="run "+RUN.slice(0,8); openStream();
-});
-</script>
+<script src="/static/app.js"></script>
 </body>
 </html>

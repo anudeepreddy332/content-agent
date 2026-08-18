@@ -33,6 +33,7 @@ jobs:
           enable-cache: true
       - run: uv python install 3.14
       - run: uv sync --dev
+      - run: uv run playwright install --with-deps chromium
       # B2 failure-injection suite + B1 slug tests. Zero network, zero API cost
       # (verified offline 2026-06-13). Imports pull torch via sentence-transformers,
       # so the first uncached sync is the slow step (~3-5 min), not the tests.

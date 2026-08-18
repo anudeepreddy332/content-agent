@@ -87,7 +87,7 @@ def client(monkeypatch):
 def _drain(client, rid):
     """Read one SSE segment to its segment_end sentinel; return parsed events."""
     out = []
-    with client.stream("GET", f"/ui/runs/{rid}/events?token={TOK}") as r:
+    with client.stream("GET", f"/ui/runs/{rid}/events", headers=H) as r:
         assert r.status_code == 200
         for line in r.iter_lines():
             if not line or not line.startswith("data:"):
@@ -100,6 +100,7 @@ def _drain(client, rid):
 
 def test_sse_requires_token(client):
     rid = client.post("/ui/runs", json={"topic": "X"}, headers=H).json()["run_id"]
+    assert client.get(f"/ui/runs/{rid}/events").status_code == 401
     assert client.get(f"/ui/runs/{rid}/events?token=wrong").status_code == 401
 
 

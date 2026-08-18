@@ -19,7 +19,9 @@ def client(monkeypatch):
     return TestClient(srv.app)
 
 
-def _seed_run(git_status="merged", slug="s", html_output="<html/>", awaiting_html=False):
+def _seed_run(git_status="merged", slug="s", html_output="<html/>", awaiting_html=False,
+              git_commit_sha="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              publish_expected_remote_sha="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"):
     import api.server as srv
     run_id = "run-" + git_status + "-" + slug
     interrupt_payload = None
@@ -30,7 +32,9 @@ def _seed_run(git_status="merged", slug="s", html_output="<html/>", awaiting_htm
     srv.REGISTRY[run_id] = {
         "status": status, "initial_state": {}, "interrupt_payload": interrupt_payload,
         "result": None if awaiting_html else
-                  {"slug": slug, "git_status": git_status, "html_output": html_output},
+                  {"slug": slug, "git_status": git_status, "html_output": html_output,
+                   "git_commit_sha": git_commit_sha,
+                   "publish_expected_remote_sha": publish_expected_remote_sha},
         "error": None,
     }
     return run_id
@@ -61,20 +65,24 @@ def test_publish_success_merged(client, monkeypatch):
     import api.server as srv
     import subprocess
     rid = _seed_run(git_status="merged", slug="my-article")
-    fake = subprocess.CompletedProcess(args=["git", "push"], returncode=0, stdout="", stderr="")
+    sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    fake = subprocess.CompletedProcess(args=["git", "push"], returncode=0,
+                                       stdout=f"{sha}\trefs/heads/main\n", stderr="")
     monkeypatch.setattr(srv.subprocess, "run", lambda *a, **kw: fake)
     monkeypatch.setenv("NETLIFY_BASE_URL", "https://tmw-demo-site.netlify.app")
     monkeypatch.setenv("PUBLISH_REMOTE", "origin")
     res = client.post(f"/ui/runs/{rid}/publish", headers=H)
     assert res.status_code == 200
-    assert res.json() == {"live_url": "https://tmw-demo-site.netlify.app/my-article"}
+    assert res.json()["live_url"] == "https://tmw-demo-site.netlify.app/my-article"
 
 
 def test_publish_success_tagged_and_merged(client, monkeypatch):
     import api.server as srv
     import subprocess
     rid = _seed_run(git_status="tagged_and_merged", slug="republished")
-    fake = subprocess.CompletedProcess(args=["git", "push"], returncode=0, stdout="", stderr="")
+    fake = subprocess.CompletedProcess(args=["git", "push"], returncode=0,
+                                       stdout="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/main\n",
+                                       stderr="")
     monkeypatch.setattr(srv.subprocess, "run", lambda *a, **kw: fake)
     res = client.post(f"/ui/runs/{rid}/publish", headers=H)
     assert res.status_code == 200
@@ -85,35 +93,22 @@ def test_publish_failure_returns_500_with_git_error(client, monkeypatch):
     import api.server as srv
     import subprocess
     rid = _seed_run(git_status="merged", slug="fails")
-    fake = subprocess.CompletedProcess(args=["git", "push"], returncode=1,
-                                        stdout="", stderr="fatal: authentication failed")
-    monkeypatch.setattr(srv.subprocess, "run", lambda *a, **kw: fake)
+    sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+    def fake_run(args, **kw):
+        if args[:2] == ["git", "ls-remote"]:
+            return subprocess.CompletedProcess(args, 0, stdout=f"{sha}\trefs/heads/main\n", stderr="")
+        return subprocess.CompletedProcess(args, 1, stdout="", stderr="fatal: authentication failed")
+
+    monkeypatch.setattr(srv.subprocess, "run", fake_run)
     res = client.post(f"/ui/runs/{rid}/publish", headers=H)
     assert res.status_code == 500
     assert "authentication failed" in res.text
 
 
-# ---- preview ----
+# ---- preview removed ----
 
-def test_preview_requires_token(client):
+def test_preview_endpoint_gone(client):
     rid = _seed_run()
-    assert client.get(f"/ui/runs/{rid}/preview?token=wrong").status_code == 401
-
-
-def test_preview_404_unknown_run(client):
-    assert client.get(f"/ui/runs/nope/preview?token={TOK}").status_code == 404
-
-
-def test_preview_returns_html_from_result(client):
-    rid = _seed_run(html_output="<p>hi from result</p>")
-    res = client.get(f"/ui/runs/{rid}/preview?token={TOK}")
-    assert res.status_code == 200
-    assert res.headers["content-type"].startswith("text/html")
-    assert "<p>hi from result</p>" in res.text
-
-
-def test_preview_returns_html_from_pending_gate2(client):
-    rid = _seed_run(awaiting_html=True, html_output="<p>hi from gate 2</p>")
-    res = client.get(f"/ui/runs/{rid}/preview?token={TOK}")
-    assert res.status_code == 200
-    assert "<p>hi from gate 2</p>" in res.text
+    assert client.get(f"/ui/runs/{rid}/preview?token={TOK}").status_code == 404
+    assert client.get(f"/ui/runs/{rid}/preview", headers=H).status_code == 404

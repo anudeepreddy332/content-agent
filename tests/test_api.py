@@ -153,21 +153,30 @@ def test_poll_graph_crash_writes_upstream_failed_telemetry(tmp_path, monkeypatch
 
 def test_html_revise_discards_content_change(base_state, monkeypatch):
     import agent.nodes as nodes
-    base_state["html_output"] = "<!DOCTYPE html><html><body><p>Gradient descent minimizes loss.</p></body></html>"
+    body = "<p>Gradient descent minimizes loss.</p>"
+    base_state["article_body_html"] = body
+    base_state["html_output"] = body
+    base_state["html_sha256"] = "orig"
     base_state["html_feedback"] = "make the paragraph bold"
-    bad = "<!DOCTYPE html><html><body><p><b>Gradient descent minimizes loss. It is the best.</b></p></body></html>"
+    bad = "<p><strong>Gradient descent minimizes loss. It is the best.</strong></p>"
     monkeypatch.setattr(nodes, "_get_client", lambda: object())
     monkeypatch.setattr(nodes, "_llm_call", lambda c, **kw: fake_response(bad))
     out = nodes.html_revise_node(base_state)
-    assert out["html_output"] == base_state["html_output"]          # discarded -> original kept
+    assert out["html_output"] == base_state["html_output"]
     assert any("DISCARDED" in e for e in out["error_log"])
 
 def test_html_revise_applies_layout_only(base_state, monkeypatch):
     import agent.nodes as nodes
-    base_state["html_output"] = "<!DOCTYPE html><html><body><p>Gradient descent minimizes loss.</p></body></html>"
+    body = "<p>Gradient descent minimizes loss.</p>"
+    base_state["article_body_html"] = body
+    base_state["html_output"] = body
     base_state["html_feedback"] = "make the paragraph bold"
-    good = "<!DOCTYPE html><html><body><p><b>Gradient descent minimizes loss.</b></p></body></html>"
+    good = "<p><strong>Gradient descent minimizes loss.</strong></p>"
     monkeypatch.setattr(nodes, "_get_client", lambda: object())
     monkeypatch.setattr(nodes, "_llm_call", lambda c, **kw: fake_response(good))
     out = nodes.html_revise_node(base_state)
-    assert out["html_output"] == good                # same words, new markup -> applied
+    assert "Gradient descent minimizes loss" in out["html_output"]
+    assert "<strong>" in out["html_output"]
+    assert out["html_output"] != body
+    assert out["approved_html_sha256"] is None
+    assert "<script>" not in out["html_output"].lower()

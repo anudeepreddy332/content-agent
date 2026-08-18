@@ -1,16 +1,10 @@
-# html_template.md — Article Page Generation Spec
-# Used by: html_gen_node in agent/nodes.py
-# Derived from: supervised-learning-models.html + dev_agent.md
+# html_template.md — Article Page Generation Spec (documentation only)
+# Canonical assembly is agent/html_policy.py. html_gen_node does not interpolate this file.
+# Generated articles are self-contained: no Google Fonts, shared.css, shared.js, or executable JS.
 #
-# RULES FOR html_gen_node:
-# - Inject all PLACEHOLDER values from AgentState before returning
-# - Do not add any CSS classes not defined in the <style> block below
-# - Do not invent content — use draft_sections exactly
-# - Do not hardcode hex colors except inside .sl-code-block (dark terminal background)
-# - All external links must have target="_blank" rel="noopener noreferrer"
-# - The <nav> and <footer> blocks below are verbatim from the live site — do not alter them
-# - Validate output contains: <!DOCTYPE html>, id="main", <h1>, ← Back to Learning Log
-# - The ld+json @type and @context keys must use the full key names shown below
+# Trusted server may add only: canonical citation anchors, fixed nav links, one immutable
+# inline CSS block, fixed SVG icons, and one application/ld+json block.
+
 
 ---
 
@@ -18,13 +12,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- MUST BE FIRST: Anti-flicker theme script -->
-    <script>
-        (function() {
-            const t = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', t);
-        })();
-    </script>
+    <!-- MUST NOT include executable JS, Google Fonts, shared.css, or shared.js.
+         Anti-flicker theme scripts are forbidden. CSS is the immutable ARTICLE_CSS
+         block owned by agent/html_policy.py. -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,13 +36,7 @@
 
     <link rel="canonical" href="https://themachinist.org/{{SLUG}}.html">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Shared styles -->
-    <link rel="stylesheet" href="./shared.css">
+    <!-- Fonts: system UI only. Do not load Google Fonts or any external stylesheet. -->
 
     <!-- Page-specific styles — do not duplicate anything from shared.css -->
     <style>
@@ -429,8 +413,7 @@
         </div>
     </footer>
 
-    <!-- Shared scripts — must be at end of body, after all content -->
-    <script src="./shared.js"></script>
+    <!-- Shared scripts are forbidden. JSON-LD is serialized by html_policy.serialize_json_ld. -->
 
     <!-- LD+JSON structured data — inject TOPIC and SLUG -->
     <script type="application/ld+json">
