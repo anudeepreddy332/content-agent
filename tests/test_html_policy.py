@@ -9,6 +9,7 @@ from agent.html_policy import (
     TrustedFragment,
     assemble_trusted_article,
     build_citation_items,
+    canonical_source_urls,
     normalize_citation_url,
     render_citations_html,
     render_markdown_fragment,
@@ -264,12 +265,61 @@ def test_malformed_dns_hosts_rejected(url):
 
 @pytest.mark.parametrize("url,expected", [
     ("https://example.com/x", "https://example.com/x"),
+    ("https://example.com:443/x", "https://example.com/x"),
     ("https://sub.example.co.uk/path", "https://sub.example.co.uk/path"),
     (" HTTPS://Example.COM/a/B?q=1#frag ", "https://example.com/a/B?q=1"),
     ("https://8.8.8.8/lookup", "https://8.8.8.8/lookup"),
 ])
 def test_public_https_hosts_accepted(url, expected):
     assert normalize_citation_url(url) == expected
+
+
+@pytest.mark.parametrize("url", [
+    "https://example.com:abc/x",
+    "https://example.com:-1/x",
+    "https://example.com:+443/x",
+    "https://example.com:65536/x",
+    "https://example.com:9999999999/x",
+    "https://example.com:443abc/x",
+])
+def test_malformed_authority_ports_rejected(url):
+    assert normalize_citation_url(url) is None
+
+
+def test_malformed_urls_do_not_break_citation_construction():
+    bad = "https://example.com:65536/x"
+    good = "https://example.com/gd"
+    items = build_citation_items(
+        [{"claim": "from-bad-retrieved", "status": "verified", "source_kind": "web",
+          "source_ref": good}],
+        [{"title": "Bad", "url": bad, "score": 0.9},
+         {"title": "Good", "url": good, "score": 0.8}],
+        [],
+    )
+    assert items[0]["url"] == good
+    assert "<a " in render_citations_html(items)
+
+    unresolved = build_citation_items(
+        [{"claim": "malformed-ref", "status": "verified", "source_kind": "web",
+          "source_ref": bad, "source_url": good}],
+        [{"title": "Good", "url": good, "score": 0.9}],
+        [],
+    )
+    assert unresolved[0]["url"] is None
+    assert unresolved[0]["label"] == "Unresolved source"
+    html = render_citations_html(unresolved)
+    assert "<a " not in html
+    assert "Unresolved source" in html
+
+    skipped = canonical_source_urls([{"title": "Bad", "url": bad}])
+    assert skipped == {}
+    rows = safe_grounding_rows(
+        [{"claim": "c", "status": "verified", "source_kind": "web",
+          "source_ref": bad, "source_url": good}],
+        [{"title": "Good", "url": good}],
+    )
+    assert rows[0]["source_url"] is None
+    assert rows[0]["source_label"] == "Unresolved source"
 
 
 def test_exact_url_attribution_path_query_slash():

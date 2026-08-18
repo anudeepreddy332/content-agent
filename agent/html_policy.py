@@ -469,18 +469,25 @@ def normalize_citation_url(candidate: str) -> str | None:
         parts = urlsplit(trimmed)
     except Exception:
         return None
+    try:
+        username = parts.username
+        password = parts.password
+        hostname = parts.hostname
+        port = parts.port
+    except ValueError:
+        return None
     scheme = (parts.scheme or "").lower()
     if scheme != "https":
         return None
-    if parts.username is not None or parts.password is not None:
+    if username is not None or password is not None:
         return None
-    host = parts.hostname
+    host = hostname
     if not host:
         return None
     host_canon = _canonical_host(host)
     if not host_canon:
         return None
-    if parts.port not in (None, 443):
+    if port not in (None, 443):
         return None
     path = parts.path if parts.path else "/"
     query = parts.query
