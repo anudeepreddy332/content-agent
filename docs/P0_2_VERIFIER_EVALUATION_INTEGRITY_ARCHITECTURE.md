@@ -194,6 +194,15 @@ manifest, raw-byte SHA mismatch, non-list manifest, count mismatch, order mismat
 duplicate topic, duplicate slug, non-positive/non-integer ID, or missing/blank `topic`, `slug`,
 `card_id`, `series`, or `category`. `card_id` is not globally unique by design.
 
+The exact count `20`, ordered IDs `1..20`, manifest bytes/digest, required fields, and release
+semantics are immutable properties of `content-agent-release-topics-v1`, not permanent product
+assumptions. Future deliberate fixture evolution must add an explicitly reviewed successor such as
+`content-agent-release-topics-v2`, with its own schema/contract version as appropriate, manifest
+identity and SHA, expected cardinality, ordered identities, semantics, and review evidence. V1 must
+never be loosened or mutated in place, and historical V1 evidence must remain interpretable against
+the unchanged V1 contract. The loader must never dynamically bless whatever currently exists in
+`evals/topics.json` as V1.
+
 All manifest and CLI preflight checks occur before `subprocess.run`.
 
 ### 8.2 Explicit CLI modes
@@ -221,7 +230,11 @@ python scripts/benchmark.py --mode release --gate --expected-code-sha <40-lowerc
 
 - `--id` and `--limit` are forbidden.
 - `--gate` and `--expected-code-sha` are required.
-- Resolve `git rev-parse HEAD`; require exact equality to the supplied SHA.
+- Release qualification is CI-only and main-only. Require `GITHUB_ACTIONS=true`,
+  `GITHUB_REF=refs/heads/main`, nonempty `GITHUB_RUN_ID`, `GITHUB_RUN_ATTEMPT`, and
+  `GITHUB_WORKFLOW_REF`, and require `GITHUB_SHA` to equal `--expected-code-sha`. A feature or
+  architecture branch can run only smoke/non-release evidence; it can never emit release PASS.
+- Resolve `git rev-parse HEAD`; require exact equality to both the supplied SHA and `GITHUB_SHA`.
 - Require no tracked unstaged or staged diff before the first subprocess. Untracked benchmark
   outputs do not invalidate the checkout.
 - Select the exact full ordered 20-topic manifest only.
@@ -246,6 +259,15 @@ After execution, release qualification requires all of the following:
 
 One failure makes release qualification `FAIL` and process exit 1. Aggregate means cannot hide a
 unit failure.
+
+Immediately after all release units finish and before finalizing the evidence report or printing
+release PASS, rerun `git rev-parse HEAD`, `git diff --quiet`, and `git diff --cached --quiet`. The
+final HEAD must equal the expected, GitHub, and preflight SHA; tracked unstaged and staged state must
+still be clean. Record separate `preflight_code_identity` and `final_code_identity` objects, each
+containing resolved SHA plus staged/unstaged cleanliness. Any mid-run HEAD or tracked-state drift
+makes `release_qualification=FAIL` and exit 1. Do not lock the repository; detect drift and fail
+closed. The evidence digest binds both attestations, proving the same exact code identity before the
+run and immediately before PASS.
 
 `release_qualification=PASS` means only that this benchmark evidence contract passed. It is not an
 overall product-release, merge, deployment, verifier-golden, or production-readiness approval.
@@ -273,7 +295,8 @@ The final report payload must contain exactly these decision-critical sections:
 - UTC timestamp and mode;
 - `release_qualification`: `PASS`, `FAIL`, or `NON_RELEASE`;
 - gate requested;
-- resolved and expected code SHA plus tracked-clean result;
+- GitHub Actions ref/run/workflow identity;
+- expected code SHA plus separate preflight and final code/clean-state attestations;
 - release-contract and selected-manifest identity/count/order;
 - safe evaluation configuration plus its digest;
 - ordered result records with exact run IDs and telemetry;
@@ -288,10 +311,13 @@ report can never pass.
 ### 8.5 Workflow integration
 
 Update the manual `.github/workflows/eval.yml` dispatch to expose an explicit `smoke`/`release`
-choice, defaulting to smoke. Smoke passes the positive topic-count input. Release passes no selector
-and supplies `${{ github.sha }}` as the expected code SHA. Step names and artifact output must state
-whether evidence is non-release or release. Do not automatically start this paid workflow during
-implementation.
+choice, defaulting to smoke. Smoke passes the positive topic-count input. Before dependency setup,
+ingestion, or any provider-bearing gate, an exact workflow guard must reject `mode=release` unless
+`${{ github.ref }}` is exactly `refs/heads/main`. The release path passes no selector and supplies
+`${{ github.sha }}` as the expected code SHA; the benchmark independently revalidates the same ref
+and SHA environment. Step names and artifact output must state whether evidence is non-release or
+release. A manual dispatch against a feature/architecture ref cannot earn release PASS. Do not
+automatically start this paid workflow during implementation.
 
 ## 9. Deterministic gates
 
@@ -300,23 +326,30 @@ Add tests that prove, with a subprocess sentinel asserting zero calls on preflig
 1. unknown ID and empty selection fail;
 2. zero, negative, and out-of-range limits fail;
 3. mode is mandatory; selectors are mutually exclusive; release forbids selectors and requires gate
-   plus exact SHA;
+   plus exact SHA and complete main-branch GitHub Actions identity;
 4. empty/malformed contract or manifest, digest/count/order mismatch, missing fields, and duplicate
    ID/topic/slug fail;
-5. a one-topic smoke pass remains `NON_RELEASE`;
-6. a 19/20 or 21/20 release result set fails;
-7. missing, extra, duplicate, or out-of-order unit and duplicate/blank run ID fail;
-8. nonzero subprocess, missing RUN_ID, missing/stale telemetry, run/topic mismatch, or malformed
+5. a parameterized V1 immutability case proves changed count, IDs, or manifest bytes cannot keep
+   `content-agent-release-topics-v1` and pass;
+6. a one-topic smoke pass remains `NON_RELEASE`;
+7. a 19/20 or 21/20 release result set fails;
+8. missing, extra, duplicate, or out-of-order unit and duplicate/blank run ID fail;
+9. nonzero subprocess, missing RUN_ID, missing/stale telemetry, run/topic mismatch, or malformed
    telemetry fail;
-9. `parse_failed`, `skipped_cost_gate`, `upstream_failed`, `unknown`, or unscorable/zero-verdict unit
+10. `parse_failed`, `skipped_cost_gate`, `upstream_failed`, `unknown`, or unscorable/zero-verdict unit
    fails release;
-10. mixed prompt version/hash or configuration identity fails;
-11. wrong expected SHA or tracked dirty state fails before calls;
-12. UVR `0.00` and `0.15` pass while any value above `0.15` fails;
-13. a fully synthetic exact 20-unit release passes once and only once;
-14. report digest validates, while field mutation, truncation, or missing digest fails;
-15. failure after calls writes `FAIL`, never PASS; preflight failure emits no release-qualified report;
-16. no report path or logged configuration contains injected API-key/URL credentials.
+11. mixed prompt version/hash or configuration identity fails;
+12. wrong expected SHA, non-main/missing GitHub ref identity, or tracked dirty state fails before
+    calls; a workflow-structure test must prove the non-main release guard precedes provider-bearing
+    steps and `${{ github.sha }}` is passed as the expected SHA;
+13. UVR `0.00` and `0.15` pass while any value above `0.15` fails;
+14. a fully synthetic exact 20-unit release passes once and only once;
+15. report digest validates, while field mutation, truncation, or missing digest fails;
+16. failure after calls writes `FAIL`, never PASS; preflight failure emits no release-qualified report;
+17. no report path or logged configuration contains injected API-key/URL credentials;
+18. parameterized post-run drift simulates a changed final HEAD, final staged change, and final
+    unstaged change after clean preflight; each writes/returns release `FAIL`, exits nonzero, and
+    never prints release PASS.
 
 Retain and rerun every existing `tests/test_evaluation_integrity.py` protection.
 
@@ -355,7 +388,8 @@ forbidden from changing. P0-2b will require its own predeclared causal experimen
 Fail closed on malformed JSON, missing contract, empty manifest/selection/result set, duplicate or
 unknown IDs, reordered units, missing expected units, invalid limits, duplicate run IDs, stale or
 mismatched telemetry, incomplete/unscorable verification, mixed prompt/config identity, wrong or
-dirty code identity, report write/read/digest failure, and secret-bearing evidence.
+dirty code identity before or after execution, non-main/missing CI ref identity, report
+write/read/digest failure, and secret-bearing evidence.
 
 Smoke, partial, historical, branch-local, unbound, `N=0`, or non-final-SHA evidence must never be
 described as release PASS.
@@ -365,6 +399,8 @@ described as release PASS.
 Stop implementation and return `P0-2a-ARCHITECTURE-BLOCKED` if:
 
 - `origin/main` or the implementation base differs from exact `ca29d32`;
+- the independently authorized final architecture object cannot be resolved exactly or is not the
+  one documentation-only child of reviewed architecture commit `5451b53`;
 - the canonical 20-topic manifest or its supplied digest cannot be reproduced;
 - another file is required beyond the four-file allowlist;
 - a prompt, model, threshold, retrieval, verifier, HITL, publication, deployment, or corpus change is
@@ -381,13 +417,20 @@ Stop implementation and return `P0-2a-ARCHITECTURE-BLOCKED` if:
 
 The Implementation Agent must:
 
-1. fetch and verify `origin/main` remains exact `ca29d32`;
-2. create a clean isolated worktree and branch `fix/p0-2a-evaluation-integrity` from that SHA;
-3. reproduce the zero-topic control before editing;
-4. change only the four allowed files;
-5. commit and push the branch;
-6. report exact commit, parent, diff, test/lint evidence, and zero provider calls;
-7. stop for independent review.
+1. fetch remote refs and verify `origin/main` remains exact `ca29d32`;
+2. verify the architecture branch contains exact reviewed commit `5451b53` and that the exact final
+   architecture SHA supplied with human authorization is the branch head and has `5451b53` as its
+   parent;
+3. read the specification without checkout mutation using
+   `git show <AUTHORIZED_FINAL_ARCHITECTURE_SHA>:docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md`
+   or an equivalent exact-object read;
+4. create a clean isolated worktree and branch `fix/p0-2a-evaluation-integrity` from exact
+   `ca29d32`, never from the unmerged documentation branch;
+5. reproduce the zero-topic control before editing;
+6. change only the four allowed files;
+7. commit and push the branch;
+8. report exact commit, parent, diff, test/lint evidence, and zero provider calls;
+9. stop for independent review.
 
 The Implementer must not merge, push main, publish, deploy, call providers, change thresholds, or
 approve its own work. Human approval is required before merge.
@@ -421,16 +464,22 @@ Use the following prompt only after independent review and human authorization:
 > `https://github.com/anudeepreddy332/content-agent`. Assume no prior conversation context.
 >
 > Implement exactly `P0-2a — FAIL-CLOSED EVALUATION SCOPE, CARDINALITY, AND RELEASE-EVIDENCE
-> BINDING` from `docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md` on the independently
-> reviewed architecture branch. Fetch first and require `origin/main` to be exact
-> `ca29d32b4869269daa47142615d298580a577a77`; otherwise stop with
+> BINDING`. Fetch remote refs. Require `origin/main` to be exact
+> `ca29d32b4869269daa47142615d298580a577a77`. Verify exact reviewed architecture commit
+> `5451b53b11a07e41c7a0c7d9f5e8f526cc55131a` exists on
+> `origin/chore/p0-2-evaluation-integrity-architecture`; verify the exact final architecture SHA
+> supplied with human authorization is that branch's head and its parent is exact `5451b53`.
+> Read the frozen specification with
+> `git show <AUTHORIZED_FINAL_ARCHITECTURE_SHA>:docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md`.
+> Do not check out or implement from the documentation branch. If any identity differs, stop with
 > `P0-2a-ARCHITECTURE-BLOCKED`. Create a clean isolated worktree and branch
-> `fix/p0-2a-evaluation-integrity` from that exact SHA. Reproduce
+> `fix/p0-2a-evaluation-integrity` from exact product main `ca29d32`. Reproduce
 > `python scripts/benchmark.py --id 999 --gate` selecting zero topics and exiting 0 before editing.
 >
 > You may change only `scripts/benchmark.py`, `tests/test_evaluation_integrity.py`,
 > `.github/workflows/eval.yml`, and new `evals/benchmark_release_contract.json`. Implement every
-> frozen CLI, manifest, scope/cardinality, exact-SHA, prompt/config, aggregate, report-digest,
+> frozen CLI, immutable V1 manifest, scope/cardinality, main-only GitHub release ref, preflight and
+> post-run code/clean-state attestation, exact-SHA, prompt/config, aggregate, report-digest,
 > smoke/release, atomic-write, secret-exclusion, and fail-closed rule in the architecture document.
 > Do not modify `agent/nodes.py`, `main.py`, `config.py`, prompts, `evals/topics.json`, thresholds,
 > verifier behavior, retrieval, corpus, HITL, publication, deployment, `FREEZE.md`, or historical

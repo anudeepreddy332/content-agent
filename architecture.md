@@ -380,3 +380,8 @@ not block it. The frozen P0-2a contract is
 independent review and human authorization before implementation or merge. Proposed
 S3/Postgres/event-driven ingestion, tenant/ACL, model-tier, and related roadmap ideas remain later
 missions and are not accepted by the P0-2a contract.
+
+P0-2a release qualification is main-only after separately approved integration. It binds exact
+preflight and post-run HEAD/clean-state attestations, and treats the exact 20-topic fixture as an
+immutable V1 evidence contract. A feature-branch, mid-run-drifted, or in-place-mutated V1 run cannot
+earn release PASS.

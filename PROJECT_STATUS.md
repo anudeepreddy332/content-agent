@@ -94,7 +94,9 @@ publish, deployment, or provider spend.
 - Frozen control: current `--id 999 --gate` behavior selects zero topics and exits `0` with a pass.
 - Required target: empty or incoherent selection fails before provider calls; smoke slices are
   explicitly non-release; a release gate binds an exact ordered topic manifest and expected count,
-  exact run IDs/statuses, prompt/config hashes, code SHA, and report digest.
+  exact run IDs/statuses, prompt/config hashes, code SHA before and after execution, main-branch CI
+  ref, and report digest. The exact 20-topic fixture is immutable V1, not a permanent product count;
+  future fixture evolution requires a separately reviewed successor contract.
 - Deterministic proof precedes any paid run. No prompts, retrieval, verifier rubric, corpus, or
   quality threshold may change in this mission.
 - Block if the canonical full manifest/cardinality cannot be frozen, if any unscorable/incomplete

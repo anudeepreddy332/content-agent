@@ -9,6 +9,38 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-19-03
+Date: 2026-08-19
+
+Decision: Tighten the frozen P0-2a evidence contract with post-run code attestation, immutable
+versioned fixture identity, main-only release qualification, and exact-object specification access.
+
+Reviewer-required clarifications: A long benchmark must re-attest HEAD and tracked staged/unstaged
+cleanliness after all units and before PASS; `content-agent-release-topics-v1` must remain exactly
+20 ordered topics with its frozen digest rather than absorb future fixture changes; release-qualified
+paid evidence must run under GitHub Actions on `refs/heads/main` with `github.sha` equal to the
+expected and checked-out SHA; implementation must read the unmerged specification from an exact Git
+object while branching product work only from `ca29d32`.
+
+Frozen consequence: Mid-run HEAD or tracked-state drift produces release FAIL. Count, ID, manifest,
+required-field, or semantic evolution requires an explicitly reviewed successor contract such as
+V2. Feature/architecture refs are smoke/non-release only and are rejected before provider-bearing
+workflow steps when release mode is requested. The independently authorized final architecture SHA
+must be read with `git show <SHA>:docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md`; it must be
+the one child of reviewed architecture commit `5451b53`, while implementation still starts from
+exact canonical product main `ca29d32`.
+
+Scope: The four implementation files remain `scripts/benchmark.py`,
+`tests/test_evaluation_integrity.py`, `.github/workflows/eval.yml`, and new
+`evals/benchmark_release_contract.json`. P0-2b, UVR `0.15`, verifier, prompts/models, retrieval,
+corpus, HITL, publication, P0-1, tenant roadmap, and MCP/A2A status are unchanged.
+
+Status: Final architecture tightening only. Independent review and explicit human implementation
+authorization remain required. No runtime implementation, provider call, merge, publish, or deploy.
+
+Confidence: 0.99
+
+---
 Decision ID: D-2026-08-19-02
 Date: 2026-08-19
 
