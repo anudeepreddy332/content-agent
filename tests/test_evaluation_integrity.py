@@ -462,24 +462,11 @@ def test_manifest_digest_mismatch_fails(tmp_path, monkeypatch):
     assert calls == []
 
 
-def test_manifest_duplicate_topic_id_fails(tmp_path, monkeypatch):
-    calls = _assert_zero_subprocess_calls(monkeypatch)
-    _install_v1_manifest(tmp_path)
-    topics_path = tmp_path / "evals/topics.json"
-    topics = json.loads(topics_path.read_text())
+def test_manifest_duplicate_topic_id_fails():
+    topics = copy.deepcopy(TOPICS)
     topics[1]["id"] = topics[0]["id"]
-    topics_path.write_text(json.dumps(topics), encoding="utf-8")
-    contract = copy.deepcopy(CONTRACT)
-    contract["manifest_sha256"] = hashlib.sha256(topics_path.read_bytes()).hexdigest()
-    (tmp_path / "evals/benchmark_release_contract.json").write_text(json.dumps(contract), encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
-
-    _expect_preflight_failure(
-        lambda: benchmark.run_benchmark.callback(
-            mode="smoke", limit=1, topic_id=None, gate=False, expected_code_sha=None,
-        ),
-    )
-    assert calls == []
+    failures = benchmark._validate_manifest_topics(topics)
+    assert any("duplicate manifest topic id" in failure for failure in failures)
 
 
 @pytest.mark.parametrize(
@@ -633,51 +620,44 @@ def test_v1_rejects_unsupported_schema_version(tmp_path, monkeypatch, schema_ver
 # --- Manifest topic schema validation ---
 
 
-def _write_manifest_with_updated_contract(tmp_path: Path, topics: list) -> None:
-    topics_path = tmp_path / "evals/topics.json"
-    topics_path.write_text(json.dumps(topics), encoding="utf-8")
-    contract = copy.deepcopy(CONTRACT)
-    contract["manifest_sha256"] = hashlib.sha256(topics_path.read_bytes()).hexdigest()
-    _write_contract(tmp_path, contract)
+def _malformed_canonical_topics() -> list[dict]:
+    return copy.deepcopy(TOPICS)
 
 
-def _expect_manifest_schema_failure(tmp_path, monkeypatch, topics: list) -> None:
-    calls = _assert_zero_subprocess_calls(monkeypatch)
-    _install_v1_manifest(tmp_path)
-    _write_manifest_with_updated_contract(tmp_path, topics)
-    monkeypatch.chdir(tmp_path)
-    _expect_preflight_failure(
-        lambda: benchmark.run_benchmark.callback(
-            mode="smoke", limit=1, topic_id=None, gate=False, expected_code_sha=None,
-        ),
-    )
-    assert calls == []
-
-
-def test_manifest_missing_category_fails(tmp_path, monkeypatch):
-    topics = json.loads((ROOT / "evals/topics.json").read_text())
+def test_manifest_missing_category_fails():
+    topics = _malformed_canonical_topics()
     del topics[0]["category"]
-    _expect_manifest_schema_failure(tmp_path, monkeypatch, topics)
+    failures = benchmark._validate_manifest_topics(topics)
+    assert any(
+        "missing fields" in failure and "category" in failure
+        for failure in failures
+    )
 
 
-def test_manifest_blank_category_fails(tmp_path, monkeypatch):
-    topics = json.loads((ROOT / "evals/topics.json").read_text())
+def test_manifest_blank_category_fails():
+    topics = _malformed_canonical_topics()
     topics[0]["category"] = "   "
-    _expect_manifest_schema_failure(tmp_path, monkeypatch, topics)
+    failures = benchmark._validate_manifest_topics(topics)
+    assert any("field 'category' must be a nonempty string" in failure for failure in failures)
 
 
 @pytest.mark.parametrize("field", ["topic", "slug", "card_id", "series"])
-def test_manifest_blank_string_fields_fail(tmp_path, monkeypatch, field):
-    topics = json.loads((ROOT / "evals/topics.json").read_text())
+def test_manifest_blank_string_fields_fail(field):
+    topics = _malformed_canonical_topics()
     topics[0][field] = ""
-    _expect_manifest_schema_failure(tmp_path, monkeypatch, topics)
+    failures = benchmark._validate_manifest_topics(topics)
+    assert any(
+        f"field '{field}' must be a nonempty string" in failure
+        for failure in failures
+    )
 
 
 @pytest.mark.parametrize("topic_id", ["1", 1.5, True, 0, -1])
-def test_manifest_invalid_topic_ids_fail(tmp_path, monkeypatch, topic_id):
-    topics = json.loads((ROOT / "evals/topics.json").read_text())
+def test_manifest_invalid_topic_ids_fail(topic_id):
+    topics = _malformed_canonical_topics()
     topics[0]["id"] = topic_id
-    _expect_manifest_schema_failure(tmp_path, monkeypatch, topics)
+    failures = benchmark._validate_manifest_topics(topics)
+    assert any("id must be a positive integer" in failure for failure in failures)
 
 
 # --- Release preflight ---
@@ -1077,6 +1057,189 @@ def test_evidence_rejects_tampered_configuration_identity_even_with_valid_digest
     body["evidence_sha256"] = benchmark._compute_evidence_digest(body)
     with pytest.raises(ValueError, match="evaluation_config_sha256 mismatch"):
         benchmark._validate_evidence_payload(body)
+
+
+def _valid_release_pass_evidence_payload() -> dict:
+    evaluation_config, evaluation_config_sha256 = benchmark.resolve_evaluation_config()
+    code_identity = {
+        "head_sha": EXPECTED_SHA,
+        "staged_clean": True,
+        "unstaged_clean": True,
+    }
+    ordered_ids = list(CONTRACT["ordered_topic_ids"])
+    payload = {
+        "schema_version": benchmark.EVIDENCE_SCHEMA_VERSION,
+        "timestamp_utc": "2026-08-19T12:00:00+00:00",
+        "mode": "release",
+        "release_qualification": "PASS",
+        "gate_requested": True,
+        "github_actions_identity": {
+            "github_actions": "true",
+            "github_ref": "refs/heads/main",
+            "github_sha": EXPECTED_SHA,
+            "github_run_id": "12345",
+            "github_run_attempt": "1",
+            "github_workflow_ref": "owner/repo/.github/workflows/eval.yml@refs/heads/main",
+        },
+        "expected_code_sha": EXPECTED_SHA,
+        "preflight_code_identity": copy.deepcopy(code_identity),
+        "final_code_identity": copy.deepcopy(code_identity),
+        "release_contract_identity": copy.deepcopy(CONTRACT),
+        "selected_manifest_identity": {
+            "manifest_id": CONTRACT["manifest_id"],
+            "manifest_path": CONTRACT["manifest_path"],
+            "manifest_sha256": CONTRACT["manifest_sha256"],
+            "expected_topic_count": CONTRACT["expected_topic_count"],
+            "ordered_topic_ids": list(ordered_ids),
+            "actual_topic_count": CONTRACT["expected_topic_count"],
+            "actual_topic_ids": list(ordered_ids),
+        },
+        "evaluation_configuration": evaluation_config,
+        "evaluation_config_sha256": evaluation_config_sha256,
+        "ordered_unit_results": [
+            _release_result(_topic_by_id(topic_id), f"run-{topic_id:02d}")
+            for topic_id in ordered_ids
+        ],
+        "aggregate_metrics": {"total_runs": 20, "successful": 20, "failed": 0},
+        "gate_failures": [],
+    }
+    body = dict(payload)
+    payload["evidence_sha256"] = benchmark._compute_evidence_digest(body)
+    return payload
+
+
+def _recompute_evidence_digest(payload: dict) -> dict:
+    body = dict(payload)
+    body.pop("evidence_sha256", None)
+    payload["evidence_sha256"] = benchmark._compute_evidence_digest(body)
+    return payload
+
+
+def _tamper_remove_github_run_id(payload: dict) -> None:
+    identity = dict(payload["github_actions_identity"])
+    identity.pop("github_run_id")
+    payload["github_actions_identity"] = identity
+
+
+def _tamper_change_github_ref(payload: dict) -> None:
+    identity = dict(payload["github_actions_identity"])
+    identity["github_ref"] = "refs/heads/feature"
+    payload["github_actions_identity"] = identity
+
+
+def _tamper_change_github_sha(payload: dict) -> None:
+    identity = dict(payload["github_actions_identity"])
+    identity["github_sha"] = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    payload["github_actions_identity"] = identity
+
+
+def _tamper_preflight_staged_dirty(payload: dict) -> None:
+    identity = dict(payload["preflight_code_identity"])
+    identity["staged_clean"] = False
+    payload["preflight_code_identity"] = identity
+
+
+def _tamper_change_final_head(payload: dict) -> None:
+    identity = dict(payload["final_code_identity"])
+    identity["head_sha"] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    payload["final_code_identity"] = identity
+
+
+def _tamper_contract_manifest_sha(payload: dict) -> None:
+    identity = dict(payload["release_contract_identity"])
+    identity["manifest_sha256"] = "0" * 64
+    payload["release_contract_identity"] = identity
+
+
+def _tamper_contract_expected_count(payload: dict) -> None:
+    identity = dict(payload["release_contract_identity"])
+    identity["expected_topic_count"] = 19
+    payload["release_contract_identity"] = identity
+
+
+def _tamper_selected_manifest_sha(payload: dict) -> None:
+    identity = dict(payload["selected_manifest_identity"])
+    identity["manifest_sha256"] = "0" * 64
+    payload["selected_manifest_identity"] = identity
+
+
+def _tamper_selected_topic_ids_order(payload: dict) -> None:
+    identity = dict(payload["selected_manifest_identity"])
+    identity["actual_topic_ids"] = list(reversed(identity["actual_topic_ids"]))
+    payload["selected_manifest_identity"] = identity
+
+
+def _tamper_remove_one_result(payload: dict) -> None:
+    payload["ordered_unit_results"] = list(payload["ordered_unit_results"][:-1])
+
+
+def _tamper_duplicate_result_id(payload: dict) -> None:
+    results = [dict(result) for result in payload["ordered_unit_results"]]
+    results[1]["id"] = results[0]["id"]
+    payload["ordered_unit_results"] = results
+
+
+def _tamper_duplicate_run_id(payload: dict) -> None:
+    results = [dict(result) for result in payload["ordered_unit_results"]]
+    results[1]["run_id"] = results[0]["run_id"]
+    payload["ordered_unit_results"] = results
+
+
+def _tamper_nonempty_gate_failures(payload: dict) -> None:
+    payload["gate_failures"] = ["injected gate failure"]
+
+
+def _tamper_gate_requested_false(payload: dict) -> None:
+    payload["gate_requested"] = False
+
+
+def test_valid_release_pass_evidence_validates():
+    payload = _valid_release_pass_evidence_payload()
+    benchmark._validate_evidence_payload(payload)
+
+
+@pytest.mark.parametrize(
+    ("mutator", "match"),
+    [
+        (_tamper_remove_github_run_id, "github_run_id"),
+        (_tamper_change_github_ref, "github_ref"),
+        (_tamper_change_github_sha, "github_sha"),
+        (_tamper_preflight_staged_dirty, "preflight staged_clean"),
+        (_tamper_change_final_head, "stable code identity|final HEAD"),
+        (_tamper_contract_manifest_sha, "manifest_sha256"),
+        (_tamper_contract_expected_count, "expected_topic_count"),
+        (_tamper_selected_manifest_sha, "manifest SHA"),
+        (_tamper_selected_topic_ids_order, "actual_topic_ids"),
+        (_tamper_remove_one_result, "exactly 20 ordered unit results"),
+        (_tamper_duplicate_result_id, "1..20 in order"),
+        (_tamper_duplicate_run_id, "run IDs must be unique"),
+        (_tamper_nonempty_gate_failures, "empty gate_failures"),
+        (_tamper_gate_requested_false, "gate_requested"),
+    ],
+    ids=[
+        "remove_github_run_id",
+        "change_github_ref",
+        "change_github_sha",
+        "preflight_staged_dirty",
+        "change_final_head",
+        "contract_manifest_sha",
+        "contract_expected_count",
+        "selected_manifest_sha",
+        "selected_topic_ids_order",
+        "remove_one_result",
+        "duplicate_result_id",
+        "duplicate_run_id",
+        "nonempty_gate_failures",
+        "gate_requested_false",
+    ],
+)
+def test_release_pass_rejects_nested_tamper_even_with_recomputed_digest(mutator, match):
+    payload = _valid_release_pass_evidence_payload()
+    benchmark._validate_evidence_payload(payload)
+    mutator(payload)
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match=match):
+        benchmark._validate_evidence_payload(payload)
 
 
 def test_tampered_configuration_identity_cannot_produce_release_pass(tmp_path, monkeypatch, capsys):

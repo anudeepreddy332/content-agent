@@ -60,6 +60,18 @@ V1_RELEASE_CONTRACT: dict[str, Any] = {
 }
 TOPIC_REQUIRED_FIELDS = ("id", "topic", "card_id", "series", "slug", "category")
 TOPIC_STRING_FIELDS = ("topic", "card_id", "series", "slug", "category")
+RELEASE_PASS_RESULT_FIELDS = (
+    "id",
+    "topic",
+    "status",
+    "run_id",
+    "telemetry",
+    "verification_status",
+    "evaluation_status",
+    "uvr",
+    "validation_error",
+    "subprocess_exit_code",
+)
 EVIDENCE_REQUIRED_FIELDS = (
     "schema_version",
     "timestamp_utc",
@@ -574,6 +586,114 @@ def _validate_code_identity_object(value: Any, field_name: str) -> None:
             raise ValueError(f"{field_name}.{flag} must be a boolean")
 
 
+def _require_nonempty_string(value: Any, field_name: str) -> None:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{field_name} must be a nonempty string")
+
+
+def _validate_release_pass_github_identity(
+    identity: dict[str, Any],
+    expected_code_sha: str,
+) -> None:
+    if identity.get("github_actions") != "true":
+        raise ValueError("release PASS requires github_actions == 'true'")
+    if identity.get("github_ref") != "refs/heads/main":
+        raise ValueError("release PASS requires github_ref == 'refs/heads/main'")
+    if identity.get("github_sha") != expected_code_sha:
+        raise ValueError("release PASS requires github_sha to equal expected_code_sha")
+    for field in ("github_run_id", "github_run_attempt", "github_workflow_ref"):
+        _require_nonempty_string(identity.get(field), f"release PASS {field}")
+
+
+def _validate_release_pass_code_identity(
+    preflight: dict[str, Any],
+    final: dict[str, Any],
+    expected_code_sha: str,
+) -> None:
+    if preflight["head_sha"] != expected_code_sha:
+        raise ValueError("release PASS requires preflight HEAD to equal expected_code_sha")
+    if final["head_sha"] != expected_code_sha:
+        raise ValueError("release PASS requires final HEAD to equal expected_code_sha")
+    if preflight["head_sha"] != final["head_sha"]:
+        raise ValueError("release PASS requires stable code identity across execution")
+    for identity, name in ((preflight, "preflight"), (final, "final")):
+        if identity["staged_clean"] is not True:
+            raise ValueError(f"release PASS requires {name} staged_clean")
+        if identity["unstaged_clean"] is not True:
+            raise ValueError(f"release PASS requires {name} unstaged_clean")
+
+
+def _validate_release_pass_contract_identity(contract_identity: dict[str, Any]) -> None:
+    for field, expected in V1_RELEASE_CONTRACT.items():
+        actual = contract_identity.get(field)
+        if actual != expected:
+            raise ValueError(
+                f"release PASS release_contract_identity.{field} must match frozen V1",
+            )
+
+
+def _validate_release_pass_selected_manifest(selected_identity: dict[str, Any]) -> None:
+    if selected_identity.get("manifest_id") != V1_MANIFEST_ID:
+        raise ValueError("release PASS requires V1 manifest identity")
+    if selected_identity.get("manifest_path") != V1_RELEASE_CONTRACT["manifest_path"]:
+        raise ValueError("release PASS requires frozen V1 manifest path")
+    if selected_identity.get("manifest_sha256") != V1_RELEASE_CONTRACT["manifest_sha256"]:
+        raise ValueError("release PASS requires frozen V1 manifest SHA")
+    expected_count = V1_RELEASE_CONTRACT["expected_topic_count"]
+    expected_ids = V1_RELEASE_CONTRACT["ordered_topic_ids"]
+    if selected_identity.get("actual_topic_count") != expected_count:
+        raise ValueError("release PASS requires actual_topic_count == 20")
+    if selected_identity.get("expected_topic_count") != expected_count:
+        raise ValueError("release PASS requires expected_topic_count == 20")
+    if selected_identity.get("actual_topic_ids") != expected_ids:
+        raise ValueError("release PASS requires actual_topic_ids == 1..20")
+    if selected_identity.get("ordered_topic_ids") != expected_ids:
+        raise ValueError("release PASS requires ordered_topic_ids == 1..20")
+
+
+def _validate_release_pass_results(results: list[Any]) -> None:
+    expected_ids = V1_RELEASE_CONTRACT["ordered_topic_ids"]
+    if len(results) != len(expected_ids):
+        raise ValueError("release PASS requires exactly 20 ordered unit results")
+    run_ids: list[str] = []
+    for index, expected_id in enumerate(expected_ids):
+        result = results[index]
+        if not isinstance(result, dict):
+            raise ValueError(f"release PASS result at index {index} must be an object")
+        missing = [field for field in RELEASE_PASS_RESULT_FIELDS if field not in result]
+        if missing:
+            raise ValueError(f"release PASS result {expected_id} missing fields: {missing}")
+        if result.get("id") != expected_id:
+            raise ValueError("release PASS result IDs must be exactly 1..20 in order")
+        run_id = result.get("run_id")
+        if not isinstance(run_id, str) or not run_id:
+            raise ValueError("release PASS requires nonempty unique run IDs")
+        run_ids.append(run_id)
+    if len(set(run_ids)) != len(run_ids):
+        raise ValueError("release PASS run IDs must be unique")
+
+
+def _validate_release_pass_evidence(
+    payload: dict[str, Any],
+    *,
+    github_identity: dict[str, Any],
+    expected_code_sha: str,
+    preflight: dict[str, Any],
+    final: dict[str, Any],
+    contract_identity: dict[str, Any],
+    selected_identity: dict[str, Any],
+) -> None:
+    _validate_release_pass_github_identity(github_identity, expected_code_sha)
+    _validate_release_pass_code_identity(preflight, final, expected_code_sha)
+    _validate_release_pass_contract_identity(contract_identity)
+    _validate_release_pass_selected_manifest(selected_identity)
+    if payload["gate_requested"] is not True:
+        raise ValueError("release PASS requires gate_requested")
+    if payload["gate_failures"] != []:
+        raise ValueError("release PASS requires empty gate_failures")
+    _validate_release_pass_results(payload["ordered_unit_results"])
+
+
 def _validate_evidence_structure(payload: dict[str, Any]) -> None:
     missing = [field for field in EVIDENCE_REQUIRED_FIELDS if field not in payload]
     if missing:
@@ -642,12 +762,15 @@ def _validate_evidence_structure(payload: dict[str, Any]) -> None:
         raise ValueError("gate_failures must be a list")
 
     if payload["mode"] == "release" and payload["release_qualification"] == "PASS":
-        if len(payload["ordered_unit_results"]) != V1_RELEASE_CONTRACT["expected_topic_count"]:
-            raise ValueError("release PASS requires exactly 20 ordered unit results")
-        if contract_identity["manifest_id"] != V1_MANIFEST_ID:
-            raise ValueError("release PASS requires V1 manifest identity")
-        if preflight["head_sha"] != final["head_sha"]:
-            raise ValueError("release PASS requires stable code identity across execution")
+        _validate_release_pass_evidence(
+            payload,
+            github_identity=github_identity,
+            expected_code_sha=expected_code_sha,
+            preflight=preflight,
+            final=final,
+            contract_identity=contract_identity,
+            selected_identity=selected_identity,
+        )
 
 
 def _validate_evidence_payload(payload: dict[str, Any]) -> None:
