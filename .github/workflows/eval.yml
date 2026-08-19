@@ -1,9 +1,16 @@
-name: Eval gates (manual — costs ~$0.07 in API credits)
+name: Eval gates (manual — costs vary by mode)
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: "Benchmark mode (smoke = partial non-release; release = full 20-topic qualification)"
+        type: choice
+        options:
+          - smoke
+          - release
+        default: smoke
       topics:
-        description: "Number of benchmark topics (slice of evals/topics.json)"
+        description: "Smoke mode only: number of benchmark topics (slice of evals/topics.json)"
         default: "3"
 
 jobs:
@@ -22,6 +29,12 @@ jobs:
       HITL_AUTO_APPROVE: "1"
       # GIT_PUSH_ENABLED deliberately unset -> git_node stays in dry-run.
     steps:
+      - name: Reject release mode off main branch
+        if: ${{ inputs.mode == 'release' && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Release benchmark qualification is only valid on refs/heads/main"
+          exit 1
+
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
@@ -48,14 +61,19 @@ jobs:
       - name: "Gate 2: telemetry correctness (attribution sums, chunk_index, latency split)"
         run: uv run python scripts/check_telemetry_fields.py
 
-      - name: "Gate 3: benchmark slice (zero failures, per-run UVR <= 0.15)"
-        run: uv run python scripts/benchmark.py --limit ${{ inputs.topics }} --gate
+      - name: "Gate 3a: smoke benchmark (non-release evidence)"
+        if: ${{ inputs.mode == 'smoke' }}
+        run: uv run python scripts/benchmark.py --mode smoke --limit ${{ inputs.topics }} --gate
+
+      - name: "Gate 3b: release benchmark (full 20-topic release qualification)"
+        if: ${{ inputs.mode == 'release' }}
+        run: uv run python scripts/benchmark.py --mode release --gate --expected-code-sha ${{ github.sha }}
 
       - name: Upload run records
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: eval-run-records
+          name: eval-run-records-${{ inputs.mode }}
           path: |
             outputs/runs/
             outputs/benchmark_results/
