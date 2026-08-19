@@ -366,9 +366,17 @@ count checks for known-cardinality fixtures do not answer it.
 The accepted sequence is:
 
 1. complete P0-1 canonical closeout;
-2. perform the separate Stage 2 MCP architecture and implementation checkpoint;
-3. only after independent MCP validation, return to the selected P0-2a Content Agent mission;
-4. treat A2A as later Stage 3 work.
+2. perform Stage 2 MCP architecture and implementation as a separate infrastructure mission that
+   does not implement P0-2a;
+3. independently validate the MCP infrastructure;
+4. execute P0-2a as the first substantive Content Agent engineering mission through the validated
+   MCP workflow, unless the Architect proves that a smaller prerequisite mission is required;
+5. after P0-2a, explicitly evaluate whether the MCP-assisted governance workflow functioned
+   correctly in a real engineering mission; and
+6. only after that proof, begin separate Stage 3 A2A architecture and implementation.
+
+The frozen dependency is: **MCP validated → P0-2a executed through MCP → MCP-assisted workflow
+evaluated → A2A**. A2A does not block P0-2a.
 
 This architecture record does not authorize P0-2 implementation. Proposed S3/Postgres/event-driven
 ingestion, tenant/ACL, model-tier, and related roadmap ideas remain input for a separate architecture

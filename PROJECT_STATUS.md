@@ -80,8 +80,15 @@ historical evidence, not a current enterprise-release decision.
 
 The current engineering mission is the separately governed **Stage 2 MCP architecture and
 implementation checkpoint**. P0-1 documentation closeout does not authorize Cursor or another
-implementation agent to begin P0-2. P0-2a is the selected next Content Agent product mission after
-the MCP checkpoint is independently validated. A2A remains later Stage 3 work.
+implementation agent to begin P0-2, and MCP implementation must not silently implement P0-2a.
+After MCP is independently validated, P0-2a is intended to be the first substantive Content Agent
+engineering mission executed through that validated workflow, unless the Architect proves a
+smaller prerequisite mission is required. After P0-2a, the MCP-assisted governance workflow must be
+explicitly evaluated based on that real mission. Only after that proof may separate Stage 3 A2A
+architecture and implementation begin; A2A does not block starting P0-2a.
+
+The frozen dependency is: **MCP validated → P0-2a executed through MCP → MCP-assisted workflow
+evaluated → A2A**.
 
 No P0-2 implementation, merge, publish, or deployment is authorized by this file.
 
