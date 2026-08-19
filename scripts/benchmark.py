@@ -3,14 +3,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import subprocess
 import sys
 import time
+from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlsplit
 
 import click
 
@@ -72,6 +76,7 @@ RELEASE_PASS_RESULT_FIELDS = (
     "validation_error",
     "subprocess_exit_code",
 )
+RELEASE_RESULT_FIELDS = RELEASE_PASS_RESULT_FIELDS + ("wall_time_s", "stderr")
 EVIDENCE_REQUIRED_FIELDS = (
     "schema_version",
     "timestamp_utc",
@@ -95,6 +100,56 @@ VALID_MODES = frozenset({"smoke", "release"})
 VALID_RELEASE_QUALIFICATIONS = frozenset({"PASS", "FAIL", "NON_RELEASE"})
 GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+SAFE_EVALUATION_CONFIG_FIELDS = frozenset({
+    "DEEPSEEK_MODEL",
+    "DEEPSEEK_BASE_URL_SHA256",
+    "QDRANT_URL_SHA256",
+    "QDRANT_COLLECTION",
+    "QDRANT_EMBEDDING_DIM",
+    "KB_N_RESULTS",
+    "TAVILY_MAX_RESULTS",
+    "TAVILY_MIN_AVG_SCORE",
+    "PROMPT_VERSION",
+    "PROMPT_HASHES",
+    "GROUNDING_FLOOR",
+    "UVR_THRESHOLD",
+})
+GITHUB_IDENTITY_FIELDS = frozenset({
+    "github_actions", "github_ref", "github_sha", "github_run_id",
+    "github_run_attempt", "github_workflow_ref",
+})
+CODE_IDENTITY_FIELDS = frozenset({"head_sha", "staged_clean", "unstaged_clean"})
+RELEASE_SELECTED_MANIFEST_FIELDS = frozenset({
+    "manifest_id", "manifest_path", "manifest_sha256", "expected_topic_count",
+    "ordered_topic_ids", "actual_topic_count", "actual_topic_ids",
+})
+SECRET_KEY_MARKERS = (
+    "apikey", "authorization", "accesstoken", "refreshtoken", "bearertoken",
+    "clientsecret", "password", "privatekey", "credential",
+)
+KNOWN_SECRET_ENVIRONMENT_KEYS = (
+    "DEEPSEEK_API_KEY", "TAVILY_API_KEY", "LANGCHAIN_API_KEY", "API_BEARER_TOKEN",
+)
+
+
+@dataclass(frozen=True)
+class TrustedReleaseFinalizationContext:
+    """Process-owned inputs used to authorize a release PASS, not payload inputs."""
+
+    expected_code_sha: str
+    preflight_github_identity: dict[str, Any]
+    final_github_identity: dict[str, Any]
+    preflight_code_identity: dict[str, Any]
+    final_code_identity: dict[str, Any]
+    release_contract_identity: dict[str, Any]
+    selected_manifest_identity: dict[str, Any]
+    evaluation_configuration: dict[str, Any]
+    evaluation_config_sha256: str
+    ordered_unit_results: list[dict[str, Any]]
+    aggregate_metrics: dict[str, Any]
+    gate_failures: list[str]
+    timestamp_utc: str
+    release_qualification: str
 
 
 def _fail_preflight(message: str) -> None:
@@ -103,7 +158,9 @@ def _fail_preflight(message: str) -> None:
 
 
 def _canonical_json(payload: dict[str, Any]) -> str:
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False,
+    )
 
 
 def _sha256_text(value: str) -> str:
@@ -226,6 +283,7 @@ def _validate_code_identity(expected_code_sha: str, identity: dict[str, Any]) ->
 
 def _validate_v1_contract_immutability(contract: dict[str, Any]) -> None:
     """Reject any contract that does not match frozen V1 semantics exactly."""
+    _validate_v1_contract_types(contract, "release contract")
     for field, expected in V1_RELEASE_CONTRACT.items():
         actual = contract.get(field)
         if actual != expected:
@@ -235,6 +293,26 @@ def _validate_v1_contract_immutability(contract: dict[str, Any]) -> None:
             )
 
 
+def _validate_v1_contract_types(contract: Any, label: str) -> dict[str, Any]:
+    contract = _require_exact_keys(contract, RELEASE_CONTRACT_REQUIRED_FIELDS, label)
+    if _require_true_int(contract["schema_version"], f"{label}.schema_version") != 1:
+        raise ValueError(f"{label}.schema_version must be 1")
+    _require_nonempty_string(contract["manifest_id"], f"{label}.manifest_id")
+    _require_nonempty_string(contract["manifest_path"], f"{label}.manifest_path")
+    _validate_sha256_field(contract["manifest_sha256"], f"{label}.manifest_sha256")
+    _require_true_int(
+        contract["expected_topic_count"], f"{label}.expected_topic_count", positive=True,
+    )
+    ordered_ids = contract["ordered_topic_ids"]
+    if not isinstance(ordered_ids, list) or not ordered_ids:
+        raise ValueError(f"{label}.ordered_topic_ids must be a nonempty list")
+    for index, topic_id in enumerate(ordered_ids):
+        _require_true_int(topic_id, f"{label}.ordered_topic_ids[{index}]", positive=True)
+    if len(ordered_ids) != contract["expected_topic_count"]:
+        raise ValueError(f"{label}.ordered_topic_ids length must equal expected_topic_count")
+    return contract
+
+
 def load_release_contract(path: Path = RELEASE_CONTRACT_PATH) -> dict[str, Any]:
     if not path.is_file():
         _fail_preflight(f"release contract missing: {path}")
@@ -242,22 +320,10 @@ def load_release_contract(path: Path = RELEASE_CONTRACT_PATH) -> dict[str, Any]:
         contract = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
         _fail_preflight(f"release contract malformed: {error}")
-    if not isinstance(contract, dict):
-        _fail_preflight("release contract must be a JSON object")
-    extra = set(contract) - RELEASE_CONTRACT_REQUIRED_FIELDS
-    missing = RELEASE_CONTRACT_REQUIRED_FIELDS - set(contract)
-    if extra:
-        _fail_preflight(f"release contract has unexpected fields: {sorted(extra)}")
-    if missing:
-        _fail_preflight(f"release contract missing fields: {sorted(missing)}")
-    if contract["schema_version"] != 1:
-        _fail_preflight("release contract schema_version must be 1")
-    ordered_ids = contract["ordered_topic_ids"]
-    if not isinstance(ordered_ids, list) or not ordered_ids:
-        _fail_preflight("ordered_topic_ids must be a nonempty list")
-    if len(ordered_ids) != contract["expected_topic_count"]:
-        _fail_preflight("ordered_topic_ids length must equal expected_topic_count")
-    _validate_v1_contract_immutability(contract)
+    try:
+        _validate_v1_contract_immutability(contract)
+    except ValueError as error:
+        _fail_preflight(str(error))
     return contract
 
 
@@ -266,7 +332,49 @@ def _is_positive_int(value: Any) -> bool:
 
 
 def _is_numeric(value: Any) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool)
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
+def _require_exact_keys(value: Any, expected: frozenset[str] | tuple[str, ...], label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must be an object")
+    expected_keys = set(expected)
+    missing = sorted(expected_keys - set(value))
+    extra = sorted(set(value) - expected_keys)
+    if missing or extra:
+        raise ValueError(f"{label} keys mismatch: missing={missing}, extra={extra}")
+    return value
+
+
+def _require_true_int(value: Any, label: str, *, positive: bool = False) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label} must be a true integer")
+    if positive and value <= 0:
+        raise ValueError(f"{label} must be a positive integer")
+    return value
+
+
+def _require_nonnegative_int(value: Any, label: str) -> int:
+    value = _require_true_int(value, label)
+    if value < 0:
+        raise ValueError(f"{label} must be a nonnegative integer")
+    return value
+
+
+def _require_finite_number(
+    value: Any, label: str, *, minimum: float | None = None, maximum: float | None = None,
+) -> float | int:
+    if not _is_numeric(value):
+        raise ValueError(f"{label} must be a finite non-bool number")
+    if minimum is not None and value < minimum:
+        raise ValueError(f"{label} must be >= {minimum}")
+    if maximum is not None and value > maximum:
+        raise ValueError(f"{label} must be <= {maximum}")
+    return value
 
 
 def _frozen_v1_manifest_path() -> Path:
@@ -384,6 +492,75 @@ def resolve_evaluation_config() -> tuple[dict[str, Any], str]:
     return config, digest
 
 
+def _normalized_evidence_key(key: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", key.lower())
+
+
+def _known_runtime_secrets() -> tuple[str, ...]:
+    return tuple(
+        value for name in KNOWN_SECRET_ENVIRONMENT_KEYS
+        if (value := os.environ.get(name))
+    )
+
+
+def _validate_no_secrets(value: Any, *, path: str = "evidence") -> None:
+    """Bounded schema/known-secret exclusion; it is not unknown-secret discovery."""
+    secrets = _known_runtime_secrets()
+
+    def visit(item: Any, item_path: str) -> None:
+        if isinstance(item, dict):
+            for key, child in item.items():
+                key_text = str(key)
+                normalized = _normalized_evidence_key(key_text)
+                if any(marker in normalized for marker in SECRET_KEY_MARKERS):
+                    raise ValueError(f"secret-bearing evidence key rejected at {item_path}")
+                visit(child, f"{item_path}.{key_text}")
+            return
+        if isinstance(item, list):
+            for index, child in enumerate(item):
+                visit(child, f"{item_path}[{index}]")
+            return
+        if not isinstance(item, str):
+            return
+        if any(secret in item for secret in secrets):
+            raise ValueError(f"known runtime secret rejected at {item_path}")
+        parsed = urlsplit(item)
+        if parsed.scheme and (parsed.username is not None or parsed.password is not None):
+            raise ValueError(f"credential-bearing URL rejected at {item_path}")
+        if parsed.scheme:
+            for query_key, _ in parse_qsl(parsed.query, keep_blank_values=True):
+                normalized = _normalized_evidence_key(query_key)
+                if any(marker in normalized for marker in SECRET_KEY_MARKERS):
+                    raise ValueError(f"credential-bearing URL rejected at {item_path}")
+
+    visit(value, path)
+
+
+def _validate_safe_evaluation_config(config: Any) -> dict[str, Any]:
+    config = _require_exact_keys(
+        config, SAFE_EVALUATION_CONFIG_FIELDS, "evaluation_configuration",
+    )
+    _require_nonempty_string(config["DEEPSEEK_MODEL"], "evaluation_configuration.DEEPSEEK_MODEL")
+    _validate_sha256_field(
+        config["DEEPSEEK_BASE_URL_SHA256"], "evaluation_configuration.DEEPSEEK_BASE_URL_SHA256",
+    )
+    _validate_sha256_field(
+        config["QDRANT_URL_SHA256"], "evaluation_configuration.QDRANT_URL_SHA256",
+    )
+    _require_nonempty_string(config["QDRANT_COLLECTION"], "evaluation_configuration.QDRANT_COLLECTION")
+    _require_true_int(config["QDRANT_EMBEDDING_DIM"], "evaluation_configuration.QDRANT_EMBEDDING_DIM", positive=True)
+    _require_nonnegative_int(config["KB_N_RESULTS"], "evaluation_configuration.KB_N_RESULTS")
+    _require_nonnegative_int(config["TAVILY_MAX_RESULTS"], "evaluation_configuration.TAVILY_MAX_RESULTS")
+    _require_finite_number(config["TAVILY_MIN_AVG_SCORE"], "evaluation_configuration.TAVILY_MIN_AVG_SCORE")
+    _require_nonempty_string(config["PROMPT_VERSION"], "evaluation_configuration.PROMPT_VERSION")
+    if not isinstance(config["PROMPT_HASHES"], dict):
+        raise ValueError("evaluation_configuration.PROMPT_HASHES must be an object")
+    _require_finite_number(config["GROUNDING_FLOOR"], "evaluation_configuration.GROUNDING_FLOOR")
+    _require_finite_number(config["UVR_THRESHOLD"], "evaluation_configuration.UVR_THRESHOLD")
+    _validate_no_secrets(config, path="evaluation_configuration")
+    return config
+
+
 def _child_environment(evaluation_config: dict[str, Any]) -> dict[str, str]:
     env = os.environ.copy()
     env["DEEPSEEK_MODEL"] = evaluation_config["DEEPSEEK_MODEL"]
@@ -461,15 +638,24 @@ def _run_topic(
                 if validation_error:
                     status = "failed"
 
-    outcome = (
-        verification_outcome(telemetry, topic)
-        if telemetry is not None else {
+    if telemetry is None:
+        outcome = {
             "verification_status": "unknown",
             "evaluation_status": "telemetry_unavailable",
             "uvr": None,
             "validation_error": validation_error or f"CLI exited with status {proc.returncode}",
         }
-    )
+    else:
+        try:
+            outcome = verification_outcome(telemetry, topic)
+        except (TypeError, ValueError, ZeroDivisionError) as error:
+            status = "failed"
+            outcome = {
+                "verification_status": telemetry.get("verification_status", "unknown"),
+                "evaluation_status": "telemetry_invalid",
+                "uvr": None,
+                "validation_error": f"telemetry arithmetic invalid: {type(error).__name__}",
+            }
     if outcome["validation_error"] and validation_error is None:
         validation_error = outcome["validation_error"]
 
@@ -492,24 +678,50 @@ def _run_topic(
 def _aggregate_metrics(results: list[dict[str, Any]]) -> dict[str, Any]:
     valid = [
         result for result in results
-        if result["status"] == "success" and not result["validation_error"]
+        if result.get("status") == "success" and not result.get("validation_error")
+        and isinstance(result.get("telemetry"), dict)
     ]
-    scorable = [result for result in valid if result["uvr"] is not None]
+    scorable = [result for result in valid if _is_numeric(result.get("uvr"))]
+
+    def numeric(values: list[Any]) -> list[float | int]:
+        return [value for value in values if _is_numeric(value)]
+
     return {
         "total_runs": len(results),
         "successful": len(valid),
         "failed": len(results) - len(valid),
         "unscorable": len([result for result in valid if result["uvr"] is None]),
-        "mean_cost_usd": _mean([result["telemetry"]["total_cost_usd"] for result in valid], 5),
-        "mean_grounding": _mean([result["telemetry"].get("grounding_score", 0) for result in valid], 3),
-        "mean_reflection": _mean([result["telemetry"].get("reflection_score", 0) for result in valid], 1),
-        "mean_wall_time_s": _mean([result["wall_time_s"] for result in results], 1),
+        "mean_cost_usd": _mean(numeric([result["telemetry"].get("total_cost_usd") for result in valid]), 5),
+        "mean_grounding": _mean(numeric([result["telemetry"].get("grounding_score", 0) for result in valid]), 3),
+        "mean_reflection": _mean(numeric([result["telemetry"].get("reflection_score", 0) for result in valid]), 1),
+        "mean_wall_time_s": _mean(numeric([result.get("wall_time_s") for result in results]), 1),
         "mean_html_errors": _mean([len(result["telemetry"].get("error_log", [])) for result in valid], 1),
         "mean_unverified_rate": _mean([result["uvr"] for result in scorable], 3),
         "runs_below_grounding_floor": sum(
             1 for result in valid if result["telemetry"].get("grounding_score", 1.0) < GROUNDING_FLOOR
         ),
     }
+
+
+def _validate_release_telemetry_types(telemetry: dict[str, Any], label: str) -> None:
+    for field in ("claims_verified", "claims_weak", "claims_unverified"):
+        _require_nonnegative_int(telemetry.get(field), f"{label} telemetry.{field}")
+    if _claim_total(telemetry) <= 0:
+        raise ValueError(f"{label}: unscorable zero-verdict telemetry claim total")
+    for field in ("web_sources_count", "kb_results_count", "total_tokens"):
+        _require_nonnegative_int(telemetry.get(field), f"{label} telemetry.{field}")
+    _require_finite_number(telemetry.get("total_cost_usd"), f"{label} telemetry.total_cost_usd", minimum=0)
+    _require_finite_number(
+        telemetry.get("grounding_score"), f"{label} telemetry.grounding_score", minimum=0, maximum=1,
+    )
+    reflection = _require_true_int(telemetry.get("reflection_score"), f"{label} telemetry.reflection_score")
+    if not 1 <= reflection <= 10:
+        raise ValueError(f"{label} telemetry.reflection_score must be in 1..10")
+    latency = telemetry.get("latency_ms")
+    if not isinstance(latency, dict):
+        raise ValueError(f"{label} telemetry.latency_ms must be an object")
+    for name, value in latency.items():
+        _require_finite_number(value, f"{label} telemetry.latency_ms.{name}", minimum=0)
 
 
 def _validate_release_units(
@@ -525,16 +737,20 @@ def _validate_release_units(
         )
         return failures
 
-    result_ids = [result["id"] for result in results]
+    result_ids = [result.get("id") if isinstance(result, dict) else None for result in results]
     if result_ids != expected_topic_ids:
         failures.append("release unit topic IDs are missing, extra, duplicate, or out of order")
 
-    run_ids = [result.get("run_id") for result in results]
-    if any(not run_id for run_id in run_ids):
+    run_ids = [result.get("run_id") for result in results if isinstance(result, dict)]
+    if len(run_ids) != len(results) or any(not isinstance(run_id, str) or not run_id for run_id in run_ids):
         failures.append("every release unit must have a nonempty run ID")
-    if len(set(run_ids)) != len(run_ids):
+    elif len(set(run_ids)) != len(run_ids):
         failures.append("release run IDs must be unique")
 
+    try:
+        _validate_safe_evaluation_config(evaluation_config)
+    except ValueError as error:
+        return [str(error)]
     expected_prompt_version = evaluation_config["PROMPT_VERSION"]
     expected_prompt_hashes = evaluation_config["PROMPT_HASHES"]
     try:
@@ -543,9 +759,20 @@ def _validate_release_units(
         failures.append(str(error))
         return failures
 
-    for result in results:
-        label = f"topic {result['id']:02d}"
-        expected_topic = v1_topics.get(result["id"])
+    for index, result in enumerate(results):
+        label = f"topic {expected_topic_ids[index]:02d}"
+        if not isinstance(result, dict):
+            failures.append(f"{label}: result must be an object")
+            continue
+        try:
+            _require_exact_keys(result, RELEASE_RESULT_FIELDS, f"{label} result")
+            result_id = _require_true_int(result.get("id"), f"{label} result.id", positive=True)
+            _require_true_int(result.get("subprocess_exit_code"), f"{label} subprocess_exit_code")
+            _require_finite_number(result.get("wall_time_s"), f"{label} wall_time_s", minimum=0)
+        except ValueError as error:
+            failures.append(str(error))
+            continue
+        expected_topic = v1_topics.get(result_id)
         if expected_topic is not None and result.get("topic") != expected_topic:
             failures.append(f"{label}: topic does not match frozen V1 manifest")
         if result["subprocess_exit_code"] != 0:
@@ -557,6 +784,21 @@ def _validate_release_units(
         telemetry = result["telemetry"]
         if not isinstance(telemetry, dict):
             failures.append(f"{label}: telemetry unavailable")
+            continue
+        # Preserve the existing validator as the first telemetry gate.  This is
+        # deterministic schema validation, not cryptographic artifact proof.
+        try:
+            telemetry_error = telemetry_validation_error(telemetry)
+        except Exception as error:  # malformed values must never fail open
+            failures.append(f"{label}: telemetry validator exception: {type(error).__name__}")
+            continue
+        if telemetry_error:
+            failures.append(f"{label}: telemetry validator: {telemetry_error}")
+            continue
+        try:
+            _validate_release_telemetry_types(telemetry, label)
+        except ValueError as error:
+            failures.append(str(error))
             continue
         if telemetry.get("run_id") != result["run_id"]:
             failures.append(f"{label}: telemetry run_id mismatch")
@@ -579,10 +821,13 @@ def _validate_release_units(
             failures.append(f"{label}: evaluation_status contradicts telemetry")
         total = _claim_total(telemetry)
         uvr = result["uvr"]
-        if not _is_numeric(uvr):
-            failures.append(f"{label}: UVR must be numeric")
-        elif uvr > UVR_THRESHOLD:
-            failures.append(f"{label}: UVR {uvr:.2f} > {UVR_THRESHOLD:.2f}")
+        try:
+            _require_finite_number(uvr, f"{label} UVR", minimum=0, maximum=1)
+        except ValueError as error:
+            failures.append(str(error))
+        else:
+            if uvr > UVR_THRESHOLD:
+                failures.append(f"{label}: UVR {uvr:.2f} > {UVR_THRESHOLD:.2f}")
         if total == 0:
             failures.append(f"{label}: unscorable or zero-verdict unit")
         elif _is_numeric(uvr):
@@ -628,10 +873,7 @@ def _validate_sha256_field(value: Any, field_name: str) -> None:
 
 
 def _validate_code_identity_object(value: Any, field_name: str) -> None:
-    if not isinstance(value, dict):
-        raise ValueError(f"{field_name} must be an object")
-    if "head_sha" not in value:
-        raise ValueError(f"{field_name} missing head_sha")
+    value = _require_exact_keys(value, CODE_IDENTITY_FIELDS, field_name)
     _validate_git_sha_field(value["head_sha"], f"{field_name}.head_sha")
     for flag in ("staged_clean", "unstaged_clean"):
         if not isinstance(value.get(flag), bool):
@@ -647,6 +889,7 @@ def _validate_release_pass_github_identity(
     identity: dict[str, Any],
     expected_code_sha: str,
 ) -> None:
+    _require_exact_keys(identity, GITHUB_IDENTITY_FIELDS, "github_actions_identity")
     if identity.get("github_actions") != "true":
         raise ValueError("release PASS requires github_actions == 'true'")
     if identity.get("github_ref") != "refs/heads/main":
@@ -676,6 +919,7 @@ def _validate_release_pass_code_identity(
 
 
 def _validate_release_pass_contract_identity(contract_identity: dict[str, Any]) -> None:
+    _validate_v1_contract_types(contract_identity, "release_contract_identity")
     for field, expected in V1_RELEASE_CONTRACT.items():
         actual = contract_identity.get(field)
         if actual != expected:
@@ -685,6 +929,24 @@ def _validate_release_pass_contract_identity(contract_identity: dict[str, Any]) 
 
 
 def _validate_release_pass_selected_manifest(selected_identity: dict[str, Any]) -> None:
+    selected_identity = _require_exact_keys(
+        selected_identity, RELEASE_SELECTED_MANIFEST_FIELDS, "selected_manifest_identity",
+    )
+    _require_nonempty_string(selected_identity["manifest_id"], "selected_manifest_identity.manifest_id")
+    _require_nonempty_string(selected_identity["manifest_path"], "selected_manifest_identity.manifest_path")
+    _validate_sha256_field(selected_identity["manifest_sha256"], "selected_manifest_identity.manifest_sha256")
+    _require_true_int(
+        selected_identity["expected_topic_count"], "selected_manifest_identity.expected_topic_count", positive=True,
+    )
+    _require_true_int(
+        selected_identity["actual_topic_count"], "selected_manifest_identity.actual_topic_count", positive=True,
+    )
+    for field in ("ordered_topic_ids", "actual_topic_ids"):
+        values = selected_identity[field]
+        if not isinstance(values, list) or not values:
+            raise ValueError(f"selected_manifest_identity.{field} must be a nonempty list")
+        for index, topic_id in enumerate(values):
+            _require_true_int(topic_id, f"selected_manifest_identity.{field}[{index}]", positive=True)
     if selected_identity.get("manifest_id") != V1_MANIFEST_ID:
         raise ValueError("release PASS requires V1 manifest identity")
     if selected_identity.get("manifest_path") != V1_RELEASE_CONTRACT["manifest_path"]:
@@ -716,10 +978,8 @@ def _validate_release_pass_results(
         result = results[index]
         if not isinstance(result, dict):
             raise ValueError(f"release PASS result at index {index} must be an object")
-        missing = [field for field in RELEASE_PASS_RESULT_FIELDS if field not in result]
-        if missing:
-            raise ValueError(f"release PASS result {expected_id} missing fields: {missing}")
-        if result.get("id") != expected_id:
+        _require_exact_keys(result, RELEASE_RESULT_FIELDS, f"release PASS result {expected_id}")
+        if _require_true_int(result.get("id"), f"release PASS result {expected_id}.id", positive=True) != expected_id:
             raise ValueError("release PASS result IDs must be exactly 1..20 in order")
         run_id = result.get("run_id")
         if not isinstance(run_id, str) or not run_id:
@@ -749,6 +1009,14 @@ def _validate_release_pass_aggregates(payload: dict[str, Any]) -> None:
         raise ValueError(f"release PASS aggregate_metrics missing fields: {missing}")
     if extra:
         raise ValueError(f"release PASS aggregate_metrics has unexpected fields: {extra}")
+    for field in ("total_runs", "successful", "failed", "unscorable", "runs_below_grounding_floor"):
+        _require_nonnegative_int(aggregate[field], f"aggregate_metrics.{field}")
+    for field in (
+        "mean_cost_usd", "mean_grounding", "mean_reflection", "mean_wall_time_s",
+        "mean_html_errors", "mean_unverified_rate",
+    ):
+        if aggregate[field] is not None:
+            _require_finite_number(aggregate[field], f"aggregate_metrics.{field}")
     if aggregate != expected:
         mismatches = sorted(
             field for field in expected if aggregate[field] != expected[field]
@@ -785,9 +1053,7 @@ def _validate_release_pass_evidence(
 
 
 def _validate_evidence_structure(payload: dict[str, Any]) -> None:
-    missing = [field for field in EVIDENCE_REQUIRED_FIELDS if field not in payload]
-    if missing:
-        raise ValueError(f"evidence missing required fields: {missing}")
+    _require_exact_keys(payload, EVIDENCE_REQUIRED_FIELDS, "evidence")
 
     if payload["schema_version"] != EVIDENCE_SCHEMA_VERSION:
         raise ValueError("invalid evidence schema_version")
@@ -804,9 +1070,9 @@ def _validate_evidence_structure(payload: dict[str, Any]) -> None:
     if not isinstance(payload["gate_requested"], bool):
         raise ValueError("gate_requested must be a boolean")
 
-    github_identity = payload["github_actions_identity"]
-    if not isinstance(github_identity, dict):
-        raise ValueError("github_actions_identity must be an object")
+    github_identity = _require_exact_keys(
+        payload["github_actions_identity"], GITHUB_IDENTITY_FIELDS, "github_actions_identity",
+    )
 
     expected_code_sha = payload["expected_code_sha"]
     if payload["mode"] == "release":
@@ -825,22 +1091,21 @@ def _validate_evidence_structure(payload: dict[str, Any]) -> None:
         if final is not None:
             raise ValueError("final_code_identity must be null for smoke mode")
 
-    contract_identity = payload["release_contract_identity"]
-    if not isinstance(contract_identity, dict):
-        raise ValueError("release_contract_identity must be an object")
-    for field in RELEASE_CONTRACT_REQUIRED_FIELDS:
-        if field not in contract_identity:
-            raise ValueError(f"release_contract_identity missing {field}")
+    contract_identity = _validate_v1_contract_types(
+        payload["release_contract_identity"], "release_contract_identity",
+    )
 
     selected_identity = payload["selected_manifest_identity"]
-    if not isinstance(selected_identity, dict):
-        raise ValueError("selected_manifest_identity must be an object")
-    if not isinstance(selected_identity.get("manifest_id"), str):
-        raise ValueError("selected_manifest_identity.manifest_id must be a string")
+    if payload["mode"] == "release":
+        _validate_release_pass_selected_manifest(selected_identity)
+    else:
+        _require_exact_keys(
+            selected_identity,
+            frozenset({"manifest_id", "manifest_path", "manifest_sha256", "selected_topic_count", "selected_topic_ids"}),
+            "selected_manifest_identity",
+        )
 
-    evaluation_config = payload["evaluation_configuration"]
-    if not isinstance(evaluation_config, dict) or not evaluation_config:
-        raise ValueError("evaluation_configuration must be a nonempty object")
+    evaluation_config = _validate_safe_evaluation_config(payload["evaluation_configuration"])
     _validate_sha256_field(payload["evaluation_config_sha256"], "evaluation_config_sha256")
     expected_config_sha = hashlib.sha256(
         _canonical_json(evaluation_config).encode("utf-8"),
@@ -868,6 +1133,7 @@ def _validate_evidence_structure(payload: dict[str, Any]) -> None:
 
 
 def _validate_evidence_payload(payload: dict[str, Any]) -> None:
+    _validate_no_secrets(payload)
     _validate_evidence_structure(payload)
     digest = payload.get("evidence_sha256")
     if not digest:
@@ -880,15 +1146,152 @@ def _validate_evidence_payload(payload: dict[str, Any]) -> None:
         raise ValueError("evidence_sha256 mismatch")
 
 
-def _write_evidence_report(payload: dict[str, Any], out_path: Path) -> None:
-    body = dict(payload)
+def _build_trusted_release_context(
+    *,
+    expected_code_sha: str,
+    preflight_github_identity: dict[str, Any],
+    preflight_code_identity: dict[str, Any],
+    preflight_contract: dict[str, Any],
+    preflight_manifest_identity: dict[str, Any],
+    preflight_evaluation_config: dict[str, Any],
+    results: list[dict[str, Any]],
+    gate_failures: list[str],
+) -> TrustedReleaseFinalizationContext:
+    """Resolve every trust root again; a payload cannot authenticate itself."""
+    final_github_identity = _github_actions_identity()
+    final_code_identity = _resolve_code_identity()
+    final_config, final_config_sha256 = resolve_evaluation_config()
+    final_contract = load_release_contract()
+    _, final_manifest_identity = load_validated_manifest(final_contract)
+    if final_github_identity != preflight_github_identity:
+        raise ValueError("trusted-context comparison: GitHub identity drifted")
+    if final_code_identity != preflight_code_identity:
+        raise ValueError("trusted-context comparison: code identity drifted")
+    if final_config != preflight_evaluation_config:
+        raise ValueError("trusted-context comparison: evaluation configuration drifted")
+    if final_contract != preflight_contract:
+        raise ValueError("trusted-context comparison: release contract drifted")
+    if final_manifest_identity != preflight_manifest_identity:
+        raise ValueError("trusted-context comparison: manifest identity drifted")
+    frozen_contract = deepcopy(V1_RELEASE_CONTRACT)
+    if final_contract != frozen_contract:
+        raise ValueError("trusted-context comparison: immutable V1 contract drifted")
+    trusted_results = deepcopy(results)
+    trusted_failures = deepcopy(gate_failures)
+    if trusted_failures:
+        raise ValueError("trusted finalization requires no prior gate failures")
+    unit_failures = _validate_release_units(
+        trusted_results,
+        expected_topic_ids=deepcopy(frozen_contract["ordered_topic_ids"]),
+        evaluation_config=deepcopy(final_config),
+    )
+    if unit_failures:
+        raise ValueError("trusted finalization unit validation: " + "; ".join(unit_failures))
+    return TrustedReleaseFinalizationContext(
+        expected_code_sha=expected_code_sha,
+        preflight_github_identity=deepcopy(preflight_github_identity),
+        final_github_identity=deepcopy(final_github_identity),
+        preflight_code_identity=deepcopy(preflight_code_identity),
+        final_code_identity=deepcopy(final_code_identity),
+        release_contract_identity=frozen_contract,
+        selected_manifest_identity=deepcopy(final_manifest_identity),
+        evaluation_configuration=deepcopy(final_config),
+        evaluation_config_sha256=final_config_sha256,
+        ordered_unit_results=trusted_results,
+        aggregate_metrics=_aggregate_metrics(trusted_results),
+        gate_failures=trusted_failures,
+        timestamp_utc=datetime.now(timezone.utc).isoformat(),
+        release_qualification="PASS",
+    )
+
+
+def _trusted_release_payload(context: TrustedReleaseFinalizationContext) -> dict[str, Any]:
+    return {
+        "schema_version": EVIDENCE_SCHEMA_VERSION,
+        "timestamp_utc": context.timestamp_utc,
+        "mode": "release",
+        "release_qualification": context.release_qualification,
+        "gate_requested": True,
+        "github_actions_identity": deepcopy(context.final_github_identity),
+        "expected_code_sha": context.expected_code_sha,
+        "preflight_code_identity": deepcopy(context.preflight_code_identity),
+        "final_code_identity": deepcopy(context.final_code_identity),
+        "release_contract_identity": deepcopy(context.release_contract_identity),
+        "selected_manifest_identity": deepcopy(context.selected_manifest_identity),
+        "evaluation_configuration": deepcopy(context.evaluation_configuration),
+        "evaluation_config_sha256": context.evaluation_config_sha256,
+        "ordered_unit_results": deepcopy(context.ordered_unit_results),
+        "aggregate_metrics": deepcopy(context.aggregate_metrics),
+        "gate_failures": deepcopy(context.gate_failures),
+    }
+
+
+def _sanitized_release_fail_evidence(
+    *, expected_code_sha: str, github_identity: dict[str, Any],
+    preflight_identity: dict[str, Any], final_identity: dict[str, Any],
+    manifest_identity: dict[str, Any], gate_failures: list[str],
+) -> dict[str, Any]:
+    config, config_sha256 = resolve_evaluation_config()
+    return {
+        "schema_version": EVIDENCE_SCHEMA_VERSION,
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "mode": "release",
+        "release_qualification": "FAIL",
+        "gate_requested": True,
+        "github_actions_identity": deepcopy(github_identity),
+        "expected_code_sha": expected_code_sha,
+        "preflight_code_identity": deepcopy(preflight_identity),
+        "final_code_identity": deepcopy(final_identity),
+        "release_contract_identity": deepcopy(V1_RELEASE_CONTRACT),
+        "selected_manifest_identity": deepcopy(manifest_identity),
+        "evaluation_configuration": config,
+        "evaluation_config_sha256": config_sha256,
+        "ordered_unit_results": [],
+        "aggregate_metrics": _aggregate_metrics([]),
+        "gate_failures": deepcopy(gate_failures),
+    }
+
+
+def _validate_trusted_release_payload(
+    payload: dict[str, Any], context: TrustedReleaseFinalizationContext | None,
+) -> None:
+    if context is None:
+        raise ValueError("release PASS requires external trusted finalization context")
+    expected = _trusted_release_payload(context)
+    expected["evidence_sha256"] = _compute_evidence_digest(expected)
+    if payload != expected:
+        raise ValueError("trusted-context comparison: persisted PASS differs from intended report")
+
+
+def _write_evidence_report(
+    payload: dict[str, Any], out_path: Path,
+    *, trusted_context: TrustedReleaseFinalizationContext | None = None,
+) -> dict[str, Any]:
+    body = deepcopy(payload)
+    if body.get("release_qualification") == "PASS":
+        _validate_trusted_release_payload(
+            {**body, "evidence_sha256": _compute_evidence_digest(body)}, trusted_context,
+        )
+    _validate_no_secrets(body)
     body["evidence_sha256"] = _compute_evidence_digest(body)
+    _validate_evidence_payload(body)
     tmp_path = out_path.with_suffix(out_path.suffix + ".tmp")
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path.write_text(json.dumps(body, indent=2, ensure_ascii=False), encoding="utf-8")
-    os.replace(tmp_path, out_path)
-    reread = json.loads(out_path.read_text(encoding="utf-8"))
-    _validate_evidence_payload(reread)
+    is_pass = body.get("release_qualification") == "PASS"
+    try:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path.write_text(json.dumps(body, indent=2, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp_path, out_path)
+        reread = json.loads(out_path.read_text(encoding="utf-8"))
+        _validate_evidence_payload(reread)
+        _validate_no_secrets(reread)
+        if is_pass:
+            _validate_trusted_release_payload(reread, trusted_context)
+        return reread
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        if is_pass:
+            out_path.unlink(missing_ok=True)
+        tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def _print_result_summary(result: dict[str, Any]) -> None:
@@ -896,17 +1299,20 @@ def _print_result_summary(result: dict[str, Any]) -> None:
     if telemetry is None:
         print(f"  {result['status']}: {result['validation_error']} | {result['wall_time_s']:.0f}s")
         return
-    verified = telemetry.get("claims_verified", 0)
-    weak = telemetry.get("claims_weak", 0)
-    unverified = telemetry.get("claims_unverified", 0)
-    total = verified + weak + unverified
-    uvr_label = f"{result['uvr']:.2f}" if result["uvr"] is not None else "N/A"
-    print(f"  cost=${telemetry['total_cost_usd']:.4f} | "
-          f"grounding={telemetry.get('grounding_score', 0):.2f} | "
-          f"reflection={telemetry.get('reflection_score', 0)} | "
-          f"claims={total} (v={verified} w={weak} u={unverified}) | uvr={uvr_label} | "
-          f"verification={result['verification_status']} | "
-          f"evaluation={result['evaluation_status']} | {result['wall_time_s']:.0f}s")
+    try:
+        verified = telemetry.get("claims_verified", 0)
+        weak = telemetry.get("claims_weak", 0)
+        unverified = telemetry.get("claims_unverified", 0)
+        total = verified + weak + unverified
+        uvr_label = f"{result['uvr']:.2f}" if result["uvr"] is not None else "N/A"
+        print(f"  cost=${telemetry['total_cost_usd']:.4f} | "
+              f"grounding={telemetry.get('grounding_score', 0):.2f} | "
+              f"reflection={telemetry.get('reflection_score', 0)} | "
+              f"claims={total} (v={verified} w={weak} u={unverified}) | uvr={uvr_label} | "
+              f"verification={result['verification_status']} | "
+              f"evaluation={result['evaluation_status']} | {result['wall_time_s']:.0f}s")
+    except (KeyError, TypeError, ValueError):
+        print("  telemetry formatting deferred to fail-closed release validation")
     if result["validation_error"]:
         print(f"    ↳ validation: {result['validation_error']}")
 
@@ -1023,7 +1429,63 @@ def run_benchmark(mode, limit, topic_id, gate, expected_code_sha):
     }
 
     out_path = Path(f"outputs/benchmark_results/benchmark_{timestamp}.json")
-    _write_evidence_report(evidence, out_path)
+    written_evidence: dict[str, Any]
+    if mode == "release" and release_qualification == "PASS":
+        try:
+            context = _build_trusted_release_context(
+                expected_code_sha=expected_code_sha,
+                preflight_github_identity=deepcopy(github_identity),
+                preflight_code_identity=deepcopy(preflight_identity),
+                preflight_contract=deepcopy(contract),
+                preflight_manifest_identity=deepcopy(manifest_identity),
+                preflight_evaluation_config=deepcopy(evaluation_config),
+                results=results,
+                gate_failures=gate_failures,
+            )
+            evidence = _trusted_release_payload(context)
+            written_evidence = _write_evidence_report(
+                evidence, out_path, trusted_context=context,
+            )
+        except (OSError, ValueError, json.JSONDecodeError, TypeError) as error:
+            # A failed finalization must never leave an apparently valid PASS
+            # artifact.  Do not retain untrusted result/telemetry content here.
+            out_path.unlink(missing_ok=True)
+            gate_failures.append("trusted finalization failed")
+            release_qualification = "FAIL"
+            final_identity = _resolve_code_identity()
+            evidence = _sanitized_release_fail_evidence(
+                expected_code_sha=expected_code_sha,
+                github_identity=_github_actions_identity(),
+                preflight_identity=preflight_identity,
+                final_identity=final_identity,
+                manifest_identity=manifest_identity,
+                gate_failures=gate_failures,
+            )
+            try:
+                written_evidence = _write_evidence_report(evidence, out_path)
+            except (OSError, ValueError, json.JSONDecodeError, TypeError):
+                out_path.unlink(missing_ok=True)
+                raise SystemExit(1) from error
+    else:
+        try:
+            written_evidence = _write_evidence_report(evidence, out_path)
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            if mode != "release":
+                raise
+            out_path.unlink(missing_ok=True)
+            gate_failures.append("release failure evidence sanitized")
+            release_qualification = "FAIL"
+            written_evidence = _write_evidence_report(
+                _sanitized_release_fail_evidence(
+                    expected_code_sha=expected_code_sha,
+                    github_identity=_github_actions_identity(),
+                    preflight_identity=preflight_identity,
+                    final_identity=_resolve_code_identity(),
+                    manifest_identity=manifest_identity,
+                    gate_failures=gate_failures,
+                ),
+                out_path,
+            )
 
     print(f"\n{'═' * 60}")
     print("Benchmark Complete")
@@ -1043,7 +1505,7 @@ def run_benchmark(mode, limit, topic_id, gate, expected_code_sha):
             print("\nSMOKE GATE: PASS — NON-RELEASE")
         else:
             print("\nRELEASE GATE: PASS")
-            print(f"  evidence_sha256={json.loads(out_path.read_text())['evidence_sha256']}")
+            print(f"  evidence_sha256={written_evidence['evidence_sha256']}")
 
 
 if __name__ == "__main__":

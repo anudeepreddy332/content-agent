@@ -4,9 +4,12 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
+import os
 import runpy
 import shutil
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -1572,3 +1575,285 @@ def test_eval_workflow_release_guard_precedes_provider_steps():
 def test_cli_requires_mode():
     with pytest.raises(click.ClickException):
         benchmark.run_benchmark.main(["--gate"], standalone_mode=False)
+
+
+# --- P0-2a trusted-finalization correction ---
+
+
+def _trusted_context_for(payload: dict) -> benchmark.TrustedReleaseFinalizationContext:
+    return benchmark.TrustedReleaseFinalizationContext(
+        expected_code_sha=payload["expected_code_sha"],
+        preflight_github_identity=copy.deepcopy(payload["github_actions_identity"]),
+        final_github_identity=copy.deepcopy(payload["github_actions_identity"]),
+        preflight_code_identity=copy.deepcopy(payload["preflight_code_identity"]),
+        final_code_identity=copy.deepcopy(payload["final_code_identity"]),
+        release_contract_identity=copy.deepcopy(payload["release_contract_identity"]),
+        selected_manifest_identity=copy.deepcopy(payload["selected_manifest_identity"]),
+        evaluation_configuration=copy.deepcopy(payload["evaluation_configuration"]),
+        evaluation_config_sha256=payload["evaluation_config_sha256"],
+        ordered_unit_results=copy.deepcopy(payload["ordered_unit_results"]),
+        aggregate_metrics=copy.deepcopy(payload["aggregate_metrics"]),
+        gate_failures=[],
+        timestamp_utc=payload["timestamp_utc"],
+        release_qualification="PASS",
+    )
+
+
+def test_release_pass_calls_existing_telemetry_validator_for_every_record(monkeypatch):
+    payload = _valid_release_pass_evidence_payload()
+    calls = []
+
+    def validator(telemetry):
+        calls.append(telemetry["run_id"])
+        return None
+
+    monkeypatch.setattr(benchmark, "telemetry_validation_error", validator)
+    benchmark._validate_evidence_payload(payload)
+    assert calls == [f"run-{topic_id:02d}" for topic_id in CONTRACT["ordered_topic_ids"]]
+
+
+def test_release_pass_missing_total_tokens_fails_at_existing_telemetry_validator():
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0]["telemetry"].pop("total_tokens")
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match=r"telemetry validator: missing telemetry fields: .*total_tokens"):
+        benchmark._validate_evidence_payload(payload)
+
+
+def test_invalid_post_call_telemetry_writes_fail_without_pass_or_formatting_crash(tmp_path, monkeypatch, capsys):
+    _install_v1_manifest(tmp_path)
+    _mock_release_github(monkeypatch, sha=EXPECTED_SHA)
+    _mock_git_identity(monkeypatch, sha=EXPECTED_SHA)
+    monkeypatch.chdir(tmp_path)
+    run_ids = {topic_id: f"run-{topic_id:02d}" for topic_id in CONTRACT["ordered_topic_ids"]}
+    for topic_id, run_id in run_ids.items():
+        topic = _topic_by_id(topic_id)
+        _write_telemetry(tmp_path, run_id, topic["topic"], verified=17, unverified=3)
+    invalid_path = tmp_path / "outputs" / "runs" / "run-01.json"
+    invalid = json.loads(invalid_path.read_text())
+    invalid["total_cost_usd"] = float("nan")
+    invalid_path.write_text(json.dumps(invalid))
+
+    def mock_run(cmd, **kwargs):
+        topic_name = cmd[cmd.index("--topic") + 1]
+        topic = next(item for item in TOPICS if item["topic"] == topic_name)
+        return _completed_proc(run_ids[topic["id"]])
+
+    monkeypatch.setattr(benchmark.subprocess, "run", mock_run)
+    with pytest.raises(SystemExit) as raised:
+        benchmark.run_benchmark.callback(
+            mode="release", limit=None, topic_id=None, gate=True, expected_code_sha=EXPECTED_SHA,
+        )
+    assert raised.value.code == 1
+    assert _aggregate(tmp_path / "outputs" / "benchmark_results")["release_qualification"] == "FAIL"
+    output = capsys.readouterr().out
+    assert "RELEASE GATE: PASS" not in output
+    assert "Traceback" not in output
+
+
+@pytest.mark.parametrize("value", [True, 1.0])
+def test_release_pass_rejects_boolean_and_float_result_ids(value):
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0]["id"] = value
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match=r"result 1\.id must be a true integer"):
+        benchmark._validate_evidence_payload(payload)
+
+
+@pytest.mark.parametrize("value", [False, 0.0])
+def test_release_pass_rejects_boolean_and_float_exit_codes(value):
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0]["subprocess_exit_code"] = value
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match="subprocess_exit_code must be a true integer"):
+        benchmark._validate_evidence_payload(payload)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("claims_verified", True), ("claims_weak", 1.0), ("claims_unverified", "1"),
+    ("claims_verified", -1), ("web_sources_count", False), ("kb_results_count", -1),
+    ("total_tokens", 1.0), ("total_cost_usd", -0.1), ("grounding_score", float("nan")),
+    ("reflection_score", True),
+])
+def test_release_pass_rejects_strict_telemetry_types_before_claim_arithmetic(field, value):
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0]["telemetry"][field] = value
+    if not isinstance(value, float) or math.isfinite(value):
+        _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError):
+        benchmark._validate_evidence_payload(payload)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("uvr", float("inf")), ("uvr", False), ("uvr", -0.1),
+    ("wall_time_s", float("nan")), ("wall_time_s", True), ("wall_time_s", -1),
+])
+def test_release_pass_rejects_nonfinite_boolean_and_negative_result_numbers(field, value):
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0][field] = value
+    if not isinstance(value, float) or math.isfinite(value):
+        _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError):
+        benchmark._validate_evidence_payload(payload)
+
+
+@pytest.mark.parametrize("latency", [{"api": -1}, {"api": True}, {"api": float("inf")}, []])
+def test_release_pass_rejects_invalid_latency_map(latency):
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0]["telemetry"]["latency_ms"] = latency
+    if latency != {"api": float("inf")}:
+        _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError):
+        benchmark._validate_evidence_payload(payload)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("total_runs", True), ("successful", 20.0), ("mean_cost_usd", float("inf")),
+])
+def test_release_pass_rejects_boolean_float_and_nonfinite_aggregate_aliases(field, value):
+    payload = _valid_release_pass_evidence_payload()
+    payload["aggregate_metrics"][field] = value
+    if not isinstance(value, float) or math.isfinite(value):
+        _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError):
+        benchmark._validate_evidence_payload(payload)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("schema_version", True), ("expected_topic_count", True),
+    ("expected_topic_count", 20.0), ("expected_topic_count", 0),
+    ("expected_topic_count", -1),
+])
+def test_v1_contract_rejects_boolean_float_and_nonpositive_aliases(field, value):
+    contract = copy.deepcopy(CONTRACT)
+    contract[field] = value
+    with pytest.raises(ValueError):
+        benchmark._validate_v1_contract_types(contract, "test contract")
+
+
+@pytest.mark.parametrize("topic_id", [True, 1.0, 0, -1])
+def test_v1_contract_rejects_noninteger_and_nonpositive_topic_ids(topic_id):
+    contract = copy.deepcopy(CONTRACT)
+    contract["ordered_topic_ids"][0] = topic_id
+    with pytest.raises(ValueError):
+        benchmark._validate_v1_contract_types(contract, "test contract")
+
+
+def test_release_evidence_rejects_extra_top_level_and_config_keys_with_recomputed_digests():
+    payload = _valid_release_pass_evidence_payload()
+    payload["injected"] = "field"
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match="evidence keys mismatch"):
+        benchmark._validate_evidence_payload(payload)
+
+    payload = _valid_release_pass_evidence_payload()
+    payload["evaluation_configuration"]["INJECTED"] = "field"
+    payload["evaluation_config_sha256"] = benchmark._sha256_text(
+        benchmark._canonical_json(payload["evaluation_configuration"]),
+    )
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match="evaluation_configuration keys mismatch"):
+        benchmark._validate_evidence_payload(payload)
+
+    payload = _valid_release_pass_evidence_payload()
+    payload["evaluation_configuration"].pop("UVR_THRESHOLD")
+    payload["evaluation_config_sha256"] = benchmark._sha256_text(
+        benchmark._canonical_json(payload["evaluation_configuration"]),
+    )
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match="evaluation_configuration keys mismatch"):
+        benchmark._validate_evidence_payload(payload)
+
+
+def test_secret_exclusion_rejects_nested_authorization_urls_and_known_runtime_secret(monkeypatch):
+    sentinel = "sentinel-secret-value"
+    monkeypatch.setenv("DEEPSEEK_API_KEY", sentinel)
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0]["telemetry"]["Authorization"] = "Bearer value"
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError) as authorization_error:
+        benchmark._validate_evidence_payload(payload)
+    assert sentinel not in str(authorization_error.value)
+
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0]["telemetry"]["source_url"] = "https://host/path?api_key=x"
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match="credential-bearing URL"):
+        benchmark._validate_evidence_payload(payload)
+
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0]["telemetry"]["provider_request_id"] = sentinel
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError) as secret_error:
+        benchmark._validate_evidence_payload(payload)
+    assert sentinel not in str(secret_error.value)
+
+    payload = _valid_release_pass_evidence_payload()
+    payload["ordered_unit_results"][0]["telemetry"].update({
+        "provider_request_id": "request-123", "cache_hit": True,
+        "source_url": "https://example.test/source?topic=gradient-descent",
+    })
+    _recompute_evidence_digest(payload)
+    benchmark._validate_evidence_payload(payload)
+
+
+def test_trusted_finalization_requires_external_context_and_rejects_coherent_rewrite(tmp_path):
+    payload = _valid_release_pass_evidence_payload()
+    with pytest.raises(ValueError, match="external trusted finalization context"):
+        benchmark._validate_trusted_release_payload(payload, None)
+
+    context = _trusted_context_for(payload)
+    benchmark._validate_trusted_release_payload(payload, context)
+    body = copy.deepcopy(payload)
+    body["ordered_unit_results"][0]["telemetry"]["prompt_version"] = "sha-rewritten"
+    body["evaluation_configuration"]["PROMPT_VERSION"] = "sha-rewritten"
+    body["evaluation_config_sha256"] = benchmark._sha256_text(
+        benchmark._canonical_json(body["evaluation_configuration"]),
+    )
+    body["aggregate_metrics"] = benchmark._aggregate_metrics(body["ordered_unit_results"])
+    _recompute_evidence_digest(body)
+    with pytest.raises(ValueError, match="trusted-context comparison"):
+        benchmark._validate_trusted_release_payload(body, context)
+
+
+@pytest.mark.parametrize("root", [
+    "final_github_identity", "final_code_identity", "evaluation_configuration",
+    "selected_manifest_identity", "ordered_unit_results",
+])
+def test_each_trusted_root_is_independently_bound(root):
+    payload = _valid_release_pass_evidence_payload()
+    context = _trusted_context_for(payload)
+    changed = copy.deepcopy(getattr(context, root))
+    if root == "final_github_identity":
+        changed["github_run_id"] = "other-run"
+    elif root == "final_code_identity":
+        changed["head_sha"] = "a" * 40
+    elif root == "evaluation_configuration":
+        changed["PROMPT_VERSION"] = "sha-other"
+    elif root == "selected_manifest_identity":
+        changed["actual_topic_ids"] = list(reversed(changed["actual_topic_ids"]))
+    else:
+        changed[0]["run_id"] = "other-run"
+    with pytest.raises(ValueError, match="trusted-context comparison"):
+        benchmark._validate_trusted_release_payload(payload, replace(context, **{root: changed}))
+
+
+def test_trusted_finalization_reread_replacement_removes_pass_artifact(tmp_path, monkeypatch):
+    payload = _valid_release_pass_evidence_payload()
+    context = _trusted_context_for(payload)
+    body = copy.deepcopy(payload)
+    body.pop("evidence_sha256")
+    destination = tmp_path / "release.json"
+    actual_replace = os.replace
+
+    def replace_then_rewrite(source, target):
+        actual_replace(source, target)
+        rewritten = json.loads(Path(target).read_text())
+        rewritten["timestamp_utc"] = "2026-08-19T13:00:00+00:00"
+        _recompute_evidence_digest(rewritten)
+        Path(target).write_text(json.dumps(rewritten))
+
+    monkeypatch.setattr(benchmark.os, "replace", replace_then_rewrite)
+    with pytest.raises(ValueError, match="trusted-context comparison"):
+        benchmark._write_evidence_report(body, destination, trusted_context=context)
+    assert not destination.exists()
