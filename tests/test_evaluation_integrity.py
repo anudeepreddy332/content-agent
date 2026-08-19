@@ -660,6 +660,50 @@ def test_manifest_invalid_topic_ids_fail(topic_id):
     assert any("id must be a positive integer" in failure for failure in failures)
 
 
+def test_manifest_value_not_a_list_fails():
+    failures = benchmark._validate_manifest_document({"id": 1}, benchmark.V1_RELEASE_CONTRACT)
+    assert failures == ["manifest must be a nonempty JSON array"]
+
+
+def test_manifest_empty_list_fails():
+    failures = benchmark._validate_manifest_document([], benchmark.V1_RELEASE_CONTRACT)
+    assert failures == ["manifest must be a nonempty JSON array"]
+
+
+def test_manifest_topic_entry_not_an_object_fails():
+    topics = _malformed_canonical_topics()
+    topics[0] = "not-an-object"
+    failures = benchmark._validate_manifest_topics(topics)
+    assert any("is not an object" in failure for failure in failures)
+
+
+def test_manifest_duplicate_topic_name_fails():
+    topics = _malformed_canonical_topics()
+    topics[1]["topic"] = topics[0]["topic"]
+    failures = benchmark._validate_manifest_topics(topics)
+    assert any("duplicate manifest topic name" in failure for failure in failures)
+
+
+def test_manifest_duplicate_slug_fails():
+    topics = _malformed_canonical_topics()
+    topics[1]["slug"] = topics[0]["slug"]
+    failures = benchmark._validate_manifest_topics(topics)
+    assert any("duplicate manifest slug" in failure for failure in failures)
+
+
+def test_manifest_topic_count_mismatch_fails():
+    topics = _malformed_canonical_topics()[:19]
+    failures = benchmark._validate_manifest_document(topics, benchmark.V1_RELEASE_CONTRACT)
+    assert any("manifest topic count mismatch" in failure for failure in failures)
+
+
+def test_manifest_topic_order_mismatch_fails():
+    topics = _malformed_canonical_topics()
+    topics[0], topics[1] = topics[1], topics[0]
+    failures = benchmark._validate_manifest_document(topics, benchmark.V1_RELEASE_CONTRACT)
+    assert any("do not match release contract order" in failure for failure in failures)
+
+
 # --- Release preflight ---
 
 
@@ -747,6 +791,7 @@ def test_release_rejects_wrong_expected_sha_before_subprocess(tmp_path, monkeypa
 
 def _release_result(topic: dict, run_id: str, **telemetry_kwargs) -> dict:
     telemetry = _telemetry(run_id, topic["topic"], verified=10, unverified=1, **telemetry_kwargs)
+    outcome = benchmark.verification_outcome(telemetry, topic)
     return {
         "id": topic["id"],
         "topic": topic["topic"],
@@ -754,10 +799,10 @@ def _release_result(topic: dict, run_id: str, **telemetry_kwargs) -> dict:
         "run_id": run_id,
         "wall_time_s": 1.0,
         "telemetry": telemetry,
-        "verification_status": "completed",
-        "evaluation_status": "scorable",
-        "uvr": 0.1,
-        "validation_error": None,
+        "verification_status": outcome["verification_status"],
+        "evaluation_status": outcome["evaluation_status"],
+        "uvr": outcome["uvr"],
+        "validation_error": outcome["validation_error"],
         "stderr": None,
         "subprocess_exit_code": 0,
     }
@@ -1103,6 +1148,7 @@ def _valid_release_pass_evidence_payload() -> dict:
         "aggregate_metrics": {"total_runs": 20, "successful": 20, "failed": 0},
         "gate_failures": [],
     }
+    payload["aggregate_metrics"] = benchmark._aggregate_metrics(payload["ordered_unit_results"])
     body = dict(payload)
     payload["evidence_sha256"] = benchmark._compute_evidence_digest(body)
     return payload
@@ -1193,6 +1239,87 @@ def _tamper_gate_requested_false(payload: dict) -> None:
     payload["gate_requested"] = False
 
 
+def _copy_first_result(payload: dict) -> dict:
+    results = [dict(result) for result in payload["ordered_unit_results"]]
+    results[0] = dict(results[0])
+    telemetry = results[0].get("telemetry")
+    if isinstance(telemetry, dict):
+        results[0]["telemetry"] = dict(telemetry)
+    payload["ordered_unit_results"] = results
+    return results[0]
+
+
+def _tamper_status_failed(payload: dict) -> None:
+    _copy_first_result(payload)["status"] = "failed"
+
+
+def _tamper_subprocess_exit_code(payload: dict) -> None:
+    _copy_first_result(payload)["subprocess_exit_code"] = 7
+
+
+def _tamper_uvr_one(payload: dict) -> None:
+    _copy_first_result(payload)["uvr"] = 1.0
+
+
+def _tamper_evaluation_unscorable(payload: dict) -> None:
+    _copy_first_result(payload)["evaluation_status"] = "unscorable"
+
+
+def _tamper_incorrect_result_topic(payload: dict) -> None:
+    _copy_first_result(payload)["topic"] = "Not A Frozen V1 Topic"
+
+
+def _tamper_telemetry_run_id_mismatch(payload: dict) -> None:
+    _copy_first_result(payload)["telemetry"]["run_id"] = "other-run"
+
+
+def _tamper_telemetry_topic_mismatch(payload: dict) -> None:
+    _copy_first_result(payload)["telemetry"]["topic"] = "Other Topic"
+
+
+def _tamper_telemetry_parse_failed(payload: dict) -> None:
+    _copy_first_result(payload)["telemetry"]["verification_status"] = "parse_failed"
+
+
+def _tamper_result_verification_not_completed(payload: dict) -> None:
+    _copy_first_result(payload)["verification_status"] = "parse_failed"
+
+
+def _tamper_zero_verdict_counts(payload: dict) -> None:
+    result = _copy_first_result(payload)
+    result["telemetry"]["claims_verified"] = 0
+    result["telemetry"]["claims_weak"] = 0
+    result["telemetry"]["claims_unverified"] = 0
+
+
+def _tamper_telemetry_prompt_version(payload: dict) -> None:
+    _copy_first_result(payload)["telemetry"]["prompt_version"] = "sha-deadbeefdead"
+
+
+def _tamper_telemetry_prompt_hashes(payload: dict) -> None:
+    _copy_first_result(payload)["telemetry"]["prompt_hashes"] = {"draft_system": "deadbeef"}
+
+
+def _tamper_aggregate_successful(payload: dict) -> None:
+    payload["aggregate_metrics"] = dict(payload["aggregate_metrics"])
+    payload["aggregate_metrics"]["successful"] = 19
+
+
+def _tamper_aggregate_failed(payload: dict) -> None:
+    payload["aggregate_metrics"] = dict(payload["aggregate_metrics"])
+    payload["aggregate_metrics"]["failed"] = 1
+
+
+def _tamper_aggregate_unscorable(payload: dict) -> None:
+    payload["aggregate_metrics"] = dict(payload["aggregate_metrics"])
+    payload["aggregate_metrics"]["unscorable"] = 1
+
+
+def _tamper_aggregate_total_runs(payload: dict) -> None:
+    payload["aggregate_metrics"] = dict(payload["aggregate_metrics"])
+    payload["aggregate_metrics"]["total_runs"] = 19
+
+
 def test_valid_release_pass_evidence_validates():
     payload = _valid_release_pass_evidence_payload()
     benchmark._validate_evidence_payload(payload)
@@ -1234,6 +1361,54 @@ def test_valid_release_pass_evidence_validates():
     ],
 )
 def test_release_pass_rejects_nested_tamper_even_with_recomputed_digest(mutator, match):
+    payload = _valid_release_pass_evidence_payload()
+    benchmark._validate_evidence_payload(payload)
+    mutator(payload)
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match=match):
+        benchmark._validate_evidence_payload(payload)
+
+
+@pytest.mark.parametrize(
+    ("mutator", "match"),
+    [
+        (_tamper_status_failed, "CLI failed"),
+        (_tamper_subprocess_exit_code, "subprocess exit code 7"),
+        (_tamper_uvr_one, "UVR"),
+        (_tamper_evaluation_unscorable, "evaluation_status=unscorable"),
+        (_tamper_incorrect_result_topic, "frozen V1 manifest"),
+        (_tamper_telemetry_run_id_mismatch, "telemetry run_id mismatch"),
+        (_tamper_telemetry_topic_mismatch, "telemetry topic mismatch"),
+        (_tamper_telemetry_parse_failed, "telemetry verification_status"),
+        (_tamper_result_verification_not_completed, "verification_status=parse_failed"),
+        (_tamper_zero_verdict_counts, "zero-verdict"),
+        (_tamper_telemetry_prompt_version, "prompt_version mismatch"),
+        (_tamper_telemetry_prompt_hashes, "prompt_hashes mismatch"),
+        (_tamper_aggregate_successful, "aggregate successful"),
+        (_tamper_aggregate_failed, "aggregate failed"),
+        (_tamper_aggregate_unscorable, "aggregate unscorable"),
+        (_tamper_aggregate_total_runs, "aggregate total_runs"),
+    ],
+    ids=[
+        "status_failed",
+        "subprocess_exit_code",
+        "uvr_one",
+        "evaluation_unscorable",
+        "incorrect_result_topic",
+        "telemetry_run_id",
+        "telemetry_topic",
+        "telemetry_parse_failed",
+        "result_verification_not_completed",
+        "zero_verdicts",
+        "prompt_version",
+        "prompt_hashes",
+        "aggregate_successful",
+        "aggregate_failed",
+        "aggregate_unscorable",
+        "aggregate_total_runs",
+    ],
+)
+def test_release_pass_rejects_semantic_tamper_even_with_recomputed_digest(mutator, match):
     payload = _valid_release_pass_evidence_payload()
     benchmark._validate_evidence_payload(payload)
     mutator(payload)

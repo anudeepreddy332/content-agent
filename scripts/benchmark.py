@@ -265,6 +265,22 @@ def _is_positive_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value > 0
 
 
+def _is_numeric(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _frozen_v1_manifest_path() -> Path:
+    return Path(__file__).resolve().parent.parent / V1_RELEASE_CONTRACT["manifest_path"]
+
+
+def _frozen_v1_topic_names_by_id() -> dict[int, str]:
+    path = _frozen_v1_manifest_path()
+    if _sha256_file(path) != V1_RELEASE_CONTRACT["manifest_sha256"]:
+        raise ValueError("frozen V1 manifest digest mismatch")
+    topics = json.loads(path.read_text(encoding="utf-8"))
+    return {topic["id"]: topic["topic"] for topic in topics}
+
+
 def _validate_manifest_topics(topics: list[dict[str, Any]]) -> list[str]:
     failures: list[str] = []
     seen_ids: set[int] = set()
@@ -302,6 +318,23 @@ def _validate_manifest_topics(topics: list[dict[str, Any]]) -> list[str]:
     return failures
 
 
+def _validate_manifest_document(topics: Any, contract: dict[str, Any]) -> list[str]:
+    """Schema, uniqueness, count, and order — independent of the V1 digest gate."""
+    if not isinstance(topics, list) or not topics:
+        return ["manifest must be a nonempty JSON array"]
+    failures = _validate_manifest_topics(topics)
+    if failures:
+        return failures
+    topic_ids = [topic["id"] for topic in topics]
+    if len(topics) != contract["expected_topic_count"]:
+        failures.append(
+            f"manifest topic count mismatch: expected {contract['expected_topic_count']}, got {len(topics)}",
+        )
+    if topic_ids != contract["ordered_topic_ids"]:
+        failures.append("manifest topic IDs do not match release contract order")
+    return failures
+
+
 def load_validated_manifest(contract: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     manifest_path = Path(contract["manifest_path"])
     if not manifest_path.is_file():
@@ -316,18 +349,10 @@ def load_validated_manifest(contract: dict[str, Any]) -> tuple[list[dict[str, An
         topics = json.loads(manifest_bytes.decode("utf-8"))
     except json.JSONDecodeError as error:
         _fail_preflight(f"manifest malformed: {error}")
-    if not isinstance(topics, list) or not topics:
-        _fail_preflight("manifest must be a nonempty JSON array")
-    manifest_failures = _validate_manifest_topics(topics)
+    manifest_failures = _validate_manifest_document(topics, contract)
     if manifest_failures:
         _fail_preflight("; ".join(manifest_failures))
     topic_ids = [topic["id"] for topic in topics]
-    if len(topics) != contract["expected_topic_count"]:
-        _fail_preflight(
-            f"manifest topic count mismatch: expected {contract['expected_topic_count']}, got {len(topics)}",
-        )
-    if topic_ids != contract["ordered_topic_ids"]:
-        _fail_preflight("manifest topic IDs do not match release contract order")
     identity = {
         "manifest_id": contract["manifest_id"],
         "manifest_path": contract["manifest_path"],
@@ -512,9 +537,17 @@ def _validate_release_units(
 
     expected_prompt_version = evaluation_config["PROMPT_VERSION"]
     expected_prompt_hashes = evaluation_config["PROMPT_HASHES"]
+    try:
+        v1_topics = _frozen_v1_topic_names_by_id()
+    except ValueError as error:
+        failures.append(str(error))
+        return failures
 
     for result in results:
         label = f"topic {result['id']:02d}"
+        expected_topic = v1_topics.get(result["id"])
+        if expected_topic is not None and result.get("topic") != expected_topic:
+            failures.append(f"{label}: topic does not match frozen V1 manifest")
         if result["subprocess_exit_code"] != 0:
             failures.append(f"{label}: subprocess exit code {result['subprocess_exit_code']}")
             continue
@@ -522,21 +555,40 @@ def _validate_release_units(
             failures.append(f"{label}: {result['validation_error'] or 'CLI failed'}")
             continue
         telemetry = result["telemetry"]
-        if telemetry is None:
+        if not isinstance(telemetry, dict):
             failures.append(f"{label}: telemetry unavailable")
             continue
         if telemetry.get("run_id") != result["run_id"]:
             failures.append(f"{label}: telemetry run_id mismatch")
         if telemetry.get("topic") != result["topic"]:
             failures.append(f"{label}: telemetry topic mismatch")
+        if telemetry.get("verification_status") != result["verification_status"]:
+            failures.append(f"{label}: telemetry verification_status mismatch")
         if result["verification_status"] != "completed":
             failures.append(f"{label}: verification_status={result['verification_status']}")
+        if telemetry.get("verification_status") != "completed":
+            failures.append(
+                f"{label}: telemetry verification_status={telemetry.get('verification_status')}",
+            )
+        outcome = verification_outcome(telemetry, {})
         if result["evaluation_status"] != "scorable":
             failures.append(f"{label}: evaluation_status={result['evaluation_status']}")
-        if result["uvr"] is None or _claim_total(telemetry) == 0:
+        if outcome["evaluation_status"] != "scorable":
+            failures.append(f"{label}: telemetry is {outcome['evaluation_status']}")
+        if result["evaluation_status"] != outcome["evaluation_status"]:
+            failures.append(f"{label}: evaluation_status contradicts telemetry")
+        total = _claim_total(telemetry)
+        uvr = result["uvr"]
+        if not _is_numeric(uvr):
+            failures.append(f"{label}: UVR must be numeric")
+        elif uvr > UVR_THRESHOLD:
+            failures.append(f"{label}: UVR {uvr:.2f} > {UVR_THRESHOLD:.2f}")
+        if total == 0:
             failures.append(f"{label}: unscorable or zero-verdict unit")
-        if result["uvr"] is not None and result["uvr"] > UVR_THRESHOLD:
-            failures.append(f"{label}: UVR {result['uvr']:.2f} > {UVR_THRESHOLD:.2f}")
+        elif _is_numeric(uvr):
+            computed_uvr = telemetry.get("claims_unverified", 0) / total
+            if uvr != computed_uvr:
+                failures.append(f"{label}: UVR contradicts claim counts")
         prompt_version = telemetry.get("prompt_version")
         prompt_hashes = telemetry.get("prompt_hashes")
         if prompt_version != expected_prompt_version:
@@ -651,11 +703,15 @@ def _validate_release_pass_selected_manifest(selected_identity: dict[str, Any]) 
         raise ValueError("release PASS requires ordered_topic_ids == 1..20")
 
 
-def _validate_release_pass_results(results: list[Any]) -> None:
+def _validate_release_pass_results(
+    results: list[Any],
+    evaluation_config: dict[str, Any],
+) -> None:
     expected_ids = V1_RELEASE_CONTRACT["ordered_topic_ids"]
     if len(results) != len(expected_ids):
         raise ValueError("release PASS requires exactly 20 ordered unit results")
     run_ids: list[str] = []
+    typed_results: list[dict[str, Any]] = []
     for index, expected_id in enumerate(expected_ids):
         result = results[index]
         if not isinstance(result, dict):
@@ -669,8 +725,35 @@ def _validate_release_pass_results(results: list[Any]) -> None:
         if not isinstance(run_id, str) or not run_id:
             raise ValueError("release PASS requires nonempty unique run IDs")
         run_ids.append(run_id)
+        typed_results.append(result)
     if len(set(run_ids)) != len(run_ids):
         raise ValueError("release PASS run IDs must be unique")
+    failures = _validate_release_units(
+        typed_results,
+        expected_topic_ids=expected_ids,
+        evaluation_config=evaluation_config,
+    )
+    if failures:
+        raise ValueError("; ".join(failures))
+
+
+def _validate_release_pass_aggregates(payload: dict[str, Any]) -> None:
+    results = payload["ordered_unit_results"]
+    aggregate = payload["aggregate_metrics"]
+    if not isinstance(aggregate, dict):
+        raise ValueError("aggregate_metrics must be an object")
+    expected = _aggregate_metrics(results)
+    required = {
+        "total_runs": V1_RELEASE_CONTRACT["expected_topic_count"],
+        "successful": V1_RELEASE_CONTRACT["expected_topic_count"],
+        "failed": 0,
+        "unscorable": 0,
+    }
+    for field, value in required.items():
+        if aggregate.get(field) != value:
+            raise ValueError(f"release PASS aggregate {field} must be {value}")
+        if expected[field] != value:
+            raise ValueError(f"release PASS aggregate {field} contradicts ordered units")
 
 
 def _validate_release_pass_evidence(
@@ -691,7 +774,11 @@ def _validate_release_pass_evidence(
         raise ValueError("release PASS requires gate_requested")
     if payload["gate_failures"] != []:
         raise ValueError("release PASS requires empty gate_failures")
-    _validate_release_pass_results(payload["ordered_unit_results"])
+    _validate_release_pass_results(
+        payload["ordered_unit_results"],
+        payload["evaluation_configuration"],
+    )
+    _validate_release_pass_aggregates(payload)
 
 
 def _validate_evidence_structure(payload: dict[str, Any]) -> None:
