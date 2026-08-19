@@ -2,7 +2,7 @@
 
 Status: `ARCHITECT PROPOSAL — INDEPENDENT REVIEW REQUIRED`
 
-Decision: `MCP-PORTABILITY-REVIEW-READY`
+Decision: `MCP-ARCHITECTURE-FINAL-REVIEW-READY`
 
 Canonical repository tip investigated: `ca29d32b4869269daa47142615d298580a577a77`
 
@@ -70,7 +70,8 @@ providers, or replace Git.
 
 1. Prose handoffs can name a branch without binding evidence to its exact HEAD.
 2. A command summary can omit nonzero exit status, timeout, output truncation, or stale artifacts.
-3. Agents can read different worktrees or assume that local `main` equals fetched `origin/main`.
+3. Agents can read different worktrees or mistake a locally cached `origin/main` tracking ref for
+   independently verified current remote state.
 4. File-scope validation is manual and can miss untracked or mid-run changes.
 5. The repository has structured telemetry, but engineering validation lacks a common response
    envelope and bundle manifest.
@@ -242,7 +243,8 @@ selection criterion.
 ## 8. Server ownership and lifecycle
 
 - Human repository operator: owns installation, host configuration, target path, process launch,
-  and any approval to fetch, branch, commit, push, merge, or deploy.
+  and any approval to fetch, verify remote refs, branch, commit, push, merge, or deploy. Remote-ref
+  verification is recorded as native operator evidence, separately from MCP evidence.
 - Architect: owns the mission policy, allowed scope, check definitions, and acceptance gates.
 - Implementer: implements the independently reviewed server specification and later edits product
   code with native editor/Git tools; it does not expand the policy.
@@ -302,7 +304,8 @@ Output result fields:
   "branch": "string or null",
   "head_sha": "40-hex",
   "origin_url": "normalized expected repository identity",
-  "origin_main_sha": "40-hex or null",
+  "local_origin_main_tracking_sha": "40-hex or null",
+  "remote_ref_verification": "NOT_PERFORMED_BY_MCP",
   "is_clean": true,
   "tracked_changes": [{"status": "two-character Git XY status", "path": "repo-relative"}],
   "untracked_paths": ["repo-relative or secret-path-redacted marker"],
@@ -313,9 +316,19 @@ Output result fields:
 }
 ```
 
+`local_origin_main_tracking_sha` is the value of the locally available
+`refs/remotes/origin/main`, or `null` when that tracking ref is absent. It is cached local Git
+metadata only: it may be stale, it does not assert the current GitHub `main`, and it can never
+satisfy a gate that requires current remote-ref verification. `remote_ref_verification` is the
+literal enum `NOT_PERFORMED_BY_MCP`; no other value is valid in this Stage 2 contract.
+
 Allowed scope: Git metadata for the fixed target worktree and normalized `origin` URL only. It does
-not fetch. Timeout: 10 seconds. A HEAD mismatch, wrong remote, unsupported repository, or required-
-clean dirty state returns `BLOCKED`.
+not fetch, run `git ls-remote`, contact GitHub, or ingest a native operator's remote-verification
+result. Timeout: 10 seconds. A HEAD mismatch, wrong remote, unsupported repository, or required-clean
+dirty state returns `BLOCKED`. Before worktree/branch creation or any transition gate that depends
+on current remote state, the operator must verify the remote refs through a separately authorized
+native workflow and record that evidence separately. Native evidence must not be copied, promoted,
+or relabeled as MCP-attested remote truth.
 
 Why MCP: one call binds state, policy, server version, and a stable dirty-state digest instead of
 requiring agents to interpret several shell outputs.
@@ -501,6 +514,9 @@ result, policy decision, command, path, timeout, limit, status, or semantic dige
 
 This is provenance, not cryptographic identity attestation. The evidence directory and chained
 audit log are locally mutable. Independent Reviewer reproduction at the exact commit is mandatory.
+The result may identify a local remote-tracking ref only under its explicit cached-state name and
+`NOT_PERFORMED_BY_MCP` sentinel. Separately recorded native remote-ref evidence is outside this
+schema and cannot be converted into an MCP evidence record.
 
 ## 12. Read/write boundaries
 
@@ -564,6 +580,11 @@ Permitted Git operations are read-only: `status --porcelain=v2`, `rev-parse`, `m
 `--no-ext-diff`. External diff/textconv helpers and user aliases are disabled. No command accepts a
 leading-dash path or revision expression.
 
+Reading `refs/remotes/origin/main` with the fixed read-only adapter is permitted solely to populate
+`local_origin_main_tracking_sha`. The server never fetches or checks that ref against a remote; an
+absent ref produces `null`, and a present ref is always paired with
+`remote_ref_verification: "NOT_PERFORMED_BY_MCP"`.
+
 `run_check` takes a global nonblocking lock. A second execution returns `BLOCKED: CHECK_BUSY`; it is
 not queued against potentially stale state. HEAD and worktree digests are captured before and after.
 Tracked or relevant untracked changes during execution invalidate the result.
@@ -612,13 +633,17 @@ environment scrubbing is a network sandbox.
 
 P0-2a is not implemented in Stage 2. After independent MCP validation, its workflow is:
 
-1. Operator fetches remote refs natively and creates an isolated implementation worktree/branch
-   from the exact then-canonical MCP-integrated SHA.
+1. Operator uses the separately authorized native workflow to fetch and verify the required current
+   remote refs, records the exact refs/SHAs as evidence outside MCP, and only then creates an isolated
+   implementation worktree/branch from the exact then-canonical MCP-integrated SHA. A
+   `local_origin_main_tracking_sha` value from MCP cannot satisfy this precondition.
 2. Architect and Reviewer approve a P0-2a mission policy containing the exact base, allowed paths,
    and fixed deterministic check IDs. The policy does not change quality thresholds.
 3. The selected Implementation Agent—Cursor or Codex—connects the already validated
    `engineering_mcp` server contract to that worktree through its thin client adapter.
 4. `repo_snapshot` proves repository identity, exact HEAD, and clean starting state.
+   It may also report the locally cached `origin/main` tracking SHA, but explicitly does not prove
+   current remote state.
 5. Architect/Reviewer use `read_tracked_file` for `scripts/benchmark.py`,
    `tests/test_evaluation_integrity.py`, `evals/topics.json`, and canonical governance documents.
 6. The selected client edits with its native capability. MCP performs no mutation.
@@ -647,6 +672,7 @@ change the mission policy or reinterpret existing evidence as fresh.
 - architecture decisions, priority, thresholds, and acceptance gates;
 - independent review and approval;
 - Git fetch, worktree/branch creation, source editing, stage/commit, PR, push, merge, and tags;
+- current remote-ref verification and its separately recorded native operator evidence;
 - GitHub Actions and branch protection;
 - live/paid provider evaluation;
 - product telemetry semantics and P0-2a/P0-2b fixes;
@@ -671,6 +697,7 @@ cross-agent structured evidence contract adds value.
 | Secret disclosure | No ignored/untracked reads, secret-like path denylist, no credential env, output redaction, no env dump. |
 | Network/provider call | No network tools, offline launch, credential absence, check-specific pre-call test. No false OS-sandbox claim. |
 | Stale worktree | Expected HEAD/status inputs, pre/post digests, global execution lock, state-change invalidation. |
+| Stale remote-tracking ref represented as remote truth | Cached-state field name, mandatory `NOT_PERFORMED_BY_MCP` sentinel, no network Git, separate native remote-ref evidence, and a two-client stale-ref conformance regression. |
 | Destructive Git | No mutating Git command in code or policy; fixed read-only verb tests. |
 | Output flood | Stream caps, process-group termination, truncation flag, full digest over retained bounded bytes. |
 | Hung or orphan process | Per-check timeout, cancellation handling, new process group, kill-and-wait proof. |
@@ -686,9 +713,12 @@ cross-agent structured evidence contract adds value.
 
 All gates are mandatory. Failure is not permission to weaken the gate.
 
-1. Base gate: canonical product base `ca29d32`, plus an exact Reviewer-authorized portability-
-   architecture implementation base descending through `3418251` with only this document changed
-   before implementation; correct origin and clean isolated worktree.
+1. Base gate: before worktree/branch creation, the native operator workflow separately fetches and
+   verifies current remote refs and records the exact remote evidence outside MCP. Then use canonical
+   product base `ca29d32`, plus an exact Reviewer-authorized portability-architecture implementation
+   base descending through `3418251` with only this document changed before implementation; correct
+   origin and clean isolated worktree. `local_origin_main_tracking_sha` and any other cached ref
+   reported by MCP can never satisfy the native remote-ref gate.
 2. Scope gate: only the files listed in section 24 change; product runtime and canonical state files
    remain byte-identical.
 3. Dependency gate: `mcp==2.0.0` is an exact dev dependency; `uv.lock` is synchronized; production
@@ -714,7 +744,8 @@ All gates are mandatory. Failure is not permission to weaken the gate.
     names, descriptions, input schemas, output schemas, annotations, and tool-catalog digest.
 11. Result equivalence gate: at the same exact repository SHA and status digest, both clients obtain
     equivalent `repo_snapshot`, `read_tracked_file`, `inspect_change`, one permitted `run_check`, and
-    `build_evidence_bundle` results under the canonical comparison rules in section 29.
+    `build_evidence_bundle` results under the canonical comparison rules in section 29, including
+    identical cached-ref naming and the `NOT_PERFORMED_BY_MCP` sentinel.
 12. Failure equivalence gate: both clients send the same prohibited traversal request and receive
     the same `BLOCKED` status, stable code, schema, and semantic failure meaning.
 13. Attribution gate: evidence IDs, timestamps, client/session metadata, negotiated protocol, and
@@ -737,7 +768,10 @@ All gates are mandatory. Failure is not permission to weaken the gate.
 21. Timeout/output gate: injected hang and output flood terminate the complete process group and
     return explicit `BLOCKED` evidence with no surviving child.
 22. Stale/concurrency gate: mid-check tracked change invalidates evidence; a concurrent check returns
-    `CHECK_BUSY` and does not run.
+    `CHECK_BUSY` and does not run. In a disposable local-remote fixture where remote `main` advances
+    from A to B while the target worktree's `refs/remotes/origin/main` remains A, both real clients
+    must report A only as `local_origin_main_tracking_sha`, return
+    `remote_ref_verification: "NOT_PERFORMED_BY_MCP"`, and never represent A as current remote truth.
 23. Evidence gate: every call validates against its output schema; full content/log/diff digests
     match artifacts; mixed-identity bundles are rejected; same semantic input produces the same
     semantic digest.
@@ -763,6 +797,8 @@ All gates are mandatory. Failure is not permission to weaken the gate.
 Return `ARCHITECTURE-BLOCKED` and stop if:
 
 - fetched `origin/main` differs from canonical product base `ca29d32`;
+- the required native remote-ref verification is absent, is not recorded separately, or is replaced
+  by MCP's locally cached tracking-ref value;
 - Codex or Cursor IDE cannot reliably connect to the same committed stdio server or consume the five
   canonical tool schemas;
 - either client requires a material server-side client conditional, a different tool/evidence
@@ -890,7 +926,7 @@ branch/commit identity is reported in the Architect's handoff; no merge or deplo
 
 ## 27. Decision
 
-`MCP-PORTABILITY-REVIEW-READY`
+`MCP-ARCHITECTURE-FINAL-REVIEW-READY`
 
 The problem, transport, five-tool capability surface, mutation boundary, security model, schemas,
 implementation files, client adapters, cross-client conformance suite, switchover behavior,
@@ -930,10 +966,11 @@ make paid/live calls, implement P0-2a/P0-2b, or design A2A.
 
 #### Mandatory preflight
 
-1. Fetch `origin/main`.
-2. Verify fetched `origin/main` is exact
-   `ca29d32b4869269daa47142615d298580a577a77`. Otherwise report
-   `ARCHITECTURE-BLOCKED` and stop.
+1. Through the separately authorized native operator workflow, fetch and verify current remote refs
+   and record the exact remote-ref evidence outside MCP before creating a worktree or branch.
+2. Verify the natively fetched `origin/main` is exact
+   `ca29d32b4869269daa47142615d298580a577a77`. An MCP-reported cached tracking ref cannot satisfy this
+   gate. Otherwise report `ARCHITECTURE-BLOCKED` and stop.
 3. Fetch `origin/chore/stage2-mcp-architecture` and verify the Reviewer-supplied exact architecture
    SHA resolves on it, descends from `3418251e73edf0c83b3cb59bc81af12dc7303fb8`, and its path from
    canonical main changes only `docs/MCP_STAGE2_ARCHITECTURE.md`. Stop on any mismatch.
@@ -962,6 +999,12 @@ codes, and evidence behavior in sections 10-16 of the architecture document. Ret
 plus serialized-JSON text fallback. Security must be enforced in code; server instructions are not
 a security boundary.
 
+For `repo_snapshot`, implement `local_origin_main_tracking_sha` as the exact local
+`refs/remotes/origin/main` value or `null`, and always return
+`remote_ref_verification: "NOT_PERFORMED_BY_MCP"`. Never expose `origin_main_sha`, fetch, use
+`ls-remote`, claim GitHub freshness, accept native remote evidence as a tool input, or let cached-ref
+evidence satisfy a current remote-ref gate.
+
 The core server must be implementation-client-agnostic. Do not branch on Cursor/Codex client name,
 version, session, or protocol era except inside the pinned SDK's protocol codec. Client metadata is
 untrusted attribution only and is excluded from semantic result identity.
@@ -981,6 +1024,8 @@ untrusted attribution only and is excluded from semantic result identity.
 - pre/post exact HEAD and worktree digest binding;
 - no automatic retries;
 - local hashes are provenance, not external attestation;
+- locally cached remote-tracking refs are labeled cached state and never remote verification;
+- current remote-ref verification remains a separately recorded native operator precondition;
 - user approval remains on in both hosts.
 
 #### Allowed files
@@ -1059,7 +1104,10 @@ The agent must not be able to supply an allowed-path list or command arguments a
 7. Atomic evidence writes, bounded logs, relative paths, output schemas, redaction tests.
 8. Pre/post HEAD and status digests; mid-run change invalidates evidence.
 9. No network client or Git network operation. Do not claim OS-level network sandboxing.
-10. stdout contains MCP frames only; sanitized diagnostics use stderr.
+10. A local `refs/remotes/origin/main` read may populate only
+    `local_origin_main_tracking_sha`; always pair it with
+    `remote_ref_verification: "NOT_PERFORMED_BY_MCP"`.
+11. stdout contains MCP frames only; sanitized diagnostics use stderr.
 
 #### Host configuration
 
@@ -1115,7 +1163,7 @@ Follow this order; stop at the first blocker:
 6. Traversal, symlink, `.git`, `.env`, ignored/untracked, binary, size, secret, command-injection,
    Git-injection, timeout, output-flood, orphan-child, concurrency, stale-state, mixed-bundle, and
    redaction security tests.
-7. Client-metadata invariance and conformance-comparator fixture tests.
+7. Client-metadata invariance, stale-local-tracking-ref, and conformance-comparator fixture tests.
 8. Exact Stage 2 scope inspection, fatal Ruff tier, and full `pytest tests/` regression.
 9. Create one candidate implementation commit after deterministic pre-commit gates pass; do not
    amend it after host testing.
@@ -1124,9 +1172,12 @@ Follow this order; stop at the first blocker:
 12. Without changing repository state, execute the full Codex CLI conformance run and the mandatory
     Cursor-to-Codex switchover comparison.
 13. Stop Codex/server instance B, reconnect Cursor, and execute the reverse switchover comparison.
-14. Run the native comparator, verify both reports pass, and prove all five tools plus the prohibited
+14. In the disposable stale-ref fixture defined in section 29, execute `repo_snapshot` through both
+    required clients and prove the cached A/current B distinction is preserved without MCP network
+    access.
+15. Run the native comparator, verify both reports pass, and prove all five tools plus the prohibited
     call were exercised by each required client.
-15. Repeat exact scope/status, fatal Ruff, full regression, secret/network-boundary, and evidence-
+16. Repeat exact scope/status, fatal Ruff, full regression, secret/network-boundary, and evidence-
     bundle checks against the same candidate commit.
 
 Run deterministic tests before any operation that could call a paid provider. No paid/live provider
@@ -1172,13 +1223,16 @@ Return:
 11. fatal lint and full regression counts;
 12. timeout/output/concurrency/stale-state evidence;
 13. secret/network-boundary evidence and explicit non-claim of OS sandboxing;
-14. both client-capture paths/digests and the cross-client comparator report;
-15. Cursor-to-Codex and Codex-to-Cursor switchover outcomes;
-16. evidence-bundle paths/digests and canonical member-equivalence result from the candidate SHA;
-17. exact commit SHA, parent, and changed-file scope;
-18. any warnings or unknowns;
-19. final status `IMPLEMENTATION-READY-FOR-INDEPENDENT-REVIEW` or `ARCHITECTURE-BLOCKED`;
-20. numerical confidence `0.00-1.00`.
+14. separately recorded native remote-ref evidence and confirmation that no MCP record is used to
+    satisfy that gate;
+15. both client-capture paths/digests, the cross-client comparator report, and the stale-tracking-ref
+    conformance result;
+16. Cursor-to-Codex and Codex-to-Cursor switchover outcomes;
+17. evidence-bundle paths/digests and canonical member-equivalence result from the candidate SHA;
+18. exact commit SHA, parent, and changed-file scope;
+19. any warnings or unknowns;
+20. final status `IMPLEMENTATION-READY-FOR-INDEPENDENT-REVIEW` or `ARCHITECTURE-BLOCKED`;
+21. numerical confidence `0.00-1.00`.
 
 Stop after reporting. Do not merge or begin P0-2a.
 
@@ -1266,6 +1320,17 @@ For each required client:
     explicitly excluding normal host traffic to Cursor/OpenAI services and making no OS-sandbox
     claim.
 
+Also run one dedicated stale-tracking-ref scenario through each required real client. The native
+test harness creates a disposable local bare remote and target clone at commit A, advances the bare
+remote's `main` to commit B without fetching in the target clone, and records A (cached local
+tracking ref) and B (independently inspected fixture remote) outside MCP. Cursor and Codex then call
+the unchanged `repo_snapshot` contract against that target. Both captures must return A as
+`local_origin_main_tracking_sha` and `remote_ref_verification: "NOT_PERFORMED_BY_MCP"`; neither may
+return B, claim remote freshness, or allow A to satisfy a remote-ref gate. Fixture setup and remote
+inspection are native test-harness operations, not MCP capabilities, and use no GitHub/network
+access. The comparator fails on missing fields, different semantics, `origin_main_sha`, any remotely
+verified status, or any attempt by MCP to fetch/inspect the remote.
+
 Each run writes a schema-validated client capture below
 `outputs/mcp_evidence/conformance/<run_id>/<client>.json`. The native
 `scripts/compare_mcp_client_conformance.py` compares those captures against the tracked contract and
@@ -1280,6 +1345,8 @@ These fields must be identical or canonically equivalent:
 - tool catalog order, names, descriptions, annotations, input/output schemas, and catalog digest;
 - evidence schema version, operation, status, stable code, and mission/actor role;
 - repository identity, pre/post HEAD, status digests, remote identity, and lock digest;
+- `local_origin_main_tracking_sha` as cached local state and the exact
+  `remote_ref_verification: "NOT_PERFORMED_BY_MCP"` sentinel;
 - server package version, code digest, policy ID/digest, supported protocol set, and launch-contract
   digest;
 - normalized operation result, complete-content/artifact digests, redactions, and warnings;
