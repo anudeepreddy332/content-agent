@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "manifest_id": "content-agent-release-topics-v1",
+  "manifest_path": "evals/topics.json",
+  "manifest_sha256": "2e1a502834252f8c7fe7a3b1136efb9f949d3392f493e6e2102838316b0c7b08",
+  "expected_topic_count": 20,
+  "ordered_topic_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+}
