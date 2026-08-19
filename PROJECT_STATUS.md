@@ -16,6 +16,11 @@ remains preserved in `FREEZE.md`.
 - **Final validated P0-1 implementation:** `20eb17f2737010dbf72eea0f0e271bf47d5af3de`,
   developed from frozen implementation base `7a606e895fe0a4bc9092659f130881bc7b52bd28`.
   No later descendant is implicitly approved.
+- **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`.
+- **Final validated P0-2a implementation — integration pending:**
+  `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`, developed from exact canonical product main
+  `ca29d32b4869269daa47142615d298580a577a77`. It is not yet part of canonical main, and no later
+  descendant is implicitly validated.
 - **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`. This remains the
   historical snapshot against which the original P0-1 threat boundary was established.
 - System shape at current main: supervised single-operator LangGraph pipeline with Tavily plus
@@ -50,9 +55,14 @@ historical evidence, not a current enterprise-release decision.
      deployment identity or overall production readiness.
 
 2. **P0-2 — Evaluation acceptance integrity, then verifier acceptance semantics**
-   - **P0-2a — PROVEN DEFECT:** the benchmark gate can select zero topics and emit a passing `0/0`
-     result. Release-grade evaluation scope, expected cardinality, and evidence identity therefore
-     remain fail-open.
+   - **P0-2a — IMPLEMENTATION VALIDATED / INTEGRATION PENDING:** exact implementation
+     `0b707e4e431ea7662eec86aec5d4ed18a3c060dd` passed the frozen deterministic and adversarial
+     acceptance gates. Zero, partial, duplicate, incomplete, unscorable, identity-drifted,
+     secret-bearing, or failed-finalization evidence cannot earn or retain a release PASS in the
+     validated implementation.
+   - This validates the P0-2a implementation only. Canonical main remains `ca29d32`; integration,
+     public integration-SHA CI, and any paid 20-topic release benchmark remain pending separate
+     authorization.
    - **P0-2b — PROVEN DEFECT:** production verifier routing computes grounding from confidence
      independently of verdict status, accepts an unknown-sized or empty extracted verdict set, and
      permits cost/iteration ceilings to reach HITL regardless of verification status. Mandatory
@@ -79,10 +89,10 @@ historical evidence, not a current enterprise-release decision.
 
 ## Current authorized mission
 
-The current product-hardening mission is **P0-2a evaluation scope/cardinality/release-evidence
-integrity**. Its implementation architecture is frozen in
-`docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md`, pending independent review and explicit
-human authorization. P0-2b follows as a separately architected verifier-semantics mission.
+P0-2a implementation validation is complete at exact `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`.
+The current controlled mission is **P0-2a integration preparation**, with canonical main held at
+exact `ca29d32b4869269daa47142615d298580a577a77` until separate human authorization. P0-2b follows
+only after P0-2a integration as a separately architected verifier-semantics mission.
 
 MCP and A2A are optional developer-workflow infrastructure. They are out of this product mission and
 must not block the frozen sequence. This file does not itself authorize implementation, merge,
@@ -101,6 +111,15 @@ publish, deployment, or provider spend.
   quality threshold may change in this mission.
 - Block if the canonical full manifest/cardinality cannot be frozen, if any unscorable/incomplete
   run can satisfy a release gate, or if passing requires threshold changes or retry-until-green.
+- Validation at exact `0b707e4`: `205 passed` focused evaluation-integrity tests; `31 passed`
+  verifier/failure regressions; `406 passed, 3 warnings` full suite; Ruff fatal tier and range
+  `git diff --check` passed.
+- Independent real-file attacks changed the contract and manifest only after PASS write, reread,
+  schema/digest/secret validation, and trusted persisted-payload comparison. Loader-originated
+  `SystemExit(2)` was converted to controlled failure; each path exited `1`, printed no release
+  PASS, retained one validated sanitized FAIL report, and left no PASS or temporary artifact.
+  Equivalent pre-write contract and manifest failures were also controlled. Unchanged roots left
+  one trusted PASS and printed PASS exactly once.
 
 ## Parallel retrieval research
 
@@ -125,6 +144,10 @@ publish, deployment, or provider spend.
   deterministic/browser tests passed. Independent probes reproduced the P0-2a zero/partial/
   duplicate scope passes and P0-2b status/confidence, empty verdict, ceiling, and approved-HITL
   routing defects.
+- Exact P0-2a implementation `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`: `205` focused,
+  `31` verifier/failure, and `406` full tests passed; Ruff and range diff checks passed. Independent
+  unchanged, real post-reread contract/manifest drift, and pre-write loader-failure probes passed
+  their frozen causal gates. No provider or paid release benchmark was run.
 - Retrieval evidence and classifications remain indexed in `docs/EXPERIMENT_LEDGER.md`.
 
 ## Explicitly not accepted
@@ -135,6 +158,8 @@ publish, deployment, or provider spend.
 - Verifier confidence as a substitute for verified status or production claim completeness.
 - Naive tokenizer-aligned rechunking, GTE, Jina, or a new fusion design as the serving replacement.
 - `N=0`, incomplete, stale, incoherent, or non-final-SHA evidence as a release pass.
+- P0-2a implementation validation as proof of integration, public integration-SHA CI, a paid full
+  release benchmark, deployment, or overall product production readiness.
 - The June 2026 live-demo URL, Docker tag, or deployment state as verified current.
 - The proposed S3/event-driven ingestion, Postgres metadata truth, Qdrant-derived-index,
   deterministic-identity/idempotent-ingestion, heterogeneous parsing, structure-aware chunking,

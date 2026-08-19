@@ -184,3 +184,23 @@ For every applicable change:
 | Kill/block conditions | Block if canonical full scope/cardinality cannot be frozen, any unscorable/incomplete run can earn release pass, scope expands into model/retrieval behavior, or passing needs a moved threshold or retry-until-green. |
 | Decision enabled | `NEXT-P0-INVESTIGATION-REQUIRED`; do not authorize Cursor for P0-2 before Stage 2 MCP validation and independent review of the P0-2a frozen contract. |
 | Confidence | 0.97 |
+
+### VAL-2026-08-19-02 — P0-2a exact-SHA implementation validation
+
+| Field | Record |
+| --- | --- |
+| Question | Does exact P0-2a implementation `0b707e4e431ea7662eec86aec5d4ed18a3c060dd` satisfy the frozen release-evaluator integrity contract, including cleanup of the previously surviving PASS artifact? |
+| Isolated variable | Benchmark scope/cardinality, release-evidence identity, trusted finalization, and failure cleanup only; no verifier, prompt/model, retrieval, threshold, corpus, HITL, publication, or P0-1 change. |
+| Architecture / base / candidate | Frozen architecture `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`; exact product base `ca29d32b4869269daa47142615d298580a577a77`; final candidate `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`. |
+| Scope and ancestry | Linear reviewed history through `d204deb` to `0b707e4`; cumulative changes are exactly `scripts/benchmark.py`, `tests/test_evaluation_integrity.py`, `.github/workflows/eval.yml`, and `evals/benchmark_release_contract.json`. |
+| Frozen gate | Exact immutable 20-topic V1; complete ordered valid/scorable units; UVR `<=0.15`; exact prompt/config/GitHub/code/clean-state/contract/manifest identity; coherent aggregates; secret-safe closed evidence; atomic write/reread; external trusted finalization; no failed finalization may leave PASS evidence. |
+| Deterministic validation | Frozen sync succeeded; focused `205 passed`; verifier/failure `31 passed`; full `406 passed, 3 warnings`; Ruff fatal tier passed; range diff check passed. |
+| Real post-reread attacks | After trusted context construction, PASS write, reread, evidence validation, and trusted persisted-payload comparison succeeded, actual contract and manifest files were independently mutated. Each real loader raised `SystemExit(2)`, which became controlled finalization failure: exit `1`, no PASS print, no PASS or temporary artifact, and one validated sanitized FAIL report. |
+| Pre-write and control | Actual contract and manifest loader failures during trusted-context construction both produced controlled sanitized FAIL with no PASS write. With roots unchanged, one trusted PASS survived and PASS printed exactly once. |
+| Prior-attack regression / causality | Representative scope/cardinality, V1 mutation/type, result/telemetry, identity, secret, aggregate, coordinated-rewrite, atomic-reread, and runtime-root attacks remained rejected at the intended validator layers. `TEST CAUSALITY: PASS`. |
+| Paid/live providers | None. No paid 20-topic release benchmark was run; no provider credential or call was required. |
+| Result | Every frozen local implementation and adversarial gate passed at exact `0b707e4`. |
+| Classification | `P0-2A IMPLEMENTATION VALIDATED — INTEGRATION PENDING`. Not integration, public integration-SHA CI, deployment proof, post-workflow cryptographic authenticity, P0-2b validation, or overall production readiness. |
+| Evidence | Exact SHAs and commands above; decision `D-2026-08-19-04`. |
+| Decision enabled | Prepare the exact controlled integration mission after separate human authorization; retain canonical main at `ca29d32` until then. |
+| Confidence | 0.99 |

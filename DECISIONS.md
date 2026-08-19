@@ -9,6 +9,60 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-19-04
+Date: 2026-08-19
+
+Decision: Accept exact P0-2a implementation `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
+as **IMPLEMENTATION VALIDATED — INTEGRATION PENDING** against frozen architecture
+`c8b75c3ab069df29e2201c0540b69bfca86e9cf1`.
+
+Question: Does the cumulative four-file implementation now make release PASS fail closed over exact
+V1 scope, valid/scorable telemetry, frozen UVR and prompt/config identity, GitHub/code/clean-state
+identity, aggregate/result coherence, secret-safe evidence, atomic write/reread, external trusted
+runtime provenance, and every tested finalization failure?
+
+SHA and scope evidence: Remote main remained exact
+`ca29d32b4869269daa47142615d298580a577a77`; the architecture branch remained exact `c8b75c3`; and
+the implementation branch resolved exact `0b707e4`, a linear descendant through `d204deb`. The
+cumulative range changes only `scripts/benchmark.py`, `tests/test_evaluation_integrity.py`,
+`.github/workflows/eval.yml`, and new `evals/benchmark_release_contract.json`. P0-2b runtime,
+prompts/models, retrieval, thresholds, HITL, publication, P0-1, and `FREEZE.md` are unchanged.
+
+Deterministic evidence: frozen dependency sync succeeded; the focused evaluation-integrity suite
+passed `205`; verifier/failure regressions passed `31`; the full suite passed `406` with three
+dependency deprecation warnings; Ruff's fatal tier and `git diff --check ca29d32..0b707e4` passed.
+No retry-until-green or threshold change occurred.
+
+Adversarial evidence: Independent exact-20 synthetic controls proved unchanged roots retain one
+trusted PASS and print PASS once. Real on-disk contract and manifest mutations introduced only after
+PASS write, reread, evidence validation, and trusted persisted-payload comparison caused the normal
+loaders' `SystemExit(2)` paths; each was converted to controlled finalization failure, exited `1`,
+printed no PASS, left no PASS or temporary artifact, and retained one validated sanitized FAIL
+report. Real contract and manifest loader failures before PASS write were also controlled. The
+representative prior scope, V1, telemetry/type, identity, secret, aggregate, coordinated-rewrite,
+atomic-reread, and final-root-drift attacks failed at their intended validator layers.
+
+Bounded claim: P0-2a provides trusted release-evaluator finalization at workflow time. It does not
+provide signed or permanently tamper-proof JSON after the workflow, validate P0-2b semantics, run a
+paid full release benchmark, or establish product-wide production readiness.
+
+Alternatives considered: accept `d204deb` despite a surviving PASS artifact (rejected by the frozen
+fail-closed gate); require post-workflow cryptographic authenticity in P0-2a (rejected as an explicit
+scope expansion); integrate now (rejected because integration and main cut-in require separate human
+authorization and exact integration-SHA validation).
+
+Status: `P0-2A IMPLEMENTATION VALIDATED — INTEGRATION PENDING`. Canonical main remains exact
+`ca29d32b4869269daa47142615d298580a577a77`. No provider call, paid release benchmark, merge,
+publish, or deployment occurred. After P0-2a integration, P0-2b verifier
+status/confidence/completeness/routing semantics is the next separate product architecture mission.
+
+Confidence: 0.99
+
+Supersedes / superseded by: Supersedes only the open implementation-status clauses in
+D-2026-08-19-02 and D-2026-08-19-03. Their historical defect evidence, frozen architecture, scope,
+and integration authorization boundary remain preserved.
+
+---
 Decision ID: D-2026-08-19-03
 Date: 2026-08-19
 
