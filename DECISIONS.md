@@ -9,6 +9,46 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-19-02
+Date: 2026-08-19
+
+Decision: Split P0-2 into sequential P0-2a evaluation-integrity and P0-2b verifier-semantics
+missions; freeze P0-2a as the current smallest implementation mission. MCP and A2A are optional,
+out of scope, and do not block the product-hardening sequence.
+
+Problem / question: Current `scripts/benchmark.py` can select no or partial work and still emit a
+passing gate, while verifier confidence/status/completeness and ceiling routing have separate runtime
+defects. Combining them would mix deterministic evidence-substrate repair with model/runtime
+behavior and would ask later verifier experiments to trust a fail-open evaluator.
+
+Exact evidence: current `origin/main` and independent remote query both resolved
+`ca29d32b4869269daa47142615d298580a577a77`. Zero-paid probes reproduced an unknown-ID `0/0` gate
+pass, partial and duplicate-unit passes, unsafe zero/negative/out-of-range limit behavior,
+`unverified + 0.99` scoring/routing, valid empty output marked completed, parse/empty states reaching
+HITL at the iteration ceiling, cost-ceiling HITL routing, and approved HITL routing to HTML
+generation. Existing exact-run telemetry and verifier-schema protections remain correct. Focused
+tests passed `45/45`; the full suite passed `215/215` with pinned Chromium.
+
+Reasoning: Evaluation selection/cardinality/evidence identity can be corrected with synthetic tests
+without changing the verifier. That correction is a prerequisite measurement substrate for any
+causal verifier-behavior experiment. Production verifier completeness remains `UNKNOWN REQUIRING
+EXPERIMENT`; a global verdict count is not justified for an unknown-sized extracted claim set.
+
+Frozen contract: `docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md`. P0-2a is limited to
+`scripts/benchmark.py`, `tests/test_evaluation_integrity.py`, `.github/workflows/eval.yml`, and new
+`evals/benchmark_release_contract.json`. It changes no model, prompt, threshold, verifier, retrieval,
+corpus, HITL, publication, deployment, or provider-call behavior.
+
+Status: `P0-2-CURSOR-OR-CODEX-READY` for architecture completeness only. Independent review and
+explicit human authorization remain required before implementation. No implementation, merge,
+publish, deployment, or provider spend occurred.
+
+Confidence: 0.98
+
+Supersedes / superseded by: Supersedes the current applicability of the documentation-only MCP-first
+dependency recorded at `ca29d32`; it does not rewrite that historical state or alter P0-1 closure.
+
+---
 Decision ID: D-2026-08-19-01
 Date: 2026-08-19
 

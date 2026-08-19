@@ -8,10 +8,11 @@ remains preserved in `FREEZE.md`.
 
 ## Authoritative SHA roles
 
-- **Current canonical main:** `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`.
-  This is the reviewed non-fast-forward integration commit for P0-1. Its parents are exact canonical
-  governance state `904f3efe87e6771329b5088bb3afeb6cd16c90dc` and exact final implementation
-  `20eb17f2737010dbf72eea0f0e271bf47d5af3de`.
+- **Current canonical main:** `ca29d32b4869269daa47142615d298580a577a77`.
+  It is a documentation-only descendant of P0-1 integration
+  `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`; the integrated runtime/product blobs are unchanged.
+  The integration commit's parents are exact canonical governance state `904f3ef` and exact final
+  implementation `20eb17f`.
 - **Final validated P0-1 implementation:** `20eb17f2737010dbf72eea0f0e271bf47d5af3de`,
   developed from frozen implementation base `7a606e895fe0a4bc9092659f130881bc7b52bd28`.
   No later descendant is implicitly approved.
@@ -78,21 +79,16 @@ historical evidence, not a current enterprise-release decision.
 
 ## Current authorized mission
 
-The current engineering mission is the separately governed **Stage 2 MCP architecture and
-implementation checkpoint**. P0-1 documentation closeout does not authorize Cursor or another
-implementation agent to begin P0-2, and MCP implementation must not silently implement P0-2a.
-After MCP is independently validated, P0-2a is intended to be the first substantive Content Agent
-engineering mission executed through that validated workflow, unless the Architect proves a
-smaller prerequisite mission is required. After P0-2a, the MCP-assisted governance workflow must be
-explicitly evaluated based on that real mission. Only after that proof may separate Stage 3 A2A
-architecture and implementation begin; A2A does not block starting P0-2a.
+The current product-hardening mission is **P0-2a evaluation scope/cardinality/release-evidence
+integrity**. Its implementation architecture is frozen in
+`docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md`, pending independent review and explicit
+human authorization. P0-2b follows as a separately architected verifier-semantics mission.
 
-The frozen dependency is: **MCP validated → P0-2a executed through MCP → MCP-assisted workflow
-evaluated → A2A**.
+MCP and A2A are optional developer-workflow infrastructure. They are out of this product mission and
+must not block the frozen sequence. This file does not itself authorize implementation, merge,
+publish, deployment, or provider spend.
 
-No P0-2 implementation, merge, publish, or deployment is authorized by this file.
-
-## P0-2a investigation boundary after MCP
+## P0-2a frozen implementation boundary
 
 - Isolated variable: benchmark scope/cardinality and evidence-binding semantics only.
 - Frozen control: current `--id 999 --gate` behavior selects zero topics and exits `0` with a pass.
@@ -123,9 +119,10 @@ No P0-2 implementation, merge, publish, or deployment is authorized by this file
   succeeded (`32143196853`, `32230388649`); [run `32230388649`](https://github.com/anudeepreddy332/content-agent/actions/runs/32230388649)
   recorded Ruff success and `215 passed, 3 warnings`. The PR-only paid evaluation job was correctly
   skipped on push.
-- Fresh zero-paid audit on 2026-08-19: `45/45` focused evaluation/verifier/failure tests passed;
-  independent probes reproduced the P0-2a zero-topic gate pass and P0-2b status/confidence and empty
-  verdict acceptance defects.
+- Fresh zero-paid audit on exact `ca29d32` on 2026-08-19: `45/45` focused tests and `215/215` full
+  deterministic/browser tests passed. Independent probes reproduced the P0-2a zero/partial/
+  duplicate scope passes and P0-2b status/confidence, empty verdict, ceiling, and approved-HITL
+  routing defects.
 - Retrieval evidence and classifications remain indexed in `docs/EXPERIMENT_LEDGER.md`.
 
 ## Explicitly not accepted

@@ -8,6 +8,7 @@ _Accepted contract synchronized 2026-08-19._
 - **Canonical integration:** `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`, with parents exact
   canonical governance state `904f3efe87e6771329b5088bb3afeb6cd16c90dc` and exact final
   implementation `20eb17f2737010dbf72eea0f0e271bf47d5af3de`
+- **Current documentation-only main:** `ca29d32b4869269daa47142615d298580a577a77`
 
 ## 0. Authority and status
 
@@ -363,21 +364,19 @@ count checks for known-cardinality fixtures do not answer it.
 
 ## 8. Engineering sequence after P0-1
 
-The accepted sequence is:
+The accepted product-hardening sequence is:
 
-1. complete P0-1 canonical closeout;
-2. perform Stage 2 MCP architecture and implementation as a separate infrastructure mission that
-   does not implement P0-2a;
-3. independently validate the MCP infrastructure;
-4. execute P0-2a as the first substantive Content Agent engineering mission through the validated
-   MCP workflow, unless the Architect proves that a smaller prerequisite mission is required;
-5. after P0-2a, explicitly evaluate whether the MCP-assisted governance workflow functioned
-   correctly in a real engineering mission; and
-6. only after that proof, begin separate Stage 3 A2A architecture and implementation.
+1. P0-1 canonical closeout — complete;
+2. P0-2a fail-closed evaluation scope/cardinality/release-evidence binding — current;
+3. P0-2b verifier status/confidence/completeness semantics — separate later mission;
+4. P0-3 tenant/ACL isolation;
+5. durability, recovery, and publishing integrity;
+6. retrieval/chunking/embedding redesign;
+7. enterprise ingestion and later scale/cost/observability work.
 
-The frozen dependency is: **MCP validated → P0-2a executed through MCP → MCP-assisted workflow
-evaluated → A2A**. A2A does not block P0-2a.
-
-This architecture record does not authorize P0-2 implementation. Proposed S3/Postgres/event-driven
-ingestion, tenant/ACL, model-tier, and related roadmap ideas remain input for a separate architecture
-mission and are not accepted here.
+MCP and A2A are optional developer-workflow infrastructure, outside this product sequence, and must
+not block it. The frozen P0-2a contract is
+`docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md`. This architecture record still requires
+independent review and human authorization before implementation or merge. Proposed
+S3/Postgres/event-driven ingestion, tenant/ACL, model-tier, and related roadmap ideas remain later
+missions and are not accepted by the P0-2a contract.
