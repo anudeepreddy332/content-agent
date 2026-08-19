@@ -1,9 +1,13 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-08-18._
+_Accepted contract synchronized 2026-08-19._
 
 - **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`
 - **Authorized P0-1 implementation base:** `7a606e895fe0a4bc9092659f130881bc7b52bd28`
+- **Final validated P0-1 implementation:** `20eb17f2737010dbf72eea0f0e271bf47d5af3de`
+- **Canonical integration:** `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`, with parents exact
+  canonical governance state `904f3efe87e6771329b5088bb3afeb6cd16c90dc` and exact final
+  implementation `20eb17f2737010dbf72eea0f0e271bf47d5af3de`
 
 ## 0. Authority and status
 
@@ -11,9 +15,10 @@ This file contains accepted architecture only. Candidate ideas and experiment hy
 belong here until independent review accepts them. Material decision history remains in
 `DECISIONS.md`; current implementation/release state remains in `PROJECT_STATUS.md`.
 
-The P0-1 architecture below is **APPROVED and frozen**. Its implementation is **not yet validated,
-not merged, and not deployed**. Descriptions under "current baseline" are current code; descriptions
-under "P0-1 accepted target" are the authorized implementation contract.
+The P0-1 architecture below is **APPROVED, frozen, implemented, validated, and integrated** at exact
+canonical main `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`. The contract is retained as the
+regression boundary. This status does not prove hosting-provider deployment identity or make the
+overall system production-ready.
 
 The implementation-base SHA is a specific independently reviewed exception: `7a606e8` is a direct
 documentation-only descendant of the audited runtime reference and does not change its runtime or
@@ -41,7 +46,7 @@ The serving retrieval baseline stays unchanged. The known MiniLM truncation defe
 the `224/32` tokenizer-safe candidate and the exact-73 alternative-model diagnostics have not earned
 cutover. Retrieval research is isolated from this security mission.
 
-## 2. Current P0-1 threat boundary
+## 2. P0-1 threat boundary
 
 Treat all of the following as untrusted:
 
@@ -61,7 +66,7 @@ The trusted computing base is deliberately narrow:
 No human approval converts raw model output into trusted HTML. Only successful passage through the
 authoritative server policy does.
 
-## 3. P0-1 accepted target
+## 3. P0-1 accepted and implemented contract
 
 ### 3.1 One authoritative rendering boundary
 
@@ -280,10 +285,10 @@ Escape every scalar placeholder. Serialize JSON-LD with `json.dumps`, additional
 `>`, `&`, U+2028, and U+2029. Never repair JSON-LD by reversing HTML entities in a completed
 document.
 
-## 4. Frozen deterministic acceptance gates
+## 4. Frozen deterministic acceptance gates and validation record
 
-Implementation starts from exact authorized base
-`7a606e895fe0a4bc9092659f130881bc7b52bd28` in a clean worktree. It must pass:
+Implementation started from exact authorized base
+`7a606e895fe0a4bc9092659f130881bc7b52bd28` in a clean worktree. The frozen gates were:
 
 1. Lock consistency and the existing fatal Ruff tier.
 2. `pytest tests/` only; repository-root pytest is prohibited because it collects a paid,
@@ -302,7 +307,16 @@ Implementation starts from exact authorized base
 
 No threshold lowering, retry-until-green, or aggregate-score masking is allowed.
 
-## 5. Authorized implementation file boundary
+Validation closed on exact final implementation
+`20eb17f2737010dbf72eea0f0e271bf47d5af3de`: lock synchronization and Ruff fatal tier passed,
+`215` deterministic tests passed, and `4` pinned-Chromium browser-security tests passed. Read-only
+integration analysis and subsequent merge preserved every reviewed implementation blob. Exact
+integration `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3` has two successful public push CI runs; run
+`32143196853` and run `32230388649` succeeded; the latter recorded Ruff success and
+`215 passed, 3 warnings`. The PR-only paid evaluation job was correctly skipped and is not claimed
+as integration evidence.
+
+## 5. Validated implementation file boundary
 
 Existing files:
 
@@ -320,11 +334,11 @@ New files:
 - `static/app.js`, `static/app.css`
 - focused HTML-policy, security-boundary, artifact-equivalence, and browser-security tests
 
-No retrieval, verifier-rubric, tenant, deployment-target, or unrelated code is authorized.
+No retrieval, verifier-rubric, tenant, deployment-target, or unrelated code was included in P0-1.
 
 ## 6. Stop conditions
 
-Stop and return `ARCHITECTURE-BLOCKED` if the implementation base differs from exact SHA
+The implementation mission required `ARCHITECTURE-BLOCKED` if its base differed from exact SHA
 `7a606e895fe0a4bc9092659f130881bc7b52bd28`; unrelated work overlaps an authorized file; the pinned
 sanitizer cannot run on Python 3.14/target platforms; a legitimate feature needs model-controlled
 active content; sandbox/CSP behavior fails in supported Chromium; visible content must change during
@@ -334,9 +348,28 @@ passing requires weakening this policy.
 
 ## 7. Deferred risks and capabilities
 
-P0-1 blocks active-content execution and bearer exposure. It does not make model text semantically
+P0-1 blocks the reviewed active-content, credential-transport, citation-authority and artifact/push
+binding failures. It does not make model text semantically
 trustworthy. Web/reviewer prompt injection can still influence prose, reasoning, and source
 selection while producing inert HTML. Also deferred: P0-2 verifier/evaluator integrity; P0-3
 identity/tenant isolation; durable registry/queue recovery; HA/scale; dependency supply-chain
 hardening; browser parser differentials beyond the frozen test matrix; and hosting-provider deploy
 identity.
+
+P0-2 is split sequentially: first fail-closed evaluation scope/cardinality and evidence binding,
+then verifier status/confidence/completeness semantics. The latter's correct completeness contract
+for a production model-extracted, unknown-sized claim set remains an experiment question; exact
+count checks for known-cardinality fixtures do not answer it.
+
+## 8. Engineering sequence after P0-1
+
+The accepted sequence is:
+
+1. complete P0-1 canonical closeout;
+2. perform the separate Stage 2 MCP architecture and implementation checkpoint;
+3. only after independent MCP validation, return to the selected P0-2a Content Agent mission;
+4. treat A2A as later Stage 3 work.
+
+This architecture record does not authorize P0-2 implementation. Proposed S3/Postgres/event-driven
+ingestion, tenant/ACL, model-tier, and related roadmap ideas remain input for a separate architecture
+mission and are not accepted here.

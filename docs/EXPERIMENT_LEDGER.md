@@ -1,6 +1,6 @@
 # Experiment and Evidence Ledger
 
-_Canonical compact index. Last synchronized: 2026-08-13._
+_Canonical compact index. Last synchronized: 2026-08-19._
 
 This ledger indexes meaningful experiments and release-relevant validation. It does not duplicate
 full reports. Detailed artifacts remain under `docs/archive/`, in the named commit/branch, or in the
@@ -150,3 +150,37 @@ For every applicable change:
 | Evidence | Exact source at `794851d`; `architecture.md`; decision `D-2026-08-13-02`. |
 | Decision enabled | Authorize the frozen P0-1 implementation mission after this documentation branch is independently reviewed. |
 | Confidence | 0.96 |
+
+### VAL-2026-08-19-01 — P0-1 exact-SHA implementation and integration validation
+
+| Field | Record |
+| --- | --- |
+| Question | Did the frozen P0-1 boundary pass exact-SHA implementation, integration, deterministic, browser-security and public-CI validation without unrelated runtime change? |
+| Isolated variable | P0-1 implementation only; no retrieval, verifier rubric, tenant model or deployment target change. |
+| Control / candidate | Frozen base `7a606e895fe0a4bc9092659f130881bc7b52bd28` / final implementation `20eb17f2737010dbf72eea0f0e271bf47d5af3de`. |
+| Frozen gate | Trusted sanitization/rendering; inert Gate 1; empty-sandbox Gate 2; CSP/header consistency; header-only SSE bearer; no token in URL/storage; canonical citation authority and malformed URL rejection; ordered revision content; approval/archive/Git byte equality; exact-SHA race-safe publication; fixed tests with no threshold changes or retry-until-green. |
+| Integration identity | `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`; parents exact canonical `904f3efe87e6771329b5088bb3afeb6cd16c90dc` and exact implementation `20eb17f2737010dbf72eea0f0e271bf47d5af3de`. Canonical documentation and reviewed implementation blob identity were preserved; no extra runtime change appeared. |
+| Deterministic validation | Final implementation: Ruff fatal tier passed; `215 passed`. Exact integration public CI: runs `32143196853` and `32230388649` succeeded; the latter recorded Ruff success and `215 passed, 3 warnings`. |
+| Browser/security validation | `4 passed` with pinned Chromium on exact final implementation; implementation blobs are identical in exact integration. Public integration CI installed pinned Chromium and included the browser tests in its `215`-test suite. |
+| Paid/live providers | None used for this validation. The PR-only paid evaluation job was skipped on the integration push and is not claimed. |
+| Result | Every frozen P0-1 gate passed and exact integration preserved the reviewed implementation. |
+| Classification | `P0-1 VALIDATED AND INTEGRATED — CLOSED`. Not deployment proof or overall production readiness. |
+| Evidence | Exact SHAs above; [GitHub Actions run `32230388649`](https://github.com/anudeepreddy332/content-agent/actions/runs/32230388649); decision `D-2026-08-19-01`. |
+| Decision enabled | Close P0-1; retain its contract as a regression boundary; reassess remaining enterprise blockers separately. |
+| Confidence | 0.99 |
+
+### AUD-2026-08-19-01 — Post-P0-1 enterprise-blocker reassessment
+
+| Field | Record |
+| --- | --- |
+| Question | After P0-1 closure, which remaining failures are independently reproducible and which are capabilities, limitations, debt or unresolved experiments? |
+| Isolated variable | Read-only/static traces plus zero-paid deterministic probes at exact canonical main `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`; no runtime or threshold change. |
+| Deterministic control | Focused evaluation/verifier/failure suite: `45 collected, 45 passed`. |
+| P0-2a reproduction | `scripts/benchmark.py --id 999 --gate` selected `0` topics, reported `Valid: 0/0`, printed a CI pass, and exited `0`. Classification: `PROVEN DEFECT` in evaluation scope/cardinality acceptance. |
+| P0-2b reproduction | A single `unverified` verdict with confidence `.99` produced grounding score `.99` and routed to HITL. An empty verifier array was recorded as `completed`; at maximum iterations it reached HITL and an approved HITL decision routed to HTML generation. Classification: `PROVEN DEFECT`, mitigated by mandatory human gates. Correct completeness semantics for a production unknown-sized extracted claim set remain `UNKNOWN REQUIRING EXPERIMENT`. |
+| Other classifications | Identity/tenant ownership: `MISSING ENTERPRISE CAPABILITY`; volatile run registry around durable checkpoints: `ARCHITECTURAL LIMITATION`; dependency-blind health, single-worker execution and operational observability: `TECHNICAL DEBT / MISSING ENTERPRISE CAPABILITY`; serving MiniLM truncation: `PROVEN DEFECT`, with replacement `UNKNOWN REQUIRING EXPERIMENT`; hosting deployment identity: `MISSING ENTERPRISE CAPABILITY`. P0-1 artifact/push binding remains closed. |
+| Ordering decision | Evidence integrity P0-2a precedes verifier-behavior P0-2b. Per the accepted program sequence, the immediate engineering mission is the separate Stage 2 MCP checkpoint; P0-2a remains queued until MCP is independently validated. |
+| P0-2a isolated target | Empty/incoherent selection must fail before calls; smoke slices must be explicitly non-release; release mode must bind exact ordered manifest/cardinality, run identities/statuses, code/config/prompt hashes and report digest. No prompts, retrieval, verifier rubric, corpus or quality threshold changes. |
+| Kill/block conditions | Block if canonical full scope/cardinality cannot be frozen, any unscorable/incomplete run can earn release pass, scope expands into model/retrieval behavior, or passing needs a moved threshold or retry-until-green. |
+| Decision enabled | `NEXT-P0-INVESTIGATION-REQUIRED`; do not authorize Cursor for P0-2 before Stage 2 MCP validation and independent review of the P0-2a frozen contract. |
+| Confidence | 0.97 |

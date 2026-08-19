@@ -9,6 +9,53 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-19-01
+Date: 2026-08-19
+
+Decision: Close P0-1 as `VALIDATED AND INTEGRATED` at exact canonical main
+`d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3` while retaining the overall enterprise-production
+block.
+
+Problem / question: Did the frozen P0-1 active-content, credential, citation, approval/artifact and
+publication boundary survive exact-SHA implementation, independent review, isolated integration,
+deterministic/browser validation, and public integration-SHA CI?
+
+SHA and ancestry evidence: final Reviewer-approved implementation
+`20eb17f2737010dbf72eea0f0e271bf47d5af3de` descends from frozen implementation base
+`7a606e895fe0a4bc9092659f130881bc7b52bd28`. Canonical integration
+`d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3` has parents exact canonical governance state
+`904f3efe87e6771329b5088bb3afeb6cd16c90dc` and exact final implementation `20eb17f`. Integration
+inspection found the canonical documentation blobs preserved from `904f3ef`, every reviewed P0-1
+implementation blob preserved from `20eb17f`, and no additional runtime change.
+
+Implemented controls: one server-side trusted renderer/sanitizer; inert Gate-1 Markdown; empty
+sandbox and trusted `srcdoc` at Gate 2; restrictive and consistent FastAPI, Caddy and generated-
+article CSP/headers; Authorization-header SSE; no bearer in URLs or browser storage; canonical
+retrieved `source_ref` citation authority with DNS/IP/WHATWG and malformed-authority rejection;
+ordered text/inline/block revision-content preservation; server-owned approval hash; archive/Git
+byte equivalence; and exact-commit publication with expected-remote-parent race protection.
+
+Validation evidence: exact final implementation passed Ruff's fatal tier, `215` deterministic
+tests, and `4` pinned-Chromium browser-security tests. Exact integration has two successful public
+push CI runs, `32143196853` and `32230388649`. The latter recorded Ruff success and `215 passed,
+3 warnings`; its PR-only paid evaluation job was correctly skipped. No paid provider result is
+claimed.
+
+Alternatives considered: leave P0-1 open because unrelated enterprise blockers remain (rejected:
+misstates the validated boundary); call the system production-ready (rejected: verifier/evaluation,
+identity/tenant, durable recovery, readiness/HA and deployment-identity gaps remain); treat a later
+descendant as implicitly approved (rejected: violates exact-SHA governance).
+
+Status: `P0-1 VALIDATED AND INTEGRATED — CLOSED`. This is neither deployment proof nor overall
+production-readiness approval. No later descendant is implicitly validated.
+
+Confidence: 0.99
+
+Supersedes / superseded by: Supersedes only the open/unimplemented P0-1 status clauses in
+D-2026-08-13-02 and D-2026-08-18-01. Their threat analysis, frozen contract, historical governance
+and exact-base record remain preserved.
+
+---
 Decision ID: D-2026-08-18-01
 Date: 2026-08-18
 
