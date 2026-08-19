@@ -1044,6 +1044,20 @@ def test_evidence_digest_rejects_mutation_and_missing_digest():
         benchmark._validate_evidence_payload(missing)
 
 
+def test_valid_smoke_non_release_evidence_validates():
+    benchmark._validate_evidence_payload(_valid_evidence_payload())
+
+
+@pytest.mark.parametrize("qualification", ["PASS", "FAIL"])
+def test_smoke_evidence_rejects_relabelled_release_qualification_with_recomputed_digest(qualification):
+    payload = _valid_evidence_payload()
+    payload["release_qualification"] = qualification
+    _recompute_evidence_digest(payload)
+
+    with pytest.raises(ValueError, match="smoke evidence requires"):
+        benchmark._validate_evidence_payload(payload)
+
+
 @pytest.mark.parametrize(
     "field",
     [
@@ -1325,6 +1339,23 @@ def test_valid_release_pass_evidence_validates():
     benchmark._validate_evidence_payload(payload)
 
 
+def test_valid_release_fail_evidence_is_structurally_valid():
+    payload = _valid_release_pass_evidence_payload()
+    payload["release_qualification"] = "FAIL"
+    _recompute_evidence_digest(payload)
+
+    benchmark._validate_evidence_payload(payload)
+
+
+def test_release_evidence_rejects_non_release_qualification_with_recomputed_digest():
+    payload = _valid_release_pass_evidence_payload()
+    payload["release_qualification"] = "NON_RELEASE"
+    _recompute_evidence_digest(payload)
+
+    with pytest.raises(ValueError, match="release evidence requires"):
+        benchmark._validate_evidence_payload(payload)
+
+
 @pytest.mark.parametrize(
     ("mutator", "match"),
     [
@@ -1384,10 +1415,10 @@ def test_release_pass_rejects_nested_tamper_even_with_recomputed_digest(mutator,
         (_tamper_zero_verdict_counts, "zero-verdict"),
         (_tamper_telemetry_prompt_version, "prompt_version mismatch"),
         (_tamper_telemetry_prompt_hashes, "prompt_hashes mismatch"),
-        (_tamper_aggregate_successful, "aggregate successful"),
-        (_tamper_aggregate_failed, "aggregate failed"),
-        (_tamper_aggregate_unscorable, "aggregate unscorable"),
-        (_tamper_aggregate_total_runs, "aggregate total_runs"),
+        (_tamper_aggregate_successful, "aggregate_metrics.*successful"),
+        (_tamper_aggregate_failed, "aggregate_metrics.*failed"),
+        (_tamper_aggregate_unscorable, "aggregate_metrics.*unscorable"),
+        (_tamper_aggregate_total_runs, "aggregate_metrics.*total_runs"),
     ],
     ids=[
         "status_failed",
@@ -1414,6 +1445,49 @@ def test_release_pass_rejects_semantic_tamper_even_with_recomputed_digest(mutato
     mutator(payload)
     _recompute_evidence_digest(payload)
     with pytest.raises(ValueError, match=match):
+        benchmark._validate_evidence_payload(payload)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "total_runs",
+        "successful",
+        "failed",
+        "unscorable",
+        "mean_cost_usd",
+        "mean_grounding",
+        "mean_reflection",
+        "mean_wall_time_s",
+        "mean_html_errors",
+        "mean_unverified_rate",
+        "runs_below_grounding_floor",
+    ],
+)
+def test_release_pass_rejects_every_aggregate_field_tamper_with_recomputed_digest(field):
+    payload = _valid_release_pass_evidence_payload()
+    benchmark._validate_evidence_payload(payload)
+    payload["aggregate_metrics"] = dict(payload["aggregate_metrics"])
+    payload["aggregate_metrics"][field] += 1
+    _recompute_evidence_digest(payload)
+
+    with pytest.raises(ValueError, match=field):
+        benchmark._validate_evidence_payload(payload)
+
+
+def test_release_pass_rejects_missing_or_extra_aggregate_field_with_recomputed_digest():
+    payload = _valid_release_pass_evidence_payload()
+    payload["aggregate_metrics"] = dict(payload["aggregate_metrics"])
+    payload["aggregate_metrics"].pop("mean_unverified_rate")
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match="missing fields"):
+        benchmark._validate_evidence_payload(payload)
+
+    payload = _valid_release_pass_evidence_payload()
+    payload["aggregate_metrics"] = dict(payload["aggregate_metrics"])
+    payload["aggregate_metrics"]["injected_metric"] = 1
+    _recompute_evidence_digest(payload)
+    with pytest.raises(ValueError, match="unexpected fields"):
         benchmark._validate_evidence_payload(payload)
 
 

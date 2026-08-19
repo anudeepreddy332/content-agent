@@ -743,17 +743,20 @@ def _validate_release_pass_aggregates(payload: dict[str, Any]) -> None:
     if not isinstance(aggregate, dict):
         raise ValueError("aggregate_metrics must be an object")
     expected = _aggregate_metrics(results)
-    required = {
-        "total_runs": V1_RELEASE_CONTRACT["expected_topic_count"],
-        "successful": V1_RELEASE_CONTRACT["expected_topic_count"],
-        "failed": 0,
-        "unscorable": 0,
-    }
-    for field, value in required.items():
-        if aggregate.get(field) != value:
-            raise ValueError(f"release PASS aggregate {field} must be {value}")
-        if expected[field] != value:
-            raise ValueError(f"release PASS aggregate {field} contradicts ordered units")
+    missing = sorted(set(expected) - set(aggregate))
+    extra = sorted(set(aggregate) - set(expected))
+    if missing:
+        raise ValueError(f"release PASS aggregate_metrics missing fields: {missing}")
+    if extra:
+        raise ValueError(f"release PASS aggregate_metrics has unexpected fields: {extra}")
+    if aggregate != expected:
+        mismatches = sorted(
+            field for field in expected if aggregate[field] != expected[field]
+        )
+        raise ValueError(
+            "release PASS aggregate_metrics contradicts ordered units: "
+            f"{mismatches}",
+        )
 
 
 def _validate_release_pass_evidence(
@@ -794,6 +797,10 @@ def _validate_evidence_structure(payload: dict[str, Any]) -> None:
         raise ValueError("mode must be smoke or release")
     if payload["release_qualification"] not in VALID_RELEASE_QUALIFICATIONS:
         raise ValueError("release_qualification must be PASS, FAIL, or NON_RELEASE")
+    if payload["mode"] == "smoke" and payload["release_qualification"] != "NON_RELEASE":
+        raise ValueError("smoke evidence requires release_qualification=NON_RELEASE")
+    if payload["mode"] == "release" and payload["release_qualification"] not in {"PASS", "FAIL"}:
+        raise ValueError("release evidence requires release_qualification=PASS or FAIL")
     if not isinstance(payload["gate_requested"], bool):
         raise ValueError("gate_requested must be a boolean")
 
