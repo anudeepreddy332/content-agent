@@ -2,7 +2,7 @@
 
 Status: `ARCHITECT PROPOSAL — INDEPENDENT REVIEW REQUIRED`
 
-Decision: `MCP-CURSOR-READY`
+Decision: `MCP-PORTABILITY-REVIEW-READY`
 
 Canonical repository tip investigated: `ca29d32b4869269daa47142615d298580a577a77`
 
@@ -10,6 +10,9 @@ Product-runtime integration retained as the accepted runtime boundary:
 `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`
 
 Date: 2026-08-19
+
+Original architecture commit, preserved without amendment:
+`3418251e73edf0c83b3cb59bc81af12dc7303fb8`
 
 ## 1. Current repository and canonical-state verification
 
@@ -31,8 +34,10 @@ The remote gate passed.
 
 The canonical documents call `d0be0a7` the current canonical product/runtime integration, while the
 public branch tip is now `ca29d32` after two documentation-only closeout commits. This proposal uses
-the terms precisely: `ca29d32` is the implementation base for Stage 2; `d0be0a7` remains the
-validated P0-1 runtime integration inside that history.
+the terms precisely: `ca29d32` is the canonical product/runtime base; `d0be0a7` remains the
+validated P0-1 runtime integration inside that history. Stage 2 implementation may start only from
+the exact portability-architecture follow-up SHA later accepted by the independent Reviewer, whose
+range from `ca29d32` must contain this architecture document and no product/runtime change.
 
 The P0-2a control was independently reproduced at `ca29d32` with zero selected topics. The command
 exited `0` after printing `Valid: 0/0`, `Scorable UVR runs: 0/0`, and `CI GATE: PASS`. The focused
@@ -125,6 +130,15 @@ MCP configuration and support local stdio and Streamable HTTP servers. Codex can
 set per-server and per-tool approval modes, and configure startup/tool timeouts. The local machine
 used for this audit has `codex-cli 0.145.0`, and its `codex mcp` command is available.
 
+Codex accepts a user-level `~/.codex/config.toml` or, for a trusted project, a project-level
+`.codex/config.toml`. A stdio server is registered under `[mcp_servers.<id>]` with `command`, `args`,
+optional `cwd`, and explicit environment forwarding. `codex mcp add`, `codex mcp list`, and the TUI
+`/mcp` view provide registration/status paths. `enabled_tools`, `disabled_tools`,
+`default_tools_approval_mode`, per-tool approval modes, `required`, and startup/tool timeouts are
+documented controls. This architecture uses the project scope, passes no environment variables,
+allowlists exactly the five canonical tools, marks the server required, and retains `prompt`
+approval. The configured host timeout must exceed the server's 1,200-second maximum check timeout.
+
 Current OpenAI documentation still describes reading server `instructions` during initialization.
 Therefore the server must be dual-era; security may not depend on an instruction being read.
 
@@ -133,22 +147,41 @@ configuration. A Reviewer operating only in ChatGPT web cannot consume this loca
 That is an explicit Stage 2 block, not a reason to deploy a premature remote server. The Reviewer
 must use an MCP-capable local Codex/ChatGPT desktop/IDE host for this phase.
 
-Reference: [OpenAI MCP documentation](https://developers.openai.com/codex/mcp).
+References: [OpenAI MCP documentation](https://developers.openai.com/codex/mcp) and
+[Codex configuration reference](https://developers.openai.com/codex/config-reference).
 
 ### Cursor
 
 Current Cursor documentation supports stdio, SSE, and Streamable HTTP. It supports tools and
-project-local `.cursor/mcp.json`; tool invocations require approval by default. The locally installed
-Cursor is version `3.16.29`. Cursor's published capability table does not establish a portable
-resource experience, so the architecture depends on tools only.
+project-local `.cursor/mcp.json`; tool invocations require approval by default. It also documents
+user-level `~/.cursor/mcp.json`, but the project scope is the authoritative Stage 2 adapter. The
+locally installed Cursor is version `3.16.29`. Cursor's published capability table does not
+establish a portable resource experience, so the architecture depends on tools only.
 
-Reference: [Cursor MCP documentation](https://docs.cursor.com/context/model-context-protocol).
+Cursor IDE exposes configured tools in `Available Tools`, allows each tool to be enabled/disabled,
+and asks for approval by default; auto-run must remain off for Stage 2. Cursor CLI is a separate,
+currently beta agent surface. Official Cursor documentation says the CLI detects the same
+`mcp.json`; its `cursor-agent mcp list` and `cursor-agent mcp list-tools <id>` commands expose server
+and tool discovery. Non-interactive CLI mode has native write and shell capabilities, so it is not
+the Stage 2 conformance target. The required Cursor target is the local IDE Agent; CLI discovery is
+supplementary when the CLI is installed. At this architecture audit, Cursor IDE/launcher version
+`3.16.29` is present but `cursor-agent` is not installed; no Cursor CLI result is claimed.
+
+References: [Cursor MCP documentation](https://docs.cursor.com/context/model-context-protocol),
+[Cursor CLI MCP behavior](https://docs.cursor.com/en/cli/using), and
+[Cursor CLI command reference](https://docs.cursor.com/en/cli/reference/parameters).
 
 ### Compatibility conclusion
 
 The common proven denominator is local stdio plus tools. Resources, prompts, roots, sampling,
 elicitation, tasks, subscriptions, and HTTP auth are not required. Actual Codex and Cursor connection
 smokes remain mandatory implementation gates; a documentation claim is not a connection test.
+
+The server is implementation-client-agnostic. Cursor and Codex receive one tool catalog, one set of
+JSON Schemas, and one evidence contract. Client identity and the negotiated protocol era may be
+recorded for attribution, but may not select commands, paths, limits, status codes, evidence fields,
+or engineering outcomes. Any server-side `if client == ...` behavior is prohibited unless a future
+protocol incompatibility is independently reviewed and accepted first.
 
 ## 6. Chosen MCP architecture
 
@@ -173,6 +206,12 @@ servers. This is safe only because the initial surface has no source mutation, G
 approval, provider, network, or arbitrary-shell capability. Each launch is still bound to a target
 worktree and a mission policy. An `actor_role` configured at launch is provenance, not authorization.
 
+With stdio, Cursor and Codex each launch a separate subprocess. In this document, "the same server"
+means the exact same committed server package, executable environment, mission policy, target
+worktree, tool/schema digests, and evidence contract. It does not mean a shared PID or concurrent
+multi-client daemon. Evidence persists below the worktree's ignored evidence root across process
+shutdown, while `server_instance_id` distinguishes launches.
+
 For P0-2a, the independently validated Stage 2 server code must run unchanged. Its server-code
 manifest digest and policy digest are included in every response. The P0-2a mission gets a separately
 reviewed policy file; it does not get new server code merely to add a check ID.
@@ -190,9 +229,11 @@ Reasons:
 - stderr can carry bounded operational logs without corrupting protocol stdout;
 - a one-user local process matches the project's present supervised single-operator posture.
 
-The launcher is `uv run --frozen --offline python -m engineering_mcp ...` from a synchronized
-project environment. `--offline` prevents dependency resolution from becoming implicit network
-activity. The server must also work when invoked directly as `.venv/bin/python -m engineering_mcp`.
+Installation and test setup use `uv sync --dev --frozen`; subsequent validation is offline. The two
+client adapters launch the same absolute worktree interpreter directly as
+`.venv/bin/python -m engineering_mcp ...`, avoiding PATH and undocumented relative-working-directory
+differences. No dependency resolution occurs during an MCP launch. The runbook may also document
+`uv run --frozen --offline` as a native operator check, not as a different server contract.
 
 Remote HTTP, a shared service, containers, OAuth, and cloud deployment are roadmap options only.
 Move to them only if a later multi-machine need is evidenced; A2A compatibility is not a Stage 2
@@ -216,9 +257,12 @@ rules but grant no authority.
 
 All roles get the same five-tool evidence surface. The separation is in what MCP deliberately lacks:
 
+MCP does not own source-code editing in Stage 2. Cursor or Codex uses its separately authorized
+native editing capability inside the implementation worktree; the MCP surface remains evidence-only.
+
 - Architect and Reviewer cannot mutate through MCP.
-- Implementer cannot mutate through MCP either; it uses Cursor's native editing under the reviewed
-  file scope.
+- Implementer cannot mutate through MCP either; it uses Cursor's or Codex's native editing under
+  the reviewed file scope.
 - No tool can record `approved`, change a threshold, change the mission policy, or merge work.
 - Read and check evidence is available to all roles, which makes independent reproduction possible.
 - Host-side tool allowlists and approval prompts are defense in depth, not the server security
@@ -388,6 +432,11 @@ server-code, policy, HEAD, or worktree-status identities. It writes an ordered J
 and returns bundle ID, relative manifest path, manifest SHA-256, evidence IDs, and consistency
 result. Timeout: 30 seconds; bundle limit: 25 MiB.
 
+Records from separate Cursor and Codex stdio processes may share a bundle when all engineering
+identities above match. Different client names, sessions, negotiated protocol eras, request IDs,
+timestamps, or server instance IDs do not make an otherwise coherent bundle inconsistent; they
+remain visible as attribution metadata.
+
 Why MCP: the Reviewer receives a manifest of exact operation evidence rather than a prose-selected
 set of excerpts.
 
@@ -407,6 +456,13 @@ in a text content block for legacy clients:
   "request_id": "opaque UUID",
   "mission_id": "policy mission ID",
   "actor_role": "architect|reviewer|implementer",
+  "client_context": {
+    "client_name": "server-observed string or null",
+    "client_version": "server-observed string or null",
+    "client_session_id": "host capture identifier or null",
+    "negotiated_protocol_version": "protocol revision",
+    "server_instance_id": "opaque UUID"
+  },
   "repository": {
     "id": "github.com/anudeepreddy332/content-agent",
     "head_sha_before": "40-hex",
@@ -434,8 +490,14 @@ in a text content block for legacy clients:
 }
 ```
 
-`semantic_result_digest` excludes request IDs, timestamps, and elapsed time so deterministic results
-can be compared. It includes the complete normalized result, not displayed tails.
+`semantic_result_digest` excludes request/evidence IDs, timestamps, elapsed time, client identity,
+client session, negotiated protocol version, server instance ID, and host presentation so
+deterministic engineering results can be compared across clients. It includes the complete
+normalized result, repository identity, server code/policy/tool-catalog digests, and evidence schema
+version, not displayed tails.
+
+Client-supplied identity is untrusted attribution, never authorization. It may not affect a tool
+result, policy decision, command, path, timeout, limit, status, or semantic digest.
 
 This is provenance, not cryptographic identity attestation. The evidence directory and chained
 audit log are locally mutable. Independent Reviewer reproduction at the exact commit is mandatory.
@@ -554,15 +616,17 @@ P0-2a is not implemented in Stage 2. After independent MCP validation, its workf
    from the exact then-canonical MCP-integrated SHA.
 2. Architect and Reviewer approve a P0-2a mission policy containing the exact base, allowed paths,
    and fixed deterministic check IDs. The policy does not change quality thresholds.
-3. Cursor connects the already validated `engineering_mcp` server to that worktree.
+3. The selected Implementation Agent—Cursor or Codex—connects the already validated
+   `engineering_mcp` server contract to that worktree through its thin client adapter.
 4. `repo_snapshot` proves repository identity, exact HEAD, and clean starting state.
 5. Architect/Reviewer use `read_tracked_file` for `scripts/benchmark.py`,
    `tests/test_evaluation_integrity.py`, `evals/topics.json`, and canonical governance documents.
-6. Cursor edits with its native editor. MCP performs no mutation.
+6. The selected client edits with its native capability. MCP performs no mutation.
 7. `inspect_change` proves the worktree changes only the frozen P0-2a scope.
 8. `run_check` executes the pre-provider-call deterministic P0-2a tests with provider credentials
    absent. A zero-selection test must prove the benchmark subprocess/provider path was not invoked.
-9. Cursor commits natively after local gates pass; MCP cannot commit.
+9. The selected client commits natively only within the separately authorized implementation
+   workflow after local gates pass; MCP cannot commit.
 10. `repo_snapshot`, `inspect_change`, focused P0-2a checks, fatal lint, and full regression are run
     against the exact candidate commit.
 11. `build_evidence_bundle` binds the coherent evidence records to that commit.
@@ -572,6 +636,11 @@ P0-2a is not implemented in Stage 2. After independent MCP validation, its workf
 
 The P0-2a mission may add a reviewed policy file and deterministic check IDs. It may not add a
 free-form command facility or alter the Stage 2 server to obtain a passing result.
+
+The P0-2a handoff must say `IMPLEMENTATION AGENT (Cursor or Codex)`. It may contain separate adapter
+connection instructions, but its base, scope, tools, schemas, gates, evidence, Git discipline,
+Reviewer boundary, and stop conditions are client-neutral. Switching clients is not permission to
+change the mission policy or reinterpret existing evidence as fresh.
 
 ## 18. What remains outside MCP
 
@@ -609,56 +678,98 @@ cross-agent structured evidence contract adds value.
 | Evidence tampering | Hashes and chained records plus independent re-execution; explicitly not claimed as external attestation. |
 | Role self-approval | No approval tool or state; Reviewer must rerun; operator controls merge. |
 | Capability creep | Exactly five tools; new tool or mutation requires new architecture and independent review. |
+| Client-specific engineering truth | No client conditional; canonical catalog/schema digests; metadata-invariance tests; actual cross-client comparison. |
+| Adapter drift or global shadowing | Tracked templates, ignored resolved copies, absolute shared launch contract, per-run sanitized digests, explicit global-config check. |
+| Switchover evidence confusion | Client/server-instance attribution, immutable evidence IDs, no overwrite, canonical member comparison, both-direction real handoff tests. |
 
 ## 20. Frozen deterministic MCP acceptance gates
 
 All gates are mandatory. Failure is not permission to weaken the gate.
 
-1. Base gate: exact implementation base `ca29d32`, correct origin, clean isolated worktree.
+1. Base gate: canonical product base `ca29d32`, plus an exact Reviewer-authorized portability-
+   architecture implementation base descending through `3418251` with only this document changed
+   before implementation; correct origin and clean isolated worktree.
 2. Scope gate: only the files listed in section 24 change; product runtime and canonical state files
    remain byte-identical.
 3. Dependency gate: `mcp==2.0.0` is an exact dev dependency; `uv.lock` is synchronized; production
    `--no-dev` behavior is unchanged.
 4. Protocol gate: the programmatic probe passes modern `2026-07-28` discovery/call and legacy
    initialization/call paths; tool list order and schemas are deterministic.
-5. Codex gate: local Codex connects, lists exactly five tools, runs `repo_snapshot`, rejects a
-   traversal read, and preserves structured results.
-6. Cursor gate: local Cursor connects from project config, lists exactly five tools, approval is on,
-   runs `repo_snapshot`, and surfaces a deliberate `BLOCKED` result correctly.
-7. Web boundary gate: documentation states ChatGPT web cannot use this local server; no remote
+5. Client-agnostic-code gate: the server contains no client-name conditional, client-specific
+   schema/result transform, or client-specific policy. Tests vary client metadata and prove the
+   engineering result and semantic digest do not change.
+6. Adapter gate: tracked Cursor and Codex templates launch the same absolute worktree interpreter,
+   server module, root, and policy; resolved developer-local adapters contain no secret and their
+   sanitized digests are captured.
+7. Codex gate: the actual local Codex CLI connects from trusted project configuration, reports the
+   exact server required, discovers exactly five tools, calls all five as prescribed by the
+   conformance suite, retains prompt approval, and preserves structured results plus text fallback.
+8. Cursor IDE gate: the actual local Cursor IDE Agent connects from project configuration, shows
+   exactly five enabled tools, has auto-run off, calls all five as prescribed by the conformance
+   suite, and surfaces a deliberate `BLOCKED` result correctly.
+9. Cursor CLI boundary gate: the runbook records whether `cursor-agent` is installed and its version.
+   When available, `mcp list` and `mcp list-tools` must agree with the IDE adapter. Cursor CLI is not
+   a substitute for the required IDE gate and non-interactive mode is not used.
+10. Catalog equivalence gate: both required clients observe the same deterministic tool order,
+    names, descriptions, input schemas, output schemas, annotations, and tool-catalog digest.
+11. Result equivalence gate: at the same exact repository SHA and status digest, both clients obtain
+    equivalent `repo_snapshot`, `read_tracked_file`, `inspect_change`, one permitted `run_check`, and
+    `build_evidence_bundle` results under the canonical comparison rules in section 29.
+12. Failure equivalence gate: both clients send the same prohibited traversal request and receive
+    the same `BLOCKED` status, stable code, schema, and semantic failure meaning.
+13. Attribution gate: evidence IDs, timestamps, client/session metadata, negotiated protocol, and
+    server instance IDs remain distinct and visible; none alters engineering truth or makes old
+    evidence appear fresh.
+14. Switchover gate: the mandatory Cursor-to-Codex scenario in section 29 passes without changing
+    repository SHA/status, server code, environment, policy, tool schemas, or evidence contract.
+15. Reverse-switchover gate: the symmetric Codex-to-Cursor scenario passes before the server may be
+    described as bidirectionally portable.
+16. Web boundary gate: documentation states ChatGPT web cannot use this local server; no remote
    workaround is silently added.
-8. Read isolation gate: absolute paths, `..`, percent/Unicode traversal, symlinks, `.git`, `.env`,
+17. Read isolation gate: absolute paths, `..`, percent/Unicode traversal, symlinks, `.git`, `.env`,
    ignored, untracked, binary, oversized, and outside-root files are rejected.
-9. Git gate: only enumerated read-only Git verbs occur; aliases, hooks, external diff/textconv, and
+18. Git gate: only enumerated read-only Git verbs occur; aliases, hooks, external diff/textconv, and
    revision-expression injection cannot execute.
-10. Command gate: unknown check IDs and extra arguments are rejected; no shell invocation exists;
+19. Command gate: unknown check IDs and extra arguments are rejected; no shell invocation exists;
     child cwd/env/argv match policy.
-11. Secret gate: sentinel secrets in parent environment do not reach child, results, stderr, logs, or
+20. Secret gate: sentinel secrets in parent environment do not reach child, results, stderr, logs, or
     bundles; known Content Agent credentials cause fail-closed startup.
-12. Timeout/output gate: injected hang and output flood terminate the complete process group and
+21. Timeout/output gate: injected hang and output flood terminate the complete process group and
     return explicit `BLOCKED` evidence with no surviving child.
-13. Stale/concurrency gate: mid-check tracked change invalidates evidence; a concurrent check returns
+22. Stale/concurrency gate: mid-check tracked change invalidates evidence; a concurrent check returns
     `CHECK_BUSY` and does not run.
-14. Evidence gate: every call validates against its output schema; full content/log/diff digests
+23. Evidence gate: every call validates against its output schema; full content/log/diff digests
     match artifacts; mixed-identity bundles are rejected; same semantic input produces the same
     semantic digest.
-15. No-network-scope gate: implementation contains no HTTP client/network Git operation; the server
-    runs with no provider credentials and makes no external call in deterministic probes.
-16. Focused gate: all MCP unit, evidence, security, and compatibility tests pass.
-17. Regression gate: existing fatal Ruff tier and `pytest tests/` pass from the final candidate SHA.
-18. Operability gate: startup/shutdown, interrupted stdin, invalid policy, missing venv, and read-only
+24. No-network-scope gate: implementation contains no HTTP client/network Git operation; the server
+    and its check child run with no provider credentials and make no external call in deterministic
+    probes. Normal client traffic to Cursor/OpenAI services is outside this server boundary and is
+    not misreported as an MCP server call. No OS-level network-sandbox claim is made.
+25. Focused gate: all MCP unit, evidence, security, compatibility, and client-conformance comparator
+    tests pass.
+26. Regression gate: existing fatal Ruff tier and `pytest tests/` pass from the final candidate SHA.
+27. Operability gate: startup/shutdown, interrupted stdin, invalid policy, missing venv, and read-only
     target failures are explicit and leave no corrupt evidence record.
-19. Independent-review gate: Reviewer repeats critical host, security, scope, and evidence tests at
-    the exact candidate SHA. Implementer self-report is insufficient.
-20. No merge/deploy gate: passing this implementation mission still does not authorize merge,
+28. Independent-review gate: Reviewer validates both host captures, repeats critical host, security,
+    scope, evidence, comparison, and switchover tests at the exact candidate SHA. Implementer
+    self-report is insufficient.
+29. No product-change gate: client conformance and switchover leave every product/runtime tracked
+    file byte-identical and the repository status digest unchanged outside ignored evidence/adapters.
+30. No merge/deploy gate: passing this implementation mission still does not authorize merge,
     deployment, P0-2a, or A2A.
 
 ## 21. MCP failure and kill conditions
 
 Return `ARCHITECTURE-BLOCKED` and stop if:
 
-- fetched `origin/main` differs from the authorized base;
-- Codex or Cursor cannot reliably connect to stdio or consume the five tool schemas;
+- fetched `origin/main` differs from canonical product base `ca29d32`;
+- Codex or Cursor IDE cannot reliably connect to the same committed stdio server or consume the five
+  canonical tool schemas;
+- either client requires a material server-side client conditional, a different tool/evidence
+  contract, a different mission policy, or weakened status/error semantics;
+- the cross-client conformance comparison, Cursor-to-Codex switchover, or reverse switchover fails;
+- host evidence is missing, theoretical protocol compatibility is the only portability evidence, or
+  the compared runs are not bound to the same server code, repository SHA/status, and policy;
 - the Reviewer is restricted to ChatGPT web and cannot use an MCP-capable local host;
 - arbitrary shell, arbitrary file reads, Git mutation, product-runtime coupling, or provider
   credentials become necessary for basic usefulness;
@@ -695,8 +806,10 @@ These are infrastructure budgets, not Content Agent product-performance claims.
 
 Each tool call atomically writes its validated evidence JSON and bounded streams under
 `outputs/mcp_evidence/operations/<evidence_id>/`. A process audit JSONL records start, finish,
-status, repository/policy/server digests, artifact digests, and a previous-record digest. Logs never
-contain raw environment values or unrestricted file content.
+status, repository/policy/server/tool-catalog digests, client attribution, server instance ID,
+artifact digests, and a previous-record digest. Logs never contain raw environment values or
+unrestricted file content. A new client process appends; it never rewrites or re-labels evidence
+from a prior process.
 
 The response returns the evidence ID and semantic digest immediately. `build_evidence_bundle`
 creates an ordered manifest of selected records. stderr is for sanitized operator diagnostics and
@@ -719,21 +832,27 @@ Allowed new files:
 - `engineering_mcp/evidence.py`
 - `engineering_mcp/schemas.py`
 - `engineering_mcp/probe.py`
+- `mcp/contracts/tool-catalog.v1.json`
+- `mcp/contracts/evidence-envelope.v1.schema.json`
+- `mcp/contracts/client-conformance.v1.schema.json`
+- `mcp/client_adapters/codex.config.template.toml`
+- `mcp/client_adapters/cursor.mcp.template.json`
 - `mcp/policies/schema.json`
 - `mcp/policies/stage2.json`
+- `scripts/compare_mcp_client_conformance.py`
 - `tests/test_mcp_server.py`
 - `tests/test_mcp_evidence.py`
 - `tests/test_mcp_security.py`
 - `tests/test_mcp_compatibility.py`
-- `.codex/config.toml`
-- `.cursor/mcp.json`
+- `tests/test_mcp_client_conformance.py`
 - `docs/MCP_STAGE2_RUNBOOK.md`
 
 Allowed existing-file changes:
 
 - `pyproject.toml`: add exact `mcp==2.0.0` to the dev dependency group only;
 - `uv.lock`: lock synchronization only;
-- `.gitignore`: only if a new evidence ignore is needed; prefer the already ignored `outputs/`.
+- `.gitignore`: add exact developer-local `.codex/config.toml` and `.cursor/mcp.json` ignores;
+  `outputs/` is already ignored.
 
 No `.github/workflows/ci.yml` change is needed because existing lint and `pytest tests/` discovery
 already cover the new code. If implementation proves otherwise, report `ARCHITECTURE-BLOCKED`
@@ -741,6 +860,12 @@ instead of widening scope.
 
 Server modules must depend only on the standard library, Git subprocesses, Pydantic already present,
 and the pinned MCP SDK. They must not import product modules.
+
+Tracked adapter templates contain the same absolute-path placeholders, launch module, root/policy
+arguments, and no secrets. The recognized `.codex/config.toml` and `.cursor/mcp.json` files are
+developer-local resolved copies for one authorized worktree and must not be committed. User-global
+MCP configuration is neither required nor accepted as conformance evidence. This prevents machine-
+specific absolute paths from entering Git while retaining reviewable adapter templates.
 
 ## 25. Explicit out of scope
 
@@ -765,26 +890,36 @@ branch/commit identity is reported in the Architect's handoff; no merge or deplo
 
 ## 27. Decision
 
-`MCP-CURSOR-READY`
+`MCP-PORTABILITY-REVIEW-READY`
 
 The problem, transport, five-tool capability surface, mutation boundary, security model, schemas,
-implementation files, deterministic gates, and stop conditions are frozen. Cursor has no material
-architecture decision to make. Connection and security outcomes remain validation gates, not open
-design choices.
+implementation files, client adapters, cross-client conformance suite, switchover behavior,
+deterministic gates, and stop conditions are frozen. Cursor and Codex have no material server-
+architecture decision to make. Real connection, equivalence, switchover, and security outcomes
+remain fail-closed implementation gates. This status authorizes only independent architecture
+review; it does not authorize implementation.
 
-## 28. Fresh-thread Cursor implementation specification
+## 28. Fresh-thread Cursor-or-Codex implementation specification
 
-The following prompt is self-contained and assumes zero prior conversation knowledge.
+The following prompt template assumes zero prior conversation knowledge. The independent Reviewer
+must replace `<REVIEWED_PORTABILITY_ARCHITECTURE_SHA>` with the exact accepted follow-up commit and
+explicitly authorize that base. Until then, the prompt is intentionally non-executable.
 
 ---
 
 ### CONTENT AGENT — STAGE 2 MCP IMPLEMENTATION MISSION
 
-You are the Implementation Agent in a fresh Cursor thread.
+You are the `IMPLEMENTATION AGENT (Cursor or Codex)` in a fresh thread.
 
 Repository: `https://github.com/anudeepreddy332/content-agent`
 
-Exact authorized base: `ca29d32b4869269daa47142615d298580a577a77`
+Canonical product/runtime base: `ca29d32b4869269daa47142615d298580a577a77`
+
+Exact reviewed architecture/implementation base:
+`<REVIEWED_PORTABILITY_ARCHITECTURE_SHA>`
+
+If that placeholder has not been replaced by an independent Reviewer with a lowercase 40-hex SHA,
+report `ARCHITECTURE-BLOCKED` and stop. This document does not authorize its own implementation.
 
 Role: implementation only.
 
@@ -799,11 +934,14 @@ make paid/live calls, implement P0-2a/P0-2b, or design A2A.
 2. Verify fetched `origin/main` is exact
    `ca29d32b4869269daa47142615d298580a577a77`. Otherwise report
    `ARCHITECTURE-BLOCKED` and stop.
-3. Create a clean isolated worktree/branch from that exact SHA. Do not use or modify a dirty user
-   checkout.
-4. Read completely: `PROJECT_STATUS.md`, `architecture.md`, `DECISIONS.md`,
+3. Fetch `origin/chore/stage2-mcp-architecture` and verify the Reviewer-supplied exact architecture
+   SHA resolves on it, descends from `3418251e73edf0c83b3cb59bc81af12dc7303fb8`, and its path from
+   canonical main changes only `docs/MCP_STAGE2_ARCHITECTURE.md`. Stop on any mismatch.
+4. Create a clean isolated worktree/branch from the exact Reviewer-supplied architecture SHA. Do
+   not use or modify a dirty user checkout.
+5. Read completely: `PROJECT_STATUS.md`, `architecture.md`, `DECISIONS.md`,
    `docs/EXPERIMENT_LEDGER.md`, `README.md`, and `docs/MCP_STAGE2_ARCHITECTURE.md`.
-5. Verify no existing MCP implementation overlaps the authorized files.
+6. Verify no existing MCP implementation overlaps the authorized files.
 
 #### Objective
 
@@ -824,10 +962,15 @@ codes, and evidence behavior in sections 10-16 of the architecture document. Ret
 plus serialized-JSON text fallback. Security must be enforced in code; server instructions are not
 a security boundary.
 
+The core server must be implementation-client-agnostic. Do not branch on Cursor/Codex client name,
+version, session, or protocol era except inside the pinned SDK's protocol codec. Client metadata is
+untrusted attribution only and is excluded from semantic result identity.
+
 #### Frozen architecture
 
 - transport: local stdio only;
 - one logical server package, one process per host/worktree;
+- one canonical tool catalog and evidence schema for both clients;
 - root and policy fixed at launch, never supplied by a tool call;
 - no product-module imports;
 - no source mutation, Git mutation, approval, provider, network, arbitrary filesystem, or arbitrary
@@ -853,21 +996,27 @@ Create only:
 - `engineering_mcp/evidence.py`
 - `engineering_mcp/schemas.py`
 - `engineering_mcp/probe.py`
+- `mcp/contracts/tool-catalog.v1.json`
+- `mcp/contracts/evidence-envelope.v1.schema.json`
+- `mcp/contracts/client-conformance.v1.schema.json`
+- `mcp/client_adapters/codex.config.template.toml`
+- `mcp/client_adapters/cursor.mcp.template.json`
 - `mcp/policies/schema.json`
 - `mcp/policies/stage2.json`
+- `scripts/compare_mcp_client_conformance.py`
 - `tests/test_mcp_server.py`
 - `tests/test_mcp_evidence.py`
 - `tests/test_mcp_security.py`
 - `tests/test_mcp_compatibility.py`
-- `.codex/config.toml`
-- `.cursor/mcp.json`
+- `tests/test_mcp_client_conformance.py`
 - `docs/MCP_STAGE2_RUNBOOK.md`
 
 Modify only:
 
 - `pyproject.toml` to add `mcp==2.0.0` to dev dependencies;
 - `uv.lock` for the corresponding lock synchronization;
-- `.gitignore` only if necessary, preferring existing ignored `outputs/`.
+- `.gitignore` only to ignore the developer-local `.codex/config.toml` and `.cursor/mcp.json`;
+  `outputs/` is already ignored.
 
 `docs/MCP_STAGE2_ARCHITECTURE.md` is read-only.
 
@@ -886,7 +1035,7 @@ provider calls.
 Implement a JSON Schema-validated `mcp/policies/stage2.json` with:
 
 - mission ID and exact repository identity;
-- exact authorized base;
+- exact Reviewer-authorized portability architecture/implementation base;
 - the allowed changed-file scope from section 24;
 - exact five tool definitions/order;
 - exact six check IDs, argv arrays, timeouts, 1 MiB stream limits, environment classes, and artifact
@@ -914,12 +1063,45 @@ The agent must not be able to supply an allowed-path list or command arguments a
 
 #### Host configuration
 
-Create project-local Codex and Cursor configs that launch with
-`uv run --frozen --offline python -m engineering_mcp`, bind the project root and Stage 2 policy, pass
-no credentials, expose exactly five tools, and preserve tool approval. Use only syntax established by
-current official host documentation. If a portable project-root expression cannot be proven in an
-actual host, document operator configuration in the runbook and report `ARCHITECTURE-BLOCKED` rather
-than inventing it.
+Create two tracked, secret-free templates and two ignored developer-local resolved adapters. Both
+resolved adapters must use the identical launch vector, with `<ABS_WORKTREE>` replaced by one
+canonical absolute path:
+
+```text
+<ABS_WORKTREE>/.venv/bin/python -m engineering_mcp
+  --repository-root <ABS_WORKTREE>
+  --policy <ABS_WORKTREE>/mcp/policies/stage2.json
+  --actor-role implementer
+```
+
+Do not use a shell wrapper, PATH-dependent interpreter, credential environment, user-global MCP
+entry, or different policy for either client.
+
+##### Codex connection validation
+
+1. Render `mcp/client_adapters/codex.config.template.toml` to ignored
+   `.codex/config.toml` for this worktree.
+2. Use `[mcp_servers.content_agent_engineering]` with the absolute command/args above, absolute `cwd`,
+   `required = true`, `enabled = true`, the exact five-tool `enabled_tools` allowlist,
+   `default_tools_approval_mode = "prompt"`, bounded startup timeout, and a tool timeout greater
+   than 1,200 seconds. Pass no `env` or `env_vars`.
+3. From the actual installed Codex CLI, capture version, `codex mcp list`, connection status, tool
+   catalog evidence, and all conformance calls. Confirm the trusted project config is the entry in
+   use and no user-global server shadows it.
+
+##### Cursor connection validation
+
+1. Render `mcp/client_adapters/cursor.mcp.template.json` to ignored `.cursor/mcp.json` for this
+   worktree, using the identical absolute command and arguments.
+2. In the actual Cursor IDE Agent, capture version and Tools & MCP status; confirm exactly five
+   tools are enabled, approval prompts occur, and auto-run is off.
+3. Execute all conformance calls through the IDE Agent. If `cursor-agent` is installed, also record
+   `cursor-agent mcp list` and `cursor-agent mcp list-tools content_agent_engineering`; this CLI
+   observation is supplementary, not a replacement for the IDE gate.
+
+If either recognized adapter, actual host, approval posture, or absolute-path launch cannot be
+proven, report `ARCHITECTURE-BLOCKED`. Do not add client-specific server behavior or a remote
+transport workaround.
 
 #### Required tests and validation order
 
@@ -933,12 +1115,19 @@ Follow this order; stop at the first blocker:
 6. Traversal, symlink, `.git`, `.env`, ignored/untracked, binary, size, secret, command-injection,
    Git-injection, timeout, output-flood, orphan-child, concurrency, stale-state, mixed-bundle, and
    redaction security tests.
-7. Local Codex connection smoke at the actual installed host.
-8. Local Cursor connection smoke at the actual installed host.
-9. Exact Stage 2 scope inspection.
-10. Fatal Ruff tier.
-11. Full `pytest tests/` regression from the final candidate state.
-12. Repeat critical gates after committing so evidence binds to the exact candidate SHA.
+7. Client-metadata invariance and conformance-comparator fixture tests.
+8. Exact Stage 2 scope inspection, fatal Ruff tier, and full `pytest tests/` regression.
+9. Create one candidate implementation commit after deterministic pre-commit gates pass; do not
+   amend it after host testing.
+10. At the exact candidate commit, render and review both ignored client adapters.
+11. Execute the full Cursor IDE conformance run, then stop Cursor/server instance A.
+12. Without changing repository state, execute the full Codex CLI conformance run and the mandatory
+    Cursor-to-Codex switchover comparison.
+13. Stop Codex/server instance B, reconnect Cursor, and execute the reverse switchover comparison.
+14. Run the native comparator, verify both reports pass, and prove all five tools plus the prohibited
+    call were exercised by each required client.
+15. Repeat exact scope/status, fatal Ruff, full regression, secret/network-boundary, and evidence-
+    bundle checks against the same candidate commit.
 
 Run deterministic tests before any operation that could call a paid provider. No paid/live provider
 operation is authorized at all in this mission. Do not retry until lucky and do not weaken a test or
@@ -952,8 +1141,9 @@ a fallback.
 
 - keep the isolated worktree clean except for authorized changes;
 - do not touch unrelated user work;
-- do not stage or commit until focused gates pass;
-- create one coherent implementation commit only after validation;
+- do not stage or commit until deterministic focused/security/regression gates pass;
+- create one coherent implementation commit before real host conformance so all evidence binds to
+  an exact SHA; do not amend it if a host gate fails;
 - do not rebase, amend, squash, force, push, merge, tag, or deploy;
 - after committing, report exact parent, candidate SHA, changed-file list, and `git diff --check`.
 
@@ -962,7 +1152,8 @@ a fallback.
 Report `ARCHITECTURE-BLOCKED` and stop on any base drift, scope overlap, client incompatibility,
 arbitrary-shell/filesystem need, network/provider need, product coupling, policy bypass, secret leak,
 path/symlink escape, surviving child, stale-state false pass, schema incompatibility, full-regression
-failure, or need to change the frozen architecture.
+failure, cross-client comparison/switchover failure, material client-specific server behavior, or
+need to change the frozen architecture.
 
 #### Required response
 
@@ -974,22 +1165,185 @@ Return:
 4. exact five tools and schemas implemented;
 5. Codex actual connection/tool-call result;
 6. Cursor actual connection/tool-call result;
-7. focused test counts and commands;
-8. security/failure-path test counts and outcomes;
-9. fatal lint and full regression counts;
-10. timeout/output/concurrency/stale-state evidence;
-11. secret/network-boundary evidence and explicit non-claim of OS sandboxing;
-12. evidence-bundle path/digest from the candidate SHA;
-13. exact commit SHA, parent, and changed-file scope;
-14. any warnings or unknowns;
-15. final status `IMPLEMENTATION-READY-FOR-INDEPENDENT-REVIEW` or `ARCHITECTURE-BLOCKED`;
-16. numerical confidence `0.00-1.00`.
+7. sanitized Cursor/Codex adapter and shared launch-contract digests;
+8. five-tool catalog/schema digest observed by each client;
+9. focused test counts and commands;
+10. security/failure-path test counts and outcomes;
+11. fatal lint and full regression counts;
+12. timeout/output/concurrency/stale-state evidence;
+13. secret/network-boundary evidence and explicit non-claim of OS sandboxing;
+14. both client-capture paths/digests and the cross-client comparator report;
+15. Cursor-to-Codex and Codex-to-Cursor switchover outcomes;
+16. evidence-bundle paths/digests and canonical member-equivalence result from the candidate SHA;
+17. exact commit SHA, parent, and changed-file scope;
+18. any warnings or unknowns;
+19. final status `IMPLEMENTATION-READY-FOR-INDEPENDENT-REVIEW` or `ARCHITECTURE-BLOCKED`;
+20. numerical confidence `0.00-1.00`.
 
 Stop after reporting. Do not merge or begin P0-2a.
 
 ---
 
-## 29. Confidence
+## 29. Frozen implementation-client portability contract
+
+### 29.1 One authoritative server contract
+
+There is exactly one `engineering_mcp` implementation and one evidence contract. Cursor, Codex, and
+any later standards-compliant client receive identical:
+
+- tool names, deterministic order, descriptions, annotations, and JSON input/output schemas;
+- repository root and policy binding;
+- path restrictions and read/write boundaries;
+- fixed command IDs/argv, environment classes, and Git allowlist;
+- timeouts, output limits, cancellation, concurrency, and stale-state behavior;
+- `PASS|FAIL|BLOCKED` status and stable error-code semantics;
+- evidence envelope, semantic digest rules, artifact hashing, and audit logging.
+
+Client metadata is never an input to policy or engineering truth. Server code must contain no
+Cursor/Codex conditional. The pinned SDK may negotiate modern or legacy wire encoding; both paths
+must expose the same logical catalog and structured result plus serialized-JSON fallback.
+
+### 29.2 Thin client adapters
+
+The tracked Codex template is structurally:
+
+```toml
+[mcp_servers.content_agent_engineering]
+command = "__ABS_WORKTREE__/.venv/bin/python"
+args = ["-m", "engineering_mcp", "--repository-root", "__ABS_WORKTREE__", "--policy", "__ABS_WORKTREE__/mcp/policies/stage2.json", "--actor-role", "implementer"]
+cwd = "__ABS_WORKTREE__"
+required = true
+enabled = true
+enabled_tools = ["repo_snapshot", "read_tracked_file", "inspect_change", "run_check", "build_evidence_bundle"]
+default_tools_approval_mode = "prompt"
+startup_timeout_sec = 20
+tool_timeout_sec = 1230
+```
+
+The tracked Cursor template is structurally:
+
+```json
+{
+  "mcpServers": {
+    "content_agent_engineering": {
+      "command": "__ABS_WORKTREE__/.venv/bin/python",
+      "args": ["-m", "engineering_mcp", "--repository-root", "__ABS_WORKTREE__", "--policy", "__ABS_WORKTREE__/mcp/policies/stage2.json", "--actor-role", "implementer"]
+    }
+  }
+}
+```
+
+The templates are tracked and reviewed. Resolved `.codex/config.toml` and `.cursor/mcp.json` copies
+are ignored, developer-local, and bound to one authorized worktree. They contain no secret or
+environment forwarding. User-global configuration is optional for unrelated tools but is not part
+of this architecture and cannot satisfy conformance. Cursor approval remains a verified IDE setting
+because current official Cursor documentation does not establish an equivalent `mcp.json` approval
+field.
+
+### 29.3 MCP Client Conformance Suite
+
+Run the suite at one exact committed implementation candidate SHA, one unchanged worktree status,
+one virtual environment/lock digest, one server code digest, and one policy/tool-catalog digest.
+Use actor role `implementer` for both. Complete the Cursor run first and the Codex run second for the
+mandatory switchover; repeat the client order in reverse for the reverse gate. No source edit occurs
+during a conformance run.
+
+For each required client:
+
+1. capture actual host name/version, adapter kind and sanitized digest, launch-contract digest,
+   server instance ID, negotiated protocol revision, session identifier, and approval posture;
+2. prove connection/negotiation and capture the host-visible five-tool catalog;
+3. call `repo_snapshot` with the exact candidate SHA and `require_clean: true`;
+4. call `read_tracked_file` for `README.md`, lines 1-80;
+5. call `inspect_change` from the exact Reviewer-authorized architecture base to `HEAD` with the
+   Stage 2 scope and no patch;
+6. call `run_check` with `mcp_protocol_smoke` and the snapshot's exact HEAD/status digest;
+7. call `read_tracked_file` with prohibited path `../.env` and require
+   `BLOCKED` with the canonical traversal code;
+8. call `build_evidence_bundle` over the coherent snapshot/read/inspect/check/prohibited evidence;
+9. capture post-run `repo_snapshot` and prove repository HEAD/status did not change;
+10. record server/child no-provider/no-network evidence within the limits of section 15, while
+    explicitly excluding normal host traffic to Cursor/OpenAI services and making no OS-sandbox
+    claim.
+
+Each run writes a schema-validated client capture below
+`outputs/mcp_evidence/conformance/<run_id>/<client>.json`. The native
+`scripts/compare_mcp_client_conformance.py` compares those captures against the tracked contract and
+emits a bounded JSON report. It must be deterministic, read-only outside ignored evidence, return
+nonzero on any missing/mismatched required field, and receive only explicit file paths—no shell or
+glob discovery. Unit tests use fixtures; infrastructure validation requires actual host captures.
+
+### 29.4 Required cross-client equivalence
+
+These fields must be identical or canonically equivalent:
+
+- tool catalog order, names, descriptions, annotations, input/output schemas, and catalog digest;
+- evidence schema version, operation, status, stable code, and mission/actor role;
+- repository identity, pre/post HEAD, status digests, remote identity, and lock digest;
+- server package version, code digest, policy ID/digest, supported protocol set, and launch-contract
+  digest;
+- normalized operation result, complete-content/artifact digests, redactions, and warnings;
+- permitted check ID, argv, exit/timeout/truncation meaning, stream/artifact digests, and semantic
+  result digest;
+- prohibited-operation failure meaning and semantic digest;
+- bundle schema, identity-consistency rules, ordered member operation/semantic-digest set, and
+  provenance semantics;
+- unchanged product/runtime file set and unchanged non-ignored worktree status.
+
+These may legitimately differ and are excluded from semantic engineering identity:
+
+- client/host name and version, adapter kind/digest, client session ID, and approval transcript;
+- negotiated protocol revision/era when the logical contract remains the same;
+- server instance, request, evidence, bundle, and host-capture IDs;
+- timestamps, elapsed durations, host UI rendering, transcript/screenshot hashes, and log ordering
+  that does not change normalized result meaning;
+- bundle manifest SHA when it includes legitimately unique IDs/timestamps, provided its canonical
+  ordered member operation/semantic-digest set is equivalent.
+
+An agent's prose summary is never comparison evidence. Any difference outside the legitimate list
+is a conformance failure, not a warning.
+
+### 29.5 Mandatory Cursor-to-Codex switchover
+
+1. Start at the exact candidate SHA/status with both resolved adapters already reviewed.
+2. Cursor IDE launches server instance A, discovers exactly five tools, runs `repo_snapshot` and the
+   prescribed evidence operations, and records evidence IDs/client attribution.
+3. Close the Cursor MCP connection and prove instance A exits; do not edit or clean the worktree.
+4. Codex CLI launches server instance B from the same interpreter, root, policy, and server code.
+5. Codex discovers the same catalog, returns the same repository identity, runs the equivalent
+   allowed check and prohibited call, and builds the coherent evidence bundle.
+6. Existing Cursor evidence remains present with instance A/client/timestamp attribution. Codex
+   neither rewrites it nor presents it as instance-B evidence.
+7. The comparator passes, and post-run snapshot proves no tracked product/runtime change.
+8. Only after the switchover gate may Codex continue an independently authorized implementation
+   using native editing; MCP still owns no source mutation.
+
+### 29.6 Reverse switchover
+
+Codex-to-Cursor is structurally symmetric: stop Codex and its stdio process, preserve worktree and
+evidence, launch Cursor with the same contract, rediscover the same catalog, rerun the equivalent
+operations, and compare. A new process/session/evidence ID is expected; a new server contract,
+policy, schema, or interpretation is forbidden. The reverse must be executed, not inferred, before
+claiming bidirectional portability.
+
+### 29.7 Governance and kill boundary
+
+The workflow remains:
+
+```text
+Architect designs
+  -> independent Reviewer approves an exact architecture SHA
+  -> IMPLEMENTATION AGENT (Cursor or Codex) implements natively
+  -> the client-agnostic MCP supplies structured evidence
+  -> independent Reviewer validates both host conformance and engineering evidence
+  -> Architect interprets the outcome
+```
+
+If both real clients cannot consume this same server/tool/evidence contract without material
+server-side client behavior, return `ARCHITECTURE-BLOCKED`. Python unit tests, SDK probes, or
+theoretical standards compatibility alone cannot validate infrastructure portability.
+
+## 30. Confidence
 
 `0.91`
 
