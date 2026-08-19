@@ -1857,3 +1857,119 @@ def test_trusted_finalization_reread_replacement_removes_pass_artifact(tmp_path,
     with pytest.raises(ValueError, match="trusted-context comparison"):
         benchmark._write_evidence_report(body, destination, trusted_context=context)
     assert not destination.exists()
+
+
+@pytest.mark.parametrize("root, expected_error", [
+    ("github", "final GitHub identity drifted"),
+    ("code", "final code identity drifted"),
+    ("config", "evaluation configuration drifted"),
+    ("contract", "release contract identity drifted"),
+    ("manifest", "selected manifest identity drifted"),
+])
+def test_post_reread_runtime_root_drift_fails_at_final_revalidation(
+    tmp_path, monkeypatch, capsys, root, expected_error,
+):
+    """The trusted context succeeds; only the post-reread root lookup drifts."""
+    _install_v1_manifest(tmp_path)
+    _mock_release_github(monkeypatch, sha=EXPECTED_SHA)
+    _mock_git_identity(monkeypatch, sha=EXPECTED_SHA)
+    monkeypatch.chdir(tmp_path)
+    run_ids = {topic_id: f"run-{topic_id:02d}" for topic_id in CONTRACT["ordered_topic_ids"]}
+    for topic_id, run_id in run_ids.items():
+        topic = _topic_by_id(topic_id)
+        _write_telemetry(tmp_path, run_id, topic["topic"], verified=17, unverified=3)
+
+    def mock_run(cmd, **kwargs):
+        topic_name = cmd[cmd.index("--topic") + 1]
+        topic = next(item for item in TOPICS if item["topic"] == topic_name)
+        return _completed_proc(run_ids[topic["id"]])
+
+    monkeypatch.setattr(benchmark.subprocess, "run", mock_run)
+    drift = {"after_reread": False}
+    original_github = benchmark._github_actions_identity
+    original_code = benchmark._resolve_code_identity
+    original_config = benchmark.resolve_evaluation_config
+    original_contract = benchmark.load_release_contract
+    original_manifest = benchmark.load_validated_manifest
+
+    if root == "github":
+        def github_identity():
+            identity = original_github()
+            if drift["after_reread"]:
+                identity["github_run_id"] = "post-reread-drift"
+            return identity
+
+        monkeypatch.setattr(benchmark, "_github_actions_identity", github_identity)
+    elif root == "code":
+        def code_identity():
+            identity = original_code()
+            if drift["after_reread"]:
+                identity["unstaged_clean"] = False
+            return identity
+
+        monkeypatch.setattr(benchmark, "_resolve_code_identity", code_identity)
+    elif root == "config":
+        def evaluation_config():
+            config, _ = original_config()
+            if drift["after_reread"]:
+                config["PROMPT_VERSION"] = "sha-post-reread-drift"
+            return config, benchmark._sha256_text(benchmark._canonical_json(config))
+
+        monkeypatch.setattr(benchmark, "resolve_evaluation_config", evaluation_config)
+    elif root == "contract":
+        def release_contract():
+            contract = original_contract()
+            if drift["after_reread"]:
+                contract["schema_version"] = 2
+            return contract
+
+        monkeypatch.setattr(benchmark, "load_release_contract", release_contract)
+    else:
+        def manifest(contract):
+            topics, identity = original_manifest(contract)
+            if drift["after_reread"]:
+                identity["actual_topic_ids"] = list(reversed(identity["actual_topic_ids"]))
+            return topics, identity
+
+        monkeypatch.setattr(benchmark, "load_validated_manifest", manifest)
+
+    built = {"value": False}
+    original_build = benchmark._build_trusted_release_context
+
+    def build_context(**kwargs):
+        context = original_build(**kwargs)
+        built["value"] = True
+        return context
+
+    monkeypatch.setattr(benchmark, "_build_trusted_release_context", build_context)
+    observed = {"called": False, "error": None}
+    original_revalidate = benchmark._revalidate_final_runtime_trust_roots
+
+    def revalidate(context):
+        observed["called"] = True
+        try:
+            original_revalidate(context)
+        except ValueError as error:
+            observed["error"] = str(error)
+            raise
+
+    monkeypatch.setattr(benchmark, "_revalidate_final_runtime_trust_roots", revalidate)
+    actual_replace = os.replace
+
+    def replace_then_drift(source, target):
+        actual_replace(source, target)
+        drift["after_reread"] = True
+
+    monkeypatch.setattr(benchmark.os, "replace", replace_then_drift)
+    with pytest.raises(SystemExit) as raised:
+        benchmark.run_benchmark.callback(
+            mode="release", limit=None, topic_id=None, gate=True, expected_code_sha=EXPECTED_SHA,
+        )
+
+    assert raised.value.code == 1
+    assert built["value"] is True
+    assert observed["called"] is True
+    assert observed["error"] == f"final runtime revalidation: {expected_error}"
+    report = _aggregate(tmp_path / "outputs" / "benchmark_results")
+    assert report["release_qualification"] == "FAIL"
+    assert "RELEASE GATE: PASS" not in capsys.readouterr().out

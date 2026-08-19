@@ -1263,6 +1263,31 @@ def _validate_trusted_release_payload(
         raise ValueError("trusted-context comparison: persisted PASS differs from intended report")
 
 
+def _revalidate_final_runtime_trust_roots(
+    context: TrustedReleaseFinalizationContext,
+) -> None:
+    """Fail closed if an external trust root drifts after the report reread."""
+    final_github_identity = _github_actions_identity()
+    final_code_identity = _resolve_code_identity()
+    final_config, final_config_sha256 = resolve_evaluation_config()
+    final_contract = load_release_contract()
+    _, final_manifest_identity = load_validated_manifest(final_contract)
+    frozen_contract = deepcopy(V1_RELEASE_CONTRACT)
+
+    checks = (
+        ("final GitHub identity", final_github_identity, context.final_github_identity),
+        ("final code identity", final_code_identity, context.final_code_identity),
+        ("evaluation configuration", final_config, context.evaluation_configuration),
+        ("evaluation configuration digest", final_config_sha256, context.evaluation_config_sha256),
+        ("release contract identity", final_contract, context.release_contract_identity),
+        ("selected manifest identity", final_manifest_identity, context.selected_manifest_identity),
+        ("immutable V1 release contract", final_contract, frozen_contract),
+    )
+    for label, actual, expected in checks:
+        if actual != expected:
+            raise ValueError(f"final runtime revalidation: {label} drifted")
+
+
 def _write_evidence_report(
     payload: dict[str, Any], out_path: Path,
     *, trusted_context: TrustedReleaseFinalizationContext | None = None,
@@ -1286,6 +1311,7 @@ def _write_evidence_report(
         _validate_no_secrets(reread)
         if is_pass:
             _validate_trusted_release_payload(reread, trusted_context)
+            _revalidate_final_runtime_trust_roots(trusted_context)
         return reread
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         if is_pass:
