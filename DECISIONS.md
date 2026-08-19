@@ -9,6 +9,52 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-19-05
+Date: 2026-08-19
+
+Decision: Close P0-2a as **VALIDATED AND INTEGRATED — CLOSED** at exact canonical main
+`74523ffcfa8906573a72415f1d868dc02996b561`.
+
+Question: Did the exact reviewed P0-2a implementation become canonical main with the expected
+merge identity and main-SHA public deterministic CI, without provider execution or unrelated
+runtime change?
+
+Integration evidence: Direct remote main and fetched `origin/main` both resolved exact
+`74523ffcfa8906573a72415f1d868dc02996b561`. The merge has first parent exact prior documentation
+closeout `174d8c924a35fc5151a4549725db9a01e96f119b` and second parent exact validated implementation
+`0b707e4e431ea7662eec86aec5d4ed18a3c060dd`. Frozen architecture remains exact
+`c8b75c3ab069df29e2201c0540b69bfca86e9cf1`.
+
+Validation evidence: Exact implementation `0b707e4` passed `205` focused evaluation-integrity tests,
+`31` verifier/failure regressions, and `406` full tests with three dependency deprecation warnings;
+Ruff's fatal tier and range diff check passed. Public GitHub Actions run
+[`32285001516`](https://github.com/anudeepreddy332/content-agent/actions/runs/32285001516) is a
+successful `push` run on `main` bound to exact `74523ff`; its deterministic lint and test jobs
+passed and its provider-backed evaluation job was skipped. No provider call or spend occurred
+during integration, and no real paid 20-topic release benchmark was executed.
+
+Bounded claim: P0-2a closes evaluator scope/cardinality/release-evidence integrity only. It does
+not establish product-wide production readiness, deployment identity, P0-2b verifier correctness,
+or permanent cryptographic authenticity of exported JSON after workflow finalization.
+
+Next mission: After this documentation-only closeout is separately reviewed and integrated, run
+the first trusted real release-mode benchmark against exact canonical main using the frozen ordered
+20-topic V1 contract and approved GitHub Actions release workflow. Preserve complete evidence,
+telemetry, exact identities, digest, and actual cost. Do not change code, configuration, prompts,
+models, retrieval, thresholds, or corpus; do not retry to obtain PASS. A legitimate FAIL is accepted
+baseline evidence. Only after that baseline is captured does P0-2b status/confidence/completeness/
+routing semantics become the next architecture mission.
+
+Status: `P0-2A VALIDATED AND INTEGRATED — CLOSED`. The real paid 20-topic release baseline remains
+`NOT YET RUN`; the Content Agent remains blocked for overall enterprise production readiness.
+
+Confidence: 0.99
+
+Supersedes / superseded by: Supersedes only the integration-pending status in D-2026-08-19-04 and
+the corresponding open integration clauses in D-2026-08-19-02 and D-2026-08-19-03. Their frozen
+scope, historical evidence, and non-claims remain preserved.
+
+---
 Decision ID: D-2026-08-19-04
 Date: 2026-08-19
 

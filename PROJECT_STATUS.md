@@ -8,19 +8,17 @@ remains preserved in `FREEZE.md`.
 
 ## Authoritative SHA roles
 
-- **Current canonical main:** `ca29d32b4869269daa47142615d298580a577a77`.
-  It is a documentation-only descendant of P0-1 integration
-  `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`; the integrated runtime/product blobs are unchanged.
-  The integration commit's parents are exact canonical governance state `904f3ef` and exact final
-  implementation `20eb17f`.
+- **Current canonical main and P0-2a integration:**
+  `74523ffcfa8906573a72415f1d868dc02996b561`. Its parents are exact prior documentation closeout
+  `174d8c924a35fc5151a4549725db9a01e96f119b` and exact validated implementation
+  `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`.
 - **Final validated P0-1 implementation:** `20eb17f2737010dbf72eea0f0e271bf47d5af3de`,
   developed from frozen implementation base `7a606e895fe0a4bc9092659f130881bc7b52bd28`.
   No later descendant is implicitly approved.
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`.
-- **Final validated P0-2a implementation — integration pending:**
-  `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`, developed from exact canonical product main
-  `ca29d32b4869269daa47142615d298580a577a77`. It is not yet part of canonical main, and no later
-  descendant is implicitly validated.
+- **P0-2a — VALIDATED AND INTEGRATED — CLOSED:** exact implementation
+  `0b707e4e431ea7662eec86aec5d4ed18a3c060dd` is integrated by exact merge
+  `74523ffcfa8906573a72415f1d868dc02996b561`. No later descendant is implicitly validated.
 - **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`. This remains the
   historical snapshot against which the original P0-1 threat boundary was established.
 - System shape at current main: supervised single-operator LangGraph pipeline with Tavily plus
@@ -55,14 +53,16 @@ historical evidence, not a current enterprise-release decision.
      deployment identity or overall production readiness.
 
 2. **P0-2 — Evaluation acceptance integrity, then verifier acceptance semantics**
-   - **P0-2a — IMPLEMENTATION VALIDATED / INTEGRATION PENDING:** exact implementation
+   - **P0-2a — VALIDATED AND INTEGRATED — CLOSED:** exact implementation
      `0b707e4e431ea7662eec86aec5d4ed18a3c060dd` passed the frozen deterministic and adversarial
      acceptance gates. Zero, partial, duplicate, incomplete, unscorable, identity-drifted,
      secret-bearing, or failed-finalization evidence cannot earn or retain a release PASS in the
      validated implementation.
-   - This validates the P0-2a implementation only. Canonical main remains `ca29d32`; integration,
-     public integration-SHA CI, and any paid 20-topic release benchmark remain pending separate
-     authorization.
+   - Exact reviewed merge `74523ffcfa8906573a72415f1d868dc02996b561` is canonical main. Public
+     push CI run [`32285001516`](https://github.com/anudeepreddy332/content-agent/actions/runs/32285001516)
+     is bound to that SHA and passed its deterministic lint and test jobs; the provider-backed
+     evaluation job was skipped. No provider call or spend occurred during integration, and the
+     first real paid 20-topic release benchmark has **not** run.
    - **P0-2b — PROVEN DEFECT:** production verifier routing computes grounding from confidence
      independently of verdict status, accepts an unknown-sized or empty extracted verdict set, and
      permits cost/iteration ceilings to reach HITL regardless of verification status. Mandatory
@@ -71,8 +71,10 @@ historical evidence, not a current enterprise-release decision.
    - **UNKNOWN REQUIRING EXPERIMENT:** the correct production completeness contract for a
      model-extracted, unknown-sized claim set. Known-cardinality fixtures already enforce exact
      counts and must not be confused with production completeness.
-   - P0-2a precedes P0-2b because release evidence must fail closed before behavioral experiments
-     can earn an acceptance claim.
+   - P0-2a closes evaluator scope, cardinality, and release-evidence integrity only. It does not
+     establish permanent cryptographic authenticity for exported JSON or overall production
+     readiness. After the documentation closeout is separately reviewed and integrated, the first
+     trusted real 20-topic release baseline must be captured before P0-2b begins.
 
 3. **P0-3 — Identity and tenant boundary**
    - `MISSING ENTERPRISE CAPABILITY / ENTERPRISE MULTI-CUSTOMER RELEASE BLOCKER`.
@@ -89,19 +91,21 @@ historical evidence, not a current enterprise-release decision.
 
 ## Current authorized mission
 
-P0-2a implementation validation is complete at exact `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`.
-The current controlled mission is **P0-2a integration preparation**, with canonical main held at
-exact `ca29d32b4869269daa47142615d298580a577a77` until separate human authorization. P0-2b follows
-only after P0-2a integration as a separately architected verifier-semantics mission.
+P0-2a is validated and integrated at exact canonical main
+`74523ffcfa8906573a72415f1d868dc02996b561`. After this documentation-only closeout is separately
+reviewed and integrated, the next controlled operational mission is the first trusted real
+20-topic V1 release baseline on the then-current exact canonical main. P0-2b follows that baseline
+as a separately architected verifier-semantics mission.
 
 MCP and A2A are optional developer-workflow infrastructure. They are out of this product mission and
 must not block the frozen sequence. This file does not itself authorize implementation, merge,
 publish, deployment, or provider spend.
 
-## P0-2a frozen implementation boundary
+## P0-2a closed implementation boundary
 
 - Isolated variable: benchmark scope/cardinality and evidence-binding semantics only.
-- Frozen control: current `--id 999 --gate` behavior selects zero topics and exits `0` with a pass.
+- Historical frozen control at `ca29d32`: `--id 999 --gate` selected zero topics and exited `0`
+  with a pass.
 - Required target: empty or incoherent selection fails before provider calls; smoke slices are
   explicitly non-release; a release gate binds an exact ordered topic manifest and expected count,
   exact run IDs/statuses, prompt/config hashes, code SHA before and after execution, main-branch CI
@@ -120,6 +124,9 @@ publish, deployment, or provider spend.
   PASS, retained one validated sanitized FAIL report, and left no PASS or temporary artifact.
   Equivalent pre-write contract and manifest failures were also controlled. Unchanged roots left
   one trusted PASS and printed PASS exactly once.
+- Integration at exact `74523ffcfa8906573a72415f1d868dc02996b561` preserves the reviewed
+  implementation and passed public main-push CI run `32285001516`. No provider-backed gate or paid
+  release benchmark ran during integration.
 
 ## Parallel retrieval research
 
@@ -148,6 +155,10 @@ publish, deployment, or provider spend.
   `31` verifier/failure, and `406` full tests passed; Ruff and range diff checks passed. Independent
   unchanged, real post-reread contract/manifest drift, and pre-write loader-failure probes passed
   their frozen causal gates. No provider or paid release benchmark was run.
+- Exact P0-2a integration `74523ffcfa8906573a72415f1d868dc02996b561`: parents are exact prior
+  closeout `174d8c9` and validated implementation `0b707e4`; public main-push CI run `32285001516`
+  passed lint/test and skipped the provider-backed evaluation gate. Provider calls/spend during
+  integration: zero. Real paid 20-topic release baseline: not yet run.
 - Retrieval evidence and classifications remain indexed in `docs/EXPERIMENT_LEDGER.md`.
 
 ## Explicitly not accepted
@@ -158,8 +169,8 @@ publish, deployment, or provider spend.
 - Verifier confidence as a substitute for verified status or production claim completeness.
 - Naive tokenizer-aligned rechunking, GTE, Jina, or a new fusion design as the serving replacement.
 - `N=0`, incomplete, stale, incoherent, or non-final-SHA evidence as a release pass.
-- P0-2a implementation validation as proof of integration, public integration-SHA CI, a paid full
-  release benchmark, deployment, or overall product production readiness.
+- P0-2a closure as proof of a paid full release benchmark, deployment, permanent cryptographic
+  authenticity of exported JSON, P0-2b correctness, or overall product production readiness.
 - The June 2026 live-demo URL, Docker tag, or deployment state as verified current.
 - The proposed S3/event-driven ingestion, Postgres metadata truth, Qdrant-derived-index,
   deterministic-identity/idempotent-ingestion, heterogeneous parsing, structure-aware chunking,

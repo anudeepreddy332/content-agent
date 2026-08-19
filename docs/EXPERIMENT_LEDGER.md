@@ -204,3 +204,19 @@ For every applicable change:
 | Evidence | Exact SHAs and commands above; decision `D-2026-08-19-04`. |
 | Decision enabled | Prepare the exact controlled integration mission after separate human authorization; retain canonical main at `ca29d32` until then. |
 | Confidence | 0.99 |
+
+### VAL-2026-08-19-03 — P0-2a canonical integration closeout
+
+| Field | Record |
+| --- | --- |
+| Question | Did the exact reviewed P0-2a implementation become canonical main with the expected merge parents and exact-main public deterministic CI, without provider execution or scope drift? |
+| Architecture / implementation / prior closeout | Frozen architecture `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`; validated implementation `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`; prior documentation closeout `174d8c924a35fc5151a4549725db9a01e96f119b`. |
+| Canonical integration identity | Direct remote main and fetched `origin/main` resolved `74523ffcfa8906573a72415f1d868dc02996b561`; parents are exact `174d8c9` then exact `0b707e4`. |
+| Deterministic validation | Exact implementation evidence: focused `205 passed`; verifier/failure `31 passed`; full `406 passed, 3 warnings`; Ruff fatal tier PASS; range diff PASS. Exact integration public CI run `32285001516`: event `push`, branch `main`, head SHA exact `74523ff`, overall success, lint success, test success. |
+| Paid/live providers | None during integration. The provider-backed `eval-gate` job was skipped. Provider calls/spend: zero. |
+| Real release baseline | The paid release-mode frozen-V1 20-topic benchmark has **not** run. No PASS/FAIL baseline, per-topic UVR, mean UVR, grounding, reflection, latency, provider cost, failed/unscorable-unit record, or release evidence digest is claimed. |
+| Result | The reviewed P0-2a implementation is canonical main and every integration authority matched. |
+| Classification | `P0-2A VALIDATED AND INTEGRATED — CLOSED`. Evaluator scope/cardinality/release-evidence integrity only; not permanent JSON authenticity, deployment proof, P0-2b validation, or overall production readiness. |
+| Evidence | Exact SHAs above; [GitHub Actions run `32285001516`](https://github.com/anudeepreddy332/content-agent/actions/runs/32285001516); decision `D-2026-08-19-05`. |
+| Decision enabled | After this docs-only closeout is separately reviewed and integrated, capture the first trusted real frozen-V1 20-topic baseline without code/config/threshold changes or retry-until-green; then begin separate P0-2b architecture. |
+| Confidence | 0.99 |

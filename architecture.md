@@ -8,10 +8,12 @@ _Accepted contract synchronized 2026-08-19._
 - **Canonical integration:** `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`, with parents exact
   canonical governance state `904f3efe87e6771329b5088bb3afeb6cd16c90dc` and exact final
   implementation `20eb17f2737010dbf72eea0f0e271bf47d5af3de`
-- **Current documentation-only main:** `ca29d32b4869269daa47142615d298580a577a77`
+- **P0-2a implementation base (historical):** `ca29d32b4869269daa47142615d298580a577a77`
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
-- **Validated P0-2a implementation — integration pending:**
-  `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
+- **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
+- **Current canonical main and P0-2a integration:**
+  `74523ffcfa8906573a72415f1d868dc02996b561`, with parents exact prior closeout
+  `174d8c924a35fc5151a4549725db9a01e96f119b` and exact validated implementation `0b707e4`
 
 ## 0. Authority and status
 
@@ -26,9 +28,10 @@ overall system production-ready.
 
 The P0-2a architecture is frozen at exact `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`, and its
 four-file implementation is independently validated at exact
-`0b707e4e431ea7662eec86aec5d4ed18a3c060dd`. Status is **IMPLEMENTATION VALIDATED — INTEGRATION
-PENDING**. The implementation is not on canonical main, public integration-SHA CI has not run, and
-no paid full release benchmark or product-wide production-readiness claim is implied.
+`0b707e4e431ea7662eec86aec5d4ed18a3c060dd`. Status is **VALIDATED AND INTEGRATED — CLOSED** at
+exact canonical main `74523ffcfa8906573a72415f1d868dc02996b561`. Public main-push CI run
+`32285001516` passed its deterministic lint/test gates and skipped the provider-backed evaluation
+gate. No paid full release benchmark or product-wide production-readiness claim is implied.
 
 The implementation-base SHA is a specific independently reviewed exception: `7a606e8` is a direct
 documentation-only descendant of the audited runtime reference and does not change its runtime or
@@ -361,7 +364,8 @@ passing requires weakening this policy.
 P0-1 blocks the reviewed active-content, credential-transport, citation-authority and artifact/push
 binding failures. It does not make model text semantically
 trustworthy. Web/reviewer prompt injection can still influence prose, reasoning, and source
-selection while producing inert HTML. Also deferred: P0-2a integration and P0-2b verifier semantics; P0-3
+selection while producing inert HTML. Also deferred: the first trusted real P0-2a release baseline,
+P0-2b verifier semantics; P0-3
 identity/tenant isolation; durable registry/queue recovery; HA/scale; dependency supply-chain
 hardening; browser parser differentials beyond the frozen test matrix; and hosting-provider deploy
 identity.
@@ -376,32 +380,38 @@ count checks for known-cardinality fixtures do not answer it.
 The accepted product-hardening sequence is:
 
 1. P0-1 canonical closeout — complete;
-2. P0-2a fail-closed evaluation scope/cardinality/release-evidence binding — implementation
-   validated, integration pending;
-3. P0-2b verifier status/confidence/completeness semantics — next product architecture mission
-   after P0-2a integration;
-4. P0-3 tenant/ACL isolation;
-5. durability, recovery, and publishing integrity;
-6. retrieval/chunking/embedding redesign;
-7. enterprise ingestion and later scale/cost/observability work.
+2. P0-2a fail-closed evaluation scope/cardinality/release-evidence binding — validated and
+   integrated, closed;
+3. first trusted real 20-topic V1 release baseline — next operational mission after this
+   documentation closeout is separately reviewed and integrated;
+4. P0-2b verifier status/confidence/completeness/routing semantics — next product architecture
+   mission after the trusted baseline;
+5. P0-3 tenant/ACL isolation;
+6. durability, recovery, and publishing integrity;
+7. retrieval/chunking/embedding redesign;
+8. enterprise ingestion and later scale/cost/observability work.
 
 MCP and A2A are optional developer-workflow infrastructure, outside this product sequence, and must
 not block it. The frozen P0-2a contract is
 `docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md`. Its exact implementation has passed
-independent review; integration and main cut-in still require separate human authorization. Proposed
+independent review and exact integration at canonical main `74523ff`. Proposed
 S3/Postgres/event-driven ingestion, tenant/ACL, model-tier, and related roadmap ideas remain later
 missions and are not accepted by the P0-2a contract.
 
-P0-2a release qualification is main-only after separately approved integration. It binds exact
+P0-2a release qualification is main-only. The first trusted real baseline must run only after this
+documentation closeout is separately reviewed and integrated. It binds exact
 preflight and post-run HEAD/clean-state attestations, and treats the exact 20-topic fixture as an
 immutable V1 evidence contract. A feature-branch, mid-run-drifted, or in-place-mutated V1 run cannot
 earn release PASS.
 
-## 9. P0-2a validated implementation boundary — integration pending
+## 9. P0-2a validated and integrated boundary — closed
 
 - Architecture authority: exact `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`.
 - Validated implementation: exact `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`, linearly descended
   from canonical product main `ca29d32b4869269daa47142615d298580a577a77`.
+- Canonical integration: exact `74523ffcfa8906573a72415f1d868dc02996b561`, with first parent
+  exact prior closeout `174d8c924a35fc5151a4549725db9a01e96f119b` and second parent exact
+  validated implementation `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`.
 - Cumulative implementation scope is exactly `scripts/benchmark.py`,
   `tests/test_evaluation_integrity.py`, `.github/workflows/eval.yml`, and
   `evals/benchmark_release_contract.json`.
@@ -412,5 +422,10 @@ earn release PASS.
   mutation after PASS write and reread produced controlled FAIL, no PASS print, no surviving PASS or
   temporary artifact, and one validated sanitized FAIL report. Real pre-write loader failures for
   both roots were likewise controlled.
-- No provider call or paid 20-topic release benchmark was made. This validation does not integrate,
-  merge, publish, deploy, or make the Content Agent production-ready. P0-2b remains separate.
+- Public main-push CI run `32285001516` passed deterministic lint/test and skipped the
+  provider-backed evaluation gate. Provider calls/spend during integration were zero. The real
+  paid 20-topic release benchmark has not run.
+- P0-2a closes evaluator scope/cardinality/release-evidence integrity only. It does not provide
+  permanent cryptographic authenticity of exported JSON, validate P0-2b, publish, deploy, or make
+  the Content Agent production-ready. P0-2b remains a separate next architecture phase after the
+  trusted real baseline.
