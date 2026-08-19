@@ -12,14 +12,15 @@ conclusion without rewriting their history.
 Decision ID: D-2026-08-19-05
 Date: 2026-08-19
 
-Decision: Close P0-2a as **VALIDATED AND INTEGRATED — CLOSED** at exact canonical main
-`74523ffcfa8906573a72415f1d868dc02996b561`.
+Decision: Close P0-2a as **VALIDATED AND INTEGRATED — CLOSED** at exact canonical runtime/product
+integration anchor `74523ffcfa8906573a72415f1d868dc02996b561`.
 
-Question: Did the exact reviewed P0-2a implementation become canonical main with the expected
-merge identity and main-SHA public deterministic CI, without provider execution or unrelated
-runtime change?
+Question: Did the exact reviewed P0-2a implementation become the canonical runtime/product state
+through the expected merge identity and main-SHA public deterministic CI, without provider
+execution or unrelated runtime change?
 
-Integration evidence: Direct remote main and fetched `origin/main` both resolved exact
+Integration evidence: At integration-closeout verification, direct remote main and fetched
+`origin/main` both resolved exact
 `74523ffcfa8906573a72415f1d868dc02996b561`. The merge has first parent exact prior documentation
 closeout `174d8c924a35fc5151a4549725db9a01e96f119b` and second parent exact validated implementation
 `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`. Frozen architecture remains exact
@@ -38,9 +39,9 @@ not establish product-wide production readiness, deployment identity, P0-2b veri
 or permanent cryptographic authenticity of exported JSON after workflow finalization.
 
 Next mission: After this documentation-only closeout is separately reviewed and integrated, run
-the first trusted real release-mode benchmark against exact canonical main using the frozen ordered
-20-topic V1 contract and approved GitHub Actions release workflow. Preserve complete evidence,
-telemetry, exact identities, digest, and actual cost. Do not change code, configuration, prompts,
+the first trusted real release-mode benchmark against the exact HEAD of `refs/heads/main` using the
+frozen ordered 20-topic V1 contract and approved GitHub Actions release workflow. Preserve complete
+evidence, telemetry, exact identities, digest, and actual cost. Do not change code, configuration, prompts,
 models, retrieval, thresholds, or corpus; do not retry to obtain PASS. A legitimate FAIL is accepted
 baseline evidence. Only after that baseline is captured does P0-2b status/confidence/completeness/
 routing semantics become the next architecture mission.

@@ -11,9 +11,12 @@ _Accepted contract synchronized 2026-08-19._
 - **P0-2a implementation base (historical):** `ca29d32b4869269daa47142615d298580a577a77`
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
-- **Current canonical main and P0-2a integration:**
-  `74523ffcfa8906573a72415f1d868dc02996b561`, with parents exact prior closeout
-  `174d8c924a35fc5151a4549725db9a01e96f119b` and exact validated implementation `0b707e4`
+- **Current canonical repository state:** the HEAD of `refs/heads/main`; it must contain the P0-2a
+  integration commit below, and documentation-only descendants do not alter its validated
+  runtime/product implementation blobs
+- **P0-2a canonical integration commit:** `74523ffcfa8906573a72415f1d868dc02996b561`,
+  with parents exact prior closeout `174d8c924a35fc5151a4549725db9a01e96f119b` and exact validated
+  implementation `0b707e4`
 
 ## 0. Authority and status
 
@@ -29,9 +32,10 @@ overall system production-ready.
 The P0-2a architecture is frozen at exact `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`, and its
 four-file implementation is independently validated at exact
 `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`. Status is **VALIDATED AND INTEGRATED — CLOSED** at
-exact canonical main `74523ffcfa8906573a72415f1d868dc02996b561`. Public main-push CI run
-`32285001516` passed its deterministic lint/test gates and skipped the provider-backed evaluation
-gate. No paid full release benchmark or product-wide production-readiness claim is implied.
+exact canonical P0-2a runtime/product integration anchor
+`74523ffcfa8906573a72415f1d868dc02996b561`. Public main-push CI run `32285001516` passed its
+deterministic lint/test gates and skipped the provider-backed evaluation gate. No paid full release
+benchmark or product-wide production-readiness claim is implied.
 
 The implementation-base SHA is a specific independently reviewed exception: `7a606e8` is a direct
 documentation-only descendant of the audited runtime reference and does not change its runtime or
@@ -394,7 +398,7 @@ The accepted product-hardening sequence is:
 MCP and A2A are optional developer-workflow infrastructure, outside this product sequence, and must
 not block it. The frozen P0-2a contract is
 `docs/P0_2_VERIFIER_EVALUATION_INTEGRITY_ARCHITECTURE.md`. Its exact implementation has passed
-independent review and exact integration at canonical main `74523ff`. Proposed
+independent review and exact canonical runtime/product integration at `74523ff`. Proposed
 S3/Postgres/event-driven ingestion, tenant/ACL, model-tier, and related roadmap ideas remain later
 missions and are not accepted by the P0-2a contract.
 

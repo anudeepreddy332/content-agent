@@ -8,8 +8,11 @@ remains preserved in `FREEZE.md`.
 
 ## Authoritative SHA roles
 
-- **Current canonical main and P0-2a integration:**
-  `74523ffcfa8906573a72415f1d868dc02996b561`. Its parents are exact prior documentation closeout
+- **Current canonical repository state:** the HEAD of `refs/heads/main`. It must contain the exact
+  P0-2a integration commit below; documentation-only descendants do not alter the validated P0-2a
+  runtime/product implementation blobs.
+- **P0-2a canonical integration commit:** `74523ffcfa8906573a72415f1d868dc02996b561`.
+  Its parents are exact prior documentation closeout
   `174d8c924a35fc5151a4549725db9a01e96f119b` and exact validated implementation
   `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`.
 - **Final validated P0-1 implementation:** `20eb17f2737010dbf72eea0f0e271bf47d5af3de`,
@@ -58,8 +61,9 @@ historical evidence, not a current enterprise-release decision.
      acceptance gates. Zero, partial, duplicate, incomplete, unscorable, identity-drifted,
      secret-bearing, or failed-finalization evidence cannot earn or retain a release PASS in the
      validated implementation.
-   - Exact reviewed merge `74523ffcfa8906573a72415f1d868dc02996b561` is canonical main. Public
-     push CI run [`32285001516`](https://github.com/anudeepreddy332/content-agent/actions/runs/32285001516)
+   - Exact reviewed merge `74523ffcfa8906573a72415f1d868dc02996b561` is the canonical P0-2a
+     runtime/product integration anchor and must be contained by `refs/heads/main`. Public push CI
+     run [`32285001516`](https://github.com/anudeepreddy332/content-agent/actions/runs/32285001516)
      is bound to that SHA and passed its deterministic lint and test jobs; the provider-backed
      evaluation job was skipped. No provider call or spend occurred during integration, and the
      first real paid 20-topic release benchmark has **not** run.
@@ -91,11 +95,11 @@ historical evidence, not a current enterprise-release decision.
 
 ## Current authorized mission
 
-P0-2a is validated and integrated at exact canonical main
+P0-2a is validated and integrated at exact runtime/product integration anchor
 `74523ffcfa8906573a72415f1d868dc02996b561`. After this documentation-only closeout is separately
 reviewed and integrated, the next controlled operational mission is the first trusted real
-20-topic V1 release baseline on the then-current exact canonical main. P0-2b follows that baseline
-as a separately architected verifier-semantics mission.
+20-topic V1 release baseline on the then-current HEAD of `refs/heads/main`. P0-2b follows that
+baseline as a separately architected verifier-semantics mission.
 
 MCP and A2A are optional developer-workflow infrastructure. They are out of this product mission and
 must not block the frozen sequence. This file does not itself authorize implementation, merge,
