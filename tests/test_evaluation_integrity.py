@@ -244,16 +244,24 @@ def test_benchmark_rejects_zero_verdict_parse_failure(tmp_path, monkeypatch, cap
 
 def test_benchmark_allows_explicit_completed_zero_claim_case_and_excludes_it_from_uvr(tmp_path, monkeypatch):
     _install_v1_manifest(tmp_path)
-    topic = _topic_by_id(1)
-    topic = dict(topic)
+    topic = dict(_topic_by_id(1))
     topic["allow_zero_claims"] = True
-    topics_path = tmp_path / "evals/topics.json"
-    topics = json.loads(topics_path.read_text())
+    topics = [dict(item) for item in TOPICS]
     topics[0] = topic
-    topics_path.write_text(json.dumps(topics), encoding="utf-8")
-    contract = copy.deepcopy(CONTRACT)
-    contract["manifest_sha256"] = hashlib.sha256(topics_path.read_bytes()).hexdigest()
-    (tmp_path / "evals/benchmark_release_contract.json").write_text(json.dumps(contract), encoding="utf-8")
+    manifest_identity = {
+        "manifest_id": CONTRACT["manifest_id"],
+        "manifest_path": CONTRACT["manifest_path"],
+        "manifest_sha256": CONTRACT["manifest_sha256"],
+        "expected_topic_count": CONTRACT["expected_topic_count"],
+        "ordered_topic_ids": CONTRACT["ordered_topic_ids"],
+        "actual_topic_count": len(topics),
+        "actual_topic_ids": [item["id"] for item in topics],
+    }
+    monkeypatch.setattr(
+        benchmark,
+        "load_validated_manifest",
+        lambda contract: (topics, manifest_identity),
+    )
     _write_telemetry(tmp_path, "new", topic["topic"])
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(benchmark.subprocess, "run", lambda *args, **kwargs: _completed_proc("new"))
@@ -496,6 +504,180 @@ def test_v1_contract_immutability_rejects_mutated_identity(tmp_path, monkeypatch
         ),
     )
     assert calls == []
+
+
+def _write_contract(tmp_path: Path, contract: dict) -> None:
+    (tmp_path / "evals/benchmark_release_contract.json").write_text(
+        json.dumps(contract), encoding="utf-8",
+    )
+
+
+def test_v1_coordinated_count_and_ids_mutation_fails_before_subprocess(tmp_path, monkeypatch):
+    """Coherent 19-topic contract still fails because frozen V1 requires 20."""
+    calls = _assert_zero_subprocess_calls(monkeypatch)
+    _install_v1_manifest(tmp_path)
+    topics_path = tmp_path / "evals/topics.json"
+    topics = json.loads(topics_path.read_text())[:19]
+    topics_path.write_text(json.dumps(topics), encoding="utf-8")
+    contract = copy.deepcopy(CONTRACT)
+    contract["expected_topic_count"] = 19
+    contract["ordered_topic_ids"] = list(range(1, 20))
+    contract["manifest_sha256"] = hashlib.sha256(topics_path.read_bytes()).hexdigest()
+    _write_contract(tmp_path, contract)
+    monkeypatch.chdir(tmp_path)
+
+    _expect_preflight_failure(
+        lambda: benchmark.run_benchmark.callback(
+            mode="smoke", limit=1, topic_id=None, gate=False, expected_code_sha=None,
+        ),
+    )
+    assert calls == []
+
+
+def test_v1_coordinated_manifest_bytes_and_digest_mutation_fails(tmp_path, monkeypatch):
+    """Updated digest matching mutated manifest bytes still fails frozen V1 SHA."""
+    calls = _assert_zero_subprocess_calls(monkeypatch)
+    _install_v1_manifest(tmp_path)
+    topics_path = tmp_path / "evals/topics.json"
+    topics = json.loads(topics_path.read_text())
+    topics[0]["topic"] = "Mutated Topic Title"
+    topics_path.write_text(json.dumps(topics), encoding="utf-8")
+    contract = copy.deepcopy(CONTRACT)
+    contract["manifest_sha256"] = hashlib.sha256(topics_path.read_bytes()).hexdigest()
+    _write_contract(tmp_path, contract)
+    monkeypatch.chdir(tmp_path)
+
+    _expect_preflight_failure(
+        lambda: benchmark.run_benchmark.callback(
+            mode="smoke", limit=1, topic_id=None, gate=False, expected_code_sha=None,
+        ),
+    )
+    assert calls == []
+
+
+def test_v1_smaller_coherent_manifest_still_fails_v1_identity(tmp_path, monkeypatch):
+    """10-topic coherent manifest + matching digest/count/IDs cannot redefine V1."""
+    calls = _assert_zero_subprocess_calls(monkeypatch)
+    _install_v1_manifest(tmp_path)
+    topics_path = tmp_path / "evals/topics.json"
+    topics = json.loads(topics_path.read_text())[:10]
+    topics_path.write_text(json.dumps(topics), encoding="utf-8")
+    contract = copy.deepcopy(CONTRACT)
+    contract["expected_topic_count"] = 10
+    contract["ordered_topic_ids"] = list(range(1, 11))
+    contract["manifest_sha256"] = hashlib.sha256(topics_path.read_bytes()).hexdigest()
+    _write_contract(tmp_path, contract)
+    monkeypatch.chdir(tmp_path)
+
+    _expect_preflight_failure(
+        lambda: benchmark.run_benchmark.callback(
+            mode="smoke", limit=1, topic_id=None, gate=False, expected_code_sha=None,
+        ),
+    )
+    assert calls == []
+
+
+@pytest.mark.parametrize(
+    "manifest_id",
+    ["content-agent-release-topics-v2", "wrong-manifest-id"],
+)
+def test_v1_rejects_differing_manifest_id(tmp_path, monkeypatch, manifest_id):
+    calls = _assert_zero_subprocess_calls(monkeypatch)
+    _install_v1_manifest(tmp_path)
+    contract = copy.deepcopy(CONTRACT)
+    contract["manifest_id"] = manifest_id
+    _write_contract(tmp_path, contract)
+    monkeypatch.chdir(tmp_path)
+
+    _expect_preflight_failure(
+        lambda: benchmark.run_benchmark.callback(
+            mode="smoke", limit=1, topic_id=None, gate=False, expected_code_sha=None,
+        ),
+    )
+    assert calls == []
+
+
+def test_v1_rejects_differing_manifest_path(tmp_path, monkeypatch):
+    calls = _assert_zero_subprocess_calls(monkeypatch)
+    _install_v1_manifest(tmp_path)
+    contract = copy.deepcopy(CONTRACT)
+    contract["manifest_path"] = "evals/other_topics.json"
+    _write_contract(tmp_path, contract)
+    monkeypatch.chdir(tmp_path)
+
+    _expect_preflight_failure(
+        lambda: benchmark.run_benchmark.callback(
+            mode="smoke", limit=1, topic_id=None, gate=False, expected_code_sha=None,
+        ),
+    )
+    assert calls == []
+
+
+@pytest.mark.parametrize("schema_version", [0, 2])
+def test_v1_rejects_unsupported_schema_version(tmp_path, monkeypatch, schema_version):
+    calls = _assert_zero_subprocess_calls(monkeypatch)
+    _install_v1_manifest(tmp_path)
+    contract = copy.deepcopy(CONTRACT)
+    contract["schema_version"] = schema_version
+    _write_contract(tmp_path, contract)
+    monkeypatch.chdir(tmp_path)
+
+    _expect_preflight_failure(
+        lambda: benchmark.run_benchmark.callback(
+            mode="smoke", limit=1, topic_id=None, gate=False, expected_code_sha=None,
+        ),
+    )
+    assert calls == []
+
+
+# --- Manifest topic schema validation ---
+
+
+def _write_manifest_with_updated_contract(tmp_path: Path, topics: list) -> None:
+    topics_path = tmp_path / "evals/topics.json"
+    topics_path.write_text(json.dumps(topics), encoding="utf-8")
+    contract = copy.deepcopy(CONTRACT)
+    contract["manifest_sha256"] = hashlib.sha256(topics_path.read_bytes()).hexdigest()
+    _write_contract(tmp_path, contract)
+
+
+def _expect_manifest_schema_failure(tmp_path, monkeypatch, topics: list) -> None:
+    calls = _assert_zero_subprocess_calls(monkeypatch)
+    _install_v1_manifest(tmp_path)
+    _write_manifest_with_updated_contract(tmp_path, topics)
+    monkeypatch.chdir(tmp_path)
+    _expect_preflight_failure(
+        lambda: benchmark.run_benchmark.callback(
+            mode="smoke", limit=1, topic_id=None, gate=False, expected_code_sha=None,
+        ),
+    )
+    assert calls == []
+
+
+def test_manifest_missing_category_fails(tmp_path, monkeypatch):
+    topics = json.loads((ROOT / "evals/topics.json").read_text())
+    del topics[0]["category"]
+    _expect_manifest_schema_failure(tmp_path, monkeypatch, topics)
+
+
+def test_manifest_blank_category_fails(tmp_path, monkeypatch):
+    topics = json.loads((ROOT / "evals/topics.json").read_text())
+    topics[0]["category"] = "   "
+    _expect_manifest_schema_failure(tmp_path, monkeypatch, topics)
+
+
+@pytest.mark.parametrize("field", ["topic", "slug", "card_id", "series"])
+def test_manifest_blank_string_fields_fail(tmp_path, monkeypatch, field):
+    topics = json.loads((ROOT / "evals/topics.json").read_text())
+    topics[0][field] = ""
+    _expect_manifest_schema_failure(tmp_path, monkeypatch, topics)
+
+
+@pytest.mark.parametrize("topic_id", ["1", 1.5, True, 0, -1])
+def test_manifest_invalid_topic_ids_fail(tmp_path, monkeypatch, topic_id):
+    topics = json.loads((ROOT / "evals/topics.json").read_text())
+    topics[0]["id"] = topic_id
+    _expect_manifest_schema_failure(tmp_path, monkeypatch, topics)
 
 
 # --- Release preflight ---
@@ -782,15 +964,48 @@ def test_post_run_code_identity_drift_fails_release(tmp_path, monkeypatch, drift
 # --- Evidence digest and secret safety ---
 
 
-def test_evidence_digest_rejects_mutation_and_missing_digest():
+def _valid_evidence_payload(**overrides) -> dict:
+    evaluation_config, evaluation_config_sha256 = benchmark.resolve_evaluation_config()
     payload = {
         "schema_version": benchmark.EVIDENCE_SCHEMA_VERSION,
+        "timestamp_utc": "2026-08-19T12:00:00+00:00",
         "mode": "smoke",
         "release_qualification": "NON_RELEASE",
+        "gate_requested": True,
+        "github_actions_identity": {
+            "github_actions": None,
+            "github_ref": None,
+            "github_sha": None,
+            "github_run_id": None,
+            "github_run_attempt": None,
+            "github_workflow_ref": None,
+        },
+        "expected_code_sha": None,
+        "preflight_code_identity": None,
+        "final_code_identity": None,
+        "release_contract_identity": dict(CONTRACT),
+        "selected_manifest_identity": {
+            "manifest_id": CONTRACT["manifest_id"],
+            "manifest_path": CONTRACT["manifest_path"],
+            "manifest_sha256": CONTRACT["manifest_sha256"],
+            "selected_topic_count": 1,
+            "selected_topic_ids": [1],
+        },
+        "evaluation_configuration": evaluation_config,
+        "evaluation_config_sha256": evaluation_config_sha256,
+        "ordered_unit_results": [{"id": 1, "status": "success"}],
+        "aggregate_metrics": {"total_runs": 1, "successful": 1, "failed": 0},
+        "gate_failures": [],
     }
-    digest = benchmark._compute_evidence_digest(payload)
-    signed = dict(payload)
-    signed["evidence_sha256"] = digest
+    payload.update(overrides)
+    body = dict(payload)
+    body.pop("evidence_sha256", None)
+    payload["evidence_sha256"] = benchmark._compute_evidence_digest(body)
+    return payload
+
+
+def test_evidence_digest_rejects_mutation_and_missing_digest():
+    signed = _valid_evidence_payload()
     benchmark._validate_evidence_payload(signed)
 
     tampered = dict(signed)
@@ -798,10 +1013,105 @@ def test_evidence_digest_rejects_mutation_and_missing_digest():
     with pytest.raises(ValueError):
         benchmark._validate_evidence_payload(tampered)
 
-    missing = dict(payload)
+    missing = dict(signed)
     missing["evidence_sha256"] = ""
     with pytest.raises(ValueError):
         benchmark._validate_evidence_payload(missing)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "schema_version",
+        "timestamp_utc",
+        "mode",
+        "release_qualification",
+        "gate_requested",
+        "github_actions_identity",
+        "expected_code_sha",
+        "preflight_code_identity",
+        "final_code_identity",
+        "release_contract_identity",
+        "selected_manifest_identity",
+        "evaluation_configuration",
+        "evaluation_config_sha256",
+        "ordered_unit_results",
+        "aggregate_metrics",
+        "gate_failures",
+    ],
+)
+def test_evidence_rejects_missing_critical_field_even_with_recomputed_digest(field):
+    payload = _valid_evidence_payload()
+    body = dict(payload)
+    body.pop("evidence_sha256", None)
+    body.pop(field, None)
+    malformed = dict(body)
+    malformed["evidence_sha256"] = benchmark._compute_evidence_digest(body)
+    with pytest.raises(ValueError):
+        benchmark._validate_evidence_payload(malformed)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("mode", "invalid"),
+        ("release_qualification", "MAYBE"),
+        ("expected_code_sha", "not-a-sha"),
+        ("evaluation_config_sha256", "0" * 64),
+    ],
+)
+def test_evidence_rejects_invalid_field_values_even_with_recomputed_digest(field, value):
+    payload = _valid_evidence_payload(**{field: value})
+    with pytest.raises(ValueError):
+        benchmark._validate_evidence_payload(payload)
+
+
+def test_evidence_rejects_tampered_configuration_identity_even_with_valid_digest():
+    payload = _valid_evidence_payload()
+    tampered_config = dict(payload["evaluation_configuration"])
+    tampered_config["PROMPT_VERSION"] = "sha-deadbeefdead"
+    body = dict(payload)
+    body.pop("evidence_sha256", None)
+    body["evaluation_configuration"] = tampered_config
+    # Recompute digest over mismatched config + stale evaluation_config_sha256.
+    body["evidence_sha256"] = benchmark._compute_evidence_digest(body)
+    with pytest.raises(ValueError, match="evaluation_config_sha256 mismatch"):
+        benchmark._validate_evidence_payload(body)
+
+
+def test_tampered_configuration_identity_cannot_produce_release_pass(tmp_path, monkeypatch, capsys):
+    _install_v1_manifest(tmp_path)
+    _mock_release_github(monkeypatch, sha=EXPECTED_SHA)
+    _mock_git_identity(monkeypatch, sha=EXPECTED_SHA)
+    monkeypatch.chdir(tmp_path)
+
+    run_ids = {topic_id: f"run-{topic_id:02d}" for topic_id in CONTRACT["ordered_topic_ids"]}
+    for topic_id, run_id in run_ids.items():
+        topic = _topic_by_id(topic_id)
+        _write_telemetry(tmp_path, run_id, topic["topic"], verified=17, unverified=3)
+
+    def mock_run(cmd, **kwargs):
+        if cmd[0:3] == ["uv", "run", "python"]:
+            topic_name = cmd[cmd.index("--topic") + 1]
+            topic = next(item for item in TOPICS if item["topic"] == topic_name)
+            return _completed_proc(run_ids[topic["id"]])
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    monkeypatch.setattr(benchmark.subprocess, "run", mock_run)
+
+    benchmark.run_benchmark.callback(
+        mode="release", limit=None, topic_id=None, gate=True, expected_code_sha=EXPECTED_SHA,
+    )
+
+    report = _aggregate(tmp_path / "outputs" / "benchmark_results")
+    assert report["release_qualification"] == "PASS"
+    tampered = dict(report)
+    tampered["evaluation_config_sha256"] = "0" * 64
+    body = dict(tampered)
+    body.pop("evidence_sha256", None)
+    tampered["evidence_sha256"] = benchmark._compute_evidence_digest(body)
+    with pytest.raises(ValueError, match="evaluation_config_sha256 mismatch"):
+        benchmark._validate_evidence_payload(tampered)
 
 
 def test_evaluation_config_excludes_raw_secret_urls():

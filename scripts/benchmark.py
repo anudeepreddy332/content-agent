@@ -47,8 +47,42 @@ RELEASE_CONTRACT_REQUIRED_FIELDS = frozenset({
     "expected_topic_count",
     "ordered_topic_ids",
 })
-TOPIC_REQUIRED_FIELDS = ("id", "topic", "card_id", "series", "slug")
+V1_MANIFEST_ID = "content-agent-release-topics-v1"
+V1_RELEASE_CONTRACT: dict[str, Any] = {
+    "schema_version": 1,
+    "manifest_id": V1_MANIFEST_ID,
+    "manifest_path": "evals/topics.json",
+    "manifest_sha256": (
+        "2e1a502834252f8c7fe7a3b1136efb9f949d3392f493e6e2102838316b0c7b08"
+    ),
+    "expected_topic_count": 20,
+    "ordered_topic_ids": list(range(1, 21)),
+}
+TOPIC_REQUIRED_FIELDS = ("id", "topic", "card_id", "series", "slug", "category")
+TOPIC_STRING_FIELDS = ("topic", "card_id", "series", "slug", "category")
+EVIDENCE_REQUIRED_FIELDS = (
+    "schema_version",
+    "timestamp_utc",
+    "mode",
+    "release_qualification",
+    "gate_requested",
+    "github_actions_identity",
+    "expected_code_sha",
+    "preflight_code_identity",
+    "final_code_identity",
+    "release_contract_identity",
+    "selected_manifest_identity",
+    "evaluation_configuration",
+    "evaluation_config_sha256",
+    "ordered_unit_results",
+    "aggregate_metrics",
+    "gate_failures",
+    "evidence_sha256",
+)
+VALID_MODES = frozenset({"smoke", "release"})
+VALID_RELEASE_QUALIFICATIONS = frozenset({"PASS", "FAIL", "NON_RELEASE"})
 GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _fail_preflight(message: str) -> None:
@@ -178,6 +212,17 @@ def _validate_code_identity(expected_code_sha: str, identity: dict[str, Any]) ->
     return failures
 
 
+def _validate_v1_contract_immutability(contract: dict[str, Any]) -> None:
+    """Reject any contract that does not match frozen V1 semantics exactly."""
+    for field, expected in V1_RELEASE_CONTRACT.items():
+        actual = contract.get(field)
+        if actual != expected:
+            _fail_preflight(
+                f"V1 release contract field {field!r} must equal frozen value "
+                f"{expected!r}, got {actual!r}",
+            )
+
+
 def load_release_contract(path: Path = RELEASE_CONTRACT_PATH) -> dict[str, Any]:
     if not path.is_file():
         _fail_preflight(f"release contract missing: {path}")
@@ -200,7 +245,12 @@ def load_release_contract(path: Path = RELEASE_CONTRACT_PATH) -> dict[str, Any]:
         _fail_preflight("ordered_topic_ids must be a nonempty list")
     if len(ordered_ids) != contract["expected_topic_count"]:
         _fail_preflight("ordered_topic_ids length must equal expected_topic_count")
+    _validate_v1_contract_immutability(contract)
     return contract
+
+
+def _is_positive_int(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
 
 
 def _validate_manifest_topics(topics: list[dict[str, Any]]) -> list[str]:
@@ -216,20 +266,27 @@ def _validate_manifest_topics(topics: list[dict[str, Any]]) -> list[str]:
         if missing:
             failures.append(f"manifest topic at index {index} missing fields: {missing}")
         topic_id = topic.get("id")
-        topic_name = topic.get("topic")
-        slug = topic.get("slug")
-        if isinstance(topic_id, int):
-            if topic_id in seen_ids:
-                failures.append(f"duplicate manifest topic id: {topic_id}")
+        if not _is_positive_int(topic_id):
+            failures.append(f"manifest topic at index {index} id must be a positive integer")
+        elif topic_id in seen_ids:
+            failures.append(f"duplicate manifest topic id: {topic_id}")
+        else:
             seen_ids.add(topic_id)
-        if isinstance(topic_name, str):
-            if topic_name in seen_topics:
-                failures.append(f"duplicate manifest topic name: {topic_name}")
-            seen_topics.add(topic_name)
-        if isinstance(slug, str):
-            if slug in seen_slugs:
-                failures.append(f"duplicate manifest slug: {slug}")
-            seen_slugs.add(slug)
+        for field in TOPIC_STRING_FIELDS:
+            value = topic.get(field)
+            if not isinstance(value, str) or not value.strip():
+                failures.append(
+                    f"manifest topic at index {index} field {field!r} must be a nonempty string",
+                )
+                continue
+            if field == "topic":
+                if value in seen_topics:
+                    failures.append(f"duplicate manifest topic name: {value}")
+                seen_topics.add(value)
+            elif field == "slug":
+                if value in seen_slugs:
+                    failures.append(f"duplicate manifest slug: {value}")
+                seen_slugs.add(value)
     return failures
 
 
@@ -496,12 +553,109 @@ def _compute_evidence_digest(payload: dict[str, Any]) -> str:
     return hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
 
 
-def _validate_evidence_payload(payload: dict[str, Any]) -> None:
-    if payload.get("schema_version") != EVIDENCE_SCHEMA_VERSION:
+def _validate_git_sha_field(value: Any, field_name: str) -> None:
+    if not isinstance(value, str) or not GIT_SHA_RE.fullmatch(value):
+        raise ValueError(f"{field_name} must be a 40-char lowercase hex git SHA")
+
+
+def _validate_sha256_field(value: Any, field_name: str) -> None:
+    if not isinstance(value, str) or not SHA256_RE.fullmatch(value):
+        raise ValueError(f"{field_name} must be a 64-char lowercase hex SHA-256 digest")
+
+
+def _validate_code_identity_object(value: Any, field_name: str) -> None:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be an object")
+    if "head_sha" not in value:
+        raise ValueError(f"{field_name} missing head_sha")
+    _validate_git_sha_field(value["head_sha"], f"{field_name}.head_sha")
+    for flag in ("staged_clean", "unstaged_clean"):
+        if not isinstance(value.get(flag), bool):
+            raise ValueError(f"{field_name}.{flag} must be a boolean")
+
+
+def _validate_evidence_structure(payload: dict[str, Any]) -> None:
+    missing = [field for field in EVIDENCE_REQUIRED_FIELDS if field not in payload]
+    if missing:
+        raise ValueError(f"evidence missing required fields: {missing}")
+
+    if payload["schema_version"] != EVIDENCE_SCHEMA_VERSION:
         raise ValueError("invalid evidence schema_version")
+    if not isinstance(payload["timestamp_utc"], str) or not payload["timestamp_utc"]:
+        raise ValueError("timestamp_utc must be a nonempty string")
+    if payload["mode"] not in VALID_MODES:
+        raise ValueError("mode must be smoke or release")
+    if payload["release_qualification"] not in VALID_RELEASE_QUALIFICATIONS:
+        raise ValueError("release_qualification must be PASS, FAIL, or NON_RELEASE")
+    if not isinstance(payload["gate_requested"], bool):
+        raise ValueError("gate_requested must be a boolean")
+
+    github_identity = payload["github_actions_identity"]
+    if not isinstance(github_identity, dict):
+        raise ValueError("github_actions_identity must be an object")
+
+    expected_code_sha = payload["expected_code_sha"]
+    if payload["mode"] == "release":
+        _validate_git_sha_field(expected_code_sha, "expected_code_sha")
+    elif expected_code_sha is not None:
+        raise ValueError("expected_code_sha must be null for smoke mode")
+
+    preflight = payload["preflight_code_identity"]
+    final = payload["final_code_identity"]
+    if payload["mode"] == "release":
+        _validate_code_identity_object(preflight, "preflight_code_identity")
+        _validate_code_identity_object(final, "final_code_identity")
+    else:
+        if preflight is not None:
+            raise ValueError("preflight_code_identity must be null for smoke mode")
+        if final is not None:
+            raise ValueError("final_code_identity must be null for smoke mode")
+
+    contract_identity = payload["release_contract_identity"]
+    if not isinstance(contract_identity, dict):
+        raise ValueError("release_contract_identity must be an object")
+    for field in RELEASE_CONTRACT_REQUIRED_FIELDS:
+        if field not in contract_identity:
+            raise ValueError(f"release_contract_identity missing {field}")
+
+    selected_identity = payload["selected_manifest_identity"]
+    if not isinstance(selected_identity, dict):
+        raise ValueError("selected_manifest_identity must be an object")
+    if not isinstance(selected_identity.get("manifest_id"), str):
+        raise ValueError("selected_manifest_identity.manifest_id must be a string")
+
+    evaluation_config = payload["evaluation_configuration"]
+    if not isinstance(evaluation_config, dict) or not evaluation_config:
+        raise ValueError("evaluation_configuration must be a nonempty object")
+    _validate_sha256_field(payload["evaluation_config_sha256"], "evaluation_config_sha256")
+    expected_config_sha = hashlib.sha256(
+        _canonical_json(evaluation_config).encode("utf-8"),
+    ).hexdigest()
+    if payload["evaluation_config_sha256"] != expected_config_sha:
+        raise ValueError("evaluation_config_sha256 mismatch")
+
+    if not isinstance(payload["ordered_unit_results"], list):
+        raise ValueError("ordered_unit_results must be a list")
+    if not isinstance(payload["aggregate_metrics"], dict):
+        raise ValueError("aggregate_metrics must be an object")
+    if not isinstance(payload["gate_failures"], list):
+        raise ValueError("gate_failures must be a list")
+
+    if payload["mode"] == "release" and payload["release_qualification"] == "PASS":
+        if len(payload["ordered_unit_results"]) != V1_RELEASE_CONTRACT["expected_topic_count"]:
+            raise ValueError("release PASS requires exactly 20 ordered unit results")
+        if contract_identity["manifest_id"] != V1_MANIFEST_ID:
+            raise ValueError("release PASS requires V1 manifest identity")
+        if preflight["head_sha"] != final["head_sha"]:
+            raise ValueError("release PASS requires stable code identity across execution")
+
+
+def _validate_evidence_payload(payload: dict[str, Any]) -> None:
+    _validate_evidence_structure(payload)
     digest = payload.get("evidence_sha256")
     if not digest:
         raise ValueError("missing evidence_sha256")
+    _validate_sha256_field(digest, "evidence_sha256")
     body = dict(payload)
     body.pop("evidence_sha256", None)
     expected = _compute_evidence_digest(body)
