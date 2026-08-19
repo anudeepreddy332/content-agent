@@ -920,7 +920,7 @@ def test_synthetic_full_release_passes_once(tmp_path, monkeypatch, capsys):
     assert report["mode"] == "release"
     assert len(report["ordered_unit_results"]) == 20
     benchmark._validate_evidence_payload(report)
-    assert "RELEASE GATE: PASS" in capsys.readouterr().out
+    assert capsys.readouterr().out.count("RELEASE GATE: PASS") == 1
 
 
 def test_release_subprocess_failure_writes_fail_not_pass(tmp_path, monkeypatch, capsys):
@@ -1970,6 +1970,167 @@ def test_post_reread_runtime_root_drift_fails_at_final_revalidation(
     assert built["value"] is True
     assert observed["called"] is True
     assert observed["error"] == f"final runtime revalidation: {expected_error}"
+    report = _aggregate(tmp_path / "outputs" / "benchmark_results")
+    assert report["release_qualification"] == "FAIL"
+    assert "RELEASE GATE: PASS" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("root", ["contract", "manifest"])
+def test_real_loader_system_exit_after_reread_is_sanitized(root, tmp_path, monkeypatch, capsys):
+    """Real on-disk trusted-root preflight exits must not leave a PASS report."""
+    _install_v1_manifest(tmp_path)
+    _mock_release_github(monkeypatch, sha=EXPECTED_SHA)
+    _mock_git_identity(monkeypatch, sha=EXPECTED_SHA)
+    monkeypatch.chdir(tmp_path)
+    run_ids = {topic_id: f"run-{topic_id:02d}" for topic_id in CONTRACT["ordered_topic_ids"]}
+    for topic_id, run_id in run_ids.items():
+        topic = _topic_by_id(topic_id)
+        _write_telemetry(tmp_path, run_id, topic["topic"], verified=17, unverified=3)
+
+    def mock_run(cmd, **kwargs):
+        topic_name = cmd[cmd.index("--topic") + 1]
+        topic = next(item for item in TOPICS if item["topic"] == topic_name)
+        return _completed_proc(run_ids[topic["id"]])
+
+    monkeypatch.setattr(benchmark.subprocess, "run", mock_run)
+    built = {"value": False}
+    original_build = benchmark._build_trusted_release_context
+
+    def build_context(**kwargs):
+        context = original_build(**kwargs)
+        built["value"] = True
+        return context
+
+    monkeypatch.setattr(benchmark, "_build_trusted_release_context", build_context)
+    trusted_validation_calls = {"value": 0}
+    original_validate = benchmark._validate_trusted_release_payload
+
+    def validate_then_mutate(payload, context):
+        original_validate(payload, context)
+        trusted_validation_calls["value"] += 1
+        if trusted_validation_calls["value"] != 2:
+            return
+        if root == "contract":
+            path = tmp_path / "evals" / "benchmark_release_contract.json"
+            document = json.loads(path.read_text())
+            document["schema_version"] = 2
+            path.write_text(json.dumps(document), encoding="utf-8")
+        else:
+            path = tmp_path / "evals" / "topics.json"
+            document = json.loads(path.read_text())
+            document[0]["topic"] = "Mutated after PASS reread"
+            path.write_text(json.dumps(document), encoding="utf-8")
+
+    monkeypatch.setattr(benchmark, "_validate_trusted_release_payload", validate_then_mutate)
+    observed = {"called": False, "error": None, "cause": None}
+    original_revalidate = benchmark._revalidate_final_runtime_trust_roots
+
+    def revalidate(context):
+        observed["called"] = True
+        try:
+            original_revalidate(context)
+        except ValueError as error:
+            observed["error"] = str(error)
+            observed["cause"] = error.__cause__
+            raise
+
+    monkeypatch.setattr(benchmark, "_revalidate_final_runtime_trust_roots", revalidate)
+    with pytest.raises(SystemExit) as raised:
+        benchmark.run_benchmark.callback(
+            mode="release", limit=None, topic_id=None, gate=True, expected_code_sha=EXPECTED_SHA,
+        )
+
+    assert raised.value.code == 1
+    assert built["value"] is True
+    assert trusted_validation_calls["value"] == 2
+    assert observed["called"] is True
+    assert observed["error"] == "final runtime revalidation: trusted release root resolution failed"
+    assert isinstance(observed["cause"], SystemExit)
+    assert observed["cause"].code == 2
+    reports_dir = tmp_path / "outputs" / "benchmark_results"
+    reports = list(reports_dir.glob("benchmark_*.json"))
+    assert len(reports) == 1
+    assert json.loads(reports[0].read_text())["release_qualification"] == "FAIL"
+    assert not list(reports_dir.glob("*.tmp"))
+    assert "RELEASE GATE: PASS" not in capsys.readouterr().out
+
+
+def test_writer_removes_pass_artifact_when_real_loader_exits(tmp_path, monkeypatch):
+    """The direct PASS writer removes its destination when a real loader exits."""
+    _install_v1_manifest(tmp_path)
+    _mock_release_github(monkeypatch, sha=EXPECTED_SHA)
+    _mock_git_identity(monkeypatch, sha=EXPECTED_SHA)
+    monkeypatch.chdir(tmp_path)
+    payload = _valid_release_pass_evidence_payload()
+    context = _trusted_context_for(payload)
+    body = copy.deepcopy(payload)
+    body.pop("evidence_sha256")
+    destination = tmp_path / "release.json"
+    original_validate = benchmark._validate_trusted_release_payload
+    validated = {"calls": 0}
+
+    def validate_then_mutate(persisted, trusted_context):
+        original_validate(persisted, trusted_context)
+        validated["calls"] += 1
+        if validated["calls"] == 2:
+            path = tmp_path / "evals" / "benchmark_release_contract.json"
+            document = json.loads(path.read_text())
+            document["schema_version"] = 2
+            path.write_text(json.dumps(document), encoding="utf-8")
+
+    monkeypatch.setattr(benchmark, "_validate_trusted_release_payload", validate_then_mutate)
+    with pytest.raises(ValueError, match="final runtime revalidation: trusted release root resolution failed") as raised:
+        benchmark._write_evidence_report(body, destination, trusted_context=context)
+
+    assert validated["calls"] == 2
+    assert isinstance(raised.value.__cause__, SystemExit)
+    assert raised.value.__cause__.code == 2
+    assert not destination.exists()
+    assert not destination.with_suffix(".json.tmp").exists()
+
+
+def test_trusted_context_real_loader_exit_before_pass_write_is_sanitized(
+    tmp_path, monkeypatch, capsys,
+):
+    """The same loader exit is controlled when trusted context is first built."""
+    _install_v1_manifest(tmp_path)
+    _mock_release_github(monkeypatch, sha=EXPECTED_SHA)
+    _mock_git_identity(monkeypatch, sha=EXPECTED_SHA)
+    monkeypatch.chdir(tmp_path)
+    run_ids = {topic_id: f"run-{topic_id:02d}" for topic_id in CONTRACT["ordered_topic_ids"]}
+    for topic_id, run_id in run_ids.items():
+        topic = _topic_by_id(topic_id)
+        _write_telemetry(tmp_path, run_id, topic["topic"], verified=17, unverified=3)
+
+    def mock_run(cmd, **kwargs):
+        topic_name = cmd[cmd.index("--topic") + 1]
+        topic = next(item for item in TOPICS if item["topic"] == topic_name)
+        return _completed_proc(run_ids[topic["id"]])
+
+    monkeypatch.setattr(benchmark.subprocess, "run", mock_run)
+    original_build = benchmark._build_trusted_release_context
+    observed = {"cause": None}
+
+    def build_after_contract_drift(**kwargs):
+        path = tmp_path / "evals" / "benchmark_release_contract.json"
+        document = json.loads(path.read_text())
+        document["schema_version"] = 2
+        path.write_text(json.dumps(document), encoding="utf-8")
+        try:
+            return original_build(**kwargs)
+        except ValueError as error:
+            observed["cause"] = error.__cause__
+            raise
+
+    monkeypatch.setattr(benchmark, "_build_trusted_release_context", build_after_contract_drift)
+    with pytest.raises(SystemExit) as raised:
+        benchmark.run_benchmark.callback(
+            mode="release", limit=None, topic_id=None, gate=True, expected_code_sha=EXPECTED_SHA,
+        )
+
+    assert raised.value.code == 1
+    assert isinstance(observed["cause"], SystemExit)
+    assert observed["cause"].code == 2
     report = _aggregate(tmp_path / "outputs" / "benchmark_results")
     assert report["release_qualification"] == "FAIL"
     assert "RELEASE GATE: PASS" not in capsys.readouterr().out

@@ -1161,8 +1161,9 @@ def _build_trusted_release_context(
     final_github_identity = _github_actions_identity()
     final_code_identity = _resolve_code_identity()
     final_config, final_config_sha256 = resolve_evaluation_config()
-    final_contract = load_release_contract()
-    _, final_manifest_identity = load_validated_manifest(final_contract)
+    final_contract, final_manifest_identity = _resolve_trusted_release_roots(
+        stage="trusted-context construction",
+    )
     if final_github_identity != preflight_github_identity:
         raise ValueError("trusted-context comparison: GitHub identity drifted")
     if final_code_identity != preflight_code_identity:
@@ -1270,8 +1271,9 @@ def _revalidate_final_runtime_trust_roots(
     final_github_identity = _github_actions_identity()
     final_code_identity = _resolve_code_identity()
     final_config, final_config_sha256 = resolve_evaluation_config()
-    final_contract = load_release_contract()
-    _, final_manifest_identity = load_validated_manifest(final_contract)
+    final_contract, final_manifest_identity = _resolve_trusted_release_roots(
+        stage="final runtime revalidation",
+    )
     frozen_contract = deepcopy(V1_RELEASE_CONTRACT)
 
     checks = (
@@ -1286,6 +1288,16 @@ def _revalidate_final_runtime_trust_roots(
     for label, actual, expected in checks:
         if actual != expected:
             raise ValueError(f"final runtime revalidation: {label} drifted")
+
+
+def _resolve_trusted_release_roots(*, stage: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Convert loader preflight exits into trusted-finalization failures only."""
+    try:
+        contract = load_release_contract()
+        _, manifest_identity = load_validated_manifest(contract)
+    except SystemExit as error:
+        raise ValueError(f"{stage}: trusted release root resolution failed") from error
+    return contract, manifest_identity
 
 
 def _write_evidence_report(
