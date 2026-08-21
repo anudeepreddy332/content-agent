@@ -43,6 +43,7 @@ from config import (
     MAX_ITERATIONS,
     REFLECTION_THRESHOLD,
     GROUNDING_FLOOR,
+    UVR_THRESHOLD,
     COST_GATE_USD,
     DEEPSEEK_INPUT_COST_PER_M,
     DEEPSEEK_OUTPUT_COST_PER_M,
@@ -997,6 +998,12 @@ def hitl_node(state: AgentState) -> dict:
     User inputs: a (approve), r (reject), f (feedback -> types it).
     """
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
+        # Auto-approve is a CI/CLI convenience, not a semantic pass. If
+        # verification is not accepted and revision is no longer available,
+        # fail closed with the existing reject → END path. Interactive/API
+        # HITL still requires an explicit human decision.
+        if not semantic_verification_accepted(state):
+            return {"hitl_status": "rejected", "hitl_feedback": None}
         return {"hitl_status": "approved", "hitl_feedback": None}
 
     # B4: API mode — pause the graph via LangGraph interrupt(). The checkpointer
@@ -1833,17 +1840,67 @@ def git_node(state: AgentState) -> dict:
 
 # EDGE FUNCTIONS (routing logic)
 
+# Claim-completeness vs the draft is unknown for model-extracted verdict
+# sets and is not an acceptance condition in this slice.
+CLAIM_COMPLETENESS = "unknown"
+
+
+def unverified_rate(grounding_report: list | None) -> float | None:
+    """Exact unverified / N, or None when UVR is not deterministically computable."""
+    if not grounding_report:
+        return None
+    n_unverified = sum(1 for row in grounding_report if row.get("status") == "unverified")
+    return n_unverified / len(grounding_report)
+
+
+def unverified_claims(grounding_report: list | None) -> list[str]:
+    """Same claim extraction draft_node injects into revision feedback."""
+    return [
+        (row.get("claim") or "").strip()
+        for row in (grounding_report or [])
+        if row.get("status") == "unverified" and (row.get("claim") or "").strip()
+    ]
+
+
+def semantic_verification_accepted(state: AgentState) -> bool:
+    """True only when every applicable semantic acceptance condition holds.
+
+    Required:
+        1. verification_status == "completed"
+        2. verdict set is nonempty
+        3. UVR is deterministically computable
+        4. UVR <= UVR_THRESHOLD (0.15)
+
+    Parse failure, skipped verification, empty verdicts, upstream failure,
+    unknown/incomplete status, and UVR above the gate all fail closed.
+    Scalar grounding/confidence cannot convert those states into a pass.
+    Claim-completeness remains CLAIM_COMPLETENESS ("unknown") and is not gated.
+    """
+    if state.get("verification_status") != "completed":
+        return False
+    report = state.get("grounding_report") or []
+    uvr = unverified_rate(report)
+    if uvr is None:
+        return False
+    return uvr <= UVR_THRESHOLD
+
+
 def route_after_reflect(state: AgentState) -> str:
     """
         Decide whether to revise the draft or proceed to HITL.
 
         Composite gate (NOT reflection score alone — LLMs inflate self-scores):
             Force rewrite if:
+                - semantic verification is not accepted (status, nonempty
+                  verdicts, computable UVR, UVR <= 0.15), when iteration
+                  capacity remains
                 - grounding_score < GROUNDING_FLOOR (hard floor, regardless of reflection)
                 - OR reflection_score < REFLECTION_THRESHOLD AND grounding_score < 0.75
             Proceed if:
-                - max iterations reached (always proceed — human decides)
-                - composite gate passes
+                - max iterations reached (HITL; auto-approve cannot launder a
+                  semantic failure — see hitl_node)
+                - cost gate trips (same HITL / fail-closed auto-approve rule)
+                - composite gate passes AND semantic verification is accepted
 
         Returns:
             "draft" — loop back and revise
@@ -1853,16 +1910,27 @@ def route_after_reflect(state: AgentState) -> str:
     iterations = state.get("iterations", 0)
     reflection_score = state.get("reflection_score", 8)
     grounding_score = state.get("grounding_score", 0.75)
+    uvr = unverified_rate(state.get("grounding_report"))
+    semantic_ok = semantic_verification_accepted(state)
 
     # Hard ceiling: never loop more than MAX_ITERATIONS
     if iterations >= MAX_ITERATIONS:
-        log.info("route.max_iterations", run_id=state["run_id"], iterations=iterations)
+        log.info("route.max_iterations", run_id=state["run_id"], iterations=iterations,
+                 semantic_ok=semantic_ok, uvr=uvr, claim_completeness=CLAIM_COMPLETENESS)
         return "hitl"
 
     # Cost gate check
     if state.get("total_cost_usd", 0) >= COST_GATE_USD:
-        log.info("route.cost_gate", run_id=state["run_id"], cost=round(state.get("total_cost_usd", 0), 4))
+        log.info("route.cost_gate", run_id=state["run_id"], cost=round(state.get("total_cost_usd", 0), 4),
+                 semantic_ok=semantic_ok, uvr=uvr, claim_completeness=CLAIM_COMPLETENESS)
         return "hitl"
+
+    if not semantic_ok:
+        log.info("route.revise", run_id=state["run_id"], reason="semantic verification not accepted",
+                 verification_status=state.get("verification_status"),
+                 uvr=uvr, reflection=reflection_score, grounding=round(grounding_score, 2),
+                 claim_completeness=CLAIM_COMPLETENESS)
+        return "draft"
 
     # Composite gate
     hard_floor_fail = grounding_score < GROUNDING_FLOOR
@@ -1873,7 +1941,8 @@ def route_after_reflect(state: AgentState) -> str:
         log.info("route.revise", run_id=state["run_id"], reason=reason, reflection=reflection_score, grounding=round(grounding_score, 2))
         return "draft"
 
-    log.info("route.proceed", run_id=state["run_id"], reflection=reflection_score, grounding=round(grounding_score, 2))
+    log.info("route.proceed", run_id=state["run_id"], reflection=reflection_score, grounding=round(grounding_score, 2),
+             uvr=uvr, claim_completeness=CLAIM_COMPLETENESS)
     return "hitl"
 
 def route_after_hitl(state: AgentState) -> str:

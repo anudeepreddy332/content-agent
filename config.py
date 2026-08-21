@@ -39,6 +39,7 @@ REFLECT_TEMPERATURE = 0.1   # Very low = deterministic scoring. Do not raise abo
 MAX_ITERATIONS = 2          # Max draft-revise loops before forcing HITL
 REFLECTION_THRESHOLD = 7    # Reflection score below this triggers rewrite (soft signal)
 GROUNDING_FLOOR = 0.60      # Grounding score below this forces rewrite (hard floor)
+UVR_THRESHOLD = 0.15        # Unverified-claim rate gate. Value frozen; routing fail-closed.
 COST_GATE_USD = 0.10            # Abort run if total cost exceeds this
 
 # ChromaDB

@@ -194,6 +194,29 @@ def test_route_max_iterations_forces_hitl(base_state):
     assert nodes.route_after_reflect(base_state) == "hitl"
 
 
+def test_parse_failure_routes_to_revision_when_capacity_remains(base_state, monkeypatch):
+    client = FakeLLMClient(response=fake_response("Sorry, no JSON from me today."))
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    result = nodes.verify_node(base_state)
+    assert result["verification_status"] == "parse_failed"
+    routed = {**base_state, **result, "iterations": 1, "reflection_score": 10,
+              "grounding_score": 0.99, "total_cost_usd": 0.0}
+    assert nodes.route_after_reflect(routed) == "draft"
+
+
+def test_skipped_verification_fails_closed_when_capacity_remains(base_state, monkeypatch):
+    sentinel = FakeLLMClient()
+    monkeypatch.setattr(nodes, "_get_client", lambda: sentinel)
+    # Force the skip path, then evaluate routing below the cost ceiling so
+    # status (not the cost check) is the fail-closed reason.
+    base_state["total_cost_usd"] = nodes.COST_GATE_USD
+    result = nodes.verify_node(base_state)
+    assert result["verification_status"] == "skipped_cost_gate"
+    routed = {**base_state, **result, "iterations": 1, "reflection_score": 10,
+              "grounding_score": 0.99, "total_cost_usd": 0.0}
+    assert nodes.route_after_reflect(routed) == "draft"
+
+
 def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path):
     """B6 regression: html_filename must be <slug>.html regardless of local archive
     state, so republishing a topic is a modification (tagged_and_merged), not a new file."""

@@ -95,11 +95,11 @@ historical evidence, not a current enterprise-release decision.
 
 ## Current authorized mission
 
-P0-2a is validated and integrated at exact runtime/product integration anchor
-`74523ffcfa8906573a72415f1d868dc02996b561`. After this documentation-only closeout is separately
-reviewed and integrated, the next controlled operational mission is the first trusted real
-20-topic V1 release baseline on the then-current HEAD of `refs/heads/main`. P0-2b follows that
-baseline as a separately architected verifier-semantics mission.
+P0-2b slice 1 (UVR-aware fail-closed routing) is implemented on
+`feature/p0-2b-slice1-uvr-fail-closed-routing`, branched from exact canonical main
+`eea98c367b0f82fcc844dcca73b3935542adeef6`. First trusted real baseline remains GitHub
+Actions run `32480353168` (immutable). Slice 1 is not merged and is awaiting Reviewer
+inspection. Claim-completeness remains `unknown` and is not an acceptance condition.
 
 MCP and A2A are optional developer-workflow infrastructure. They are out of this product mission and
 must not block the frozen sequence. This file does not itself authorize implementation, merge,

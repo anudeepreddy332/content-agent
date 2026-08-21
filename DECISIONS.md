@@ -9,6 +9,32 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-21-01
+Date: 2026-08-21
+
+Decision: P0-2b slice 1 — semantic verification fail-closed routing. A verification
+result proceeds past `route_after_reflect` only when `verification_status ==
+"completed"`, the verdict set is nonempty, UVR is deterministically computable,
+and UVR <= 0.15. UVR above 0.15 with remaining iteration capacity reuses the
+existing draft revision path (prior unverified claims injected; verify runs again).
+Parse failure, skipped verification, empty verdicts, upstream failure, and
+unknown/incomplete status fail closed. Grounding/reflection/confidence cannot
+override UVR or status failure. Claim-completeness remains explicitly `unknown`.
+At MAX_ITERATIONS=2 or COST_GATE_USD=$0.10, routing still enters HITL; automatic
+HITL approval cannot launder a semantic failure (reject → END). Interactive/API
+HITL remains an explicit human decision. Thresholds, retrieval, prompts, and
+models are unchanged.
+
+Status: Implemented on `feature/p0-2b-slice1-uvr-fail-closed-routing` from canonical
+main `eea98c367b0f82fcc844dcca73b3935542adeef6`. Not merged.
+
+Confidence: 0.93
+
+Supersedes / superseded by: Does not supersede P0-2a evaluation-integrity decisions.
+Narrows production routing for P0-2b slice 1 only. Completeness contract remains
+an open experiment (PROJECT_STATUS P0-2b UNKNOWN).
+
+---
 Decision ID: D-2026-08-19-05
 Date: 2026-08-19
 
