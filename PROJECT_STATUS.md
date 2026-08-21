@@ -99,7 +99,9 @@ P0-2b slice 1 (UVR-aware fail-closed routing) is implemented on
 `feature/p0-2b-slice1-uvr-fail-closed-routing`, branched from exact canonical main
 `eea98c367b0f82fcc844dcca73b3935542adeef6`. First trusted real baseline remains GitHub
 Actions run `32480353168` (immutable). Slice 1 is not merged and is awaiting Reviewer
-inspection. Claim-completeness remains `unknown` and is not an acceptance condition.
+inspection. Ordinary HITL approve cannot grant HTML eligibility when semantic
+verification is not accepted (reject/unknown → END; feedback → draft).
+Claim-completeness remains `unknown` and is not an acceptance condition.
 
 MCP and A2A are optional developer-workflow infrastructure. They are out of this product mission and
 must not block the frozen sequence. This file does not itself authorize implementation, merge,

@@ -998,13 +998,8 @@ def hitl_node(state: AgentState) -> dict:
     User inputs: a (approve), r (reject), f (feedback -> types it).
     """
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
-        # Auto-approve is a CI/CLI convenience, not a semantic pass. If
-        # verification is not accepted and revision is no longer available,
-        # fail closed with the existing reject → END path. Interactive/API
-        # HITL still requires an explicit human decision.
-        if not semantic_verification_accepted(state):
-            return {"hitl_status": "rejected", "hitl_feedback": None}
-        return {"hitl_status": "approved", "hitl_feedback": None}
+        # Auto-approve is a CI/CLI convenience, not a semantic pass.
+        return hitl_approve_update(state)
 
     # B4: API mode — pause the graph via LangGraph interrupt(). The checkpointer
     # (set by the API server's build_graph) persists full state to SQLite, so the
@@ -1032,7 +1027,7 @@ def hitl_node(state: AgentState) -> dict:
         }) or {}
         action = decision.get("action")
         if action == "approve":
-            return {"hitl_status": "approved", "hitl_feedback": None}
+            return hitl_approve_update(state)
         if action == "feedback":
             fb = (decision.get("feedback") or "").strip()
             if fb:
@@ -1073,7 +1068,7 @@ def hitl_node(state: AgentState) -> dict:
     while True:
         choice = input("\n[a]pprove / [r]eject / [f]eedback: ").strip().lower()
         if choice == 'a':
-            return {"hitl_status": "approved", "hitl_feedback": None}
+            return hitl_approve_update(state)
         elif choice == 'r':
             return {"hitl_status": "rejected", "hitl_feedback": None}
         elif choice == 'f':
@@ -1885,6 +1880,17 @@ def semantic_verification_accepted(state: AgentState) -> bool:
     return uvr <= UVR_THRESHOLD
 
 
+def hitl_approve_update(state: AgentState) -> dict:
+    """Ordinary approve grants HTML eligibility only if semantic verification passed.
+
+    Semantic failure uses the existing reject payload so route_after_hitl → END.
+    Feedback and explicit reject are unchanged.
+    """
+    if semantic_verification_accepted(state):
+        return {"hitl_status": "approved", "hitl_feedback": None}
+    return {"hitl_status": "rejected", "hitl_feedback": None}
+
+
 def route_after_reflect(state: AgentState) -> str:
     """
         Decide whether to revise the draft or proceed to HITL.
@@ -1949,19 +1955,27 @@ def route_after_hitl(state: AgentState) -> str:
     """
     Route based on HITL decision.
 
-    Returns:
-        "html_gen" — approved, generate HTML
-        "draft"    — feedback given, revise
-        END        — rejected, terminate run
+    Ordinary approve may proceed to HTML only when semantic verification is
+    accepted. A semantically failed/incomplete state cannot become HTML-eligible
+    through approve (auto, interactive, or API). Existing destinations only:
+        "html_gen" — approved AND semantically accepted
+        "draft"    — explicit feedback (existing remediation path)
+        END        — reject, unknown, or approve blocked by semantic failure
     """
     from langgraph.graph import END
     log = get_logger("router")
     status = state.get("hitl_status", "pending")
-    log.info("hitl.decision", run_id=state["run_id"], status=status)
+    semantic_ok = semantic_verification_accepted(state)
+    log.info("hitl.decision", run_id=state["run_id"], status=status, semantic_ok=semantic_ok)
 
-    if status == "approved":
-        return "html_gen"
-    elif status == "feedback":
+    if status == "feedback":
         return "draft"
-    else:   # rejected or unknown
+    if status == "approved" and semantic_ok:
+        return "html_gen"
+    if status == "approved":
+        log.info("hitl.approve_blocked_semantic_failure",
+                 run_id=state["run_id"],
+                 verification_status=state.get("verification_status"),
+                 claim_completeness=CLAIM_COMPLETENESS)
         return END
+    return END

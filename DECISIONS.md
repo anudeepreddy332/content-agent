@@ -9,6 +9,28 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-21-02
+Date: 2026-08-21
+
+Decision: P0-2b slice 1 HITL fail-closed correction. Ordinary HITL approve
+(auto, interactive, or API) grants HTML eligibility only when
+`semantic_verification_accepted(state)` is true. If semantic verification has
+failed or is incomplete, `route_after_hitl` must not return `"html_gen"`.
+Allowed existing destinations remain: explicit reject → END; explicit
+feedback → draft; blocked ordinary approve → END (same destination as
+reject/unknown). No new HITL status, graph edge, or workflow.
+
+Status: Implemented as a follow-up commit on
+`feature/p0-2b-slice1-uvr-fail-closed-routing`. Not merged.
+
+Confidence: 0.94
+
+Supersedes / superseded by: Narrows D-2026-08-21-01's clause that interactive/API
+HITL "remains an explicit human decision" with respect to HTML eligibility.
+Human intervention is preserved (reject, feedback, review). Ordinary approve
+cannot launder a remaining failed/incomplete semantic state into HTML.
+
+---
 Decision ID: D-2026-08-21-01
 Date: 2026-08-21
 

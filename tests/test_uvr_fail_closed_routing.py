@@ -304,3 +304,90 @@ def test_auto_approve_still_works_when_semantic_verification_passes(base_state, 
     result = nodes.hitl_node(base_state)
     assert result["hitl_status"] == "approved"
     assert nodes.route_after_hitl({**base_state, **result}) == "html_gen"
+
+
+def _accepted_state(base_state: dict) -> dict:
+    state = dict(base_state)
+    state.update(
+        iterations=MAX_ITERATIONS,
+        verification_status="completed",
+        grounding_report=_report(verified=10, weak=0, unverified=0),
+        grounding_score=0.80,
+        reflection_score=8,
+        total_cost_usd=0.01,
+    )
+    return state
+
+
+def test_semantically_accepted_human_approve_routes_to_html_gen(base_state):
+    state = _accepted_state(base_state)
+    state["hitl_status"] = "approved"
+    assert nodes.semantic_verification_accepted(state) is True
+    assert nodes.route_after_hitl(state) == "html_gen"
+
+
+def test_uvr_failure_human_or_api_approve_does_not_route_to_html_gen(base_state, monkeypatch):
+    state = topic10_state(base_state)
+    state["iterations"] = MAX_ITERATIONS
+    state["hitl_status"] = "approved"
+    assert nodes.unverified_rate(state["grounding_report"]) > UVR_THRESHOLD
+    assert nodes.route_after_hitl(state) != "html_gen"
+    assert nodes.route_after_hitl(state) == END
+
+    monkeypatch.setenv("HITL_AUTO_APPROVE", "0")
+    monkeypatch.setenv("HITL_MODE", "api")
+    monkeypatch.setattr("langgraph.types.interrupt", lambda payload: {"action": "approve"})
+    result = nodes.hitl_node(state)
+    assert result["hitl_status"] != "approved"
+    assert nodes.route_after_hitl({**state, **result}) != "html_gen"
+    assert nodes.route_after_hitl({**state, **result}) == END
+
+
+def test_parse_failed_human_or_api_approve_does_not_route_to_html_gen(base_state, monkeypatch):
+    base_state.update(
+        iterations=MAX_ITERATIONS,
+        verification_status="parse_failed",
+        grounding_report=[],
+        grounding_score=0.99,
+        reflection_score=10,
+        hitl_status="approved",
+    )
+    assert nodes.route_after_hitl(base_state) != "html_gen"
+    monkeypatch.setenv("HITL_AUTO_APPROVE", "0")
+    monkeypatch.setenv("HITL_MODE", "api")
+    monkeypatch.setattr("langgraph.types.interrupt", lambda payload: {"action": "approve"})
+    result = nodes.hitl_node(base_state)
+    assert nodes.route_after_hitl({**base_state, **result}) == END
+
+
+def test_empty_verdicts_human_or_api_approve_does_not_route_to_html_gen(base_state, monkeypatch):
+    base_state.update(
+        iterations=MAX_ITERATIONS,
+        verification_status="completed",
+        grounding_report=[],
+        grounding_score=0.99,
+        reflection_score=10,
+        hitl_status="approved",
+    )
+    assert nodes.route_after_hitl(base_state) != "html_gen"
+    monkeypatch.setenv("HITL_AUTO_APPROVE", "0")
+    monkeypatch.setenv("HITL_MODE", "api")
+    monkeypatch.setattr("langgraph.types.interrupt", lambda payload: {"action": "approve"})
+    result = nodes.hitl_node(base_state)
+    assert nodes.route_after_hitl({**base_state, **result}) == END
+
+
+def test_semantic_failure_feedback_uses_existing_draft_remediation(base_state):
+    state = topic10_state(base_state)
+    state["iterations"] = MAX_ITERATIONS
+    state["hitl_status"] = "feedback"
+    state["hitl_feedback"] = "ground or cut the unverified claims"
+    assert nodes.semantic_verification_accepted(state) is False
+    assert nodes.route_after_hitl(state) == "draft"
+
+
+def test_semantic_failure_reject_ends(base_state):
+    state = topic10_state(base_state)
+    state["iterations"] = MAX_ITERATIONS
+    state["hitl_status"] = "rejected"
+    assert nodes.route_after_hitl(state) == END
