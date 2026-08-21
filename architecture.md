@@ -1,6 +1,6 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-08-19._
+_Accepted contract synchronized 2026-08-21._
 
 - **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`
 - **Authorized P0-1 implementation base:** `7a606e895fe0a4bc9092659f130881bc7b52bd28`
@@ -11,12 +11,18 @@ _Accepted contract synchronized 2026-08-19._
 - **P0-2a implementation base (historical):** `ca29d32b4869269daa47142615d298580a577a77`
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
-- **Current canonical repository state:** the HEAD of `refs/heads/main`; it must contain the P0-2a
-  integration commit below, and documentation-only descendants do not alter its validated
-  runtime/product implementation blobs
+- **Current canonical repository state:** the HEAD of `refs/heads/main`; direct remote main is
+  exact `230314f7f774ed4b112c377269b190fa1279a004`. It must contain the P0-2a integration commit
+  and the P0-2b slice-1 integration commit below; documentation-only descendants do not alter
+  those validated runtime/product implementation blobs
 - **P0-2a canonical integration commit:** `74523ffcfa8906573a72415f1d868dc02996b561`,
   with parents exact prior closeout `174d8c924a35fc5151a4549725db9a01e96f119b` and exact validated
   implementation `0b707e4`
+- **P0-2b slice 1 canonical integration commit:**
+  `230314f7f774ed4b112c377269b190fa1279a004`, with linear ancestry exact
+  `eea98c367b0f82fcc844dcca73b3935542adeef6` →
+  `aa90bfc1c4a7d430f0abeb07c84fa0c5416fce70` →
+  `230314f7f774ed4b112c377269b190fa1279a004`
 
 ## 0. Authority and status
 
@@ -34,8 +40,15 @@ four-file implementation is independently validated at exact
 `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`. Status is **VALIDATED AND INTEGRATED — CLOSED** at
 exact canonical P0-2a runtime/product integration anchor
 `74523ffcfa8906573a72415f1d868dc02996b561`. Public main-push CI run `32285001516` passed its
-deterministic lint/test gates and skipped the provider-backed evaluation gate. No paid full release
-benchmark or product-wide production-readiness claim is implied.
+deterministic lint/test gates and skipped the provider-backed evaluation gate. No product-wide
+production-readiness claim is implied.
+
+P0-2b slice 1 is **VALIDATED AND INTEGRATED** at exact
+`230314f7f774ed4b112c377269b190fa1279a004`. Public main-push CI run `32491216346` passed
+deterministic lint/test and skipped provider eval. This records the already-accepted UVR-aware
+fail-closed routing, bounded revision/reverification, and Gate-1 HTML-eligibility guard. It
+does not add architecture. Overall P0-2b remains **OPEN**; claim completeness remains unresolved;
+no AFTER paid benchmark has run.
 
 The implementation-base SHA is a specific independently reviewed exception: `7a606e8` is a direct
 documentation-only descendant of the audited runtime reference and does not change its runtime or
@@ -55,7 +68,9 @@ retrieve -> draft -> verify -> reflect -> optional revise (maximum 2)
 - Retrieval: Tavily web search plus Qdrant `all-MiniLM-L6-v2` dense search and BM25, fused with
   RRF `k=60`.
 - Generation/verification/reflection: DeepSeek through the existing LangGraph nodes.
-- Review: two mandatory human gates.
+- Review: two mandatory human gates. Gate 1 ordinary approve grants HTML eligibility only when
+  semantic verification is accepted (P0-2b slice 1, integrated at `230314f`). Explicit reject
+  or blocked approve → END; explicit feedback → draft.
 - Execution: FastAPI with SqliteSaver checkpoints and a volatile in-memory run registry.
 - Publication: Git integration into a website checkout plus a distinct publish endpoint.
 
@@ -368,16 +383,17 @@ passing requires weakening this policy.
 P0-1 blocks the reviewed active-content, credential-transport, citation-authority and artifact/push
 binding failures. It does not make model text semantically
 trustworthy. Web/reviewer prompt injection can still influence prose, reasoning, and source
-selection while producing inert HTML. Also deferred: the first trusted real P0-2a release baseline,
-P0-2b verifier semantics; P0-3
+selection while producing inert HTML. Also deferred: remaining P0-2b verifier completeness
+semantics; P0-3
 identity/tenant isolation; durable registry/queue recovery; HA/scale; dependency supply-chain
 hardening; browser parser differentials beyond the frozen test matrix; and hosting-provider deploy
 identity.
 
 P0-2 is split sequentially: first fail-closed evaluation scope/cardinality and evidence binding,
-then verifier status/confidence/completeness semantics. The latter's correct completeness contract
-for a production model-extracted, unknown-sized claim set remains an experiment question; exact
-count checks for known-cardinality fixtures do not answer it.
+then verifier status/confidence/completeness/routing semantics. P0-2b slice 1 integrated the
+accepted UVR-aware fail-closed routing contract. The correct completeness contract for a
+production model-extracted, unknown-sized claim set remains an experiment question; exact
+count checks for known-cardinality fixtures do not answer it. Overall P0-2b remains OPEN.
 
 ## 8. Engineering sequence after P0-1
 
@@ -386,14 +402,17 @@ The accepted product-hardening sequence is:
 1. P0-1 canonical closeout — complete;
 2. P0-2a fail-closed evaluation scope/cardinality/release-evidence binding — validated and
    integrated, closed;
-3. first trusted real 20-topic V1 release baseline — next operational mission after this
-   documentation closeout is separately reviewed and integrated;
-4. P0-2b verifier status/confidence/completeness/routing semantics — next product architecture
-   mission after the trusted baseline;
-5. P0-3 tenant/ACL isolation;
-6. durability, recovery, and publishing integrity;
-7. retrieval/chunking/embedding redesign;
-8. enterprise ingestion and later scale/cost/observability work.
+3. first trusted real 20-topic V1 BEFORE baseline — captured as immutable GitHub Actions run
+   `32480353168` (20/20 complete and scorable; 19/20 at or below UVR 0.15; topic 10 UVR =
+   5/21 = 0.238095...; overall FAIL; zero benchmark retries). Preserved unchanged;
+4. P0-2b slice 1 UVR-aware fail-closed routing — VALIDATED AND INTEGRATED at exact
+   `230314f7f774ed4b112c377269b190fa1279a004`;
+5. remaining P0-2b verifier semantics — OPEN. Next authorized state: ARCHITECTURE FREEZE
+   FOR REMAINING P0-2B SEMANTICS. No AFTER paid benchmark has run;
+6. P0-3 tenant/ACL isolation;
+7. durability, recovery, and publishing integrity;
+8. retrieval/chunking/embedding redesign;
+9. enterprise ingestion and later scale/cost/observability work.
 
 MCP and A2A are optional developer-workflow infrastructure, outside this product sequence, and must
 not block it. The frozen P0-2a contract is
@@ -402,11 +421,9 @@ independent review and exact canonical runtime/product integration at `74523ff`.
 S3/Postgres/event-driven ingestion, tenant/ACL, model-tier, and related roadmap ideas remain later
 missions and are not accepted by the P0-2a contract.
 
-P0-2a release qualification is main-only. The first trusted real baseline must run only after this
-documentation closeout is separately reviewed and integrated. It binds exact
-preflight and post-run HEAD/clean-state attestations, and treats the exact 20-topic fixture as an
-immutable V1 evidence contract. A feature-branch, mid-run-drifted, or in-place-mutated V1 run cannot
-earn release PASS.
+P0-2a release qualification is main-only. The immutable BEFORE baseline is GitHub Actions run
+`32480353168`. A feature-branch, mid-run-drifted, or in-place-mutated V1 run cannot earn release
+PASS. No AFTER paid benchmark has run after P0-2b slice 1.
 
 ## 9. P0-2a validated and integrated boundary — closed
 
@@ -428,8 +445,26 @@ earn release PASS.
   both roots were likewise controlled.
 - Public main-push CI run `32285001516` passed deterministic lint/test and skipped the
   provider-backed evaluation gate. Provider calls/spend during integration were zero. The real
-  paid 20-topic release benchmark has not run.
+  paid 20-topic release benchmark had not run. The later immutable BEFORE baseline is GitHub
+  Actions run `32480353168`.
 - P0-2a closes evaluator scope/cardinality/release-evidence integrity only. It does not provide
-  permanent cryptographic authenticity of exported JSON, validate P0-2b, publish, deploy, or make
-  the Content Agent production-ready. P0-2b remains a separate next architecture phase after the
-  trusted real baseline.
+  permanent cryptographic authenticity of exported JSON, validate remaining P0-2b, publish, deploy,
+  or make the Content Agent production-ready.
+
+## 10. P0-2b slice 1 validated and integrated boundary
+
+- Exact integration: `230314f7f774ed4b112c377269b190fa1279a004`.
+- Ancestry: `eea98c367b0f82fcc844dcca73b3935542adeef6` →
+  `aa90bfc1c4a7d430f0abeb07c84fa0c5416fce70` →
+  `230314f7f774ed4b112c377269b190fa1279a004`.
+- Cumulative slice-1 scope is exactly `agent/nodes.py`, `config.py`,
+  `tests/test_uvr_fail_closed_routing.py`, `tests/test_failure_injection.py`, `DECISIONS.md`,
+  and `PROJECT_STATUS.md`.
+- Integrated contract, already decided in D-2026-08-21-01 and D-2026-08-21-02: UVR-aware
+  fail-closed routing; bounded revision and reverification; ordinary HITL approve cannot grant
+  HTML generation when semantic verification is not accepted.
+- Public main-push CI run `32491216346` passed deterministic lint/test and skipped provider eval.
+- Retrieval, prompts, models, evaluator, and quality thresholds are unchanged.
+- Immutable BEFORE baseline `32480353168` is preserved unchanged. No AFTER paid benchmark has
+  run. Claim completeness remains unresolved. Overall P0-2b remains OPEN. This section records
+  integration status only; it does not add architecture.

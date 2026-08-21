@@ -1,6 +1,6 @@
 # Experiment and Evidence Ledger
 
-_Canonical compact index. Last synchronized: 2026-08-19._
+_Canonical compact index. Last synchronized: 2026-08-21._
 
 This ledger indexes meaningful experiments and release-relevant validation. It does not duplicate
 full reports. Detailed artifacts remain under `docs/archive/`, in the named commit/branch, or in the
@@ -219,4 +219,23 @@ For every applicable change:
 | Classification | `P0-2A VALIDATED AND INTEGRATED — CLOSED`. Evaluator scope/cardinality/release-evidence integrity only; not permanent JSON authenticity, deployment proof, P0-2b validation, or overall production readiness. |
 | Evidence | Exact SHAs above; [GitHub Actions run `32285001516`](https://github.com/anudeepreddy332/content-agent/actions/runs/32285001516); decision `D-2026-08-19-05`. |
 | Decision enabled | After this docs-only closeout is separately reviewed and integrated, capture the first trusted real frozen-V1 20-topic baseline without code/config/threshold changes or retry-until-green; then begin separate P0-2b architecture. |
+| Confidence | 0.99 |
+
+### VAL-2026-08-21-01 — P0-2b slice 1 canonical integration closeout
+
+| Field | Record |
+| --- | --- |
+| Question | Did exact P0-2b slice 1 become canonical main with matching main-SHA deterministic CI, without retrieval/prompt/model/evaluator/threshold change, without provider execution, and without mutating the immutable BEFORE baseline? |
+| Isolated variable | Documentation/status closeout only. No product/runtime change in this record. |
+| Canonical integration identity | Direct remote main and fetched `origin/main` resolved exact `230314f7f774ed4b112c377269b190fa1279a004`. Linear ancestry: `eea98c367b0f82fcc844dcca73b3935542adeef6` → `aa90bfc1c4a7d430f0abeb07c84fa0c5416fce70` → `230314f7f774ed4b112c377269b190fa1279a004`. |
+| Cumulative slice-1 scope | Exactly `agent/nodes.py`, `config.py`, `tests/test_uvr_fail_closed_routing.py`, `tests/test_failure_injection.py`, `DECISIONS.md`, `PROJECT_STATUS.md`. |
+| Integrated contract | UVR-aware fail-closed routing; bounded revision and reverification; ordinary HITL approve cannot grant HTML generation when semantic verification is not accepted. |
+| Deterministic validation | Public GitHub Actions run [`32491216346`](https://github.com/anudeepreddy332/content-agent/actions/runs/32491216346): event `push`, branch `main`, head SHA exact `230314f`, lint PASS, deterministic tests PASS, provider-backed `eval-gate` skipped. |
+| Immutable BEFORE baseline | GitHub Actions run [`32480353168`](https://github.com/anudeepreddy332/content-agent/actions/runs/32480353168) preserved unchanged: 20/20 complete and scorable; 19/20 at or below UVR 0.15; topic 10 UVR = 5/21 = 0.238095...; overall FAIL; zero benchmark retries. |
+| AFTER paid benchmark | Not run. |
+| Paid/live providers | None during this closeout. Provider calls/spend: zero. |
+| Result | Slice 1 is canonical at `230314f`. Retrieval, prompts, models, evaluator, and quality thresholds unchanged. |
+| Classification | `P0-2B SLICE 1 — VALIDATED AND INTEGRATED`. Overall P0-2b remains OPEN. Claim completeness remains unresolved. Not an AFTER benchmark, remaining-P0-2b close, deployment proof, or overall production readiness. |
+| Evidence | Exact SHAs above; CI run `32491216346`; BEFORE run `32480353168`; decision `D-2026-08-21-03`. |
+| Decision enabled | `ARCHITECTURE FREEZE FOR REMAINING P0-2B SEMANTICS`. Do not start remaining P0-2b implementation from this closeout. |
 | Confidence | 0.99 |

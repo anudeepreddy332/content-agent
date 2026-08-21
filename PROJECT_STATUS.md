@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-08-19._
+_Canonical current-state snapshot. Last synchronized: 2026-08-21._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -8,9 +8,15 @@ remains preserved in `FREEZE.md`.
 
 ## Authoritative SHA roles
 
-- **Current canonical repository state:** the HEAD of `refs/heads/main`. It must contain the exact
-  P0-2a integration commit below; documentation-only descendants do not alter the validated P0-2a
-  runtime/product implementation blobs.
+- **Current canonical repository state:** the HEAD of `refs/heads/main`. Direct remote main is
+  exact `230314f7f774ed4b112c377269b190fa1279a004`. It must contain the P0-2a integration commit
+  and the P0-2b slice-1 integration commit below; documentation-only descendants do not alter
+  those validated runtime/product implementation blobs.
+- **P0-2b slice 1 canonical integration commit:**
+  `230314f7f774ed4b112c377269b190fa1279a004`. Linear ancestry is exact
+  `eea98c367b0f82fcc844dcca73b3935542adeef6` →
+  `aa90bfc1c4a7d430f0abeb07c84fa0c5416fce70` →
+  `230314f7f774ed4b112c377269b190fa1279a004`.
 - **P0-2a canonical integration commit:** `74523ffcfa8906573a72415f1d868dc02996b561`.
   Its parents are exact prior documentation closeout
   `174d8c924a35fc5151a4549725db9a01e96f119b` and exact validated implementation
@@ -19,6 +25,9 @@ remains preserved in `FREEZE.md`.
   developed from frozen implementation base `7a606e895fe0a4bc9092659f130881bc7b52bd28`.
   No later descendant is implicitly approved.
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`.
+- **P0-2b slice 1 — VALIDATED AND INTEGRATED:** exact canonical main
+  `230314f7f774ed4b112c377269b190fa1279a004`. Overall P0-2b remains OPEN. No later descendant
+  is implicitly validated for remaining P0-2b semantics.
 - **P0-2a — VALIDATED AND INTEGRATED — CLOSED:** exact implementation
   `0b707e4e431ea7662eec86aec5d4ed18a3c060dd` is integrated by exact merge
   `74523ffcfa8906573a72415f1d868dc02996b561`. No later descendant is implicitly validated.
@@ -65,20 +74,24 @@ historical evidence, not a current enterprise-release decision.
      runtime/product integration anchor and must be contained by `refs/heads/main`. Public push CI
      run [`32285001516`](https://github.com/anudeepreddy332/content-agent/actions/runs/32285001516)
      is bound to that SHA and passed its deterministic lint and test jobs; the provider-backed
-     evaluation job was skipped. No provider call or spend occurred during integration, and the
-     first real paid 20-topic release benchmark has **not** run.
-   - **P0-2b — PROVEN DEFECT:** production verifier routing computes grounding from confidence
-     independently of verdict status, accepts an unknown-sized or empty extracted verdict set, and
-     permits cost/iteration ceilings to reach HITL regardless of verification status. Mandatory
-     human gates mitigate unattended publication but do not make the machine acceptance semantics
-     sound.
+     evaluation job was skipped. No provider call or spend occurred during P0-2a integration.
+     The first trusted real 20-topic BEFORE baseline was later captured as immutable GitHub
+     Actions run [`32480353168`](https://github.com/anudeepreddy332/content-agent/actions/runs/32480353168)
+     and is preserved unchanged. No AFTER paid benchmark has run after P0-2b slice 1.
+   - **P0-2b slice 1 — VALIDATED AND INTEGRATED:** UVR-aware fail-closed routing, bounded
+     revision and reverification, and the Gate-1 HTML-eligibility guard are integrated at exact
+     `230314f7f774ed4b112c377269b190fa1279a004`. Ordinary HITL approve cannot grant HTML
+     generation when semantic verification is not accepted. Public main-push CI run
+     [`32491216346`](https://github.com/anudeepreddy332/content-agent/actions/runs/32491216346)
+     passed deterministic lint and tests; the provider-backed evaluation job was skipped.
+   - **P0-2b overall — OPEN.** Claim completeness for a production unknown-sized extracted
+     claim set remains unresolved. Slice 1 does not close remaining P0-2b semantics.
    - **UNKNOWN REQUIRING EXPERIMENT:** the correct production completeness contract for a
      model-extracted, unknown-sized claim set. Known-cardinality fixtures already enforce exact
      counts and must not be confused with production completeness.
-   - P0-2a closes evaluator scope, cardinality, and release-evidence integrity only. It does not
-     establish permanent cryptographic authenticity for exported JSON or overall production
-     readiness. After the documentation closeout is separately reviewed and integrated, the first
-     trusted real 20-topic release baseline must be captured before P0-2b begins.
+   - P0-2a closes evaluator scope, cardinality, and release-evidence integrity only. Slice 1
+     closes only the recorded routing/HITL-eligibility contract. Neither establishes overall
+     production readiness. Historical pre-slice-1 routing-defect evidence remains in the ledger.
 
 3. **P0-3 — Identity and tenant boundary**
    - `MISSING ENTERPRISE CAPABILITY / ENTERPRISE MULTI-CUSTOMER RELEASE BLOCKER`.
@@ -95,13 +108,15 @@ historical evidence, not a current enterprise-release decision.
 
 ## Current authorized mission
 
-P0-2b slice 1 (UVR-aware fail-closed routing) is implemented on
-`feature/p0-2b-slice1-uvr-fail-closed-routing`, branched from exact canonical main
-`eea98c367b0f82fcc844dcca73b3935542adeef6`. First trusted real baseline remains GitHub
-Actions run `32480353168` (immutable). Slice 1 is not merged and is awaiting Reviewer
-inspection. Ordinary HITL approve cannot grant HTML eligibility when semantic
-verification is not accepted (reject/unknown → END; feedback → draft).
-Claim-completeness remains `unknown` and is not an acceptance condition.
+**P0-2B SLICE 1 — VALIDATED AND INTEGRATED** at exact canonical main
+`230314f7f774ed4b112c377269b190fa1279a004`. Next authorized state:
+`ARCHITECTURE FREEZE FOR REMAINING P0-2B SEMANTICS`. This closeout does not authorize
+remaining P0-2b implementation, an AFTER paid benchmark, threshold movement, or merge
+of documentation descendants.
+
+Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged). Claim
+completeness remains unresolved and is not an acceptance condition. Overall P0-2b
+remains OPEN.
 
 MCP and A2A are optional developer-workflow infrastructure. They are out of this product mission and
 must not block the frozen sequence. This file does not itself authorize implementation, merge,
@@ -131,8 +146,23 @@ publish, deployment, or provider spend.
   Equivalent pre-write contract and manifest failures were also controlled. Unchanged roots left
   one trusted PASS and printed PASS exactly once.
 - Integration at exact `74523ffcfa8906573a72415f1d868dc02996b561` preserves the reviewed
-  implementation and passed public main-push CI run `32285001516`. No provider-backed gate or paid
-  release benchmark ran during integration.
+  implementation and passed public main-push CI run `32285001516`. No provider-backed gate ran
+  during P0-2a integration.
+
+## P0-2b slice 1 integrated boundary
+
+- Isolated variable: production routing after verify/reflect and Gate-1 HTML eligibility only.
+- Exact integration: `230314f7f774ed4b112c377269b190fa1279a004`.
+- Cumulative slice-1 scope is exactly `agent/nodes.py`, `config.py`,
+  `tests/test_uvr_fail_closed_routing.py`, `tests/test_failure_injection.py`, `DECISIONS.md`,
+  and `PROJECT_STATUS.md`.
+- Integrated contract: UVR-aware fail-closed routing; bounded revision and reverification;
+  ordinary HITL approve cannot grant HTML generation when semantic verification is not accepted.
+- Public main-push CI run `32491216346` passed deterministic lint/test and skipped provider eval.
+- Retrieval, prompts, models, evaluator, and quality thresholds are unchanged. `UVR_THRESHOLD`
+  names the frozen `0.15` gate; it is not a moved threshold.
+- Immutable BEFORE baseline `32480353168` is preserved unchanged. No AFTER paid benchmark has
+  run. Claim completeness remains unresolved. Overall P0-2b remains OPEN.
 
 ## Parallel retrieval research
 
@@ -164,7 +194,13 @@ publish, deployment, or provider spend.
 - Exact P0-2a integration `74523ffcfa8906573a72415f1d868dc02996b561`: parents are exact prior
   closeout `174d8c9` and validated implementation `0b707e4`; public main-push CI run `32285001516`
   passed lint/test and skipped the provider-backed evaluation gate. Provider calls/spend during
-  integration: zero. Real paid 20-topic release baseline: not yet run.
+  P0-2a integration: zero.
+- Immutable BEFORE 20-topic release baseline GitHub Actions run `32480353168`: 20/20 complete
+  and scorable; 19/20 at or below UVR 0.15; topic 10 UVR = 5/21 = 0.238095...; overall FAIL;
+  zero benchmark retries. Preserved unchanged through P0-2b slice 1. No AFTER paid benchmark.
+- Exact P0-2b slice 1 integration `230314f7f774ed4b112c377269b190fa1279a004`: ancestry
+  `eea98c3` → `aa90bfc` → `230314f`; public main-push CI run `32491216346` passed lint/test
+  and skipped provider eval. Provider calls/spend during this documentation closeout: zero.
 - Retrieval evidence and classifications remain indexed in `docs/EXPERIMENT_LEDGER.md`.
 
 ## Explicitly not accepted
@@ -175,8 +211,10 @@ publish, deployment, or provider spend.
 - Verifier confidence as a substitute for verified status or production claim completeness.
 - Naive tokenizer-aligned rechunking, GTE, Jina, or a new fusion design as the serving replacement.
 - `N=0`, incomplete, stale, incoherent, or non-final-SHA evidence as a release pass.
-- P0-2a closure as proof of a paid full release benchmark, deployment, permanent cryptographic
-  authenticity of exported JSON, P0-2b correctness, or overall product production readiness.
+- P0-2a closure as proof of deployment, permanent cryptographic authenticity of exported JSON,
+  remaining P0-2b correctness, or overall product production readiness.
+- P0-2b slice 1 integration as closure of overall P0-2b, as an AFTER paid benchmark, as a
+  claim-completeness contract, or as enterprise production readiness.
 - The June 2026 live-demo URL, Docker tag, or deployment state as verified current.
 - The proposed S3/event-driven ingestion, Postgres metadata truth, Qdrant-derived-index,
   deterministic-identity/idempotent-ingestion, heterogeneous parsing, structure-aware chunking,

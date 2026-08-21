@@ -9,6 +9,54 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-21-03
+Date: 2026-08-21
+
+Decision: Record P0-2b slice 1 as **P0-2B SLICE 1 — VALIDATED AND INTEGRATED** at exact
+canonical main `230314f7f774ed4b112c377269b190fa1279a004`. This is a status closeout of
+already-accepted slice-1 routing. It does not add architecture, change product code, or
+close overall P0-2b.
+
+Question: Did exact slice-1 ancestry become canonical main with matching main-SHA
+deterministic CI, without retrieval/prompt/model/evaluator/threshold change, without
+provider execution, and without mutating the immutable BEFORE baseline?
+
+Integration evidence: Direct remote `refs/heads/main` and fetched `origin/main` both
+resolved exact `230314f7f774ed4b112c377269b190fa1279a004`. Linear ancestry is exact
+`eea98c367b0f82fcc844dcca73b3935542adeef6` →
+`aa90bfc1c4a7d430f0abeb07c84fa0c5416fce70` →
+`230314f7f774ed4b112c377269b190fa1279a004`. Cumulative slice-1 files remain exactly
+`agent/nodes.py`, `config.py`, `tests/test_uvr_fail_closed_routing.py`,
+`tests/test_failure_injection.py`, `DECISIONS.md`, and `PROJECT_STATUS.md`.
+
+Validation evidence: Public GitHub Actions run
+[`32491216346`](https://github.com/anudeepreddy332/content-agent/actions/runs/32491216346)
+is a successful `push` run on `main` bound to exact `230314f`; lint PASS, deterministic
+tests PASS, provider-backed `eval-gate` skipped. UVR-aware fail-closed routing, bounded
+revision and reverification, and the Gate-1 HTML-eligibility guard are the integrated
+slice-1 contract: ordinary HITL approve cannot grant HTML generation when semantic
+verification is not accepted.
+
+Bounded claim: Slice 1 is integrated. Overall P0-2b remains **OPEN**. Claim completeness
+for a production unknown-sized extracted claim set remains unresolved. Immutable BEFORE
+baseline GitHub Actions run `32480353168` is preserved unchanged (20/20 complete and
+scorable; 19/20 at or below UVR 0.15; topic 10 UVR = 5/21 = 0.238095...; overall FAIL;
+zero benchmark retries). No AFTER paid benchmark has run. No new architectural decision
+is made here.
+
+Next mission: `ARCHITECTURE FREEZE FOR REMAINING P0-2B SEMANTICS`. Do not start remaining
+P0-2b implementation from this closeout.
+
+Status: `P0-2B SLICE 1 — VALIDATED AND INTEGRATED`. Overall P0-2b remains OPEN.
+
+Confidence: 0.99
+
+Supersedes / superseded by: Supersedes only the "Not merged" status clauses in
+D-2026-08-21-01 and D-2026-08-21-02. Their routing contract, non-claims, and historical
+evidence remain preserved. Does not supersede P0-2a evaluation-integrity decisions and
+does not close remaining P0-2b completeness semantics.
+
+---
 Decision ID: D-2026-08-21-02
 Date: 2026-08-21
 
