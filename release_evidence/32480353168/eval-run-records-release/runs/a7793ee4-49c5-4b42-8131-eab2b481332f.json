@@ -1,0 +1,991 @@
+{
+  "run_id": "a7793ee4-49c5-4b42-8131-eab2b481332f",
+  "topic": "Multi-Agent Systems \u2014 When and Why",
+  "slug": "multi-agent-systems-when-and-why",
+  "timestamp": "2026-08-21T12:25:33.857023+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 24,
+      "S": 25,
+      "V": 31,
+      "W": 3,
+      "U": 0,
+      "N": 34,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.925,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Multi-agent systems split work across specialized agents such as a planner, researcher, writer, and reviewer, each with its own prompt, tools, and memory.",
+          "source_url": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b"
+        },
+        {
+          "claim": "Coordination costs scale exponentially: 4 agents create 6 potential failure points, 10 agents create 45.",
+          "source_url": "https://galileo.ai/blog/why-multi-agent-systems-fail",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://galileo.ai/blog/why-multi-agent-systems-fail"
+        },
+        {
+          "claim": "Multi-agent systems fail in production more often than they succeed.",
+          "source_url": "https://galileo.ai/blog/why-multi-agent-systems-fail",
+          "confidence": 0.6,
+          "status": "weak",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://galileo.ai/blog/why-multi-agent-systems-fail"
+        },
+        {
+          "claim": "Agents lose context, loop infinitely, and hallucinate agreements.",
+          "source_url": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b"
+        },
+        {
+          "claim": "Use multi-agent systems when tasks genuinely decompose into distinct expertise, when error correction via debate matters, and when you can afford the latency and cost.",
+          "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+        },
+        {
+          "claim": "A single agent with good prompting and tools is the better engineering choice for most tasks.",
+          "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+        },
+        {
+          "claim": "A multi-agent system is a set of autonomous agents, each with its own perception, reasoning, and action loop, interacting in a shared environment.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "In LLM-based multi-agent systems, each agent is an LLM-driven entity with a prompt, tools, and memory.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "Coordination in LLM-based multi-agent systems happens via message passing of structured natural language.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "The formal model of a multi-agent system is a decentralized partially observable Markov decision process (Dec-POMDP), defined by a tuple (I, S, {A_i}, T, {O_i}, O, R), where I is the set of agents, S is the global state, A_i is the action space of agent i, T(s, a, s') is the transition function, O_i(s) is the observation for agent i, and R(s, a) is the shared reward.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "Each agent follows a policy \u03c0_i that maps observation history to action.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "The joint policy maximizes expected cumulative reward: E[ \u03a3_t \u03b3^t R(s_t, a_t) ].",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "In practice, LLM-driven agents don't optimize policies formally; they emerge from prompts and dialog.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "AutoGen uses ConversableAgent with two-agent or group-chat patterns; GroupChatManager handles speaker selection.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "CrewAI defines agents with role, goal, and backstory; tasks have description, expected_output, and agent assignment.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "LangGraph uses Command(goto=\"agent_name\") for handoffs and Send for fan-out to parallel agents.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "Coordination breakdowns occur when agents talk past each other, duplicate effort, or forget responsibilities.",
+          "source_url": "https://galileo.ai/blog/why-multi-agent-systems-fail",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://galileo.ai/blog/why-multi-agent-systems-fail"
+        },
+        {
+          "claim": "Context loss is common: conversations grow long, and LLMs forget earlier context.",
+          "source_url": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b"
+        },
+        {
+          "claim": "Infinite loops happen when agents keep passing messages without convergence.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "Hallucinated agreements occur when agents pretend to agree without true coordination.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "Token usage grows approximately linearly with number of agents \u00d7 average conversation turns.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "Communication cost scales as O(n\u00b2) messages for fully-connected agents; hierarchical topologies reduce to O(n).",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "One root cause of multi-agent system failures is insufficient architecture before deployment.",
+          "source_url": "https://galileo.ai/blog/why-multi-agent-systems-fail",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://galileo.ai/blog/why-multi-agent-systems-fail"
+        },
+        {
+          "claim": "Multi-agent systems need structure (clear workflow, defined responsibilities), supervision (orchestrator or verifier), grounding (stable memory, factual checks), and guardrails (constraints, stop conditions, validation layers).",
+          "source_url": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b"
+        },
+        {
+          "claim": "Debate improves factual accuracy by 11% on TruthfulQA compared to single-agent generation (Du et al., 2023).",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "Latency increases with each serial agent hop.",
+          "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+          "confidence": 0.8,
+          "status": "weak",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+        },
+        {
+          "claim": "Cost multiplies in multi-agent systems.",
+          "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+          "confidence": 0.8,
+          "status": "weak",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+        },
+        {
+          "claim": "Debugging is harder in multi-agent systems because errors cascade.",
+          "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+        },
+        {
+          "claim": "A single misbehaving sub-agent can silently corrupt the entire pipeline.",
+          "source_url": "https://www.linkedin.com/pulse/why-most-multi-agent-systems-fail-production-how-prevent-vinod-b-c-lm3rc",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.linkedin.com/pulse/why-most-multi-agent-systems-fail-production-how-prevent-vinod-b-c-lm3rc"
+        },
+        {
+          "claim": "Test single-agent first; most tasks don't need multiple agents.",
+          "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+        },
+        {
+          "claim": "Use multi-agent systems only when tasks require genuinely distinct expertise that cannot be handled by one model with good prompting and tools.",
+          "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+        },
+        {
+          "claim": "Implement guardrails: stop conditions, token limits, and validation layers to prevent infinite loops and cost blowup.",
+          "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+        },
+        {
+          "claim": "Use hierarchical topologies (supervisor delegates to workers) to reduce communication overhead from O(n\u00b2) to O(n).",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "claim": "Monitor for context loss and hallucinated agreements; use shared state management (e.g., LangGraph checkpointers) to ground agents.",
+          "source_url": "multi-agent-systems",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:multi-agent-systems",
+          "kb_chunk_candidates": [
+            0,
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The structure is solid with all four sections present and coherent, and the technical depth is appropriate for senior engineers \u2014 the Dec-POMDP formalism and failure-mode analysis are strong. However, the writing has some AI-slop tells: the opening paragraph overuses em-dashes and the 'promise is... but the reality is' pattern feels formulaic. The code examples are useful but the AutoGen snippet uses a placeholder API key, which is a minor polish issue. Overall publishable with minor edits.",
+  "grounding_score": 0.925,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 16337,
+  "total_cost_usd": 0.00852,
+  "latency_ms": {
+    "retrieve": 8707,
+    "retrieve_web": 8687,
+    "retrieve_kb": 20,
+    "draft": 11559,
+    "verify": 12139,
+    "reflect": 1982,
+    "html_gen": 4243,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 31,
+  "claims_weak": 3,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 3,
+    "mean_confidence_verified": 0.944,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 24,
+    "S": 25,
+    "V": 31,
+    "N": 34,
+    "verified_fraction": 0.912,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Multi-agent systems split work across specialized agents such as a planner, researcher, writer, and reviewer, each with its own prompt, tools, and memory.",
+      "source_url": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b"
+    },
+    {
+      "claim": "Coordination costs scale exponentially: 4 agents create 6 potential failure points, 10 agents create 45.",
+      "source_url": "https://galileo.ai/blog/why-multi-agent-systems-fail",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://galileo.ai/blog/why-multi-agent-systems-fail"
+    },
+    {
+      "claim": "Multi-agent systems fail in production more often than they succeed.",
+      "source_url": "https://galileo.ai/blog/why-multi-agent-systems-fail",
+      "confidence": 0.6,
+      "status": "weak",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://galileo.ai/blog/why-multi-agent-systems-fail"
+    },
+    {
+      "claim": "Agents lose context, loop infinitely, and hallucinate agreements.",
+      "source_url": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b"
+    },
+    {
+      "claim": "Use multi-agent systems when tasks genuinely decompose into distinct expertise, when error correction via debate matters, and when you can afford the latency and cost.",
+      "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+    },
+    {
+      "claim": "A single agent with good prompting and tools is the better engineering choice for most tasks.",
+      "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+    },
+    {
+      "claim": "A multi-agent system is a set of autonomous agents, each with its own perception, reasoning, and action loop, interacting in a shared environment.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "In LLM-based multi-agent systems, each agent is an LLM-driven entity with a prompt, tools, and memory.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "Coordination in LLM-based multi-agent systems happens via message passing of structured natural language.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "The formal model of a multi-agent system is a decentralized partially observable Markov decision process (Dec-POMDP), defined by a tuple (I, S, {A_i}, T, {O_i}, O, R), where I is the set of agents, S is the global state, A_i is the action space of agent i, T(s, a, s') is the transition function, O_i(s) is the observation for agent i, and R(s, a) is the shared reward.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "Each agent follows a policy \u03c0_i that maps observation history to action.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "The joint policy maximizes expected cumulative reward: E[ \u03a3_t \u03b3^t R(s_t, a_t) ].",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "In practice, LLM-driven agents don't optimize policies formally; they emerge from prompts and dialog.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "AutoGen uses ConversableAgent with two-agent or group-chat patterns; GroupChatManager handles speaker selection.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "CrewAI defines agents with role, goal, and backstory; tasks have description, expected_output, and agent assignment.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "LangGraph uses Command(goto=\"agent_name\") for handoffs and Send for fan-out to parallel agents.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "Coordination breakdowns occur when agents talk past each other, duplicate effort, or forget responsibilities.",
+      "source_url": "https://galileo.ai/blog/why-multi-agent-systems-fail",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://galileo.ai/blog/why-multi-agent-systems-fail"
+    },
+    {
+      "claim": "Context loss is common: conversations grow long, and LLMs forget earlier context.",
+      "source_url": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b"
+    },
+    {
+      "claim": "Infinite loops happen when agents keep passing messages without convergence.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "Hallucinated agreements occur when agents pretend to agree without true coordination.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "Token usage grows approximately linearly with number of agents \u00d7 average conversation turns.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "Communication cost scales as O(n\u00b2) messages for fully-connected agents; hierarchical topologies reduce to O(n).",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "One root cause of multi-agent system failures is insufficient architecture before deployment.",
+      "source_url": "https://galileo.ai/blog/why-multi-agent-systems-fail",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://galileo.ai/blog/why-multi-agent-systems-fail"
+    },
+    {
+      "claim": "Multi-agent systems need structure (clear workflow, defined responsibilities), supervision (orchestrator or verifier), grounding (stable memory, factual checks), and guardrails (constraints, stop conditions, validation layers).",
+      "source_url": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b"
+    },
+    {
+      "claim": "Debate improves factual accuracy by 11% on TruthfulQA compared to single-agent generation (Du et al., 2023).",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "Latency increases with each serial agent hop.",
+      "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+      "confidence": 0.8,
+      "status": "weak",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+    },
+    {
+      "claim": "Cost multiplies in multi-agent systems.",
+      "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+      "confidence": 0.8,
+      "status": "weak",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+    },
+    {
+      "claim": "Debugging is harder in multi-agent systems because errors cascade.",
+      "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+    },
+    {
+      "claim": "A single misbehaving sub-agent can silently corrupt the entire pipeline.",
+      "source_url": "https://www.linkedin.com/pulse/why-most-multi-agent-systems-fail-production-how-prevent-vinod-b-c-lm3rc",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.linkedin.com/pulse/why-most-multi-agent-systems-fail-production-how-prevent-vinod-b-c-lm3rc"
+    },
+    {
+      "claim": "Test single-agent first; most tasks don't need multiple agents.",
+      "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+    },
+    {
+      "claim": "Use multi-agent systems only when tasks require genuinely distinct expertise that cannot be handled by one model with good prompting and tools.",
+      "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+    },
+    {
+      "claim": "Implement guardrails: stop conditions, token limits, and validation layers to prevent infinite loops and cost blowup.",
+      "source_url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production"
+    },
+    {
+      "claim": "Use hierarchical topologies (supervisor delegates to workers) to reduce communication overhead from O(n\u00b2) to O(n).",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "claim": "Monitor for context loss and hallucinated agreements; use shared state management (e.g., LangGraph checkpointers) to ground agents.",
+      "source_url": "multi-agent-systems",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:multi-agent-systems",
+      "kb_chunk_candidates": [
+        0,
+        1,
+        2,
+        3
+      ]
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://galileo.ai/blog/why-multi-agent-systems-fail",
+      "score": 0.8286204,
+      "content": "## 7 Ways Multi-Agent Systems Fail in Production\n\nThese failures follow predictable patterns you can identify and fix. Let's explore the most common failures, show you how to spot them in your logs, and provide solutions that transform chaotic agent interactions into reliable workflows.\n\nLearn when to use multi-agent systems, how to design them efficiently, and how to build reliable systems that work in production.\n\n### 1. Agent Coordination Breakdowns\n\nWhen your agents drift out of sync, your entire workflow wobbles. Inter-agent misalignment accounts for a large share of observed breakdowns, making it the most common failure mode in production systems.\n\nThis happens when otherwise capable models talk past each other, duplicate effort, or forget their responsibilities. [...] In this guide, we move beyond the hype cycle to examine the hard engineering reality. We will explore 7 specific ways multi-agent systems fail in production, from context loss to infinite loops, and, conversely, the architectural conditions under which they outperform single-model systems.\n\nFinally, we will provide a decision framework to help you determine if the coordination tax is worth the intelligence gain.\n\n Multi-agent systems fail because coordination costs scale exponentially: 4 agents create 6 potential failure points, 10 agents create 45\n\n The 7 most common production failures all share one root cause: insufficient architecture before deployment [...] In a single-agent loop, the agent has a unified worldview. It knows it just changed the user schema, so it updates the validation logic immediately. In a multi-agent system, Agent B is operating on a stale snapshot of reality. It builds validation logic for a schema that no longer exists.\n\nBy the time the system detects the discrepancy, both agents have wasted compute resources on mutually exclusive paths, requiring a costly rollback or a third 'merger' agent to untangle the mess. Unlike read-only operations, where consensus is easy, wri"
+    },
+    {
+      "url": "https://www.linkedin.com/pulse/why-most-multi-agent-systems-fail-production-how-prevent-vinod-b-c-lm3rc",
+      "score": 0.81489426,
+      "content": "Vinod B C\n\n### Vinod B C\n\nMulti-agent systems are no longer experimental. Teams are shipping orchestrators that coordinate LLM calls, tool invocations, retrieval pipelines, and external API calls in production, serving real users, at real cost, with real consequences when things go wrong.\n\nThe failure modes in multi-agent production are different from anything that came before. A single misbehaving sub-agent can silently corrupt the output of an entire pipeline. A missing guardrail on one tool invocation can cascade into unintended actions. A prompt regression nobody noticed can quietly degrade user experience for days before the metrics surface it. [...] ### Security at protocol boundaries\n\nBoth MCP and A2A create network boundaries where authentication and authorization must be enforced. Every inter-agent call should be authenticated. Agent capabilities should be scoped by user context. Prompt injection through tool results, where a malicious document causes the agent to invoke unintended tool calls, is an active attack vector. Sanitize tool results before they re-enter agent context.\n\n## 8. The Operational Model\n\nGoing live is not the end of the engineering process. It is the beginning of a different one. Production multi-agent systems require an operational model that is designed before launch.\n\n### On-call and runbooks [...] ### Circuit breakers\n\nImplement circuit breakers on every external dependency. If the retrieval service starts returning errors, the orchestrator should detect this, stop routing to that sub-agent, return a graceful degraded response to the user, and alert your on-call system. Failing loudly and visibly is better than silently producing degraded output.\n\n### Context management\n\nContext window consumption is a production concern, not just a technical detail. Long-running agent chains accumulate context rapidly. Implement context compression, summarization, or sliding window strategies before you hit production token limits. Design the inform"
+    },
+    {
+      "url": "https://medium.com/@umairamin2004/why-multi-agent-systems-fail-in-production-and-how-to-fix-them-3bedbdd4975b",
+      "score": 0.8098936,
+      "content": "This article is a simple, research-backed, case-study style breakdown of what I learned.\n\n## What Exactly Is a Multi-Agent System? (Simple Explanation)\n\nA multi-agent system is when multiple AI agents work together, each with a specific role.\n\nFor example:\n\n   Planner(decides the steps)\n   Researcher(gathers information)\n   Writer(generates content)\n   Reviewer(checks correctness)\n\nThis structure sounds great, but once deployed in production, hidden failure modes begin to appear.\n\n## Why Multi-Agent Systems Fail (Based on Research and Real Examples)\n\nBelow are the most common failure patterns found across labs, papers, and production environments.\n\n## 1. Agents Lose Context (Memory Problems) [...] ## Conclusion\n\nMulti-agent systems are powerful, but not plug-and-play. They require careful design and strong engineering foundations.\n\nTo function reliably, MAS need:\n\n   Structure \u2014 a clear workflow and defined agent responsibilities to prevent chaos and unnecessary communication loops.\n   Supervision \u2014 oversight through an orchestrator or verifier to detect mistakes before they propagate.\n   Grounding \u2014 stable memory and factual checks to keep agents aligned with goals and context.\n   Guardrails \u2014 constraints, limits, stop conditions, and validation layers that prevent failure escalation.\n\nWhen these foundations are in place, multi-agent systems can become: [...] ## 1. Agents Lose Context (Memory Problems)\n\nMulti-agent conversations become long very quickly. LLMs forget earlier steps, lose track of goals, or drift off-topic.\n\nExample: The planner says: \u201cWe are writing about electric cars.\u201d Twenty messages later, the system is writing about solar panels.\n\nThe context window overflowed or the system lacked proper memory storage.\n\n## 2. Infinite Loops and Uncontrolled Back-and-Forth\n\nTwo agents may keep asking each other questions:\n\n   \u201cShould we refine this?\u201d\n   \u201cMaybe. What do you think?\u201d\n\nThis can lead to:\n\n   loops\n   no final output\n   high compute costs\n\n## 3. Hallu"
+    },
+    {
+      "url": "https://www.centific.com/blog/why-multi-agent-systems-fail-in-production-and-how-enterprises-can-avoid-it",
+      "score": 0.80844593,
+      "content": "## Why these failures matter to the enterprise\n\nMulti-agent systems are often deployed to improve speed, reduce cost, or handle complexity. When they fail in production, the consequences extend beyond technical debt. They can damage customer trust, expose the organization to compliance risk, and generate operational overhead far greater than the benefits they were meant to deliver.\n\n For the enterprise, these failures show up as:\n\n Inconsistent customer experiences,\n Elevated risk ratings in compliance audits,\n Opaque decision trails that cannot be explained to stakeholders,\n Increased costs from firefighting behaviors that weren\u2019t anticipated.\n\nIn production environments, those outcomes make predictability and trust just as critical as traditional performance metrics. [...] ## Common failure patterns in production\n\nMulti-agent systems tend to fail for a consistent set of reasons once they move from controlled pilots into live environments. These failures rarely come from a single broken component. Instead, they emerge from interaction effects between agents, incomplete governance, and assumptions carried over from traditional automation.\n\n### Emergent behavior without guardrails\n\nEmergent behavior refers to outcomes that were not directly programmed but appear when agents interact. In tightly controlled environments with static data, this may be manageable. But in dynamic, real-world settings, the same interactions can produce actions that violate constraints, create loops of self-reinforcing errors, or amplify noise into false signals. [...] Author(s)\n\nSurya Prabha Vadlamani \n\nSurya Prabha Vadlamani\n\nAI agents promise to deliver distributed decision-making, dynamic planning, and operational speed well beyond traditional automation. In early use cases, multi-agent systems have delivered value by breaking down complex workflows, coordinating actions, and reducing manual handoffs. But production deployments often stumble.\n\nThe failures are not because the technology "
+    },
+    {
+      "url": "https://www.techaheadcorp.com/blog/ways-multi-agent-ai-fails-in-production",
+      "score": 0.7732339,
+      "content": "The reason is the architectural failures that cost enterprises millions in wasted investment, operational disruption, and damaged customer trust. The coordination complexity and cascading errors that seem manageable in pilots become existential threats at scale. That is why, in this blog, we are going to share the seven critical failure modes destroying multi-agent deployments.\n\n## Key Takeaways\n\n## The Promise of Specialized Multi-agent Intelligence\n\nMulti-agent systems offer an appealing proposition: divide complex workflows into specialized tasks, assign each to a \u2018purpose-built AI agent\u2019, and achieve better results through focused expertise. Instead of one generalist agent struggling with everything, you get specialists working in harmony. [...] You need multi-agents when tasks require genuinely distinct expertise that cannot be handled by one model with good prompting and tools. Test single-agent solutions first; most do not actually need multiple agents.\n\nCoordination overhead causing latency, exponential cost increases from token usage, cascading failures reducing reliability, security vulnerabilities at agent boundaries, debugging complexity are the risks. However, all of the risks have solutions to set up multi agent systems.\n\nAggressive caching, use cheaper models for simple tasks, set strict token limits per workflow, monitor costs in real-time with alerts, run agents in parallel rather than sequentially to minimize redundant calls. [...] Why are Multi-Agent Systems Vulnerable?\n\nAgent A might sanitize user input perfectly, but it cannot predict what malicious instructions might be embedded in Agent B\u2019s output that will exploit Agent C. You are defending against attacks that hop between agents, using one compromised response to manipulate the next agent\u2019s behavior. The problem compounds because agents trust each other\u2019s outputs that create an express lane for attacks.\n\n#### Solutions\n\n### # 7 Role Confusion Chaos\n\nMulti-agent systems assign specific roles "
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=Mi5wOpAgixw&vl=en",
+      "score": 0.73981786,
+      "content": "Hey everyone, I'm Shaw. In this video, I'm going to explain multi-agent systems. I'll start with an overview of what they are and when to use them and then review four ways we can build multi- aent systems with concrete examples. 2025 was the year of AI agents. This is where we saw the rise of deep research agents and coding agents which are driving a significant portion of AI's economic value. And the key principle that made this possible is this idea of more tokens lead to better performance. In other words, as agents think for longer and longer, execute more tool calls, and interact more with the real world, the better they are able to accomplish tasks. The technical term for this principle is so-called testime compute scaling. This shifted the AI space from only focusing on training [...] year that multi-agent systems become good. Because at this point, the models are indeed good enough to create these multi-agent systems. It's just now an engineering problem. It's mainly the challenge of building an effective harness for the specific task. Another key point here is that multi-agent systems are not a so-called paro improvement of single agent systems. So, in other words, multi-agent systems do not dominate single agent ones across all tasks. It's only when tasks are decomposable that multi- aent systems are going to be valuable. So again, sequential tasks use a single agent system. Decomposible tasks use a multi- aent system. Finally, the harness is the hard part today and defining the optimal architecture is going to depend on the task. So at the two extremes, we have the [...] Another key benefit is that if you have multiple agents working together, they can work in parallel. So, for example, if you have a research agent, instead of just having one trying to research sources one at a time, you can spin up dozens of research agents to independently look up different keywords or investigate different sources in parallel and then come back together to synthesize "
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Multi-agent_system",
+      "score": 0.7244226,
+      "content": "or \"self-organized system\" is a computational system composed of multiple interacting intelligent agents. Multi-agent systems can solve problems that are difficult or impossible for an individual agent or a monolithic system to solve. Intelligence may include methodic, functional \"Function (computer science)\"), procedural approaches, algorithmic search or reinforcement learning. With advancements in large language models (LLMs), LLM-based multi-agent systems have emerged as a new area of research, enabling more sophisticated interactions and coordination among agents. [...] ## Concept\n\n[edit]\n\nMulti-agent systems consist of agents and their environment. Typically, research on multi-agent systems refers to software agents. However, the agents in a multi-agent system could equally well be robots, humans, or human teams, and may consist of combined human-agent teams.\n\nAgents can be divided into types spanning simple to complex. Categories include:\n\n Passive agents or \"agent without goals\" (such as obstacle, apple or key in any simple simulation)\n Active agents with simple goals (like birds in flocking, or wolf\u2013sheep in prey-predator model)\n Cognitive agents, with beliefs, desires, intentions, and commitments processed by logical, probabilistic, and neural network-based reasoning\n\nAgent environments can be divided into:\n\n Virtual\n Discrete\n Continuous"
+    },
+    {
+      "url": "https://www.ml6.eu/en/blog/multi-agent-ai-systems-where-they-shine-and-how-they-work-together",
+      "score": 0.71687365,
+      "content": "A Multi-Agent System (MAS) is a team of specialized AI agents that collaborate to tackle  complex problems. Use a multi-agent system when your challenge involves multiple tasks, dynamic environments, or specialized expertise that require agent coordination and agent communication. For simpler or well-defined workflows, a single intelligent agent or structured agentic workflow is often a better, faster, and more cost-efficient choice. The golden rule is to use the simplest setup that effectively solves your problem.\n\n## When do you need a Multi-Agent System? [...] 1. A Multi-Agent System (MAS) consists of several specialized AI agents that collaborate to achieve a common goal. Each agent focuses on a specific task, such as data retrieval, reasoning, or verification\u2014while sharing information with others through a coordinated framework. Unlike a single AI model that handles every step alone, MAS distributes intelligence across agents, improving efficiency, reliability, and adaptability in complex workflows. [...] These agents collaborate behind the scenes through a process known as message passing, by sharing data, coordinating actions, and adapting continuously to your preferences and priorities in real time. But how do you know when a MAS is actually needed? Let\u2019s explore that next.\n\n## When is a Multi-Agent System the right fit?\n\nTo decide whether you need a multi-agent system, consider two guiding principles:\n\n### 1. When the problem requires dynamic, skill-based collaboration\n\nA Multi-Agent System is ideal when the overall challenge is too complex to be solved by a fixed sequence of steps, and instead requires continuous, adaptive breakdown into sub-problems."
+    },
+    {
+      "url": "https://www.freecodecamp.org/news/how-to-build-your-first-multi-agent-ai-system-in-python-and-langgraph",
+      "score": 0.7161595,
+      "content": "### When to Use a Multi-Agent System\n\nMulti-agent systems make sense when a task naturally breaks into distinct steps or roles, such as planning, writing, reviewing, or using different specialized prompts for different parts of the workflow. If single agent can handle the task well with a clear prompt and produce the output reliably, adding more agents can just introduce extra complexity, latency, and overhead.\n\nIn general, use multiple agents when separation of responsibilities clearly improves the result, and use a single agent when the task is still manageable as one coherent interaction.\n\n## Motivation and Architecture [...] The single agent has to do several jobs at once to generate the study guide based on the prompt above. That\u2019s a lot to do for a smaller local model in one shot and the quality of output likely won't be the best.\n\nA multi-agent system helps by splitting the one big prompt into three specialized agents. It makes it easier for the small model to handle the tasks. The agents in the the workflow are:\n\n Planner: breaks the topic into logical sections.\n Teacher: writes concise study notes for each section.\n Quiz Writer: generates review questions to reinforce the material.\n\nThis workflow can be implemented in two ways. In the simple Python version, the Python code coordinates the steps to call agents. [...] Rather than asking one model to solve the entire problem, the workload is divided into smaller, focused tasks. Because each agent has a narrower objective, its prompt is typically simpler and easier for the model to follow consistently.\n\nThis tutorial intentionally keeps the system simple. There's no memory, tool calling, or complex patterns. Instead, the focus is on a simple use case to show the building blocks for a multi-agent AI system.\n\n### When to Use a Multi-Agent System"
+    },
+    {
+      "url": "https://www.ibm.com/think/topics/multiagent-system",
+      "score": 0.6690754,
+      "content": "Get hands-on experience with IBM tech Join one of the largest technical IBM community gatherings\n\n# What is a multi-agent system?\n\nBy Anna Gutowska\n\nA multi-agent system (MAS) consists of multiple artificial intelligence (AI) agents working collectively to perform tasks on behalf of a user or another system.\n\nEach agent within a MAS has individual properties but all agents behave collaboratively to lead to desired global properties.1 Multi-agent systems are valuable in completing large-scale, complex tasks that can encompass hundreds, if not thousands, of agents.2 [...] Single agent intelligent systems engage with their environment to autonomously plan, call tools and produce responses. The tools made available to an agent provide information that is otherwise unavailable to the agent. As previously described, this information can be a database acquired through an API or another agent. There is a distinction here between single and multi-agent systems. When calling another agent as a tool, that secondary agent is part of the original agent\u2019s environmental stimuli. That information is acquired and no further cooperation takes place. Whereas multi-agent systems differ by involving all agents within the environment to model each other\u2019s goals, memory and plan of action.4 Communication between agents can be direct or indirect through altering the shared [...] ### Flexibility\n\nMulti-agent systems can adjust to varying environments by adding, removing or adapting agents.\n\n### Scalability\n\nThe cooperation of several agents allows for a greater pool of shared information. This collaboration allows multi-agent systems to solve more complex problems and tasks than single-agent systems.\n\n### Domain specialization\n\nSingle agent systems require one agent to perform tasks in various domains, whereas each agent in a multi-agent system can hold specific domain expertise.\n\n### Greater performance"
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "multi-agent-systems",
+      "chunk_index": 0,
+      "distance": 0.2779,
+      "rrf_score": 0.03333,
+      "text": "# Multi-Agent Systems \u2014 When and Why\n\n## Definition\nA multi-agent system (MAS) is a computational framework where multiple autonomous agents, each with its own perception, reasoning, and action capabilities, coexist and interact within a shared environment. Agents may have aligned, conflicting, or mixed goals, and they coordinate through communication protocols, negotiation, or emergent behaviors. In language-model\u2013based MAS, each agent is typically an LLM-driven entity equipped with prompts, tools, and memory.\n\n## Intuition\nComplex problems can be decomposed into subtasks handled by specialized agents, akin to roles in a human team. Multiple agents can debate, verify each other\u2019s outputs, or explore different solution paths in parallel, yielding more robust and creative outcomes than a single monolithic agent.\n\n## Mathematical Formulation\nA common model is the decentralized partially observable Markov decision process (Dec-POMDP), defined by a tuple (I, S, {A_i}, T, {O_i}, O, R), where I is the set of agents, S is the global state, A_i the action space of agent i, T(s, a, s') the transition function, O_i(s)\u2192o_i the observation for agent i, and R(s, a) the shared reward. Each agent follows a policy \u03c0_i that maps its observation history to an action. The joint policy maximizes the expected cumulative reward: E[ \u03a3_t \u03b3^t R(s_t, a_t) ]. In LLM-driven MAS, policies are not formally optimized but emergent from prompts and dialog, with coordination achieved via message passing of structured natural language.\n\n## Estimation\nNo direct parameter estimation; system performance is evaluated experimentally using task completion rate, solution quality, communication cost, and robustness metrics. MAS behavior is validated on benchmark suites or simulators, often via repeated trials and inter-agent agreement measures.\n\n## Assumptions\n- Agents can send and receive messages over a reliable communication"
+    },
+    {
+      "source": "multi-agent-systems",
+      "chunk_index": 1,
+      "distance": 0.3779,
+      "rrf_score": 0.03227,
+      "text": " rate, solution quality, communication cost, and robustness metrics. MAS behavior is validated on benchmark suites or simulators, often via repeated trials and inter-agent agreement measures.\n\n## Assumptions\n- Agents can send and receive messages over a reliable communication channel.\n- Each agent has a bounded but sufficient reasoning capacity to interpret messages and adapt actions.\n- Goals are either shared (cooperative), known and fixed (competitive), or can be inferred from interaction.\n- The environment\u2019s dynamics permit multi-agent intervention without catastrophic interference.\n\n## Key Properties\n- **Specialization**: Agents can be optimized for distinct subtasks.\n- **Robustness**: Failure or drift of one agent can be compensated by others.\n- **Emergent intelligence**: Collective behaviors like debate, voting, or role negotiation arise.\n- **Scalability**: Workload can be distributed horizontally, though communication overhead grows.\n\n## Failure Modes\n- **Coordination failure**: Agents produce conflicting plans or deadlock on decisions.\n- **Infinite chatter**: Prompt-driven loops without convergence.\n- **Hallucinated agreements**: Agents pretend to agree without true coordination.\n- **Cost blowup**: Multiple LLM calls per step compound inference expense.\n- **Information cascade**: Early errors propagate when agents over-rely on peers.\n\n## When to Use / Not Use\n**Use**: When a task naturally decomposes into parallel or role-based subproblems (code generation + review, multi-perspective analysis, complex negotiation), when error correction via cross-checking is valuable, or when simulations of social dynamics are desired.\n\n**Not use**: For simple single-step queries, latency-sensitive pipelines where serial agent chaining adds unacceptable delay, or when the added complexity of coordination outweighs accuracy gains.\n\n## Variants / Extensions\n- **Hierarchical teams**: Supervisor agent delegates to workers.\n- **Competitive debate**: Agents argue opposing sides to"
+    },
+    {
+      "source": "multi-agent-systems",
+      "chunk_index": 2,
+      "distance": 0.5235,
+      "rrf_score": 0.03202,
+      "text": "- **Hierarchical teams**: Supervisor agent delegates to workers.\n- **Competitive debate**: Agents argue opposing sides to improve answer quality.\n- **Market-based coordination**: Resource allocation via bidding protocols.\n- **Multi-agent reinforcement learning (MARL)**: Training policies with environment rewards.\n- **CrewAI / AutoGen**: Frameworks for orchestrating conversational MAS.\n\n## Minimal Example (Python)\n```python\ndef agent1(observation):\n    return f\"Agent1 suggests: {observation.title()}\"\ndef agent2(suggestion):\n    if \"?\" in suggestion:\n        return \"Agent2: clarifying question needed\"\n    return \"Agent2 agrees\"\n# Simple interaction\nobs = \"what is the weather?\"\nmsg1 = agent1(obs)\nmsg2 = agent2(msg1)\nfinal = msg2\n```\n## Claim-Dense Reference Facts\n\n- AutoGen (Microsoft) uses ConversableAgent with two-agent or group-chat patterns; GroupChatManager handles speaker selection.\n- CrewAI defines agents with role, goal, and backstory; tasks have description, expected_output, and agent assignment.\n- LangGraph multi-agent uses Command(goto=\"agent_name\") for handoffs between agents in a shared graph.\n- Multi-agent debate improves factual accuracy by 11% on TruthfulQA compared to single-agent generation (Du et al., 2023).\n- Communication cost scales as O(n\u00b2) messages for n fully-connected agents; hierarchical topologies reduce this to O(n).\n- AutoGen's token usage grows approximately linearly with number of agents \u00d7 average conversation turns.\n- Agent specialization (code agent + critic agent) achieves higher HumanEval pass@1 than single generalist agent.\n- LangGraph's `Send` API enables fan-out to multiple agents simultaneously for parallel subgraph execution.\n- Swarm (OpenAI) implements agent handoffs via function returns; handoff functions return Agent objects directly.\n- Production MAS systems require shared state management; LangGraph uses checkpointers (Sql"
+    },
+    {
+      "source": "multi-agent-systems",
+      "chunk_index": 3,
+      "distance": 0.5214,
+      "rrf_score": 0.03102,
+      "text": " fan-out to multiple agents simultaneously for parallel subgraph execution.\n- Swarm (OpenAI) implements agent handoffs via function returns; handoff functions return Agent objects directly.\n- Production MAS systems require shared state management; LangGraph uses checkpointers (SqliteSaver, PostgresSaver) for persistence."
+    },
+    {
+      "source": "langgraph-state-machines",
+      "chunk_index": 0,
+      "distance": 0.5734,
+      "rrf_score": 0.03054,
+      "text": "# LangGraph \u2014 State Machines for AI Agents\n\n## Definition\nLangGraph is a library by LangChain for building stateful, multi-actor applications with language models. It models agent workflows as directed graphs where nodes encode computation (LLM calls, tools, logic) and edges define control flow. A shared state object traverses the graph, enabling cyclic, persistent, and interruptible execution.\n\n## Intuition\nMany AI agent tasks require branching, looping, and tool use\u2014patterns that simple chain-of-calls cannot express. LangGraph represents these workflows as a state machine, where each node modifies a persistent state and conditional edges determine the next step. This provides the flexibility of a general program while remaining inspectable and resumable.\n\n## Mathematical Formulation\nA LangGraph application is a tuple (G, S, f, c):\n- G = (V, E) is a directed graph. V are nodes (agent steps), E are directed edges.\n- S is a shared state dictionary.\n- Each node v has a function f_v: S \u2192 \u0394S that returns partial state updates to merge into S.\n- Edges may have guard conditions: c_e: S \u2192 {True, False} that decide traversal.\n- Special edges: START (entry point), END (terminal nodes).\nExecution iteratively selects the next node based on current node\u2019s outgoing edges, evaluates conditions, applies node functions, and repeats until an END node is reached. Cyclic edges enable loops (e.g., agent \u2192 tool \u2192 agent).\n\n## Estimation\nNot applicable \u2014 LangGraph is a runtime orchestration framework, not a statistical estimator. However, execution behavior (node scheduling, state merging, checkpointing) follows discrete state-machine semantics.\n\n## Assumptions\n- Node functions are deterministic enough for predictable execution (idempotency helps recovery).\n- State is JSON-serializable to enable checkpointing and persistence.\n- LLM calls within nodes are encapsulated and managed externally (e.g"
+    }
+  ],
+  "attribution": {
+    "web": 17,
+    "kb": 17,
+    "none": 0,
+    "unresolved": 0
+  }
+}

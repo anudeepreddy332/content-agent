@@ -1,0 +1,571 @@
+{
+  "run_id": "82cab9d8-92eb-430f-9fe2-db4904639421",
+  "topic": "Gradient Descent",
+  "slug": "gradient-descent",
+  "timestamp": "2026-08-21T12:09:04.208144+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 13,
+      "S": 13,
+      "V": 22,
+      "W": 0,
+      "U": 0,
+      "N": 22,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.923,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Training a machine learning model means finding the set of parameters that minimizes a loss function.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "For most models, there is no closed-form solution, so an iterative method is needed.",
+          "source_url": "https://realpython.com/gradient-descent-algorithm-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://realpython.com/gradient-descent-algorithm-python"
+        },
+        {
+          "claim": "Gradient descent is the backbone of nearly every optimizer used in deep learning, from plain SGD to Adam.",
+          "source_url": "https://www.meegle.com/en_us/topics/gradient-descent/gradient-descent-in-python-libraries",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.meegle.com/en_us/topics/gradient-descent/gradient-descent-in-python-libraries"
+        },
+        {
+          "claim": "The core idea of gradient descent is to compute the gradient of the loss with respect to the parameters, then take a step in the opposite direction.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Gradient descent is a first-order iterative optimization algorithm.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "The update rule for gradient descent is \u03b8_{t+1} = \u03b8_t - \u03b7\u00b7\u2207J(\u03b8_t), where \u03b7 is the learning rate and \u2207J(\u03b8_t) is the gradient vector.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "The gradient points in the direction of steepest ascent, so subtracting it moves downhill.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "For a dataset of m examples, the full-batch gradient is the average of per-example gradients: \u2207J(\u03b8) = (1/m) \u03a3_{i=1}^m \u2207L(f(x_i; \u03b8), y_i).",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "In practice, mini-batches of size B (commonly 32\u2013256) are used instead of the full batch.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Stochastic gradient descent (SGD) refers to using a single example (B=1), while mini-batch gradient descent uses a mini-batch.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Mini-batches introduce noise into the gradient estimate, which can help escape shallow local minima but also causes the loss to fluctuate.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "The learning rate is the most critical hyperparameter; too small causes slow convergence, too large causes divergence.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "There is no universal best learning rate; it must be tuned per problem.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Gradient descent only finds a local minimum, not necessarily the global one.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "For non-convex functions, gradient descent can stall in local minima or at saddle points where the gradient is zero but the point is not a minimum.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "In high-dimensional spaces, saddle points are more prevalent than local minima.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Vanishing or exploding gradients can occur in deep networks; if the gradient magnitude becomes extremely small, updates effectively stop, and if it becomes huge, updates overshoot wildly.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Gradient clipping rescales the gradient when its norm exceeds a threshold.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Momentum adds a velocity term: v = \u03b3v + \u03b7\u00b7\u2207J(\u03b8), \u03b8 = \u03b8 - v, with \u03b3 typically 0.9.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Adam uses per-parameter adaptive learning rates with default hyperparameters \u03b2\u2081=0.9, \u03b2\u2082=0.999, \u03b5=1e-8 in PyTorch.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Variants like momentum, RMSProp, and Adam still require tuning and can fail on certain loss surfaces.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        },
+        {
+          "claim": "Full-batch gradient descent is deterministic but expensive; mini-batch SGD is the practical standard for large datasets.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically accurate, but the technical depth is uneven: the deep-dive covers fundamentals well yet glosses over important nuances like convergence criteria, learning rate schedules, and the distinction between local minima and saddle points in high dimensions. The writing is clear and direct, though the intro is slightly verbose and the code examples are redundant with the deep-dive implementation. Publishable with minor edits to tighten prose and add a brief note on practical convergence checks.",
+  "grounding_score": 0.923,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 16578,
+  "total_cost_usd": 0.00818,
+  "latency_ms": {
+    "retrieve": 11186,
+    "retrieve_web": 11166,
+    "retrieve_kb": 20,
+    "draft": 11513,
+    "verify": 9892,
+    "reflect": 2358,
+    "html_gen": 4395,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 22,
+  "claims_weak": 0,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 0,
+    "mean_confidence_verified": 0.923,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 13,
+    "S": 13,
+    "V": 22,
+    "N": 22,
+    "verified_fraction": 1.0,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Training a machine learning model means finding the set of parameters that minimizes a loss function.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "For most models, there is no closed-form solution, so an iterative method is needed.",
+      "source_url": "https://realpython.com/gradient-descent-algorithm-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://realpython.com/gradient-descent-algorithm-python"
+    },
+    {
+      "claim": "Gradient descent is the backbone of nearly every optimizer used in deep learning, from plain SGD to Adam.",
+      "source_url": "https://www.meegle.com/en_us/topics/gradient-descent/gradient-descent-in-python-libraries",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.meegle.com/en_us/topics/gradient-descent/gradient-descent-in-python-libraries"
+    },
+    {
+      "claim": "The core idea of gradient descent is to compute the gradient of the loss with respect to the parameters, then take a step in the opposite direction.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Gradient descent is a first-order iterative optimization algorithm.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "The update rule for gradient descent is \u03b8_{t+1} = \u03b8_t - \u03b7\u00b7\u2207J(\u03b8_t), where \u03b7 is the learning rate and \u2207J(\u03b8_t) is the gradient vector.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "The gradient points in the direction of steepest ascent, so subtracting it moves downhill.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "For a dataset of m examples, the full-batch gradient is the average of per-example gradients: \u2207J(\u03b8) = (1/m) \u03a3_{i=1}^m \u2207L(f(x_i; \u03b8), y_i).",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "In practice, mini-batches of size B (commonly 32\u2013256) are used instead of the full batch.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Stochastic gradient descent (SGD) refers to using a single example (B=1), while mini-batch gradient descent uses a mini-batch.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Mini-batches introduce noise into the gradient estimate, which can help escape shallow local minima but also causes the loss to fluctuate.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "The learning rate is the most critical hyperparameter; too small causes slow convergence, too large causes divergence.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "There is no universal best learning rate; it must be tuned per problem.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Gradient descent only finds a local minimum, not necessarily the global one.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "For non-convex functions, gradient descent can stall in local minima or at saddle points where the gradient is zero but the point is not a minimum.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "In high-dimensional spaces, saddle points are more prevalent than local minima.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Vanishing or exploding gradients can occur in deep networks; if the gradient magnitude becomes extremely small, updates effectively stop, and if it becomes huge, updates overshoot wildly.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Gradient clipping rescales the gradient when its norm exceeds a threshold.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Momentum adds a velocity term: v = \u03b3v + \u03b7\u00b7\u2207J(\u03b8), \u03b8 = \u03b8 - v, with \u03b3 typically 0.9.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Adam uses per-parameter adaptive learning rates with default hyperparameters \u03b2\u2081=0.9, \u03b2\u2082=0.999, \u03b5=1e-8 in PyTorch.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Variants like momentum, RMSProp, and Adam still require tuning and can fail on certain loss surfaces.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    },
+    {
+      "claim": "Full-batch gradient descent is deterministic but expensive; mini-batch SGD is the practical standard for large datasets.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/how-to-implement-a-gradient-descent-in-python-to-find-a-local-minimum",
+      "score": 0.9061314,
+      "content": "## Implementation\n\nHere\u2019s an example to find the minimum of f(x) = x^2 + 4x + 4.\n\n### Step 1: Importing Libraries\n\nImporting libraries like Numpy and Matplotlib.\n\n````\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n````\n\n### Step 2: Minimize Function\n\nDefining function to minimize.\n\n````\ndef f(x):\n    return x2 + 4x + 4\n\n````\n\n### Step 3: Derivative\n\nFinding derivative of the function.\n\n````\ndef df(x):\n    return 2x + 4\n\n````\n\n### Step 4: Gradient Descent\n\nImplementing Gradient Descent.\n\n````\ndef gradient_descent(starting_point, learning_rate, iterations):\n    x = starting_point\n    for i in range(iterations):\n        x = x - learning_rate  df(x)  # update step\n        print(f\"Iteration {i+1}: x = {x:.4f}, f(x) = {f(x):.4f}\")\n    return x [...] geeksforgeeks\n\n# Implementing gradient descent in Python to find a local minimum\n\nGradient Descent is an optimization algorithm used to find the local minimum of a function. It is used in machine learning to minimize a cost or loss function by iteratively updating parameters in the opposite direction of the gradient. It works by calculating the derivative i.e slope of a function and moving in the direction opposite to the slope to reach a minimum. It can be applied to any differentiable function.\n\nGD-IM3\n\n## Mathematical Concept\n\nThe mathematical formula for Gradient Descent:\n\nx\\_{\\text{new}} = x\\_{\\text{old}} - \\alpha \\cdot f'(x)\n\nWhere:\n\nThe derivative points in the direction of the steepest ascent. By moving in the opposite direction, we approach the local minimum.\n\n## Implementation"
+    },
+    {
+      "url": "https://www.meegle.com/en_us/topics/gradient-descent/gradient-descent-in-python-libraries",
+      "score": 0.85995835,
+      "content": "### Future Directions for Gradient Descent\n\n1. Integration with AI Hardware: Leverage specialized hardware like GPUs and TPUs for faster Gradient Descent computations.\n2. Hybrid Algorithms: Combine Gradient Descent with other optimization techniques for improved performance.\n3. Automated Hyperparameter Tuning: Develop algorithms that automatically select the best learning rate and other parameters.\n\nExamples of gradient descent in python libraries\n\n### Example 1: Implementing Gradient Descent with NumPy\n\n### Example 2: Using TensorFlow's SGD Optimizer\n\n### Example 3: Customizing Gradient Descent in PyTorch\n\nRelated:\n\nServerless Architecture Webinars\n\nClick here to utilize our free project management templates!\n\nTips for do's and don'ts [...] Gradient Descent is one of the most fundamental optimization algorithms in machine learning and deep learning. It serves as the backbone for training models, enabling them to minimize error and improve accuracy. For professionals working in data science, artificial intelligence, or software development, understanding Gradient Descent and its implementation in Python libraries is crucial for building robust and efficient models. This guide delves deep into the mechanics, applications, and best practices of Gradient Descent, offering actionable insights and practical examples to help you master this essential technique. Whether you're a seasoned developer or a newcomer to machine learning, this article will equip you with the knowledge and tools to leverage Gradient Descent effectively in [...] 1. NumPy: Ideal for manual implementation of Gradient Descent due to its efficient array operations.\n2. TensorFlow: Provides built-in optimizers like `tf.keras.optimizers.SGD` for Gradient Descent.\n3. PyTorch: Offers flexible tools for implementing and customizing Gradient Descent, such as `torch.optim.SGD`.\n4. Scikit-learn: Includes Gradient Descent-based algorithms like linear regression and logistic regression.\n5. SciPy: Contains optimiz"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=i62czvwDlsw",
+      "score": 0.8539252,
+      "content": "# Gradient Descent Explained\n## IBM Technology\n1770000 subscribers\n3744 likes\n\n### Description\n170738 views\nPosted: 15 Sep 2022\nLearn more about WatsonX  \u2192  \nWhat is Gradient Descent?  \u2192  \nCreate Data Fabric instead of data silos  \u2192 \n\nGradient descent is an optimization algorithm which is commonly-used to train machine learning models and neural networks.  Training data helps these models learn over time, and the cost function within gradient descent specifically acts as a barometer, gauging its accuracy with each iteration of parameter updates. IBM Master Inventor Martin Keen explains.\n\nGet started for free on IBM Cloud \u2192 \nSubscribe to see more videos like this in the future \u2192 \n\n#AI #Software #ITModernization #GradientDescent #lightboard #IBM #DataFabric #WatsonX [...] Gradient descent is like. It's like trying to find your way down a dark mountain. You can't see where you're going. So you have to feel your way around. You take small steps in the direction that feels the most downhill. Eventually, if you keep going, you'll find your way to the bottom. That's gradient descent. Let's get into it. So Gradient Descent is a common optimization algorithm used to train machine learning models in neural networks by training on data that these models can learn over time, and because they're learning over time, they can improve their accuracy. Now you see a neural network consists of connected neurons like this, and those neurons are in layers. And those layers have weights and biases describe how we navigate through this network. We provide the neural network [...] or exploding gradients. So vanishing gradients that when the gradient is too small and the earlier layers in the network learn more slowly than the later layers as we go through this network here. Exploding gradients, on the other hand, are when the gradient is too large and that can create an unstable model. But look, despite those challenges. Gradient descent is a powerful optimization algorithm, and it is comm"
+    },
+    {
+      "url": "https://realpython.com/gradient-descent-algorithm-python",
+      "score": 0.8536326,
+      "content": "This function has only one independent variable (\ud835\udc63), and its gradient is the derivative 2\ud835\udc63. It\u2019s a differentiable convex function, and the analytical way to find its minimum is straightforward. However, in practice, analytical differentiation can be difficult or even impossible and is often approximated with numerical methods.\n\nYou need only one statement to test your gradient descent implementation:\n\nLanguage: Python\n\n```\n>>> gradient_descent(... gradient = lambda v: 2 v, start =10.0, learn_rate =0.2... )2.210739197207331e-06\n```\n\nYou use the lambda function `lambda v: 2  v` to provide the gradient of \ud835\udc63\u00b2. You start from the value `10.0` and set the learning rate to `0.2`. You get a result that\u2019s very close to zero, which is the correct minimum. [...] This is a basic implementation of the algorithm that starts with an arbitrary point, `start`, iteratively moves it toward the minimum, and returns a point that is hopefully at or near the minimum:\n\nLanguage: Python\n\n```\n  1 def  gradient_descent(gradient, start, learn_rate, n_iter):  2 vector = start  3 for _ in range(n_iter):  4 diff = - learn_rate gradient(vector)  5 vector += diff  6 return vector\n```\n\n`gradient_descent()` takes four arguments: [...] Language: Python\n\n```\n>>> gradient_descent(... gradient = lambda v: 1 - 1/ v, start =2.5, learn_rate =0.5... )1.0000011077232125\n```\n\nWith the provided set of arguments, `gradient_descent()` correctly calculates that this function has the minimum in \ud835\udc63 = 1. You can try it with other values for the learning rate and starting point.\n\nYou can also use `gradient_descent()` with functions of more than one variable. The application is the same, but you need to provide the gradient and starting points as vectors or arrays. For example, you can find the minimum of the function \ud835\udc63\u2081\u00b2 + \ud835\udc63\u2082\u2074 that has the gradient vector (2\ud835\udc63\u2081, 4\ud835\udc63\u2082\u00b3):\n\nLanguage: Python"
+    },
+    {
+      "url": "https://towardsdatascience.com/implementing-gradient-descent-in-python-from-scratch-760a8556c31f",
+      "score": 0.8452414,
+      "content": "So now that we know what a gradient descent is and how it works, let\u2019s start implementing the same in python. But, before we get to the code logic of the same, let\u2019s first take a look at the data we are going to be using and the libraries that we will be importing for our purpose.\n\nFor this implementation, we are going to use the advertising dataset. This is a dataset that gives us the total sales for different products, after marketing them on Television, Radio and Newspaper. Using our algorithm, we can find out which medium performs the best for our sales and assign weights to all the mediums accordingly. This dataset can be downloaded from the link given below:\n\n> [...] Output:\n\nImage by Author (Top 5 rows of the dataset)\n\nImage by Author (Top 5 rows of the dataset)\n\nX would represent TV, Radio and Newspaper while Y would represent our sales. As all these sales might be on different scales, we then normalise our X & Y variables.\n\n```\nX=df\n```\n\n```\nY=df['Sales']\n```\n\n```\nY=np.array((Y-Y.mean())/Y.std())\n```\n\n```\nX=X.apply(lambda rec:(rec-rec.mean())/rec.std(),axis=0)\n```\n\nOnce we have a normalised dataset, we can start defining our algorithm. To implement a gradient descent algorithm we need to follow 4 steps:\n\n1. Randomly initialize the bias and the weight theta\n2. Calculate predicted value of y that is Y given the bias and the weight\n3. Calculate the cost function from predicted and actual values of Y\n4. Calculate gradient and the weights [...] ```\nplt.plot(alpha_df_1['iteration'],alpha_df_1['cost'],label=\"alpha=0.01\")\n```\n\n```\nplt.plot(alpha_df_2['iteration'],alpha_df_2['cost'],label=\"alpha=0.001\")\n```\n\n```\nplt.legend()\n```\n\n```\nplt.ylabel('cost')\n```\n\n```\nplt.xlabel('Number of iterations')\n```\n\n```\nplt.title('Cost Vs. Iterations for different alpha values')\n```\n\nOutput:\n\nImage by Author\n\nImage by Author\n\nAs one can see, 0.01 is the more optimal learning rate as it converges much quicker than 0.001. 0.01 converges around the 100 mark, while 0.001 takes 1000 ite"
+    },
+    {
+      "url": "https://developers.google.com/machine-learning/crash-course/linear-regression/gradient-descent",
+      "score": 0.82994765,
+      "content": "Gradient descent is a mathematical technique that iteratively finds the weights and bias that produce the model with the lowest loss. Gradient descent finds the best weight and bias by repeating the following process for a number of user-defined iterations.\n\nThe model begins training with randomized weights and biases near zero, and then repeats the following steps:\n\n1. Calculate the loss with the current weight and bias.\n2. Determine the direction to move the weights and bias that reduce loss.\n3. Move the weight and bias values a small amount in the direction that reduces loss.\n4. Return to step one and repeat the process until the model can't reduce the loss any further. [...] Gradient descent is an iterative optimization algorithm used to find the best weights and bias for a linear regression model by minimizing the loss function.\n The process involves repeatedly calculating the loss, determining the direction to adjust weights and bias to reduce loss, and updating the parameters accordingly.\n A model is considered to have converged when further iterations do not significantly reduce the loss, indicating it has found the weights and bias that produce the lowest possible loss.\n Loss curves visually represent the model's progress during training, showing how the loss decreases over iterations and helping to identify convergence."
+    },
+    {
+      "url": "https://www.datacamp.com/tutorial/stochastic-gradient-descent",
+      "score": 0.78944516,
+      "content": "## SGD in Action: A Walkthrough Example\n\nIn this section, we will implement SGD with support for batch size (mini-batch GD) using only Numpy.\n\nFirst, let\u2019s import the necessary libraries:\n\n`import seaborn as sns\nimport numpy as np\nimport pandas as pd\nimport warnings\nwarnings.filterwarnings(\"ignore\")\nnp.random.seed(42)`\n\nWe will use 10,000 data points from the Diamonds dataset available in Seaborn. We will take only the carat feature and the price column as target:\n\n`# Load the data\ndataset_size = 10_000\ndiamonds = sns.load_dataset('diamonds')\n# Extract the target and the feature\nxy = diamonds.values\nnp.random.shuffle(xy) # Shuffle the data\nxy = xy[:dataset_size]\nxy.shape\n(10000, 2)`\n\nNow, let\u2019s split the data into training and test sets, setting train size to 80% of the total. [...] Continuing the function outside the inner loop, we calculate the loss for the epoch:\n\n`# Compute the loss\ny_pred = model(m, x, b)\ncurrent_loss = loss(y, y_pred)`\n\nIf the `current_loss` is smaller than the `stopping_threshold` we stop the entire process:\n\n`current_loss`\n`stopping_threshold`\n`if previous_loss - current_loss < stopping_threshold:\nbreak\nprevious_loss = current_loss`\n\nOtherwise, we set `previous_loss` to `current_loss`. In the end, we return the optimized `m` and `b` parameters:\n\n`previous_loss`\n`current_loss`\n`m`\n`b`\n`return m, b`\n\nI\u2019ve pasted the entire code into this GitHub gist so that you can look at the whole picture.\n\nA screenshot of the code for implementing Stochastic Gradient Descent (SGD) in Python [...] A screenshot of the code for implementing Stochastic Gradient Descent (SGD) in Python\n\nLet\u2019s test how well the found parameters work by running the model on the test set:\n\n`# Find the optimal parameters\nm, b = stochastic_gradient_descent(train_xy[:, 0], train_xy[:, 1])\n# Make predictions\ny_preds = model(m, test_xy[:, 0], b)\n# Compute and print the loss\nmean_squared_error = loss(test_xy[:, 1], y_preds)\nmean_squared_error  0.5\n1595.3955619759456`\n\nThe square root of "
+    },
+    {
+      "url": "https://www.ibm.com/think/topics/gradient-descent",
+      "score": 0.75723875,
+      "content": "# What is gradient descent?\n\n## What is gradient descent?\n\nGradient descent is an optimization algorithm which is commonly-used to train machine learning models and neural networks. It trains machine learning models by minimizing errors between predicted and actual results.\n\nTraining data helps these models learn over time, and the cost function within gradient descent specifically acts as a barometer, gauging its accuracy with each iteration of parameter updates. Until the function is close to or equal to zero, the model will continue to adjust its parameters to yield the smallest possible error. Once machine learning models are optimized for accuracy, they can be powerful tools for artificial intelligence (AI) and computer science applications."
+    },
+    {
+      "url": "https://towardsdatascience.com/the-gradient-descent-algorithm-4d54e0d446cd",
+      "score": 0.7418428,
+      "content": "Towards Data Science\n\nPublish AI, ML & data-science insights to a global community of data professionals.\n\nTowards Data Science\n\n# The Gradient Descent Algorithm and the Intuition Behind It\n\nA technical description of the Gradient Descent method, complemented with a graphical representation of the algorithm at work\n\n\"Once you're over the hill you begin to pick up speed\" by Arthur Schopenhauer. Photo taken by the author. [...] Let us recap what have we have said so far. Gradient descent is an algorithm, that while in the training phase of a model, iteratively adjusts hence optimizes the values of the function\u2019s parameters by taking the partial derivative of the function with respect to each of its inputs at every step it takes towards the steepest descent, defined as the local minimum. If the derivative is positive, the function is increasing. Thus, steps should be taken opposite direction. The gradient indicates in which direction the step should be taken. If gradient is large, namely large slope absolute value, larger steps should be taken towards the local minimum. In fact, gradient descent takes increasingly smaller steps on the direction of the local minima within each iteration as shown by the blue arrows [...] Gradient Descent is mostly used (among others) to train machine learning models and deep learning models, the latter based on a neural network architectural type. From linear regression and logistic regression to neural networks, gradient descent aims to calculate the function\u2019s best parameters values. In its simplest form, gradient descent aims to minimize the error term of the below linear regression by deriving the optimal values of the parameters for the independent variables. This is,\n\ny = \u03b20 + \u03b21  X1 + \u2026 \u03b2k  Xk + \u0190\n\nwhere,\n\ny is the dependent variable\n\nk number of independent variables\n\nX independent variable\n\n\u03b2 parameter\n\n\u0190 error term component"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=qg4PchTECck",
+      "score": 0.7327644,
+      "content": "Gradient descent is the process by which machines learn how to generate new faces, play hide and seek, and even beat the best humans at games like Dota. But, what exactly is gradient descent? To answer that question, let's say you're trying to train your computer to listen to an audio file and recognize three spoken commands based on a labeled data set. The first step is to formulate this machine learning task as a mathematical optimization problem. For example, you can work with a neural network whose weights are unknown variables, whose input is an audio data, and whose output is a vector of size three, where each entry represents how much the neural network thinks the audio corresponds to each command. Then, for each example in the data set, you compare the output of the neural network [...] of gradient descent is that while we cannot get a look at the whole function all at once, we can easily evaluate the cost function at an arbitrary point. And with a process called backpropagation, we can also evaluate the negative gradient of this cost function and take a small step in that direction. Gradient descent continues in an iterative fashion. It computes the negative gradient at the new point, takes a step in that direction, and so on and so forth. The intuition behind every step is that the gradient of a function gives you the direction that increases that function the most. So, by taking a small step in the opposite direction, you can hope to make the function decrease at each iteration. Gradient descent, as I just presented it, is known as vanilla gradient descent because [...] # Gradient Descent in 3 minutes\n## Visually Explained\n83500 subscribers\n10055 likes\n\n### Description\n433192 views\nPosted: 8 Oct 2021\nVisual and intuitive overview of the Gradient Descent algorithm. This simple algorithm is the backbone of most machine learning applications. \n\nReferences:\n- AI plays hide and seek: \n- AI plays Dota 2: \n- InterFaceGAN: \n- Boyd and Vandenberghe's book on Conve"
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "gradient-descent",
+      "chunk_index": 0,
+      "distance": 0.3315,
+      "rrf_score": 0.03333,
+      "text": "# Gradient Descent\n\n## Definition\nGradient descent is a first-order iterative optimization algorithm for finding a local minimum of a differentiable function. It moves parameters in the direction of the negative gradient of the objective function with respect to the parameters.\n\n## Intuition\nThe gradient of a function points in the direction of steepest ascent. By repeatedly taking small steps in the opposite direction, the algorithm travels downhill on the error surface, converging to a point where the gradient is zero (a critical point).\n\n## Mathematical Formulation\nGiven a parameter vector \u03b8 \u2208 R^d and a differentiable loss function J(\u03b8), the update rule for step t is:\n\n\u03b8_{t+1} = \u03b8_t \u2212 \u03b7 \u00b7 \u2207J(\u03b8_t)\n\nwhere \u03b7 > 0 is the learning rate (step size). The gradient \u2207J(\u03b8_t) is the vector of partial derivatives [\u2202J/\u2202\u03b8_1, ..., \u2202J/\u2202\u03b8_d] evaluated at \u03b8_t.\n\nFor a dataset of m examples, the full-batch gradient uses:\n\n\u2207J(\u03b8) = (1/m) \u03a3_{i=1}^m \u2207L(f(x_i; \u03b8), y_i)\n\nIn practice, the gradient is often approximated using a mini-batch of size B \u226a m.\n\n## Estimation\nGradient descent estimates model parameters by minimizing a loss function. The procedure:\n1. Initialize \u03b8_0 (e.g., small random values).\n2. For t = 0, 1, ..., until convergence:\n   a. Compute gradient estimate g_t = (1/|B|) \u03a3_{i\u2208B} \u2207_\u03b8 L(f(x_i; \u03b8_t), y_i).\n   b. Update \u03b8_{t+1} = \u03b8_t \u2212 \u03b7 g_t.\n3. Stop when gradient magnitude or loss improvement falls below a"
+    },
+    {
+      "source": "gradient-descent",
+      "chunk_index": 2,
+      "distance": 0.4465,
+      "rrf_score": 0.032,
+      "text": " and local minima**: May stall in flat regions or local minima for non-convex functions, though high-dimensional saddle points are more prevalent.\n- **Vanishing/exploding gradients**: Severely scaled gradients in deep networks disrupt updates.\n\n## When to Use / Not Use\n**Use**: As the default optimizer for differentiable loss functions in machine learning (linear/logistic regression, neural networks). Scalable to large datasets via mini-batches.\n\n**Not use**: When loss is non-differentiable (use subgradient methods, evolutionary algorithms), when problem is small and exact solution is needed (closed-form OLS), when convergence speed is critical and second-order methods are feasible (Newton's method), or when the function has many local minima and global search is required.\n\n## Variants / Extensions\n- **Stochastic Gradient Descent (SGD)**: Uses a single example or mini-batch; noisy but faster.\n- **Momentum**: Adds a velocity term to damp oscillations and accelerate convergence.\n- **Nesterov Accelerated Gradient (NAG)**: Looks ahead along momentum direction.\n- **AdaGrad, RMSProp, Adam**: Adaptive learning rate methods that scale updates per-parameter.\n- **Batch Gradient Descent**: Full dataset per step; deterministic but computationally heavy.\n\n## Minimal Example (Python)\n```python\n# Minimize f(x) = (x-3)^2\ndef f(x): return (x-3)**2\ndef gradf(x): return 2*(x-3)\n\nx = 0.0          # initial guess\nlr = 0.1\nfor t in range(100):\n    x = x - lr * gradf(x)\nprint(x)  # ~3.0\n```\n## Claim-Dense Reference Facts\n\n- The standard SGD update rule is \u03b8 = \u03b8 - \u03b7\u00b7\u2207J(\u03b8) where \u03b7 is the learning rate scalar.\n- Adam optimizer uses"
+    },
+    {
+      "source": "gradient-descent",
+      "chunk_index": 3,
+      "distance": 0.5343,
+      "rrf_score": 0.03132,
+      "text": " # ~3.0\n```\n## Claim-Dense Reference Facts\n\n- The standard SGD update rule is \u03b8 = \u03b8 - \u03b7\u00b7\u2207J(\u03b8) where \u03b7 is the learning rate scalar.\n- Adam optimizer uses \u03b2\u2081=0.9, \u03b2\u2082=0.999, \u03b5=1e-8 as default hyperparameters in PyTorch.\n- Momentum SGD adds a velocity term: v = \u03b3v + \u03b7\u00b7\u2207J(\u03b8), \u03b8 = \u03b8 - v, where \u03b3=0.9 is typical.\n- Learning rate warmup linearly increases \u03b7 from 0 to target over the first 5\u201310% of training steps.\n- Cosine annealing decays learning rate as \u03b7_t = \u03b7_min + 0.5(\u03b7_max - \u03b7_min)(1 + cos(\u03c0t/T)).\n- Gradient clipping by norm is applied when ||g|| > threshold, rescaling g = g\u00b7(threshold/||g||).\n- PyTorch's `torch.optim.SGD` accepts lr, momentum, weight_decay, and nesterov parameters.\n- For logistic regression on convex loss, gradient descent with constant step size converges at O(1/k) rate.\n- Mini-batch size of 32\u2013256 is standard; larger batches require learning rate scaling (linear scaling rule).\n- Cyclical learning rates (CLR) oscillate between \u03b7_min and \u03b7_max over a fixed cycle of 2\u201310 epochs."
+    },
+    {
+      "source": "backpropagation",
+      "chunk_index": 0,
+      "distance": 0.4448,
+      "rrf_score": 0.03105,
+      "text": "# Backpropagation\n\n## Definition\nBackpropagation is an algorithm that computes the gradient of a scalar loss function with respect to all parameters of a differentiable computational graph by applying the chain rule recursively from output to input. It enables efficient gradient-based learning in neural networks.\n\n## Intuition\nA deep network is a composition of many functions. Backpropagation computes the gradient of the loss with respect to each internal parameter by propagating error signals backward through the network, reusing partial results to avoid redundant computation and achieving linear time complexity in the number of parameters.\n\n## Mathematical Formulation\nConsider a feedforward graph with layers l=1,...,L. Forward: a^(0)=x, a^(l)=f_l(a^(l-1); \u03b8^(l)). Loss L = \u2113(a^(L), y). Define the error signal \u03b4^(L) = \u2202L/\u2202a^(L) \u00b7 f_L'(z^(L)) (for elementwise activation). For each layer l = L down to 1:\n\n\u03b4^(l) = ((W^(l+1))^T \u03b4^(l+1)) \u2299 g_l'(z^(l))\n\nwhere z^(l) = W^(l) a^(l-1) + b^(l), and g_l is activation with derivative g_l'. Gradients w.r.t. parameters:\n\n\u2202L/\u2202W^(l) = \u03b4^(l) (a^(l-1))^T\n\u2202L/\u2202b^(l) = \u03b4^(l)\n\nThese accumulate over mini-batches. More generally, for an arbitrary scalar output y and tensor input x, backpropagation computes vector-Jacobian products: \u2202y/\u2202x = \u03a3_i (\u2202y/\u2202x_i) e_i, efficiently using the transpose of the Jacobian of each operation.\n\n## Estimation\nBackpropagation is the gradient computation step within parameter estimation. During"
+    },
+    {
+      "source": "gradient-descent",
+      "chunk_index": 1,
+      "distance": 0.4073,
+      "rrf_score": 0.03089,
+      "text": "} \u2207_\u03b8 L(f(x_i; \u03b8_t), y_i).\n   b. Update \u03b8_{t+1} = \u03b8_t \u2212 \u03b7 g_t.\n3. Stop when gradient magnitude or loss improvement falls below a threshold, or after a fixed number of epochs.\n\nConvergence is monitored via training/validation loss. The estimate \u03b8_final is the minimizer found.\n\n## Assumptions\n- The loss function J(\u03b8) is differentiable (almost everywhere, or subgradients exist).\n- Learning rate \u03b7 is suitably chosen; too large causes divergence, too small causes slow convergence.\n- Data examples are i.i.d. samples from the target distribution (for generalization).\n- The parameter space is unconstrained or handled via projection (or penalty) if constrained.\n\n## Key Properties\n- **Monotonic improvement**: For sufficiently small \u03b7 and convex J, J(\u03b8_{t+1}) \u2264 J(\u03b8_t). For non-convex J, this holds locally with careful step sizing.\n- **Linear convergence rate** for strongly convex, smooth functions with constant step size; sublinear for convex, non-strongly convex.\n- **Sensitivity to scaling**: Performance depends heavily on the conditioning of the problem; ill-conditioned problems lead to slow zigzagging.\n- **Global convergence to stationary point** under Lipschitz gradient and diminishing step sizes (for stochastic variants).\n\n## Failure Modes\n- **Divergence**: Learning rate too high; loss increases to infinity.\n- **Slow progress**: Learning rate too small or poorly conditioned curvature.\n- **Oscillations**: Near steep ravines, constant step size leads to bouncing, slowing convergence.\n- **Saddle points and local minima**: May stall in flat regions or local minima for non-convex functions, though high-dimensional saddle points are more prevalent.\n- **Vanishing/exploding gradients**: Severely scaled gradients in deep networks disrupt updates.\n\n##"
+    }
+  ],
+  "attribution": {
+    "web": 22,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

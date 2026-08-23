@@ -1,0 +1,805 @@
+{
+  "run_id": "1b973ad6-d74a-48a8-a10d-694da36a7678",
+  "topic": "Ridge, Lasso & ElasticNet",
+  "slug": "ridge-lasso-and-elasticnet",
+  "timestamp": "2026-08-21T12:10:38.649186+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 22,
+      "S": 22,
+      "V": 35,
+      "W": 0,
+      "U": 0,
+      "N": 35,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.91,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Ordinary least squares (OLS) regression fits a line by minimizing the sum of squared errors.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "When you have many predictors, or predictors that are highly correlated, OLS coefficients can blow up and the model memorizes noise instead of learning the underlying pattern.",
+          "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+        },
+        {
+          "claim": "Regularization adds a penalty to the objective that shrinks coefficients toward zero.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Ridge uses an L2 penalty (sum of squared coefficients), which shrinks all coefficients but never sets them to zero.",
+          "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+        },
+        {
+          "claim": "Lasso uses an L1 penalty (sum of absolute coefficients), which can drive some coefficients exactly to zero, performing feature selection.",
+          "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+        },
+        {
+          "claim": "ElasticNet combines both penalties, giving you a middle ground that handles correlated features better than Lasso alone.",
+          "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+        },
+        {
+          "claim": "These methods are standard tools when you suspect overfitting, have high-dimensional data, or need a sparse, interpretable model.",
+          "source_url": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f"
+        },
+        {
+          "claim": "All three methods start with the OLS objective: minimize \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Ridge adds a penalty term: minimize \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 \u03a3\u2c7c \u03b2\u2c7c\u00b2.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "The \u03b1 (often called lambda) controls the strength of the penalty.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Larger \u03b1 means more shrinkage, reducing variance but increasing bias.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Ridge has a closed-form solution: \u03b2\u0302 = (X\u1d40X + \u03b1I)\u207b\u00b9X\u1d40y.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "The \u03b1I term makes the matrix invertible even when X\u1d40X is singular, which happens when p > n or with perfect multicollinearity.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Lasso replaces the squared penalty with an absolute value: minimize \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 \u03a3\u2c7c |\u03b2\u2c7c|.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "This non-differentiable penalty has no closed-form solution; it's typically solved via coordinate descent or LARS.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "The key property of L1 is that it can set coefficients exactly to zero.",
+          "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+        },
+        {
+          "claim": "Geometrically, the constraint region is a diamond, and the optimal point often lands on a corner where some coefficients are zero.",
+          "source_url": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f"
+        },
+        {
+          "claim": "This makes Lasso a feature selector.",
+          "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+        },
+        {
+          "claim": "ElasticNet combines both: minimize \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 [ \u03c1 \u03a3\u2c7c |\u03b2\u2c7c| + 0.5(1\u2212\u03c1) \u03a3\u2c7c \u03b2\u2c7c\u00b2 ].",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Here \u03c1 (l1_ratio in scikit-learn) balances L1 and L2.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "When \u03c1=1, it's Lasso; when \u03c1=0, it's Ridge.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "The L2 term helps when you have groups of correlated features.",
+          "source_url": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f"
+        },
+        {
+          "claim": "Lasso tends to pick one feature from a correlated group arbitrarily, while ElasticNet encourages a grouping effect where correlated features get similar coefficients.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "This is especially useful when p > n, where Lasso can only select at most n features, even if more are relevant.",
+          "source_url": "http://accio.github.io/machine-learning/2018/01/04/glmnet.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "unresolved",
+          "source_ref": null
+        },
+        {
+          "claim": "A major failure mode: all three methods are sensitive to the choice of \u03b1.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Too small \u03b1 means little regularization, and you're back to overfitting.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Too large \u03b1 shrinks everything toward zero, underfitting.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "You must tune \u03b1 via cross-validation.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Also, these methods are sensitive to predictor scaling; you should standardize features before fitting.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "The coefficients are biased, so if you need unbiased inference on the original coefficients, these methods are not appropriate.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Ridge (L2) shrinks all coefficients but never to zero; use when you have many features and want to keep them all.",
+          "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+        },
+        {
+          "claim": "Lasso (L1) can zero out coefficients, performing feature selection; use when you want a sparse, interpretable model.",
+          "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+        },
+        {
+          "claim": "ElasticNet combines L1 and L2; use when you have correlated features and Lasso's arbitrary selection is a problem.",
+          "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+        },
+        {
+          "claim": "Always standardize features before fitting any of these methods, because the penalty is scale-sensitive.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        },
+        {
+          "claim": "Tune alpha (and l1_ratio for ElasticNet) via cross-validation; too small overfits, too large underfits.",
+          "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "Solid, well-structured draft with all four sections present and technically accurate for the target audience. The deep-dive covers the math, geometry, and practical failure modes (alpha sensitivity, scaling, p>n limitations) at an appropriate senior level. Minor improvements: the code example could show coefficient comparison across models more explicitly, and the takeaways section is a bit listy rather than synthesizing when to choose each method in practice.",
+  "grounding_score": 0.91,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 15759,
+  "total_cost_usd": 0.00839,
+  "latency_ms": {
+    "retrieve": 7359,
+    "retrieve_web": 7340,
+    "retrieve_kb": 19,
+    "draft": 10455,
+    "verify": 13393,
+    "reflect": 2036,
+    "html_gen": 3742,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 35,
+  "claims_weak": 0,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 0,
+    "mean_confidence_verified": 0.91,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 22,
+    "S": 22,
+    "V": 35,
+    "N": 35,
+    "verified_fraction": 1.0,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Ordinary least squares (OLS) regression fits a line by minimizing the sum of squared errors.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "When you have many predictors, or predictors that are highly correlated, OLS coefficients can blow up and the model memorizes noise instead of learning the underlying pattern.",
+      "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+    },
+    {
+      "claim": "Regularization adds a penalty to the objective that shrinks coefficients toward zero.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Ridge uses an L2 penalty (sum of squared coefficients), which shrinks all coefficients but never sets them to zero.",
+      "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+    },
+    {
+      "claim": "Lasso uses an L1 penalty (sum of absolute coefficients), which can drive some coefficients exactly to zero, performing feature selection.",
+      "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+    },
+    {
+      "claim": "ElasticNet combines both penalties, giving you a middle ground that handles correlated features better than Lasso alone.",
+      "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+    },
+    {
+      "claim": "These methods are standard tools when you suspect overfitting, have high-dimensional data, or need a sparse, interpretable model.",
+      "source_url": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f"
+    },
+    {
+      "claim": "All three methods start with the OLS objective: minimize \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Ridge adds a penalty term: minimize \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 \u03a3\u2c7c \u03b2\u2c7c\u00b2.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "The \u03b1 (often called lambda) controls the strength of the penalty.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Larger \u03b1 means more shrinkage, reducing variance but increasing bias.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Ridge has a closed-form solution: \u03b2\u0302 = (X\u1d40X + \u03b1I)\u207b\u00b9X\u1d40y.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "The \u03b1I term makes the matrix invertible even when X\u1d40X is singular, which happens when p > n or with perfect multicollinearity.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Lasso replaces the squared penalty with an absolute value: minimize \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 \u03a3\u2c7c |\u03b2\u2c7c|.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "This non-differentiable penalty has no closed-form solution; it's typically solved via coordinate descent or LARS.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "The key property of L1 is that it can set coefficients exactly to zero.",
+      "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+    },
+    {
+      "claim": "Geometrically, the constraint region is a diamond, and the optimal point often lands on a corner where some coefficients are zero.",
+      "source_url": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f"
+    },
+    {
+      "claim": "This makes Lasso a feature selector.",
+      "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+    },
+    {
+      "claim": "ElasticNet combines both: minimize \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 [ \u03c1 \u03a3\u2c7c |\u03b2\u2c7c| + 0.5(1\u2212\u03c1) \u03a3\u2c7c \u03b2\u2c7c\u00b2 ].",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Here \u03c1 (l1_ratio in scikit-learn) balances L1 and L2.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "When \u03c1=1, it's Lasso; when \u03c1=0, it's Ridge.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "The L2 term helps when you have groups of correlated features.",
+      "source_url": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f"
+    },
+    {
+      "claim": "Lasso tends to pick one feature from a correlated group arbitrarily, while ElasticNet encourages a grouping effect where correlated features get similar coefficients.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "This is especially useful when p > n, where Lasso can only select at most n features, even if more are relevant.",
+      "source_url": "http://accio.github.io/machine-learning/2018/01/04/glmnet.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "unresolved",
+      "source_ref": null
+    },
+    {
+      "claim": "A major failure mode: all three methods are sensitive to the choice of \u03b1.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Too small \u03b1 means little regularization, and you're back to overfitting.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Too large \u03b1 shrinks everything toward zero, underfitting.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "You must tune \u03b1 via cross-validation.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Also, these methods are sensitive to predictor scaling; you should standardize features before fitting.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "The coefficients are biased, so if you need unbiased inference on the original coefficients, these methods are not appropriate.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Ridge (L2) shrinks all coefficients but never to zero; use when you have many features and want to keep them all.",
+      "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+    },
+    {
+      "claim": "Lasso (L1) can zero out coefficients, performing feature selection; use when you want a sparse, interpretable model.",
+      "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+    },
+    {
+      "claim": "ElasticNet combines L1 and L2; use when you have correlated features and Lasso's arbitrary selection is a problem.",
+      "source_url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=WuLPh_PAcU0"
+    },
+    {
+      "claim": "Always standardize features before fitting any of these methods, because the penalty is scale-sensitive.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    },
+    {
+      "claim": "Tune alpha (and l1_ratio for ElasticNet) via cross-validation; too small overfits, too large underfits.",
+      "source_url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://www.youtube.com/watch?v=WuLPh_PAcU0",
+      "score": 0.85797083,
+      "content": "Ridge, Lasso, and Elastic Net are regularized linear regression techniques used to prevent overfitting and improve model generalization. Ridge Regression uses L2 regularization to shrink coefficients, which is especially helpful in the presence of multicollinearity. Lasso Regression applies L1 regularization, which can reduce some coefficients to exactly zero, effectively performing feature selection. Elastic Net combines both L1 and L2 penalties, offering a balanced approach suitable for datasets with correlated features. In practice, Ridge spreads influence across all features, while Lasso focuses on a few important ones. Elastic Net is particularly powerful when the dataset has many features, some of which are redundant or irrelevant. Using the mtcars dataset, models were trained and [...] Using the mtcars dataset, models were trained and tested to compare performance using metrics like mean squared error (MSE) and R\u00b2. Linear regression had high training accuracy but performed poorly on test data, suggesting overfitting. Ridge slightly improved generalization, while Lasso and Elastic Net further reduced test error and improved R\u00b2 scores. Overall, these techniques provide flexible options for improving regression performance when dealing with complex or high-dimensional data. [...] U Better performance model we get 9576 so it's exactly the same it didn't add any value at all we did some work here and um made no improvement into the way this model was able to learn and and make predictions into the future 9576 was uh Ridge and just straight up regression lasso is 9572 so this is actually slightly worse than the first two so Ridge is not not necessarily we're just doing superflous work here lasso is actually uh causing the model to become a little bit fuzzy and and make uh slightly less accurate predictions uh 9572 if we look at elastic net 0.95 67 so now even it's slightly worse than uh lasso right so this is adding no value whatsoever I don't think this these conc"
+    },
+    {
+      "url": "https://blog.damavis.com/en/linear-regression-with-elastic-net-implementations-in-python",
+      "score": 0.84858394,
+      "content": "The Python implementations for the Elastic Net, whose extreme cases include the Ridge and Lasso regressions, are discussed below.\n\n## Linear regression with elastic net in Python\n\nAs an example, the load\\_diabetes package from sklearn.datasets, divided into training and test data, will be used.\n\nThe data are already standardized.\n\n### Scikit-Learn [...] Ridge (L2) penalizes the sum of the square of the coefficients. The minimization function in Lagrangian form is:\n\nwhere, in each case, \u03bb represents the fitting parameter with value .\n\nThe combination of both penalties is the expression of an Elastic Net:\n\nAlthough formally, and also in the Scikit-Learn and Statsmodels implementations, the expression that is minimized is slightly different:\n\nwhere n is the sample size.\n\nRegarding the L1 and L2 penalties, it should be noted that: [...] Prediction accuracy can sometimes be improved by decreasing the value of the regression coefficients. In this sense, reducing the value of the estimators increases the bias but reduces the variance in the values to be predicted.\n According to the first point, the coefficients can be reduced to zero by selecting variables indirectly. In a model with a large number of explanatory variables at the beginning, it improves its interpretability.\n\nLasso and Ridge are two methods that combine the minimization of the OLS mean square error with the establishment of limits or penalties to the coefficients.\n\n## Definition of penalties L1 and L2\n\nLasso (L1) penalizes the sum of the absolute value of the coefficients. In this case, the minimization function in Lagrangian form would have the form"
+    },
+    {
+      "url": "https://www.facebook.com/groups/DataScienceGroup/posts/4276188215776369",
+      "score": 0.8020137,
+      "content": "Ridge shrinks variables, Lasso drops them to zero, while Elastic Net is a hybrid, useful for correlated variables and subset selection."
+    },
+    {
+      "url": "https://towardsdatascience.com/lasso-and-elastic-net-regressions-explained-a-visual-guide-with-code-examples-5fecf3e1432f",
+      "score": 0.80126834,
+      "content": "Ridge Regression works well when you have the opposite situation \u2013 lots of features compared to your number of samples. It\u2019s also great when your features are strongly connected to each other.\n\nLasso Regression is best when you want to discover which features actually matter for your predictions. It will automatically set unimportant features to zero, making your model simpler.\n\nElastic Net combines the strengths of both Ridge and Lasso. It\u2019s useful when you have groups of related features and want to either keep or remove them together. If you\u2019ve tried Ridge and Lasso separately and weren\u2019t happy with the results, Elastic Net might give you better predictions. [...] Linear regression comes in different types: Least Squares methods form the foundation, from the classic Ordinary Least Squares (OLS) to Ridge regression with its regularization to prevent overfitting. Then there\u2019s Lasso regression, which takes a unique approach by automatically selecting important factors and ignoring others. Elastic Net combines the best of both worlds, mixing Lasso\u2019s feature selection with Ridge\u2019s ability to handle related features.\n\nIt\u2019s frustrating to see many articles treat these methods as if they\u2019re basically the same thing with minor tweaks. They make it seem like switching between them is as simple as changing a setting in your code, but each actually uses different approaches to solve their optimization problems! [...] Note: Even though Elastic Net can do what OLS, Ridge, and Lasso do by changing its parameters, it\u2019s better to use the specific command made for each type of regression. In scikit-learn, use `LinearRegression` for OLS, `Ridge` for Ridge regression, and `Lasso` for Lasso regression. Only use Elastic Net when you want to combine both Lasso and Ridge\u2019s special features together.\n\n## Final Remarks: Which Regression Method Should You Use?\n\nLet\u2019s break down when to use each method.\n\nStart with Ordinary Least Squares (OLS) when you have more samples than features in you"
+    },
+    {
+      "url": "http://accio.github.io/machine-learning/2018/01/04/glmnet.html",
+      "score": 0.7992077,
+      "content": "Technically, LASSO achieves its goals by forcing the sum of the absolute value of the regression coefficients to be less than a fixed value, and therefore forces certain coefficients be set to zero. This process is also known as \\(l1\\)-norm regularization, in contrast to the \\(l2\\)-norm regularization normalization applied in ridge regression, which forces the sum of the squares of the coefficients to be less than a fixed value.\n\nOne limitation of LASSO when applied to computational biology questions is that when the number of covariates is larger than the same size (\\(p>n\\)), LASSO can only select \\(n\\) covariates, even when more are associated with the outcome, and it tends to select only one covariate from any set of highly correlated covariates. [...] ## Elastic net\n\nIn order to overcome the limitations of LASSO, Hastie and others developed the elastic net method.\n\nElastic net can be viewed as a hybrid of ridge and LASSO. It extends LASSO by adding a ridge regression-like penalty which improves performance when \\(p>n\\). The result is that strongly correlated covariates can be selected together.\n\nThe elastic-net penalty is controlled by a parameter \\(\\alpha\\) between 0 and 1: it bridges the gap between LASSO (\\(\\alpha\\)=1) and ridge (\\(\\alpha\\)=0). [...] ## Lasso regression\n\nLASSO, or Least Aboslute Shrinkage and Selection Operator, is another regression method that performs both variable selection and regularization. It selects only a subset of provided covariates in the final model rather than using all of them for regression. As a consequence, the resulting model has fewer variables and is easier to interpret, at the same time the model maintains a high accuracy of prediction."
+    },
+    {
+      "url": "https://accio.github.io/machine-learning/2018/01/04/glmnet.html",
+      "score": 0.7992077,
+      "content": "Technically, LASSO achieves its goals by forcing the sum of the absolute value of the regression coefficients to be less than a fixed value, and therefore forces certain coefficients be set to zero. This process is also known as \\(l1\\)-norm regularization, in contrast to the \\(l2\\)-norm regularization normalization applied in ridge regression, which forces the sum of the squares of the coefficients to be less than a fixed value.\n\nOne limitation of LASSO when applied to computational biology questions is that when the number of covariates is larger than the same size (\\(p>n\\)), LASSO can only select \\(n\\) covariates, even when more are associated with the outcome, and it tends to select only one covariate from any set of highly correlated covariates. [...] ## Elastic net\n\nIn order to overcome the limitations of LASSO, Hastie and others developed the elastic net method.\n\nElastic net can be viewed as a hybrid of ridge and LASSO. It extends LASSO by adding a ridge regression-like penalty which improves performance when \\(p>n\\). The result is that strongly correlated covariates can be selected together.\n\nThe elastic-net penalty is controlled by a parameter \\(\\alpha\\) between 0 and 1: it bridges the gap between LASSO (\\(\\alpha\\)=1) and ridge (\\(\\alpha\\)=0). [...] ## Lasso regression\n\nLASSO, or Least Aboslute Shrinkage and Selection Operator, is another regression method that performs both variable selection and regularization. It selects only a subset of provided covariates in the final model rather than using all of them for regression. As a consequence, the resulting model has fewer variables and is easier to interpret, at the same time the model maintains a high accuracy of prediction."
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-lasso-ridge-and-elastic-net",
+      "score": 0.79022324,
+      "content": "Elastic Net :  \nIn elastic Net Regularization we added the both terms of L1 and L2 to get the final loss function. This leads us to reduce the following loss function:   \nL\\_{elastic-Net}\\left ( \\hat\\beta \\right )= \\left ( \\sum \\left ( y - x\\_i^J\\hat{\\beta} \\right )^2 \\right )/2n+\\lambda \\left ( (1 -\\alpha )/2 \\ \\sum\\_{j=1}^{m} \\hat{\\beta\\_{j}^{2}}+\\alpha \\ \\sum\\_{j=1}^{m} \\left \\| \\hat{\\beta\\_{j}} \\right \\| \\right)   \nwhere \\alpha is between 0 and 1. when \\alpha = 1, It reduces the penalty term to L1 penalty and if \\alpha = 0, it reduces that term to L2   \npenalty.  \nCode : Python code implementing the Elastic Net [...] The above code produce scatter plots of different independent variable with target variable as shown below\n\nscatter plots\n\nWe can observe from the above scatter plots that some of the independent variables are not very much correlated (either positively or negatively) with the target variable. These variables will get their coefficients to be reduced in regularization.   \nCode : Python code to pre-process the data.\n\n Python3  ````\n # Load the dataset into Pandas Dataframe boston_pd = pd. DataFrame(boston_dataset. data) boston_pd. columns = boston_dataset. feature_names boston_pd_target = np. asarray(boston_dataset. target) boston_pd['House Price'] = pd. Series(boston_pd_target) # input X = boston_pd. iloc[:,: - 1] #output Y = boston_pd. iloc[:, - 1] print(boston_pd. head())\n```` [...] rigdgeatAlpha1\n\nRidge Regression at \\alpha =1\n\nIn the above graph we take \\alpha = 1.   \nLet's look at another bar plot with \\alpha = 10 \n\n is called L1 Regularization.  \nCode : Python code implementing the Lasso Regression \n\n Python3  ````\n # import Lasso regression from sklearn library fromsklearn.linear_model import Lasso # Train the model lasso = Lasso(alpha = 1) lasso. fit(x_train, y_train) y_pred1 = lasso. predict(x_test) # Calculate Mean Squared Error mean_squared_error = np. mean((y_pred1 - y_test) 2) print(\"Mean squared error on test set\", mean_squared_error) "
+    },
+    {
+      "url": "https://dataaspirant.com/elasticnet-regression-python",
+      "score": 0.7413937,
+      "content": "Compared to Lasso regression, ElasticNet regression performs better when there are correlated features in the data because it does not select only one feature from a group of correlated features. compared to Ridge regression, ElasticNet regression performs better when feature selection and therefore performs better when there are irrelevant or redundant features in the data.\n\n## Real-World Applications of ElasticNet Regression\n\nPowerful as ElasticNet Regression, maybe if it has no real-world usage then it won\u2019t be of much use. Let\u2019s go through some of the real-world usage of it.\n\n### Example 1: Predicting housing prices [...] ## Implementing ElasticNet Regression in Python\n\nTo implement ElasticNet regression in Python, use the scikit-learn library, which provides easy-to-use tools for machine learning tasks. This example uses the Diabetes dataset, a predefined dataset in scikit-learn.\n\nImplementing ElasticNet Regression in Python\n\n### Preparing the data\n\n First, we need to loaded the dataset and split it into training and testing sets\n Next, we standardize the data using the StandardScaler\n\n### Creating an ElasticNet regression model\n\n To create an ElasticNet regression model, we first import the ElasticNet class from the linear\\_model module.\n Then, we instantiate an ElasticNet object and fit it to our training data. [...] ElasticNet regression is an essential tool for data scientists working with high-dimensional data sets, combining the strengths of both L1 regularization and L2 regularization to provide a powerful way to handle multicollinearity and reduce model complexity while retaining important features.\n\nIt provides a powerful way to handle multicollinearity while preserving important features and reducing model complexity.\n\nIf you are new to ElasticNet regression, we recommend practicing with the examples and code provided in this guide. Once you have mastered this technique, you can explore other regularization techniques such as Lasso regression and Ridg"
+    },
+    {
+      "url": "https://metricgate.com/blogs/lasso-vs-ridge-vs-elastic-net",
+      "score": 0.71758664,
+      "content": "Lasso's limitation: When predictors are highly correlated, Lasso tends to arbitrarily pick one and zero out the rest. This makes it unstable when"
+    },
+    {
+      "url": "https://www.digitalocean.com/community/tutorials/regularization-in-machine-learning-lasso-ridge-elastic-net",
+      "score": 0.68748367,
+      "content": "Elastic Net improves on the limitations of Lasso, especially when working with high-dimensional data and a small number of samples. Lasso tends to select just one variable from a group of highly correlated features and ignore the rest, which can be a problem when all those features carry useful information.\n\nTo fix this, Elastic Net adds a quadratic term (the L2 norm, like in Ridge Regression) to the penalty. This makes the loss function more stable and convex, and helps include more relevant variables rather than dropping them entirely. Essentially, Elastic Net combines the strengths of both Lasso and Ridge\u2014it selects important features while handling correlated ones better.\n\nThe process of finding Elastic Net coefficients happens in two stages: [...] The choice between Lasso, Ridge, or Elastic Net depends on the problem at hand\u2014whether you need feature selection, stability with multicollinearity, or a balance of both. Ultimately, thoughtful experimentation and model evaluation are key to selecting the most effective regularization technique for your machine learning task.\n\nElastic Net shines when there is a need to combine the best of both worlds by applying both L1 and L2 penalties. This allows it to select important features like Lasso while maintaining the grouping effect and robustness of Ridge. [...] Both the techniques Lasso and Ridge regression are powerful for regularization, each with its own strengths\u2014Lasso for feature selection and sparsity, and Ridge for handling multicollinearity and stabilizing models.\n\nHowever, neither is perfect on its own. There is always a need to iterate through each step and process to find the method that works best for the specific model, dataset, and features. This often involves experimenting with different regularization strengths, tuning hyperparameters, and evaluating model performance using cross-validation."
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "ridge-lasso-elasticnet",
+      "chunk_index": 0,
+      "distance": 0.2655,
+      "rrf_score": 0.03333,
+      "text": "# Ridge, Lasso & ElasticNet\n\n## Definition\nRidge, Lasso, and ElasticNet are regularized linear regression methods that add a penalty to the ordinary least squares objective. Ridge uses an L2 penalty, Lasso an L1 penalty, and ElasticNet a convex combination of both, controlling coefficient magnitude and, for Lasso/ElasticNet, inducing sparsity.\n\n## Intuition\nUnpenalized OLS can overfit when predictors are many or correlated. Shrinking coefficients toward zero reduces variance at the cost of increased bias. The L1 penalty can push coefficients exactly to zero (feature selection); L2 distributes shrinkage across all coefficients. ElasticNet blends L1 and L2 to select variables even when groups of predictors are strongly correlated, where Lasso would select only one arbitrarily.\n\n## Mathematical Formulation\nMinimize over \u03b2:\n- Ridge: \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 \u03a3\u2c7c \u03b2\u2c7c\u00b2\n- Lasso: \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 \u03a3\u2c7c |\u03b2\u2c7c|\n- ElasticNet: \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 [ \u03c1 \u03a3\u2c7c |\u03b2\u2c7c| + 0.5(1\u2212\u03c1) \u03a3\u2c7c \u03b2\u2c7c\u00b2 ]\nHere \u03b1 \u2265 0 controls overall penalty strength, \u03c1 \u2208 [0,1] balances L1 vs L2 ratio.\n\n## Estimation\nRidge has closed-form \u03b2\u0302 = (X\u1d40X + \u03b1I)\u207b\u00b9X\u1d40y. Lasso and ElasticNet generally lack closed-form solutions and are estimated via coordinate descent, LARS, or proximal gradient methods. All typically include an intercept term not penalized, and predictors are standardized before fitting to make the penalty scale-invariant.\n\n"
+    },
+    {
+      "source": "ridge-lasso-elasticnet",
+      "chunk_index": 1,
+      "distance": 0.3014,
+      "rrf_score": 0.03252,
+      "text": " Lasso and ElasticNet generally lack closed-form solutions and are estimated via coordinate descent, LARS, or proximal gradient methods. All typically include an intercept term not penalized, and predictors are standardized before fitting to make the penalty scale-invariant.\n\n## Assumptions\nSame structural assumptions as OLS (linearity, independent errors, homoscedasticity) for consistent estimation, but regularization mitigates collinearity issues. Normality of errors is not required for prediction. The penalty parameter \u03b1 is typically chosen via cross-validation.\n\n## Key Properties\nRidge shrinks coefficients but never sets them to zero, is rotationally invariant, and handles p > n. Lasso performs both shrinkage and variable selection; it can produce sparse coefficient vectors but selects at most n variables when p > n. ElasticNet overcomes Lasso\u2019s variable-selection instability when predictors are highly correlated, encouraging a grouping effect where correlated predictors have similar coefficients. All three embody the bias\u2013variance trade-off, with larger \u03b1 reducing variance and increasing bias.\n\n## Failure Modes\nRidge cannot perform feature selection; all predictors remain, harming interpretability. Lasso may arbitrarily pick one from a set of highly correlated predictors, and its selection is unstable with small data. Lasso fails when true model is not sparse or when p \u226b n and n is small (saturated). ElasticNet requires tuning two hyperparameters, increasing computational cost. All methods are sensitive to \u03b1 choice; inadequate cross-validation leads to under- or over-regularization. They are also sensitive to predictor scaling.\n\n## When to Use / Not Use\nUse when OLS overfits, collinearity exists, or p is close to or exceeds n. Prefer Lasso for interpretable sparse models. Prefer Ridge when all predictors have small effects. Prefer ElasticNet when predictors are many and correlated. Do not use if inference on original full coefficients without bias is primary; r"
+    },
+    {
+      "source": "ridge-lasso-elasticnet",
+      "chunk_index": 2,
+      "distance": 0.3548,
+      "rrf_score": 0.03252,
+      "text": " sparse models. Prefer Ridge when all predictors have small effects. Prefer ElasticNet when predictors are many and correlated. Do not use if inference on original full coefficients without bias is primary; ridge/Lasso coefficients are biased. Not suited for non-linear relationships without basis expansion.\n\n## Variants / Extensions\nGroup Lasso (penalty on groups of coefficients), adaptive Lasso (weighted L1 for oracle properties), fused Lasso, relaxed Lasso, and ElasticNet with cross-validation for both \u03b1 and \u03c1. Extensions to generalized linear models (GLMNet) apply the same penalties to logistic and Poisson regression.\n\n## Minimal Example (Python)\n```python\nfrom sklearn.linear_model import Ridge, Lasso, ElasticNet\nX = [[1,2],[2,3],[4,1],[5,5]]\ny = [3.5, 5.2, 5.1, 10.2]\nridge = Ridge(alpha=1.0).fit(X, y)\nlasso = Lasso(alpha=0.1).fit(X, y)\nenet = ElasticNet(alpha=0.1, l1_ratio=0.5).fit(X, y)\nprint(ridge.coef_, lasso.coef_, enet.coef_)\n```"
+    },
+    {
+      "source": "support-vector-machines",
+      "chunk_index": 0,
+      "distance": 0.5825,
+      "rrf_score": 0.01587,
+      "text": "# Support Vector Machines\n\n## Definition\nA Support Vector Machine (SVM) is a supervised learning algorithm that constructs a hyperplane in a high-dimensional space to separate classes. The objective is to maximize the margin between the closest points of different classes. Flexibility for non-linear boundaries is provided by the kernel trick, which implicitly computes dot products in a transformed feature space. The method also extends to regression (support vector regression) and novelty detection.\n\n## Intuition\nThe separating hyperplane with the largest margin is preferred because it is expected to generalize better, as it tolerates small perturbations without misclassifying. Only the training points lying exactly on the margin or violating it (support vectors) determine the solution, making the model sparse and the decision boundary robust to points far away.\n\n## Mathematical Formulation\nFor a binary classification problem with labels y_i \u2208 {\u22121,+1}, the primal hard-margin objective is: minimize (1/2)\u2016w\u2016\u00b2 subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1. To handle non-separable data, slack variables \u03be_i \u2265 0 are introduced: minimize (1/2)\u2016w\u2016\u00b2 + C \u03a3 \u03be_i subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1 \u2212 \u03be_i, where C > 0 controls the trade-off between margin width and misclassification.\n\nThe dual formulation is: maximize \u03a3 \u03b1_i \u2212 (1/2) \u03a3_i \u03a3_j \u03b1_i \u03b1_j y_i y_j K(x_i, x_j), subject to 0 \u2264 \u03b1_i \u2264 C and \u03a3 \u03b1_i y_i = 0. The kernel function K(x_i, x_j) = \u27e8\u03c6(x_i), \u03c6(x_j)\u27e9 avoids explicit computation of \u03c6. The decision function becomes: f(x) = sign(\u03a3 \u03b1_i y_i K(x_i, x) + b).\n\nFor"
+    },
+    {
+      "source": "linear-logistic-regression",
+      "chunk_index": 1,
+      "distance": 0.0,
+      "rrf_score": 0.01587,
+      "text": "correlated, homoscedastic errors) suffice for BLUE.  \nLogistic: independent binary outcomes, log-odds linear in X, no perfect or quasi-separation, adequate sample size per predictor; no error variance assumption.\n\n## Key Properties\nLinear: under Gauss-Markov, OLS is BLUE; predictions are unbounded; R\u00b2 measures explained variance.  \nLogistic: MLE is consistent and asymptotically normal; outputs are calibrated probabilities; coefficients are log-odds ratios; the decision boundary p=0.5 is the hyperplane X\u03b2=0.\n\n## Failure Modes\nLinear: heteroscedasticity inflates SEs, nonlinearity causes bias, outliers are influential, multicollinearity destabilizes coefficients, extrapolation gives misleading predictions.  \nLogistic: complete separation yields infinite estimates, quasi-separation inflates errors, multicollinearity destabilizes, severe class imbalance biases the intercept, non-linear log-odds harms fit, miscalibration possible.\n\n## When to Use / Not Use\nUse linear regression for continuous unbounded outcomes when the mean is linear in predictors and coefficient interpretation is important. Avoid for proportions, counts, or binary data.  \nUse logistic regression for binary responses requiring probability estimates and a roughly linear log-odds. Avoid for multi-class (use multinomial) or highly non-linear boundaries without proper transformations.\n\n## Variants / Extensions\nLinear: ridge (L2), lasso (L1), elastic net, generalized linear models (GLM), polynomial/spline expansions.  \nLogistic: multinomial (softmax) for >2 classes, ordinal logistic, regularized (L1/L2) logistic, Firth\u2019s penalized likelihood for small samples, Bayesian logistic.\n\n## Minimal Example (Python)\n```python\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression, LogisticRegression\n\nX = np.array([[1], [2], [3], [4]])\ny_lin = np.array"
+    }
+  ],
+  "attribution": {
+    "web": 34,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 1
+  }
+}

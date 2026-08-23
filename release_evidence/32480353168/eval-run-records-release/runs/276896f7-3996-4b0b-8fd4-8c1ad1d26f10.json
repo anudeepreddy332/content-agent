@@ -1,0 +1,765 @@
+{
+  "run_id": "276896f7-3996-4b0b-8fd4-8c1ad1d26f10",
+  "topic": "ReAct Agent Pattern",
+  "slug": "react-agent-pattern",
+  "timestamp": "2026-08-21T12:21:59.590443+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 23,
+      "S": 24,
+      "V": 29,
+      "W": 1,
+      "U": 0,
+      "N": 30,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.92,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "A single LLM call can answer questions from memory, but it cannot look things up, run calculations, or query APIs.",
+          "source_url": "https://outcomeschool.com/blog/react-agent",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://outcomeschool.com/blog/react-agent"
+        },
+        {
+          "claim": "The ReAct pattern solves this by wrapping the LLM in a loop: the model reasons about what to do, emits an action, the environment executes it, and the result is fed back as an observation.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "This interleaving of reasoning and acting lets the model gather external information and adapt its plan dynamically.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "Without it, you would need to hard-code every possible tool call or rely on the model's internal knowledge, which is stale and hallucination-prone.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "ReAct is the foundational pattern for most modern tool-using agents.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "At each step t, the agent maintains a history H_t = [x, (T_0, A_0, O_0), ..., (T_t, A_t, O_t)], where x is the user query, T_i is a reasoning thought, A_i is a parsable action, and O_i is the observation returned by the environment.",
+          "source_url": "react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:react-agent-pattern",
+          "kb_chunk_candidates": [
+            0,
+            2
+          ]
+        },
+        {
+          "claim": "The LLM acts as a stochastic policy \u03c0 that samples (T_t, A_t) given H_{t-1}.",
+          "source_url": "react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:react-agent-pattern",
+          "kb_chunk_candidates": [
+            0,
+            2
+          ]
+        },
+        {
+          "claim": "The environment is a deterministic transition function E: A_t \u2192 O_t.",
+          "source_url": "react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:react-agent-pattern",
+          "kb_chunk_candidates": [
+            0,
+            2
+          ]
+        },
+        {
+          "claim": "The loop terminates when A_t is a special 'finish' action with the final answer, or after a maximum number of steps.",
+          "source_url": "react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:react-agent-pattern",
+          "kb_chunk_candidates": [
+            0,
+            2
+          ]
+        },
+        {
+          "claim": "The prompt is critical. You must describe the available tools, their syntax, and provide few-shot examples that demonstrate the Thought-Action-Observation interleaving.",
+          "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+        },
+        {
+          "claim": "For instance, a tool might be `calculate: 4 * 7 / 3` or `wikipedia: Django`.",
+          "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+        },
+        {
+          "claim": "The model outputs a Thought, then an Action, then you parse the action, execute it, and append the Observation to the history.",
+          "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+        },
+        {
+          "claim": "This loop continues until the model outputs a final Answer.",
+          "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+        },
+        {
+          "claim": "Tool call loops occur when the model repeatedly calls the same tool with slightly different parameters, never converging.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "This is especially likely when the tool returns unexpected data formats or empty results.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "Production agents need explicit loop detection and maximum-step limits.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "Reasoning trace drift is another failure: over long sequences, the model's Thoughts lose track of the original goal and focus on intermediate artifacts.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "Periodic goal-restatement can mitigate this.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "Tool-call hallucination is the model inventing a tool name that doesn't exist.",
+          "source_url": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it"
+        },
+        {
+          "claim": "This is more likely with a large, poorly named tool registry.",
+          "source_url": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it"
+        },
+        {
+          "claim": "Keeping the tool set small and well-named reduces this.",
+          "source_url": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it"
+        },
+        {
+          "claim": "The model may produce malformed actions that fail to parse; you need robust parsing and error handling.",
+          "source_url": "https://www.linkedin.com/posts/aurimas-griciunas_what-is-%F0%9D%97%A5%F0%9D%97%B2%F0%9D%97%94%F0%9D%97%B0%F0%9D%98%81-%F0%9D%97%94%F0%9D%97%B4%F0%9D%97%B2%F0%9D%97%BB%F0%9D%98%81-pattern-as-activity-7407034234252664832-m3DN",
+          "confidence": 0.7,
+          "status": "weak",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.linkedin.com/posts/aurimas-griciunas_what-is-%F0%9D%97%A5%F0%9D%97%B2%F0%9D%97%94%F0%9D%97%B0%F0%9D%98%81-%F0%9D%97%94%F0%9D%97%B4%F0%9D%97%B2%F0%9D%97%BB%F0%9D%98%81-pattern-as-activity-7407034234252664832-m3DN"
+        },
+        {
+          "claim": "Each step is an LLM call, so a 5-step agent costs 5x a single call.",
+          "source_url": "https://outcomeschool.com/blog/react-agent",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://outcomeschool.com/blog/react-agent"
+        },
+        {
+          "claim": "You must set a step budget and a cost bound.",
+          "source_url": "agentic-ai-production",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:agentic-ai-production",
+          "kb_chunk_candidates": [
+            0
+          ]
+        },
+        {
+          "claim": "In production, you also need observability: log every thought, action, and observation to debug failures.",
+          "source_url": "agentic-ai-production",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:agentic-ai-production",
+          "kb_chunk_candidates": [
+            0
+          ]
+        },
+        {
+          "claim": "ReAct interleaves explicit reasoning (Thought) with tool execution (Action) and result feeding (Observation) in a loop.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "The prompt must define tool syntax and provide few-shot examples; the model outputs a Thought then an Action.",
+          "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+        },
+        {
+          "claim": "Common failure modes: tool call loops, reasoning trace drift, and tool-call hallucination; mitigate with step limits, goal restatement, and small tool registries.",
+          "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+        },
+        {
+          "claim": "Each step is an LLM call, so cost and latency scale linearly; set budgets and use observability logs.",
+          "source_url": "agentic-ai-production",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "kb",
+          "source_ref": "kb:agentic-ai-production",
+          "kb_chunk_candidates": [
+            0
+          ]
+        },
+        {
+          "claim": "You can implement a minimal ReAct agent in ~20 lines of Python using an LLM API and a tools dictionary.",
+          "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically sound, covering the core loop, prompt design, failure modes, and cost considerations at an appropriate depth for senior engineers. However, the code examples are inconsistent\u2014the first uses a deprecated openai API and has a parsing bug (splitting on '\\nAction: ' without handling missing action), while the second references an undefined llm_call function, which undermines the practical value. The writing is direct and avoids filler, but the transition from the formal notation to the informal prompt discussion could be smoother, and the Takeaways section repeats earlier points verbatim rather than synthesizing them.",
+  "grounding_score": 0.92,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 16308,
+  "total_cost_usd": 0.00815,
+  "latency_ms": {
+    "retrieve": 8615,
+    "retrieve_web": 8598,
+    "retrieve_kb": 17,
+    "draft": 9693,
+    "verify": 10944,
+    "reflect": 2525,
+    "html_gen": 4148,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 29,
+  "claims_weak": 1,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 1,
+    "mean_confidence_verified": 0.928,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 23,
+    "S": 24,
+    "V": 29,
+    "N": 30,
+    "verified_fraction": 0.967,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "A single LLM call can answer questions from memory, but it cannot look things up, run calculations, or query APIs.",
+      "source_url": "https://outcomeschool.com/blog/react-agent",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://outcomeschool.com/blog/react-agent"
+    },
+    {
+      "claim": "The ReAct pattern solves this by wrapping the LLM in a loop: the model reasons about what to do, emits an action, the environment executes it, and the result is fed back as an observation.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "This interleaving of reasoning and acting lets the model gather external information and adapt its plan dynamically.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "Without it, you would need to hard-code every possible tool call or rely on the model's internal knowledge, which is stale and hallucination-prone.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "ReAct is the foundational pattern for most modern tool-using agents.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "At each step t, the agent maintains a history H_t = [x, (T_0, A_0, O_0), ..., (T_t, A_t, O_t)], where x is the user query, T_i is a reasoning thought, A_i is a parsable action, and O_i is the observation returned by the environment.",
+      "source_url": "react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:react-agent-pattern",
+      "kb_chunk_candidates": [
+        0,
+        2
+      ]
+    },
+    {
+      "claim": "The LLM acts as a stochastic policy \u03c0 that samples (T_t, A_t) given H_{t-1}.",
+      "source_url": "react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:react-agent-pattern",
+      "kb_chunk_candidates": [
+        0,
+        2
+      ]
+    },
+    {
+      "claim": "The environment is a deterministic transition function E: A_t \u2192 O_t.",
+      "source_url": "react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:react-agent-pattern",
+      "kb_chunk_candidates": [
+        0,
+        2
+      ]
+    },
+    {
+      "claim": "The loop terminates when A_t is a special 'finish' action with the final answer, or after a maximum number of steps.",
+      "source_url": "react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:react-agent-pattern",
+      "kb_chunk_candidates": [
+        0,
+        2
+      ]
+    },
+    {
+      "claim": "The prompt is critical. You must describe the available tools, their syntax, and provide few-shot examples that demonstrate the Thought-Action-Observation interleaving.",
+      "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+    },
+    {
+      "claim": "For instance, a tool might be `calculate: 4 * 7 / 3` or `wikipedia: Django`.",
+      "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+    },
+    {
+      "claim": "The model outputs a Thought, then an Action, then you parse the action, execute it, and append the Observation to the history.",
+      "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+    },
+    {
+      "claim": "This loop continues until the model outputs a final Answer.",
+      "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+    },
+    {
+      "claim": "Tool call loops occur when the model repeatedly calls the same tool with slightly different parameters, never converging.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "This is especially likely when the tool returns unexpected data formats or empty results.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "Production agents need explicit loop detection and maximum-step limits.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "Reasoning trace drift is another failure: over long sequences, the model's Thoughts lose track of the original goal and focus on intermediate artifacts.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "Periodic goal-restatement can mitigate this.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "Tool-call hallucination is the model inventing a tool name that doesn't exist.",
+      "source_url": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it"
+    },
+    {
+      "claim": "This is more likely with a large, poorly named tool registry.",
+      "source_url": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it"
+    },
+    {
+      "claim": "Keeping the tool set small and well-named reduces this.",
+      "source_url": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it"
+    },
+    {
+      "claim": "The model may produce malformed actions that fail to parse; you need robust parsing and error handling.",
+      "source_url": "https://www.linkedin.com/posts/aurimas-griciunas_what-is-%F0%9D%97%A5%F0%9D%97%B2%F0%9D%97%94%F0%9D%97%B0%F0%9D%98%81-%F0%9D%97%94%F0%9D%97%B4%F0%9D%97%B2%F0%9D%97%BB%F0%9D%98%81-pattern-as-activity-7407034234252664832-m3DN",
+      "confidence": 0.7,
+      "status": "weak",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.linkedin.com/posts/aurimas-griciunas_what-is-%F0%9D%97%A5%F0%9D%97%B2%F0%9D%97%94%F0%9D%97%B0%F0%9D%98%81-%F0%9D%97%94%F0%9D%97%B4%F0%9D%97%B2%F0%9D%97%BB%F0%9D%98%81-pattern-as-activity-7407034234252664832-m3DN"
+    },
+    {
+      "claim": "Each step is an LLM call, so a 5-step agent costs 5x a single call.",
+      "source_url": "https://outcomeschool.com/blog/react-agent",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://outcomeschool.com/blog/react-agent"
+    },
+    {
+      "claim": "You must set a step budget and a cost bound.",
+      "source_url": "agentic-ai-production",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:agentic-ai-production",
+      "kb_chunk_candidates": [
+        0
+      ]
+    },
+    {
+      "claim": "In production, you also need observability: log every thought, action, and observation to debug failures.",
+      "source_url": "agentic-ai-production",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:agentic-ai-production",
+      "kb_chunk_candidates": [
+        0
+      ]
+    },
+    {
+      "claim": "ReAct interleaves explicit reasoning (Thought) with tool execution (Action) and result feeding (Observation) in a loop.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "The prompt must define tool syntax and provide few-shot examples; the model outputs a Thought then an Action.",
+      "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+    },
+    {
+      "claim": "Common failure modes: tool call loops, reasoning trace drift, and tool-call hallucination; mitigate with step limits, goal restatement, and small tool registries.",
+      "source_url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern"
+    },
+    {
+      "claim": "Each step is an LLM call, so cost and latency scale linearly; set budgets and use observability logs.",
+      "source_url": "agentic-ai-production",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "kb",
+      "source_ref": "kb:agentic-ai-production",
+      "kb_chunk_candidates": [
+        0
+      ]
+    },
+    {
+      "claim": "You can implement a minimal ReAct agent in ~20 lines of Python using an LLM API and a tools dictionary.",
+      "source_url": "https://til.simonwillison.net/llms/python-react-pattern",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://til.simonwillison.net/llms/python-react-pattern"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://webflow2.decagon.ai/glossary/what-is-react-agent-pattern",
+      "score": 0.82761955,
+      "content": "Decagon Dialogues 2026 is here.\n\nRegister today\n\nSign in\n\nGet a demo\n\nGlossary\n\n# ReAct (agent pattern)\n\nThe ReAct agent pattern (short for Reasoning and Acting) is an LLM prompting and inference architecture in which the model alternates between generating explicit reasoning traces (\"Thought\" steps) and executing tool calls (\"Action\" steps), with the results of those tool calls (\"Observation\" steps) fed back into the model's context before the next reasoning step. This interleaved loop continues until the model determines it has sufficient information to produce a final answer. First described in a 2022 research paper, ReAct became the foundational pattern for most modern tool-using AI agents. [...] ## Failure modes in ReAct agents\n\nReAct agents fail in characteristic ways. Tool call loops are a common failure: the model enters a cycle of calling the same tool repeatedly with slightly different parameters, never converging on an answer. This is especially common when the tool returns unexpected data formats or empty results that the model interprets as requiring further investigation. Production ReAct agents require explicit loop detection and maximum-step limits to prevent runaway inference.\n\nReasoning trace drift is another failure pattern: over long Thought-Action-Observation sequences, the model's Thought steps begin to lose track of the original task goal and focus on intermediate artifacts. Adding periodic goal-restatement steps mitigates this in some architectures. [...] ## How the Thought-Action-Observation cycle works\n\nThe ReAct loop is powered by function calling capabilities in modern LLMs combined with a prompting structure that elicits explicit reasoning before each action. The system prompt instructs the model to produce a Thought before each Action \u2014 articulating what it knows, what it needs, and why it is choosing a particular tool. The Action is a structured tool call with typed parameters. The Observation is the tool's return value, injected into "
+    },
+    {
+      "url": "https://til.simonwillison.net/llms/python-react-pattern",
+      "score": 0.8194462,
+      "content": "in a loop of Thought, Action, PAUSE, Observation. At the end of the loop you output an AnswerUse Thought to describe your thoughts about the question you have been asked.Use Action to run one of the actions available to you - then return PAUSE.Observation will be the result of running those actions. Your available actions are: calculate:e.g. calculate: 4  7 / 3Runs a calculation and returns the number - uses Python so be sure to use floating point syntax if necessary wikipedia:e.g. wikipedia: Django Returns a summary from searching Wikipedia simon_blog_search:e.g. simon_blog_search: Django Search Simon's blog for that term Always look things up on Wikipedia if you have the opportunity to do so. Example session: Question: What is the capital of France?Thought: I should look up France on [...] # A simple Python implementation of the ReAct pattern for LLMs\n\nA popular nightmare scenario for AI is giving it access to tools, so it can make API calls and execute its own code and generally break free of the constraints of its initial environment.\n\nLet's do that now!\n\nThe ReAct pattern (for Reason+Act) is described in this paper. It's a pattern where you implement additional actions that an LLM can take - searching Wikipedia or running calculations for example - and then teach it how to request that those actions are run, then feed their results back into the LLM.\n\nSee also my post Could you train a ChatGPT-beating model for $85,000 and run it in a browser?. [...] `wikipedia:`  - search Wikipedia and returns the snippet of the first result\n `simon_blog_search:`  - search my blog and return the truncated text of the first result\n `calculate:`  - evaluate an expression using Python's `eval()` function (so dangerous! This should absolutely use something like a WebAssembly sandbox instead)\n\n## Some examples\n\nHere are some (very cherry-picked) examples of my `query()` function running, showing the underlying deliberations of the LLM:\n\n### What does England share borders with?\n\n``"
+    },
+    {
+      "url": "https://outcomeschool.com/blog/react-agent",
+      "score": 0.8098936,
+      "content": "Let's get started.\n\n## What is a ReAct Agent\n\nA ReAct Agent is an AI Agent built using the ReAct (Reasoning + Acting) pattern - the most common pattern for building AI Agents. It is not a single LLM call. It is a loop around an LLM, where the LLM is given a list of tools it can recommend. At each step, the LLM reasons about what to do and recommends a tool. The loop runs the tool, appends the result back to the memory, and the LLM reasons over it on the next turn.\n\nLet's decompose the term:\n\nReAct Agent = Reasoning + Acting + Agent\n\nReasoning is the thinking part - the LLM figures out what to do next. Acting is the doing part - the LLM picks a tool, and the loop calls it. Agent is the wrapper around the LLM that runs this loop, executes the tools, and feeds the results back. [...] ReAct is a pattern for building that loop, where the LLM follows a Thought - Action - Observation cycle. At every step, the LLM first writes its reasoning (the Thought), then picks a tool (the Action), then reads the result (the Observation), then thinks again. The reasoning is explicit, step by step, and visible at every turn. That explicit step-by-step reasoning is Chain-of-Thought (CoT) Prompting surfaced inside the agent loop.\n\nSo when we say \"ReAct Agent,\" we mean an AI Agent built with the ReAct pattern. Other patterns like Plan-and-Execute, Reflection, and Agentic RAG also build AI Agents - they just shape the loop differently.\n\nIn simple words:\n\nReAct is a way to build an AI Agent. Not all AI Agents are built this way, but most are. [...] A ReAct Agent is an AI Agent that loops through Thought, Action, and Observation until the task is done. It is an LLM wrapped in a loop with tools and memory.\n The anatomy has five parts: the LLM, the System Prompt, the Tools, the Memory, and the Loop Controller. Remove any one, and it is no longer a ReAct Agent.\n The system prompt is what makes a plain LLM behave reliably as a ReAct Agent. It explains the pattern, lists the tools, and sets the ru"
+    },
+    {
+      "url": "https://towardsdatascience.com/your-react-agent-is-wasting-90-of-its-retries-heres-how-to-stop-it",
+      "score": 0.78749067,
+      "content": "What it does not show: how many of those retries were impossible from the first attempt. That\u2019s the gap this article is about.\n\n> Simulation note: All results come from a deterministic simulation using calibrated parameters, not live API calls. The hallucination rate (28%) is a conservative estimate for tool-call hallucination in ReAct-style agents derived from failure mode analysis in published GPT-4-class benchmarks (Yao et al., 2023; Shinn et al., 2023) \u2014 it is not a directly reported figure from those papers. Structural conclusions hold as architectural properties; exact percentages will vary in production. Full limitations are discussed at the end. Reproduce every number yourself: `python app.py --seed 42`.\n\nGitHub Repository: [...] > Production note: The `eval()` call in the benchmark\u2019s `tool_calculate` is present for simulation purposes only. Never use `eval()` in a production tool \u2014 it is a code injection vulnerability. Replace it with a safe expression parser such as `simpleeval` or a purpose-built math library.\n\n## Benchmark Limitations\n\nHallucination rate is a parameter, not a measurement. The 28% figure is a conservative estimate derived from failure mode analysis in Yao et al. (2023) and Shinn et al. (2023) \u2014 not a directly reported figure from either paper. A well-prompted model with a clean tool schema and a small, well-named tool registry may hallucinate tool names far less frequently. Run the benchmark at your actual observed rate. [...] Three tools is a simplified environment. Production agents typically manage dozens of tools with heterogeneous failure modes. The taxonomy and circuit breaker patterns scale well; threshold values will need tuning for your workload.\n\nLatency figures are simulated. The P95 near-equivalence is the production-relevant finding. Absolute millisecond values should not inform capacity planning. Average latency comparisons are confounded by early-exit failures in ReAct and per-step LLM accounting in the workflow \u2014 use P95 f"
+    },
+    {
+      "url": "https://www.linkedin.com/posts/aurimas-griciunas_what-is-%F0%9D%97%A5%F0%9D%97%B2%F0%9D%97%94%F0%9D%97%B0%F0%9D%98%81-%F0%9D%97%94%F0%9D%97%B4%F0%9D%97%B2%F0%9D%97%BB%F0%9D%98%81-pattern-as-activity-7407034234252664832-m3DN",
+      "score": 0.78611463,
+      "content": "What is \ud835\udde5\ud835\uddf2\ud835\uddd4\ud835\uddf0\ud835\ude01 \ud835\uddd4\ud835\uddf4\ud835\uddf2\ud835\uddfb\ud835\ude01 pattern? As with most of the Agentic System Design patterns, it is all about flow engineering - how you construct the initial prompt and how you route your system according to the outputs produced by the LLM. ReAct stands for Reasoning and Action. This means that the Agent is prompted to do both, reason about the actions it should take next and is provided the tools that it can use to act on the plan in the real world. After the actions are taken, they are used to reason about the next steps. The implementations can vary, but on a high level you will see: \ud835\udfed. The initial prompt is very important and is something that you would spend time tuning, on a high level: \u27a1\ufe0f You ask the LLM to solve the provided user query. \u27a1\ufe0f Provide the Agent with the list of tools it can use. [...] Wael Abdeen   1d \n\n Report this comment\n\nReAct is an agent design pattern where an AI reasons about what to do next and then takes actions using tools in a loop. The agent thinks, acts, observes the result, and repeats until the task is solved or a step limit is reached. It works best when the prompt is carefully designed, tools are limited, and the loop is tightly controlled. ReAct is powerful inside larger agent systems, but on its own it needs guardrails to stay reliable and efficient.\n\nLike Reply  1 Reaction\n\nAshish Patel \ud83c\uddee\ud83c\uddf3   18h \n\n Report this comment [...] data and run the updated prompt through the LLM again. \ud835\udff1. Repeat until either the User Query is answered or N steps are reached. \u2139\ufe0f Similar types of architectures are used to implement fully autonomous agents and agentic systems. The goal is to go beyond just CoT reasoning and allow the agent to reason continuously on actions it is taking in the real world. \u2757\ufe0f Be sure to limit the amount of tools you give to your ReAct Agents. To many and your agent will get confused (try to stay bellow 10, less than 5 is even better). If you have many tools, start splitting your Agentic system into multiple Agents/Tasks. \u2705 From my ex"
+    },
+    {
+      "url": "https://medium.com/aimonks/multi-agent-system-design-patterns-from-scratch-in-python-react-agents-e4480d099f38",
+      "score": 0.78014404,
+      "content": "self.conversation_history = []\nAgain, if you are finding it difficult to understand this code above, a strongly urge you to take a look into the last article on tool use.\n\n## Building The ReAct Agent\n\nOnce we have brought in the code from the previous article, we can begin to implement the ReAct agent pattern. Let\u2019s start by bringing in some imports we can make use of. We can then bring in some other imports we will need for this session and create the LLM model we\u2019ll be using.\n\nfrom openai import OpenAI\n\nfrom dotenv import load_dotenv\n\nimport os\n\nload_dotenv()\nWe can then load in our environment variables, make sure to have your API keys available in the `.env` file. Once this is set, we can proceed:\n\nclient = OpenAI(api_key=os.getenv(\"OPENAI_API_KEY\"))\n### ReAct Agent System Prompt [...] Once we have our environment variables loaded in, we can move on to defining a system prompt for our ReAct agent, here is an example, again feel free to modify this to your own use cases.\n\nREACT_SYSTEM_PROMPT = \"\"\"\n\n# ReAct Agent: Reasoning and Acting Framework\n\nYou are an AI assistant that follows the ReAct (Reasoning and Acting) framework to solve problems. Your thinking process is structured in a clear cycle: Thought \u2192 Action \u2192 Observation.\n\n## How You Operate\n\n1. THOUGHT: Carefully reason about the problem and determine if a tool call is necessary\n\n2. ACTION: Execute tools based on your reasoning, following the proper format\n\n3. OBSERVATION: Analyze the results to inform your final response\n\n## Available Tools\n\nYou have access to the following functions to help users:\n\n<tools> [...] )formatted_response = response.choices.message.content\n\nprint(formatted_response)<response>The area of the rectangle with a length of 100 units and a width of 30 units is 3000 square units.</response>\nOkay, we finally got the correct response! In some cases, you might need to play around with your prompts to get this working well. You can see how this can be so iterative, repeating the same code ov"
+    },
+    {
+      "url": "https://www.dailydoseofds.com/ai-agents-crash-course-part-10-with-implementation",
+      "score": 0.7746691,
+      "content": "This approach enhances an LLM agent\u2019s ability to handle complex tasks and decisions by combining chain-of-thought reasoning with external tool use\u200b.\n\nWhile frameworks like CrewAI implement this logic for you and you should also keep using them in production systems (also because they are built by experts), often times, relying on pre-packaged libraries without understanding their inner workings can lead to confusion\u200b.\n\nYou might use an agent framework and wonder how it decides to, say, perform a web search or a calculation as part of answering a question.\n\nAn example is shown below where the Agent is going through a series of thought activities before producing a response.\n\nIn this article, we\u2019ll demystify that process by building a ReAct agent from scratch using only Python and an LLM. [...] Now that we understand the ReAct pattern conceptually, we can start building our own agent that follows this logic. We\u2019ll need a language model to serve as the agent\u2019s brain, some tools the agent can use, and a loop that ties them together.\n\nIn the next section, we\u2019ll step away from CrewAI and build a ReAct agent from scratch\u2014in pure Python, using only local LLMs and a simple set of tool definitions. You'll see that everything we covered here is not magic\u2014it\u2019s just smart prompt design combined with controlled I/O.\n\n\ud83d\udca1 [...] Observation: The agent\u2019s environment (our code) executes the requested action and returns the result (observation) back to the agent. For example, the web search tool might return: \u201c`Observation: The population of Canada in 2023 is 38 million.`\u201d This observation is fed into the agent\u2019s context.\n\n The agent takes the new information and goes back to step 1 (another Thought). It will reason with the fresh data. In our example, it might think: \u201cNow I have the population figure; I can answer the question.\u201d"
+    },
+    {
+      "url": "https://github.com/arunpshankar/react-from-scratch",
+      "score": 0.7570233,
+      "content": "## \ud83d\udcda Contents\n\n Step-by-step implementation of the ReAct pattern\n Multiple examples showcasing ReAct agents in action\n Optimizations specific to the Gemini model\n Tools integration (Google Search and Wikipedia)\n\n## \ud83d\ude80 Getting Started\n\n### Prerequisites\n\n Python 3.8+\n Git\n Poetry (for dependency management)\n\n### Installation\n\n1. Clone the repository:\n\n   ```\n   git clone  cd react-agents-from-scratch \n   ```\n2. Set up a virtual environment:\n\n   ```\n   python -m venv .venv source .venv/bin/activate # On Windows, use `.venv\\Scripts\\activate` \n   ```\n3. Install Poetry (if not already installed):\n\n   ```\n   pip install poetry \n   ```\n4. Install project dependencies:\n\n   ```\n   poetry install \n   ```\n5. Set up environment variables:"
+    },
+    {
+      "url": "https://blog.n8n.io/react-agent",
+      "score": 0.7293082,
+      "content": "## What\u2019s an AI ReAct agent? Is it AI? Or just ReAct?\n\nA ReAct agent (from \u201cReason\u201d and \u201cAct\u201d) is a prompting pattern that connects internal reasoning with external execution. Unlike simple chat responses, it doesn\u2019t just give answers based on pre-trained data. It combines reasoning and action to plan, execute API calls, and analyze the outcome of each step it takes. This creates a clear shift from a single-pass completion to a closed-loop agentic system, facilitating more traceable and grounded workflows.\n\nReAct agents follow an iterative loop where they:\n\n Generate a thought\n Select an action\n Process the observation to analyze its next move"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=WBgI9ce_7wM",
+      "score": 0.7286136,
+      "content": "# AI Agentic Design Patterns: ReAct Explained | Reasoning + Acting in AI Agents\n## CodeCraft Academy\n3630 subscribers\n24 likes\n\n### Description\n1953 views\nPosted: 26 Feb 2026\nWhat is the ReAct pattern in AI Agents?\n\nReAct (Reason + Act) is one of the most important agentic design patterns used in modern AI systems. Instead of just generating text, ReAct agents think step-by-step, use tools, observe results, and iterate until they reach the correct answer.\n\nIn this video, you\u2019ll learn:\n\nWhat ReAct (Reason + Act) really means\n\nHow AI agents alternate between reasoning and tool usage\n\nThe Thought \u2192 Action \u2192 Observation loop\n\nWhy ReAct reduces hallucinations\n\nHow ReAct differs from traditional RAG\n\nHow frameworks like LangChain, AutoGen, and CrewAI implement it [...] all the pieces it needs, does the agent put together the final answer. You see how powerful this is? The answer isn't a guess. It's assembled piece by piece from verified external information. You know, if you're looking for an easy way to think about all this, this analogy is perfect. A React agent is basically like a sharp engineer trying to debug a complex system. They don't just guess what the fix is. No, they form a hypothesis. They check the logs. They run a test, see the result, and then repeat that cycle until they've nailed down the problem. It's that same methodical step-by-step process. And look, this isn't just some academic idea. This is the real engine behind what everyone is calling the agent revolution. This exact pattern is being used right now to build the next [...] ask a question, and the AI has a thought. Then it takes an action. It sees the result, the observation, and then it repeats that loop. Thought, action, observation, over and over until it's sure it has the right answer. The bottom line is it stops being a guesser and becomes an investigator. Now, all this theory is fine and good, but the best way to really understand this is to see it in action. So, let's walk through a simple"
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "react-agent-pattern",
+      "chunk_index": 0,
+      "distance": 0.486,
+      "rrf_score": 0.03333,
+      "text": "# ReAct Agent Pattern\n\n## Definition\nThe ReAct (Reasoning and Acting) pattern is an agent design where a language model generates interleaved reasoning traces and executable actions. The model produces a thought explaining what it intends to do, then an action command; the environment executes the action and returns an observation, which is appended to the context, and the loop continues until a final answer is output.\n\n## Intuition\nPure chain-of-thought reasoning operates only on the model\u2019s internal knowledge, leading to hallucinations. Pure acting (tool use) lacks explicit planning. ReAct combines them: the model thinks about what it needs, performs actions to gather external information, then reasons over the observations, dynamically adapting its plan.\n\n## Mathematical Formulation\nAt step t, the agent maintains a history H_t = [x, (T_0, A_0, O_0), \u2026, (T_t, A_t, O_t)] where x is the user query, T_i is a reasoning thought, A_i is a parsable action, and O_i is the observation returned by the environment. The LLM acts as a stochastic policy \u03c0 sampling (T_t, A_t) ~ \u03c0(\u00b7| H_{t-1}). The environment is a deterministic transition function E: A_t \u2192 O_t. The loop terminates when A_t is a special \u201cfinish\u201d action with the final answer, or after a maximum number of steps. The final answer is extracted from the last T_t.\n\n## Estimation\nReAct is typically a prompting method, not a trained estimator. The LLM is prompted with few-shot examples demonstrating the thought-action-observation interleaving. No parameter update is required. Fine-tuning variants train the model on ReAct-augmented trajectories to improve action validity and reasoning coherence, using standard language-modeling objectives on token sequences that include special delimiters for thoughts and actions.\n\n## Assumptions\n- The model can reliably generate structured actions pars"
+    },
+    {
+      "source": "react-agent-pattern",
+      "chunk_index": 2,
+      "distance": 0.5275,
+      "rrf_score": 0.03279,
+      "text": " actions have irreversible side effects without human confirmation, or when the model\u2019s instruction-following ability is insufficient to maintain the pattern.\n\n## Variants / Extensions\n- **ReAct + Reflexion**: Adds a posterior verbal critique step to improve future attempts.\n- **Tree-of-Thought + ReAct**: Expands the reasoning into a search tree, interleaving actions at nodes.\n- **ReWOO**: Decouples reasoning and actions into a planning phase, then parallel execution, reducing LLM calls.\n- **Fine-tuned ReAct**: Models like ReAct-T5 are trained explicitly to produce thought-action-observation sequences.\n- **Tool-use augmentation**: Integrating ReAct pattern into chat-optimized models via function calling (OpenAI functions).\n\n## Minimal Example (Python)\n```python\nimport openai\n\ndef react_agent(query, tools, max_steps=5):\n    history = [f\"Question: {query}\"]\n    for _ in range(max_steps):\n        response = openai.ChatCompletion.create(\n            model=\"gpt-4\",\n            messages=[{\"role\": \"user\", \"content\": \"\\n\".join(history)}],\n            stop=[\"Observation:\"]\n        )[\"choices\"][0][\"message\"][\"content\"]\n        thought, action = response.split(\"\\nAction: \")\n        history.append(thought)\n        history.append(f\"Action: {action}\")\n        # execute action via tools dict (not shown)\n        obs = tools.get(action.strip(), \"No such tool\")\n        history.append(f\"Observation: {obs}\")\n        if \"Finish\" in action:\n            return obs\n    return \"Max steps reached\"\n```"
+    },
+    {
+      "source": "agentic-ai-production",
+      "chunk_index": 0,
+      "distance": 0.6894,
+      "rrf_score": 0.03175,
+      "text": "# Agentic AI in Real Production\n\n## Definition\nAgentic AI in real production is the deployment of autonomous language-model agents as live services that plan, execute tools, observe results, and adapt actions over multiple steps to accomplish complex user goals. It extends theoretical agent patterns with production-grade requirements: reliability, observability, oversight, cost control, and integration with existing infrastructure.\n\n## Intuition\nA lab agent only needs to solve a task once. A production agent must solve thousands of tasks correctly, safely, and within time and budget, while producing logs, handling malformed tool outputs, and refusing unsafe actions. It is a stateful, long-running process managed like a microservice.\n\n## Mathematical Formulation\nAn agent is a policy \u03c0 that, at step t with history H_t, outputs action A_t in a fixed action space A. The environment E provides observation O_t, producing extended history H_{t+1}=H_t\u222a{(A_t,O_t)}. Production constraints define: (1) a step budget N_max; (2) a total cost bound C_max=\u03a3_t c(A_t); (3) a latency deadline T_max per step. The agent task is to produce a final answer y within these bounds. Formally: y=\u03c0*(x) subject to t \u2264 N_max, \u03a3 c(A_t) \u2264 C_max, per-step latency \u2264 T_max. Validation includes output schema check \u03c8(y) \u2208 {valid, invalid} and optional safety filters.\n\n## Estimation\nAgent reliability is estimated via offline evaluation on curated task suites, measuring task success rate, average steps, cost, and safety violations. Online estimation uses metrics like completion rate, latency percentiles, tool failure recovery rate, and user feedback. Canary releases and A/B tests compare agent configurations. Fine-grained logging enables bottleneck analysis (e.g., planning failures vs. tool failures).\n\n## Assumptions\n- Tools and APIs used by the agent are idempotent"
+    },
+    {
+      "source": "multi-agent-systems",
+      "chunk_index": 2,
+      "distance": 0.6688,
+      "rrf_score": 0.03175,
+      "text": "- **Hierarchical teams**: Supervisor agent delegates to workers.\n- **Competitive debate**: Agents argue opposing sides to improve answer quality.\n- **Market-based coordination**: Resource allocation via bidding protocols.\n- **Multi-agent reinforcement learning (MARL)**: Training policies with environment rewards.\n- **CrewAI / AutoGen**: Frameworks for orchestrating conversational MAS.\n\n## Minimal Example (Python)\n```python\ndef agent1(observation):\n    return f\"Agent1 suggests: {observation.title()}\"\ndef agent2(suggestion):\n    if \"?\" in suggestion:\n        return \"Agent2: clarifying question needed\"\n    return \"Agent2 agrees\"\n# Simple interaction\nobs = \"what is the weather?\"\nmsg1 = agent1(obs)\nmsg2 = agent2(msg1)\nfinal = msg2\n```\n## Claim-Dense Reference Facts\n\n- AutoGen (Microsoft) uses ConversableAgent with two-agent or group-chat patterns; GroupChatManager handles speaker selection.\n- CrewAI defines agents with role, goal, and backstory; tasks have description, expected_output, and agent assignment.\n- LangGraph multi-agent uses Command(goto=\"agent_name\") for handoffs between agents in a shared graph.\n- Multi-agent debate improves factual accuracy by 11% on TruthfulQA compared to single-agent generation (Du et al., 2023).\n- Communication cost scales as O(n\u00b2) messages for n fully-connected agents; hierarchical topologies reduce this to O(n).\n- AutoGen's token usage grows approximately linearly with number of agents \u00d7 average conversation turns.\n- Agent specialization (code agent + critic agent) achieves higher HumanEval pass@1 than single generalist agent.\n- LangGraph's `Send` API enables fan-out to multiple agents simultaneously for parallel subgraph execution.\n- Swarm (OpenAI) implements agent handoffs via function returns; handoff functions return Agent objects directly.\n- Production MAS systems require shared state management; LangGraph uses checkpointers (Sql"
+    },
+    {
+      "source": "multi-agent-systems",
+      "chunk_index": 0,
+      "distance": 0.6396,
+      "rrf_score": 0.03105,
+      "text": "# Multi-Agent Systems \u2014 When and Why\n\n## Definition\nA multi-agent system (MAS) is a computational framework where multiple autonomous agents, each with its own perception, reasoning, and action capabilities, coexist and interact within a shared environment. Agents may have aligned, conflicting, or mixed goals, and they coordinate through communication protocols, negotiation, or emergent behaviors. In language-model\u2013based MAS, each agent is typically an LLM-driven entity equipped with prompts, tools, and memory.\n\n## Intuition\nComplex problems can be decomposed into subtasks handled by specialized agents, akin to roles in a human team. Multiple agents can debate, verify each other\u2019s outputs, or explore different solution paths in parallel, yielding more robust and creative outcomes than a single monolithic agent.\n\n## Mathematical Formulation\nA common model is the decentralized partially observable Markov decision process (Dec-POMDP), defined by a tuple (I, S, {A_i}, T, {O_i}, O, R), where I is the set of agents, S is the global state, A_i the action space of agent i, T(s, a, s') the transition function, O_i(s)\u2192o_i the observation for agent i, and R(s, a) the shared reward. Each agent follows a policy \u03c0_i that maps its observation history to an action. The joint policy maximizes the expected cumulative reward: E[ \u03a3_t \u03b3^t R(s_t, a_t) ]. In LLM-driven MAS, policies are not formally optimized but emergent from prompts and dialog, with coordination achieved via message passing of structured natural language.\n\n## Estimation\nNo direct parameter estimation; system performance is evaluated experimentally using task completion rate, solution quality, communication cost, and robustness metrics. MAS behavior is validated on benchmark suites or simulators, often via repeated trials and inter-agent agreement measures.\n\n## Assumptions\n- Agents can send and receive messages over a reliable communication"
+    }
+  ],
+  "attribution": {
+    "web": 23,
+    "kb": 7,
+    "none": 0,
+    "unresolved": 0
+  }
+}

@@ -1,0 +1,752 @@
+{
+  "run_id": "839f7f72-aa6f-485f-ad85-2d1b0a90770f",
+  "topic": "Embedding Models & Vector Search",
+  "slug": "embedding-models-and-vector-search",
+  "timestamp": "2026-08-21T12:22:45.302973+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 23,
+      "S": 23,
+      "V": 32,
+      "W": 0,
+      "U": 0,
+      "N": 32,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.856,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Keyword search fails when users don't know the exact terms in a document.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Embedding models convert text into vectors that capture meaning, and semantically similar phrases end up with similar vectors.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Vector search is the foundation of semantic search, recommendation systems, and retrieval-augmented generation (RAG).",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Comparing a query vector against millions of stored vectors exhaustively is too slow.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Vector search uses approximate nearest neighbor (ANN) indexes to return top-k results in milliseconds.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Embeddings fail on out-of-domain vocabulary.",
+          "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+        },
+        {
+          "claim": "Single-vector models have theoretical limits on the complexity of queries they can represent.",
+          "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+        },
+        {
+          "claim": "An embedding model is a function f: X \u2192 R^d that maps an input to a dense vector of d real numbers.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Models like Sentence-BERT are trained with contrastive loss: positive pairs are pulled together, negative pairs are pushed apart.",
+          "source_url": "https://aarontay.substack.com/p/why-embedding-vector-search-is-probably",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://aarontay.substack.com/p/why-embedding-vector-search-is-probably"
+        },
+        {
+          "claim": "Cosine similarity \u2014 cos(q, d) = (q\u00b7d) / (||q|| ||d||) \u2014 measures semantic closeness.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "For normalized vectors, cosine similarity equals dot product.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Many libraries (FAISS, Qdrant) use inner product for speed.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "At indexing time, every document is passed through the model, and the resulting vectors are stored in a vector database.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "At query time, the query is encoded with the same model, and the system retrieves the top-k vectors with the highest similarity.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Exhaustive search is O(N) per query.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "HNSW (Hierarchical Navigable Small World) builds a multi-layer graph; at query time it greedily traverses the graph, trading a small accuracy loss for O(log N) search time.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "FAISS's IVF (Inverted File Index) partitions vectors into nlist clusters; at query time it searches only nprobe clusters.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Typical defaults: HNSW m=16, ef_construction=200 in FAISS; Qdrant uses m=16, ef_construct=100.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "These parameters control the recall-latency tradeoff.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "A critical failure mode is domain shift: if your corpus uses niche vocabulary and your embedding model was trained on general web text, the vectors will be poor.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Fine-tuning on domain data via contrastive loss can improve recall@10 by 5\u201315% on in-domain queries.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "A single-vector model has a fixed capacity for representing complex queries.",
+          "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+        },
+        {
+          "claim": "DeepMind's paper shows that for a d=512 model, retrieval is guaranteed to fail on some top-2 combinations beyond ~500k documents.",
+          "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+        },
+        {
+          "claim": "Hybrid search (combining keyword and vector) or multi-vector models like ColBERT are necessary for high-recall retrieval at scale.",
+          "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+        },
+        {
+          "claim": "ColBERT stores per-token embeddings and uses MaxSim scoring.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "ANN indexes are approximate \u2014 they can miss true nearest neighbors, especially for skewed vector distributions.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Always evaluate recall@k on your own data.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Embedding models map text to dense vectors where cosine similarity approximates semantic similarity; use the same model for documents and queries.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "ANN indexes like HNSW and IVF trade a small accuracy loss for sub-linear query time; tune parameters like m, ef_construction, and nprobe to balance recall and latency.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Single-vector embeddings have a theoretical capacity limit \u2014 beyond a few hundred thousand documents (for d=512), they can fail on complex queries; consider hybrid or multi-vector approaches for high-recall needs.",
+          "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+        },
+        {
+          "claim": "Domain shift is a real problem: fine-tune your embedding model on your corpus to improve retrieval quality by 5\u201315% recall@10.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        },
+        {
+          "claim": "Always evaluate recall@k on your own data; ANN indexes can miss true neighbors, especially with skewed vector distributions.",
+          "source_url": "https://weaviate.io/blog/vector-search-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://weaviate.io/blog/vector-search-explained"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically sound, covering the right ground for senior engineers. The code examples are practical and the grounding is strong. However, the writing has a slightly formulaic, list-like quality in the deep-dive section (e.g., 'Typical defaults:...' and 'Another limitation is...') that reads more like a spec sheet than a narrative, and the problem framing could be tightened to avoid the slightly generic 'not a silver bullet' phrasing. Minor edits to improve flow and add a bit more connective tissue between concepts would elevate it to an 8.",
+  "grounding_score": 0.856,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "rejected",
+  "git_status": null,
+  "total_tokens": 16149,
+  "total_cost_usd": 0.0083,
+  "latency_ms": {
+    "retrieve": 8685,
+    "retrieve_web": 8666,
+    "retrieve_kb": 19,
+    "draft": 12647,
+    "verify": 10870,
+    "reflect": 2779,
+    "html_gen": 4008
+  },
+  "error_log": [
+    "[html_gen] policy failure: unreplaced placeholders in article body"
+  ],
+  "claims_verified": 32,
+  "claims_weak": 0,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 0,
+    "mean_confidence_verified": 0.856,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 23,
+    "S": 23,
+    "V": 32,
+    "N": 32,
+    "verified_fraction": 1.0,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Keyword search fails when users don't know the exact terms in a document.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Embedding models convert text into vectors that capture meaning, and semantically similar phrases end up with similar vectors.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Vector search is the foundation of semantic search, recommendation systems, and retrieval-augmented generation (RAG).",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Comparing a query vector against millions of stored vectors exhaustively is too slow.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Vector search uses approximate nearest neighbor (ANN) indexes to return top-k results in milliseconds.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Embeddings fail on out-of-domain vocabulary.",
+      "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+    },
+    {
+      "claim": "Single-vector models have theoretical limits on the complexity of queries they can represent.",
+      "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+    },
+    {
+      "claim": "An embedding model is a function f: X \u2192 R^d that maps an input to a dense vector of d real numbers.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Models like Sentence-BERT are trained with contrastive loss: positive pairs are pulled together, negative pairs are pushed apart.",
+      "source_url": "https://aarontay.substack.com/p/why-embedding-vector-search-is-probably",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://aarontay.substack.com/p/why-embedding-vector-search-is-probably"
+    },
+    {
+      "claim": "Cosine similarity \u2014 cos(q, d) = (q\u00b7d) / (||q|| ||d||) \u2014 measures semantic closeness.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "For normalized vectors, cosine similarity equals dot product.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Many libraries (FAISS, Qdrant) use inner product for speed.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "At indexing time, every document is passed through the model, and the resulting vectors are stored in a vector database.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "At query time, the query is encoded with the same model, and the system retrieves the top-k vectors with the highest similarity.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Exhaustive search is O(N) per query.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "HNSW (Hierarchical Navigable Small World) builds a multi-layer graph; at query time it greedily traverses the graph, trading a small accuracy loss for O(log N) search time.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "FAISS's IVF (Inverted File Index) partitions vectors into nlist clusters; at query time it searches only nprobe clusters.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Typical defaults: HNSW m=16, ef_construction=200 in FAISS; Qdrant uses m=16, ef_construct=100.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "These parameters control the recall-latency tradeoff.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "A critical failure mode is domain shift: if your corpus uses niche vocabulary and your embedding model was trained on general web text, the vectors will be poor.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Fine-tuning on domain data via contrastive loss can improve recall@10 by 5\u201315% on in-domain queries.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "A single-vector model has a fixed capacity for representing complex queries.",
+      "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+    },
+    {
+      "claim": "DeepMind's paper shows that for a d=512 model, retrieval is guaranteed to fail on some top-2 combinations beyond ~500k documents.",
+      "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+    },
+    {
+      "claim": "Hybrid search (combining keyword and vector) or multi-vector models like ColBERT are necessary for high-recall retrieval at scale.",
+      "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+    },
+    {
+      "claim": "ColBERT stores per-token embeddings and uses MaxSim scoring.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "ANN indexes are approximate \u2014 they can miss true nearest neighbors, especially for skewed vector distributions.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Always evaluate recall@k on your own data.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Embedding models map text to dense vectors where cosine similarity approximates semantic similarity; use the same model for documents and queries.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "ANN indexes like HNSW and IVF trade a small accuracy loss for sub-linear query time; tune parameters like m, ef_construction, and nprobe to balance recall and latency.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Single-vector embeddings have a theoretical capacity limit \u2014 beyond a few hundred thousand documents (for d=512), they can fail on complex queries; consider hybrid or multi-vector approaches for high-recall needs.",
+      "source_url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval"
+    },
+    {
+      "claim": "Domain shift is a real problem: fine-tune your embedding model on your corpus to improve retrieval quality by 5\u201315% recall@10.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    },
+    {
+      "claim": "Always evaluate recall@k on your own data; ANN indexes can miss true neighbors, especially with skewed vector distributions.",
+      "source_url": "https://weaviate.io/blog/vector-search-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://weaviate.io/blog/vector-search-explained"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://weaviate.io/blog/vector-search-explained",
+      "score": 0.80735475,
+      "content": "Vector Search\n\nVector Search\n\nAt the time of entry/import (or any significant changes to data objects), every data object, and the query, are converted into numerical vector representations using embedding models. Every data object in a dataset gets a vector, and this is compared to the query vector at search time.\n\nIn a nutshell, vector embeddings are an array of numbers, which can be used as coordinates in a high-dimensional space. Although it is hard to imagine coordinates in more than 3-dimensional space (x, y, z), we can still use the vectors to compute the distance between vectors, which can be used to indicate similarity between objects. There are many different distance metrics, like cosine similarity and Euclidean distance (L2 distance). [...] ## What is vector search?\u200b\n\nVector search is a technique for finding and retrieving similar items in large datasets by comparing their vector representations, which are numerical encodings of their features. Unlike traditional search that relies on exact matches, vector search looks for similarity based on meaning or context. It's used in applications like image retrieval, recommendation systems, and search engines.\n\n## How does vector search work?\u200b\n\nVector search works by converting data and queries into vector embeddings. Vector embeddings are generated by language models that learn to capture the meaning and context of data within numerical representations.\n\nVector Search\n\nVector Search [...] ### Search Systems\u200b\n\nVector search can be applied to a wide range of different search systems, from billion-scale e-commerce applications to multi-modal and multi-lingual search apps to internal document search in large enterprises. For example, in e-commerce, semantic search can recommend products based on customer intent, even if they don't have the exact keywords in their search query. With the right embedding model selection, you could create multilingual, like WeaLingo, or multimodal search apps out of the box. Vector sea"
+    },
+    {
+      "url": "https://tullie.ai/blog/vector-bottleneck-embedding-retrieval",
+      "score": 0.80735475,
+      "content": "Tullie Murrell\n\n\u2190 Writing\n\n# The Vector Bottleneck in Embedding-Based Retrieval\n\n research\n ir\n   \n\nDeepMind\u2019s latest paper formalizes a long-suspected limitation of embedding-based retrieval: single-vector models cannot scale to combinatorial query complexity, no matter how large the dimension. The result reframes hybrid and multi-vector approaches, not as patches, but as necessary architectures for retrieval at scale.\n\nVector search is necessary but not sufficient. Most production failures I see come from treating embeddings as the whole retrieval stack instead of one candidate source. [...] A d=512 model (e.g., some smaller BERTs): The breaking point is around n = 500k documents. Beyond this, it\u2019s guaranteed to fail on some top-2 combinations.\n A d=1024 model (common size): Breaks at n = 4 million documents.\n A massive d=4096 model (largest current models): Breaks at n = 250 million documents.\n\n## LIMIT: A Diagnostic for Production Pain Points\n\nThe paper\u2019s most potent contribution is the LIMIT dataset. It\u2019s engineered to have a high sign rank by instantiating a dense relevance graph: its core is a set of 1035 queries designed to retrieve every possible pair from a pool of 46 documents. [...] A recent paper from Google DeepMind, \u201cOn the Theoretical Limitations of Embedding-Based Retrieval,\u201d provides a formal basis for a limitation many of us have intuited in single-vector retrieval systems. It\u2019s an important piece of work because it moves the discussion of embedding capacity onto a more rigorous, mathematical footing, forcing us to reconsider the ultimate capabilities of our simplest architectures.\n\nThe timing is also notable, as Google launched its new Gemma family of embedding models in the same week. It\u2019s ironic that Google\u2019s research organization publishing a fundamental critique of a technology while the product division ships a state-of-the-art implementation of it."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=YlAWtEAJl9g",
+      "score": 0.77364457,
+      "content": "component in generative AI applications to help retrieve information fast and efficiently it is becoming one of the most important components in Ai and machine learning Services overall Vector search technology is transforming the way people engage with information it allows for more relevant efficient and personalized search experiences across a wide range of applications as data volumes continue to grow and user expectations for search become more sophisticated Vector search is poised to play an increasingly crucial role in the future of search so how does Vector search work let's explain the process at a high level step one encode data into vectors by using AI models called embedding models step two create an index to enable fast and scalable Vector search step three search the vector [...] first how to encode data more specifically how to convert multimodal data to a representation that captures semantic meanings and second how to index and search data more specifically how to build a search space that enables fast and efficient search to address these challenges let's explore the Technologies of embeddings and Vector search respectively these two technologies also lay the foundation for many other modern Ai and machine learning applications such as large language models and generative AI thank you for watching please check out the next lesson about generating embeddings hello everybody in this video we are going to talk about how to generate embeddings the First Technology you explore is embeddings which address the first issue of encoding data into a representation that [...] after importing the embedding libraries you first need to specify the name of the pre-trained embedding model that you want to use such as text embedding Gecko and multimodal embedding both provided by Google second you need to define the text input third you need to get the embeddings you can find more coding examples in the following demo and the Hands-On lab you have examined text embe"
+    },
+    {
+      "url": "https://aarontay.substack.com/p/why-embedding-vector-search-is-probably",
+      "score": 0.74807674,
+      "content": "AI-generated content may be incorrect.\n\nWhile several approaches exist for applying embeddings in search, the most common method uses a bi-encoder architecture. In this model, documents are passed through an embedding model during indexing to generate vector representations, which are then stored in a vector database. At query time, the input query is independently encoded into a vector using the same embedding model. Finally, a similarity function\u2014such as cosine similarity\u2014is used to compare the query vector against the document vectors, enabling the system to rank and retrieve the most relevant results based on their semantic similarity. [...] What we typically call \"semantic search\" aims for retrieval based on \"meaning\" rather than just matching keywords. This is achieved these days using embedding models.\n\nIn simple terms, these models convert text (a document, a search query) into a string of numbers called a vector embedding. This vector represents the text's meaning in a high-dimensional space. The system then finds documents whose vectors are mathematically \"closest\" to your query's vector.\n\nA diagram of embedding search in practice\n\nAI-generated content may be incorrect.\n\nOf course, AI powered search is more than one technology, but here are some common ways already used in academic search engines\n\nUse of LLMs to generate Boolean Search Queries (type of query expansion)\n\nUse of LLMs to generate suggested terms to add [...] These embedding models are typically trained via self-supervised learning on predicting the sequence of text from huge amounts of text from the internet.\n\nA diagram of embedding search in practice\n\nAI-generated content may be incorrect."
+    },
+    {
+      "url": "https://philna.sh/blog/2025/04/08/how-to-create-vector-embeddings-in-python",
+      "score": 0.74385756,
+      "content": "The above assumes that you have already created your vector-enabled collection with the right number of dimensions for the model you\u2019re using.\n\nPerforming a vector search then looks like this:\n\n```\ncursor = collection.find(cursor = collection.find( {}, {}, sort={\"$vector\": [0.04574034, 0.038084425, -0.00916391, ...]}  sort ={\"$vector\": [0.04574034, 0.038084425, -0.00916391, ...]})) for document in cursor: for  document in cursor: print(document)  print(document)\n```\n\nIn these examples, you have to create your vectors first, before storing or searching against the database with them. In the case of the frameworks, you might not see this happen, as it has been abstracted away, but the operations are being performed. [...] You can use the same `vector_store` object and associated embeddings to perform the vector search, too.\n\n```\nresults = vector_store.similarity_search(\"Are robots allowed to protect themselves?\") results = vector_store.similarity_search(\"Are robots allowed to protect themselves?\")\n```\n\nLlamaIndex has a similar set of abstractions that enable you to combine different embedding models and vector stores. Check out this LlamaIndex introduction to RAG to learn more.\n\nIf you\u2019re new to embeddings, LangChain has a handy list of embedding models and providers that can help you find different options to try.\n\n## Directly in the database [...] If you\u2019re using LangChain to build your entire RAG pipeline, these embeddings fit in well with the vector database interfaces. You can provide an embedding model to the database object and LangChain handles generating the embeddings as you insert documents or perform queries. For example, here\u2019s how you can combine the Google embeddings model with the LangChain wrapper for Astra DB."
+    },
+    {
+      "url": "https://realpython.com/chromadb-vector-database",
+      "score": 0.7434107,
+      "content": "Because you have a grasp on vectors and embeddings, and you understand the motivation behind vector databases, the best way to get started is with an example. For this example, you\u2019ll store ten documents to search over. To illustrate the power of embeddings and semantic search, each document covers a different topic, and you\u2019ll see how well ChromaDB associates your queries with similar documents.\n\nYou\u2019ll start by importing dependencies, defining configuration variables, and creating a ChromaDB client:\n\nLanguage: Python\n\n```\n>>> import  chromadb>>> from  chromadb.utils  import embedding_functions>>> CHROMA_DATA_PATH =\"chroma_data/\">>> EMBED_MODEL =\"all-MiniLM-L6-v2\">>> COLLECTION_NAME = \"demo_docs\">>> client = chromadb. PersistentClient(path = CHROMA_DATA_PATH)\n``` [...] The vector database will accept a query like how much revenue did the company make in Q2 2023 and embed the query. It\u2019ll then compare the embedded query to other embeddings in the vector database and return the documents that have embeddings that are most similar to the query embedding.\n\nIn this example, perhaps the most similar document says something like Company XYZ reported $15 million in revenue for Q2 2023. The vector database identified the document that had an embedding most similar to how much revenue did the company make in Q2 2023, which likely had a high similarity score based on the document\u2019s semantics. [...] In this example, you query the collection for five reviews that have the worst implications on the dealership, and you filter on reviews that have a rating less than or equal to `3`. You then pass this question, along with the five relevant reviews, to ChatGPT.\n\nChatGPT points to a specific review where a customer had a poor experience at the dealership, quoting the review directly. ChatGPT has no knowledge of this review without your providing it, and you may not have found this review without a vector database capable of accurate semantic search. This is the power that you unlock"
+    },
+    {
+      "url": "https://www.oracle.com/database/vector-search",
+      "score": 0.7300017,
+      "content": "In business, vector embeddings can be applied to documents, products, customer communications, and other commercial assets and blended with business data, such as up-to-date pricing or availability records. When vector search is combined with a technology called retrieval-augmented generation, or RAG, it allows powerful large language models (LLMs) to deliver answers informed by an organization\u2019s operational data. That brings generative AI to bear on a variety of business use cases, including sales, research, product development, and many others.\n\nKey Takeaways\n\n## Vector Search Explained [...] Key Takeaways\n\n## Vector Search Explained\n\nFor vector search to work, items in a data set must first be assigned vector embeddings and indexed in a way that facilitates fast retrieval of similar items. Vector embeddings are strings of numbers that correspond to the many attributes of an item\u2014whether that item is a word, document, image, or video or audio file. Embeddings are assigned by sophisticated machine learning algorithms and allow for searches that focus on the attributes of an item rather than finding results based on keywords."
+    },
+    {
+      "url": "https://medium.com/@toimrank/understanding-vector-embeddings-semantic-search-and-its-implementation-d51e76c09a80",
+      "score": 0.7274535,
+      "content": "## 3. Process Details \u2014 How Vector Embeddings Work (Step by Step)\n\nBelow is the overall process to create and store vector embeddings to perform search in detail:\n\nPress enter or click to view image in full size\n\nImage 5\n\nVector search transforms data such as text, images or audio into numerical vector embeddings using machine learning models.\n\nStep1: Load required code modules to work with Vector embedding and search.\n\nStep2:Load data text, images or audio with the help of document, sentence and paragraph.\n\nStep3:Imports a module to split large documents / sentence/ paragraph into smaller chunks by character length. _Splitting is essential because LLMs and embedding models have__token limits__._"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=ABLeB7JMWk0",
+      "score": 0.7163977,
+      "content": "# Python + AI: Vector embeddings\n## Microsoft Reactor\n163000 subscribers\n272 likes\n\n### Description\n7856 views\nPosted: 8 Oct 2025\nIn our second session of the Python + AI series, we'll dive into a different kind of model: the vector embedding model.\n\nA vector embedding is a way to encode a text or image as an array of floating point numbers. Vector embeddings make it possible to perform similarity search on many kinds of content. \n\nIn this session, we'll explore different vector embedding models, like the OpenAI text-embedding-3 series, with both visualizations and Python code. We'll compare distance metrics, use quantization to reduce vector size, and try out multimodal embedding models.\n\nIf you'd like to follow along with the live examples, make sure you've got a GitHub account. [...] to be able to take questions from users and be able to use those to do uh to do vector searches, right? So, I have uh so for example, this is a rag on top of Azure AI search that's searching documents like PDFs, right? So this one is doing a vector search of of documents and we can actually like see the um kind of scores that come back from the search service for for the various chunks. Right? So we have created embeddings of all of these chunks from the documents and we are searching based off of the embeddings of these chunks. And that way we can get really good results and then you know send that to send those results to the LM and get a good response. So that's that is rag and that is what we're going to be talking about for the whole session tomorrow. All right. So now uh moving on [...] \ud83d\udccc This session is a part of a series. Learn more here: \nExplore the slides and episode resources: \nCheck out the demos: \n\nChapters:\n00:08 \u2013 Welcome & Housekeeping\n01:03 \u2013 Introduction to Vector Embeddings\n02:24 \u2013 Why Vector Embeddings Matter\n03:32 \u2013 How Embedding Models Work\n06:01 \u2013 Comparing Embedding Models\n10:55 \u2013 Generating Embeddings with OpenAI\n20:59 \u2013 Understanding Similarity Spaces\n24:47"
+    },
+    {
+      "url": "https://arxiv.org/html/2508.21038v1",
+      "score": 0.635879,
+      "content": "It is tempting to use the triangle inequality to show that embedding models have theoretical limitations. This is true for metric spaces, however, vector search often uses cosine similarity which operates in non-metric space. Thus, for realistic scenarios, we cannot use the triangle inequality to bound what embedding models can represent.\n\n## 8 Relationship to Order-K Voronoi Regions [...] We connect known results in learning theory, showing that the number of top-kk subsets of documents capable of being returned as the result of some query is limited by the dimension of the embedding.\nWe empirically show that this holds true even if we restrict to k=2k=2, and directly optimize on the test set with free parameterized embeddings.\nWe then create a realistic dataset called LIMIT that stress tests models based on these theoretical results, and observe that even state-of-the-art models fail on this dataset despite the simple nature of the task.\nOur work shows the limits of embedding models under the existing single vector paradigm and calls for future research to develop methods that can resolve this fundamental limitation. [...] Rather than proposing empirical benchmarks to gauge what embedding models can achieve, we seek to understand at a more fundamental level what the limitations are.\nSince embedding models use vector representations in geometric space, there exists well-studied fields of mathematical research (Papadimitriou and Sipser 1982) that could be used to analyze these representations."
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "embedding-models-vector-search",
+      "chunk_index": 0,
+      "distance": 0.2655,
+      "rrf_score": 0.03333,
+      "text": "# Embedding Models & Vector Search\n\n## Definition\nEmbedding models are functions that map discrete inputs (text tokens, images, audio) into dense, fixed-dimensional real-valued vectors, such that semantically similar items are placed close in the vector space. Vector search is the task of efficiently retrieving the top-k vectors most similar to a query vector from a large collection, using a distance metric (cosine, Euclidean) and approximate nearest neighbor (ANN) indexing.\n\n## Intuition\nEmbeddings compress semantic meaning into a numeric point; items with related meaning cluster together. Vector search enables fast lookup of relevant items from millions of candidates by navigating a pre-built index, avoiding exhaustive pairwise comparison.\n\n## Mathematical Formulation\nAn embedding model f: X \u2192 R^d maps input x to v = f(x). Similarity between query q and document d is measured via cosine similarity: cos(q,d) = (q\u00b7d) / (||q|| ||d||). The top-k retrieval solves k = argmax_{i\u2208D} cos(f(q), f(d_i)). Approximate algorithms (HNSW, IVF-PQ) build graph or partition-based indices to achieve sub-linear O(log N) query time by trading minimal accuracy.\n\n## Estimation\nEmbedding models are trained using contrastive or triplet losses that maximize similarity between positive pairs and minimize similarity for negatives. Training data comes from parallel corpora, question-answer pairs, or co-occurrence signals. The vector index is built offline: all document vectors are ingested and an ANN index is constructed (e.g., HNSW graph, IVF centroids). At query time, the same encoder produces the query vector, and the ANN index returns top-k results.\n\n## Assumptions\n- Embedding space is Euclidean, and the consistency metric captures semantic similarity.\n- Query distribution matches training data; domain shift can degrade relevance.\n- Cosine similarity (or chosen metric) is a valid relevance"
+    },
+    {
+      "source": "embedding-models-vector-search",
+      "chunk_index": 3,
+      "distance": 0.404,
+      "rrf_score": 0.03252,
+      "text": " ef_construction=200 as typical defaults.\n- Qdrant's default HNSW parameters are m=16, ef_construct=100, and on_disk=false for in-memory storage.\n- Cosine similarity for normalized vectors equals dot product; normalization is done at index time in FAISS.\n- FAISS IndexFlatIP performs exact inner product search; IndexIVFPQ approximates with 10\u2013100x speedup.\n- IVF (Inverted File Index) partitions vectors into nlist=100\u20134096 clusters; searches nprobe=10\u201364 clusters at query time.\n- Sentence-transformers library provides a unified API for 100+ pretrained embedding models via HuggingFace.\n- ColBERT stores per-token embeddings (128-d) and uses MaxSim scoring, achieving higher recall than single-vector models.\n- Embedding model fine-tuning on domain data via contrastive loss typically improves recall@10 by 5\u201315% on in-domain queries."
+    },
+    {
+      "source": "embedding-models-vector-search",
+      "chunk_index": 1,
+      "distance": 0.5295,
+      "rrf_score": 0.03227,
+      "text": "-k results.\n\n## Assumptions\n- Embedding space is Euclidean, and the consistency metric captures semantic similarity.\n- Query distribution matches training data; domain shift can degrade relevance.\n- Cosine similarity (or chosen metric) is a valid relevance proxy for the task.\n- Approximate search accuracy loss is acceptable and configured.\n- Index can be rebuilt when the corpus changes significantly.\n\n## Key Properties\n- **Semantic matching**: Captures synonymy, paraphrasing, and topical relatedness beyond keyword overlap.\n- **Fixed-length representation**: Enables geometric operations (similarity, clustering, arithmetic).\n- **Scalability**: Billions of vectors can be searched in milliseconds with ANN indexes.\n- **Metric boundedness**: Cosine similarity \u2208 [-1,1], magnitude-invariant; Euclidean distance is unbounded.\n- **Offline indexing, online query**: Index preparation is amortized; retrieval is fast.\n\n## Failure Modes\n- **Out-of-domain encoding**: Model unfamiliar with niche vocabulary produces poor representations.\n- **Curse of dimensionality**: Distances lose discriminability if dimension d is very high relative to data volume.\n- **False nearest neighbors**: ANN may miss true top items, especially for skewed vector distributions.\n- **Embedding collision**: Unrelated concepts mapped close, causing irrelevant results.\n- **Index staleness**: Document changes not reflected until re-indexing.\n\n## When to Use / Not Use\n**Use**: Semantic search, retrieval-augmented generation, recommendation, deduplication, clustering, multimodal retrieval.\n\n**Not use**: When exact keyword match is sufficient and interpretable (database LIKE query), or when corpus is tiny and exhaustive search is trivial, or when low-latency insertion/deletion without re-indexing is critical.\n\n## Variants / Extensions\n- **Sparse embeddings**: Bag-of-words or learned sparse vectors (SPLADE) for interpretable hybrid retrieval.\n- **Multi-vector models**: Per-token embeddings for late interaction (ColBERT"
+    },
+    {
+      "source": "support-vector-machines",
+      "chunk_index": 0,
+      "distance": 0.6313,
+      "rrf_score": 0.03077,
+      "text": "# Support Vector Machines\n\n## Definition\nA Support Vector Machine (SVM) is a supervised learning algorithm that constructs a hyperplane in a high-dimensional space to separate classes. The objective is to maximize the margin between the closest points of different classes. Flexibility for non-linear boundaries is provided by the kernel trick, which implicitly computes dot products in a transformed feature space. The method also extends to regression (support vector regression) and novelty detection.\n\n## Intuition\nThe separating hyperplane with the largest margin is preferred because it is expected to generalize better, as it tolerates small perturbations without misclassifying. Only the training points lying exactly on the margin or violating it (support vectors) determine the solution, making the model sparse and the decision boundary robust to points far away.\n\n## Mathematical Formulation\nFor a binary classification problem with labels y_i \u2208 {\u22121,+1}, the primal hard-margin objective is: minimize (1/2)\u2016w\u2016\u00b2 subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1. To handle non-separable data, slack variables \u03be_i \u2265 0 are introduced: minimize (1/2)\u2016w\u2016\u00b2 + C \u03a3 \u03be_i subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1 \u2212 \u03be_i, where C > 0 controls the trade-off between margin width and misclassification.\n\nThe dual formulation is: maximize \u03a3 \u03b1_i \u2212 (1/2) \u03a3_i \u03a3_j \u03b1_i \u03b1_j y_i y_j K(x_i, x_j), subject to 0 \u2264 \u03b1_i \u2264 C and \u03a3 \u03b1_i y_i = 0. The kernel function K(x_i, x_j) = \u27e8\u03c6(x_i), \u03c6(x_j)\u27e9 avoids explicit computation of \u03c6. The decision function becomes: f(x) = sign(\u03a3 \u03b1_i y_i K(x_i, x) + b).\n\nFor"
+    },
+    {
+      "source": "retrieval-augmented-generation",
+      "chunk_index": 0,
+      "distance": 0.6337,
+      "rrf_score": 0.03055,
+      "text": "# Retrieval Augmented Generation (RAG)\n\n## Definition\nRetrieval Augmented Generation (RAG) is a framework that combines a pre-trained parametric memory (a sequence-to-sequence generator) with a non-parametric memory (a dense vector index of documents) via a neural retriever. At inference time, relevant documents are fetched from the index and provided as additional context for generation, enabling factual grounding and access to external knowledge without enlarging model parameters.\n\n## Intuition\nStandard language models store knowledge implicitly in their weights, which is expensive to update and prone to hallucination. RAG offloads factual recall to an external, easily updatable retrieval corpus, allowing the generator to focus on synthesizing an answer from retrieved evidence.\n\n## Mathematical Formulation\nGiven an input query x, a retriever with parameters \u03b7 assigns a document z from corpus D a probability p_\u03b7(z|x) \u221d exp( d(z)^T q(x) ), where q and d are dense encoders (e.g., BERT-based). A generator with parameters \u03b8 produces target y. Two common formulations:\n\n**RAG-Sequence** marginalizes over the top-k documents Z:\np_Seq(y|x) = \u03a3_{z\u2208Z} p_\u03b7(z|x) \u220f_t p_\u03b8(y_t | y_{<t}, z, x)\n\n**RAG-Token** marginalizes per generated token:\np_Token(y|x) = \u220f_t \u03a3_{z\u2208Z} p_\u03b7(z|x) p_\u03b8(y_t | y_{<t}, z, x)\n\nIn practice, often a single set of k retrieved documents Z is concatenated with x and passed to a generator that models p_\u03b8(y|x, Z) without marginalization, using architectures like FiD where all documents are encoded jointly.\n\n## Estimation\nTraining maximizes the log-likelihood of target y. The retriever is typically initialized from"
+    }
+  ],
+  "attribution": {
+    "web": 32,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

@@ -1,0 +1,1105 @@
+{
+  "run_id": "b546fe6f-825d-412e-afad-38d717d0a4a1",
+  "topic": "Decision Trees",
+  "slug": "decision-trees",
+  "timestamp": "2026-08-21T12:14:07.389781+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 2,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 0,
+      "S": 22,
+      "V": 0,
+      "W": 0,
+      "U": 37,
+      "N": 37,
+      "uvr": 1.0,
+      "verification_status": "completed",
+      "grounding_score": 0.0,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [
+        "Linear models fail when the relationship between features and the target is nonlinear or involves interactions.",
+        "Neural networks are accurate but opaque.",
+        "Decision trees solve this by learning a series of if-then rules that partition the feature space into regions, each with a constant prediction.",
+        "The result is a model you can read and audit, which matters in regulated industries or when you need to explain a prediction to a stakeholder.",
+        "Trees also handle mixed data types and missing values with minimal preprocessing.",
+        "They are the building block for powerful ensembles like Random Forests and Gradient Boosted Trees, so understanding them is foundational.",
+        "The core problem they solve: how to automatically discover the decision rules that best separate your data, without requiring you to hand-code them.",
+        "A decision tree recursively splits the data.",
+        "At each node, the algorithm considers every feature and every possible threshold.",
+        "For a feature j and threshold s, it splits the node into two child nodes: R_left = {x : x_j <= s} and R_right = {x : x_j > s}.",
+        "The split is chosen to maximize the reduction in impurity, defined as: \u0394I = I(parent) - (N_left/N) * I(left) - (N_right/N) * I(right) where I is an impurity measure and N is the number of samples.",
+        "For classification, common impurity measures are Gini impurity: G = 1 - \u03a3 p_k\u00b2, and entropy: H = -\u03a3 p_k log\u2082(p_k), where p_k is the proportion of class k in the node.",
+        "For regression, the impurity is mean squared error: MSE = (1/N) \u03a3 (y_i - \u0233)\u00b2, with \u0233 the node mean.",
+        "The tree grows greedily: it picks the best split at each node, then recurses on the child nodes.",
+        "This greedy approach is computationally efficient but does not guarantee a globally optimal tree.",
+        "The standard algorithm in scikit-learn is CART, which produces binary trees.",
+        "CART uses Gini impurity by default for classification.",
+        "Stopping criteria prevent the tree from growing indefinitely.",
+        "Common criteria include max depth, minimum samples per leaf, and node purity (all samples in a node belong to the same class).",
+        "Without these, the tree will grow until every leaf is pure, which almost always overfits the training data.",
+        "Overfitting is the primary failure mode: the tree memorizes noise and outliers, leading to poor generalization.",
+        "The default in scikit-learn is max_depth=None, which means the tree grows until pure leaves, so you must set constraints or use pruning.",
+        "Pruning is a post-hoc technique to reduce overfitting.",
+        "Cost-complexity pruning minimizes R_\u03b1(T) = \u03a3_leaf N_leaf * I(leaf) + \u03b1 * |leaves|, where \u03b1 is a penalty for the number of leaves.",
+        "A larger \u03b1 forces a simpler tree.",
+        "scikit-learn exposes this via the ccp_alpha parameter.",
+        "Another failure mode is instability.",
+        "A small change in the training data can produce a completely different tree, because the greedy split selection is sensitive to small perturbations.",
+        "This high variance is why single trees are often outperformed by ensembles like Random Forests, which average many trees trained on bootstrap samples and random feature subsets.",
+        "Trees also cannot extrapolate.",
+        "They predict a constant value within each leaf, so predictions outside the training feature range will be the same as the nearest leaf's value.",
+        "For regression, this means the model cannot produce values beyond the range seen in training.",
+        "Decision trees partition feature space with axis-aligned splits, choosing the split that maximizes impurity reduction (Gini or entropy for classification, MSE for regression).",
+        "Overfitting is the main risk; always set max_depth, min_samples_leaf, or use cost-complexity pruning (ccp_alpha) to constrain tree growth.",
+        "Trees are unstable: small data changes can produce very different trees, which is why ensembles like Random Forests are often preferred.",
+        "Trees cannot extrapolate beyond the training feature range; predictions are constant within each leaf.",
+        "Use plot_tree from scikit-learn to visualize and audit the learned rules, which is a key advantage over black-box models."
+      ],
+      "grounding_report": [
+        {
+          "claim": "Linear models fail when the relationship between features and the target is nonlinear or involves interactions.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Neural networks are accurate but opaque.",
+          "source_url": null,
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "none",
+          "source_ref": null
+        },
+        {
+          "claim": "Decision trees solve this by learning a series of if-then rules that partition the feature space into regions, each with a constant prediction.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The result is a model you can read and audit, which matters in regulated industries or when you need to explain a prediction to a stakeholder.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Trees also handle mixed data types and missing values with minimal preprocessing.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "They are the building block for powerful ensembles like Random Forests and Gradient Boosted Trees, so understanding them is foundational.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The core problem they solve: how to automatically discover the decision rules that best separate your data, without requiring you to hand-code them.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "A decision tree recursively splits the data.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "At each node, the algorithm considers every feature and every possible threshold.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "For a feature j and threshold s, it splits the node into two child nodes: R_left = {x : x_j <= s} and R_right = {x : x_j > s}.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The split is chosen to maximize the reduction in impurity, defined as: \u0394I = I(parent) - (N_left/N) * I(left) - (N_right/N) * I(right) where I is an impurity measure and N is the number of samples.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "For classification, common impurity measures are Gini impurity: G = 1 - \u03a3 p_k\u00b2, and entropy: H = -\u03a3 p_k log\u2082(p_k), where p_k is the proportion of class k in the node.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "For regression, the impurity is mean squared error: MSE = (1/N) \u03a3 (y_i - \u0233)\u00b2, with \u0233 the node mean.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The tree grows greedily: it picks the best split at each node, then recurses on the child nodes.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "This greedy approach is computationally efficient but does not guarantee a globally optimal tree.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The standard algorithm in scikit-learn is CART, which produces binary trees.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "CART uses Gini impurity by default for classification.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Stopping criteria prevent the tree from growing indefinitely.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Common criteria include max depth, minimum samples per leaf, and node purity (all samples in a node belong to the same class).",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Without these, the tree will grow until every leaf is pure, which almost always overfits the training data.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Overfitting is the primary failure mode: the tree memorizes noise and outliers, leading to poor generalization.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The default in scikit-learn is max_depth=None, which means the tree grows until pure leaves, so you must set constraints or use pruning.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Pruning is a post-hoc technique to reduce overfitting.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Cost-complexity pruning minimizes R_\u03b1(T) = \u03a3_leaf N_leaf * I(leaf) + \u03b1 * |leaves|, where \u03b1 is a penalty for the number of leaves.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "A larger \u03b1 forces a simpler tree.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "scikit-learn exposes this via the ccp_alpha parameter.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Another failure mode is instability.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "A small change in the training data can produce a completely different tree, because the greedy split selection is sensitive to small perturbations.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "This high variance is why single trees are often outperformed by ensembles like Random Forests, which average many trees trained on bootstrap samples and random feature subsets.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Trees also cannot extrapolate.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "They predict a constant value within each leaf, so predictions outside the training feature range will be the same as the nearest leaf's value.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "For regression, this means the model cannot produce values beyond the range seen in training.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Decision trees partition feature space with axis-aligned splits, choosing the split that maximizes impurity reduction (Gini or entropy for classification, MSE for regression).",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Overfitting is the main risk; always set max_depth, min_samples_leaf, or use cost-complexity pruning (ccp_alpha) to constrain tree growth.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Trees are unstable: small data changes can produce very different trees, which is why ensembles like Random Forests are often preferred.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Trees cannot extrapolate beyond the training feature range; predictions are constant within each leaf.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Use plot_tree from scikit-learn to visualize and audit the learned rules, which is a key advantage over black-box models.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "SV": 25,
+      "S": 25,
+      "V": 28,
+      "W": 0,
+      "U": 2,
+      "N": 30,
+      "uvr": 0.067,
+      "verification_status": "completed",
+      "grounding_score": 0.848,
+      "m4_feedback_claims": 37,
+      "unverified_claims": [
+        "Linear models assume a straight-line relationship, which fails when the true pattern is curved or involves feature interactions.",
+        "Neural networks can model these complexities but are hard to interpret."
+      ],
+      "grounding_report": [
+        {
+          "claim": "Linear models assume a straight-line relationship, which fails when the true pattern is curved or involves feature interactions.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Neural networks can model these complexities but are hard to interpret.",
+          "source_url": null,
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "none",
+          "source_ref": null
+        },
+        {
+          "claim": "Decision trees learn a series of if-then rules that partition the feature space into regions, each with a constant prediction.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Decision trees handle mixed data types and missing values with minimal preprocessing.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Decision trees serve as the building blocks for powerful ensembles like Random Forests and Gradient Boosted Trees.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "At each node, the algorithm considers every feature and every possible threshold.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "For a feature j and threshold s, it splits the node into two child nodes: R_left = {x : x_j <= s} and R_right = {x : x_j > s}.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The split is chosen to maximize the reduction in impurity, defined as: \u0394I = I(parent) - (N_left/N) * I(left) - (N_right/N) * I(right), where I is an impurity measure and N is the number of samples.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "For classification, common impurity measures are Gini impurity: G = 1 - \u03a3 p_k\u00b2, and entropy: H = -\u03a3 p_k log\u2082(p_k), where p_k is the proportion of class k in the node.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "For regression, the impurity is mean squared error: MSE = (1/N) \u03a3 (y_i - \u0233)\u00b2, with \u0233 the node mean.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The tree grows greedily: it picks the best split at each node, then recurses on the child nodes.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "This greedy approach is computationally efficient but does not guarantee a globally optimal tree.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The standard algorithm in scikit-learn is CART, which produces binary trees.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "CART uses Gini impurity by default for classification.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Common stopping criteria include max depth, minimum samples per leaf, and node purity (all samples in a node belong to the same class).",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Without stopping criteria, the tree will grow until every leaf is pure, which almost always overfits the training data.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Overfitting is the primary failure mode: the tree memorizes noise and outliers, leading to poor generalization.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "The default in scikit-learn is max_depth=None, which means the tree grows until pure leaves, so you must set constraints or use pruning.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Cost-complexity pruning minimizes R_\u03b1(T) = \u03a3_leaf N_leaf * I(leaf) + \u03b1 * |leaves|, where \u03b1 is a penalty for the number of leaves.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "A larger \u03b1 forces a simpler tree.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "scikit-learn exposes cost-complexity pruning via the ccp_alpha parameter.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "A small change in the training data can produce a completely different tree, because the greedy split selection is sensitive to small perturbations.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "This high variance is why single trees are often outperformed by ensembles like Random Forests, which average many trees trained on bootstrap samples and random feature subsets.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Trees cannot extrapolate. They predict a constant value within each leaf, so predictions outside the training feature range will be the same as the nearest leaf's value.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "For regression, this means the model cannot produce values beyond the range seen in training.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Decision trees partition feature space with axis-aligned splits, choosing the split that maximizes impurity reduction (Gini or entropy for classification, MSE for regression).",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Overfitting is the main risk; always set max_depth, min_samples_leaf, or use cost-complexity pruning (ccp_alpha) to constrain tree growth.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Trees are unstable: small data changes can produce very different trees, which is why ensembles like Random Forests are often preferred.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Trees cannot extrapolate beyond the training feature range; predictions are constant within each leaf.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        },
+        {
+          "claim": "Use plot_tree from scikit-learn to visualize and audit the learned rules, which is a key advantage over black-box models.",
+          "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 37,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically accurate, but it reads like a competent textbook summary rather than a senior-engineer-focused article. The code examples are trivial (4-5 data points) and don't demonstrate real-world usage, hyperparameter tuning, or failure modes in practice. The writing is clear and direct, but the 'Takeaways' section merely repeats the body verbatim instead of synthesizing actionable guidance, and the lack of any discussion of feature importance, interpretability trade-offs, or comparison to logistic regression/linear baselines leaves the depth slightly below what a senior engineer would need.",
+  "grounding_score": 0.848,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 32389,
+  "total_cost_usd": 0.01652,
+  "latency_ms": {
+    "retrieve": 9548,
+    "retrieve_web": 9530,
+    "retrieve_kb": 18,
+    "draft": 8216,
+    "verify": 11528,
+    "reflect": 2581,
+    "html_gen": 4547,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 28,
+  "claims_weak": 0,
+  "claims_unverified": 2,
+  "grounding_breakdown": {
+    "unverified_no_source": 1,
+    "unverified_has_source": 1,
+    "weak_count": 0,
+    "mean_confidence_verified": 0.909,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 25,
+    "S": 25,
+    "V": 28,
+    "N": 30,
+    "verified_fraction": 0.933,
+    "unverified_fraction": 0.067
+  },
+  "grounding_report": [
+    {
+      "claim": "Linear models assume a straight-line relationship, which fails when the true pattern is curved or involves feature interactions.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.0,
+      "status": "unverified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Neural networks can model these complexities but are hard to interpret.",
+      "source_url": null,
+      "confidence": 0.0,
+      "status": "unverified",
+      "specificity": "generic",
+      "source_kind": "none",
+      "source_ref": null
+    },
+    {
+      "claim": "Decision trees learn a series of if-then rules that partition the feature space into regions, each with a constant prediction.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Decision trees handle mixed data types and missing values with minimal preprocessing.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Decision trees serve as the building blocks for powerful ensembles like Random Forests and Gradient Boosted Trees.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "At each node, the algorithm considers every feature and every possible threshold.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "For a feature j and threshold s, it splits the node into two child nodes: R_left = {x : x_j <= s} and R_right = {x : x_j > s}.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "The split is chosen to maximize the reduction in impurity, defined as: \u0394I = I(parent) - (N_left/N) * I(left) - (N_right/N) * I(right), where I is an impurity measure and N is the number of samples.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "For classification, common impurity measures are Gini impurity: G = 1 - \u03a3 p_k\u00b2, and entropy: H = -\u03a3 p_k log\u2082(p_k), where p_k is the proportion of class k in the node.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "For regression, the impurity is mean squared error: MSE = (1/N) \u03a3 (y_i - \u0233)\u00b2, with \u0233 the node mean.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "The tree grows greedily: it picks the best split at each node, then recurses on the child nodes.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "This greedy approach is computationally efficient but does not guarantee a globally optimal tree.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "The standard algorithm in scikit-learn is CART, which produces binary trees.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "CART uses Gini impurity by default for classification.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Common stopping criteria include max depth, minimum samples per leaf, and node purity (all samples in a node belong to the same class).",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Without stopping criteria, the tree will grow until every leaf is pure, which almost always overfits the training data.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Overfitting is the primary failure mode: the tree memorizes noise and outliers, leading to poor generalization.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "The default in scikit-learn is max_depth=None, which means the tree grows until pure leaves, so you must set constraints or use pruning.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Cost-complexity pruning minimizes R_\u03b1(T) = \u03a3_leaf N_leaf * I(leaf) + \u03b1 * |leaves|, where \u03b1 is a penalty for the number of leaves.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "A larger \u03b1 forces a simpler tree.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "scikit-learn exposes cost-complexity pruning via the ccp_alpha parameter.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "A small change in the training data can produce a completely different tree, because the greedy split selection is sensitive to small perturbations.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "This high variance is why single trees are often outperformed by ensembles like Random Forests, which average many trees trained on bootstrap samples and random feature subsets.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Trees cannot extrapolate. They predict a constant value within each leaf, so predictions outside the training feature range will be the same as the nearest leaf's value.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "For regression, this means the model cannot produce values beyond the range seen in training.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Decision trees partition feature space with axis-aligned splits, choosing the split that maximizes impurity reduction (Gini or entropy for classification, MSE for regression).",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Overfitting is the main risk; always set max_depth, min_samples_leaf, or use cost-complexity pruning (ccp_alpha) to constrain tree growth.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Trees are unstable: small data changes can produce very different trees, which is why ensembles like Random Forests are often preferred.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Trees cannot extrapolate beyond the training feature range; predictions are constant within each leaf.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    },
+    {
+      "claim": "Use plot_tree from scikit-learn to visualize and audit the learned rules, which is a key advantage over black-box models.",
+      "source_url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://github.com/abbas-taher/decision-tree-algorithm-example/blob/master/README.md",
+      "score": 0.8820324,
+      "content": "374 lines (274 loc) \u00b7 20.6 KB\n\nRaw\n\nCopy raw file\n\nDownload raw file\n\nOutline\n\nEdit and raw actions\n\n## Tutorial 101: Decision Tree\n\n### Understanding the Algorithm: Simple Implementation Code Example\n\nThe Python code for a Decision-Tree (decisiontreee.py) is a good example to learn how a basic machine learning algorithm works. The inputdata.py is used by the createTree algorithm to generate a simple decision tree that can be used for prediction purposes. The data and code presented here are a modified version of the original code given by Peter Harrington in Chapter 3 of his book: Machine Learning in Action. [...] Here is the Python code for making predictions:\n\n```\ndef predict(inputTree, features, testVec): def classify (inputTree, testDict): (key, subtree), = inputTree.items() testValue = testDict.pop(key) if len(testDict) == 0: return subtree[testValue] else: return classify(subtree[testValue], testDict) testDict = dict(zip(features, testVec)) return classify(inputTree, testDict) \n```\n\nThe program is recursive with a nested function. Basically, the input features and test vector are transformed into a dict which is then used to traverse the given tree. At each recursion step the associated dict item is poped and the recursion continues into the sub-tree associated with the dict item that was poped.\n\nTo make predictions you can run the following: [...] ## Historical Note\n\nMachine learning decision trees were first formalized by John Ross Quinlan during the years 1982-1985. Along linear and logistic regression, decision trees (with their modern version of random forests) are considered the easiest and the most commonly used machine learning algorithms.\n\n## Running Create Tree Program\n\nTo execute the main function you can just run the decisiontreee.py program using a call to Python via the command line:\n\n```\n $ python decisiontree.py \n```\n\nOr you can execute it from within the Python shell using the following commands:\n\n```\n $ python >>> import decisiontree >>> imp"
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/decision-tree-implementation-python",
+      "score": 0.82220376,
+      "content": "## Step By Step Implementation\n\nHere we implement Decision Tree classifiers on the Balance Scale dataset, evaluate their performance and visualize the resulting trees.\n\n### Step 1: Install Libraries and Import Dependencies\n\n Import pandas, numpy for data handling and matplotlib for plotting.\n import scikit learn for Decision Tree implementation\n Import metrics for evaluating model performance\n\n Python  ````\n pip install - U scikit - learn import numpy as np import pandas as pd fromsklearn.metrics import confusion_matrix, accuracy_score, classification_report fromsklearn.model_selection import train_test_split fromsklearn.tree import DecisionTreeClassifier, plot_tree importmatplotlib.pyplot as plt\n```` \n\n### Step 2: Import Dataset [...] windy\n\nDecision Tree\n\nIn the above figure, a decision tree is a flowchart-like structure with a root node (WINDY), internal nodes (OUTLOOK, TEMPERATURE) for attribute tests and leaf nodes for final decisions. The branches show the possible outcomes of each test. A Decision Tree follows a tree-like structure where:\n\n Nodes represent decisions or feature tests\n Branches represent outcomes of those decisions\n Leaf nodes represent final predictions or class labels\n\nThe tree is constructed by recursively splitting the dataset based on the feature that provides the maximum information gain or minimum impurity.\n\n## How Decision Trees Work [...] ## How Decision Trees Work\n\nDecision Trees work by selecting the best attribute at each step to split the data. This selection is based on statistical metrics that measure data impurity or uncertainty.\n\n Start with the full dataset as the root node.\n Select the best feature using a splitting criterion.\n Split the dataset into subsets.\n Repeat the process recursively until stopping conditions are met.\n Assign class labels at leaf nodes.\n\n## Splitting Criteria in Decision Trees\n\nDecision Trees select the best attributes for splits using metrics like Gini Index, Entropy and Information Gain helping decid"
+    },
+    {
+      "url": "https://www.w3schools.com/python/python_ml_decision_tree.asp",
+      "score": 0.82082915,
+      "content": "Now, based on this data set, Python can create a decision tree that can be used to decide\nif any new shows are worth attending to.\n\n## How Does it Work?\n\nFirst, read the dataset with pandas:\n\n### Example\n\nRead and print the data set:\n\nRun example \u00bb\n\nTo make a decision tree, all data has to be numerical.\n\nWe have to convert the non numerical columns 'Nationality' and 'Go' into numerical values.\n\nPandas has a `map()` method that takes a dictionary with information on how to\nconvert the values.\n\n`map()`\n\n`{'UK': 0, 'USA': 1, 'N': 2}`\n\n`{'UK': 0, 'USA': 1, 'N': 2}`\n\nMeans convert the values 'UK' to 0, 'USA' to 1, and 'N' to 2.\n\n### Example\n\nChange string values into numerical values:\n\nRun example \u00bb\n\nThen we have to separate the feature columns from the target column. [...] The feature columns are the columns that we try to predict from, and\nthe target column is the column with the values we try to predict.\n\n### Example\n\n`X` is the feature columns,\n`y` is the target column:\n\n`X`\n`y`\n\nRun example \u00bb\n\nNow we can create the actual decision tree, fit it with our details. Start by\nimporting the modules we need:\n\n### Example\n\nCreate and display a Decision Tree:\n\nRun example \u00bb\n\n## Result Explained\n\nThe decision tree uses your earlier decisions to calculate the odds for you to wanting to go see\na comedian or not.\n\nLet us read the different aspects of the decision tree:\n\n### Rank\n\n`Rank <= 6.5` means that every comedian with a rank of 6.5 or\nlower will follow the\n`True` arrow (to the left), and the rest will\nfollow the `False` arrow (to the right). [...] # Machine Learning - Decision Tree\n\n## Decision Tree\n\nIn this chapter we will show you how to make a \"Decision Tree\". A Decision\nTree is a Flow Chart, and can help you make decisions based on previous experience.\n\nIn the example, a person will try to decide if he/she should go to a comedy show or\nnot.\n\nLuckily our example person has registered every time there was a comedy show\nin town, and registered some information about the co"
+    },
+    {
+      "url": "https://codesignal.com/learn/courses/classification-algorithms-and-metrics/lessons/building-a-decision-tree-from-scratch-in-python",
+      "score": 0.80126834,
+      "content": "Standard stopping criteria include:\n\n Maximum Tree Depth: Limiting the maximum depth of the tree.\n Minimum Node Records: No more partitioning if less than a threshold number of records.\n Node Purity: Stop if all instances at a node belong to the same class.\n\nThese criteria ensure the model is consistent, which prevents overfitting.\n\n## Implementing Decision Tree Building in Python\n\nNow, we'll use Python to build the decision tree. We'll rely on the existing `get_split` function from the previous lesson to find the optimal split for our data.\n\nHere is how a terminal node is created:\n\nPython\n\n```\ndef create_terminal(group): outcomes = [row[-1] for row in group] return max(set(outcomes), key=outcomes.count)\n``` [...] Building a Decision Tree from Scratch in Python | CodeSignal Learn\n\n# Building a Decision Tree from Scratch in Python\n\n## Introduction\n\nGreetings! In this session on Decision Trees, we aim to implement a full Decision Tree from scratch in Python. Decision Trees are a type of Supervised Machine Learning in which data is continuously split according to certain parameters.\n\n## Refreshing the Structure of Decision Tree\n\nA Decision Tree has a tree-like structure with each internal node denoting a test on an attribute, each branch representing an outcome of the test, and each terminal node (leaf) holding a class label. Here are the parts of a Decision Tree: [...] Python\n\n```\n# Sample datasetdataset = [ [5, 3, 0], [6, 3, 0], [6, 4, 0], [10, 3, 1], [11, 4, 1], [12, 8, 0], [5, 5, 0], [12, 4, 1]] max_depth = 2min_size = 1tree = build_tree(dataset, max_depth, min_size) # Print the treedef print_tree(node, depth=0): if isinstance(node, dict): print('%s[X%d < %.3f]' % ((depth' ', (node['index']+1), node['value']))) print_tree(node['left'], depth+1) print_tree(node['right'], depth+1) else: print('%s[%s]' % ((depth' ', node))) print_tree(tree)'''Output:[X1 < 10.000] [X1 < 5.000]   [X2 < 8.000]   '''\n```"
+    },
+    {
+      "url": "https://www.xoriant.com/blog/decision-trees-for-classification-a-machine-learning-algorithm",
+      "score": 0.7752821,
+      "content": "brand-elementsbrand-elements\n\nIntroduction Decision Trees are a type of Supervised Machine Learning (that is you explain what the input is and what the corresponding output is in the training data) where the data is continuously split according to a certain parameter. The tree can be explained by two entities, namely decision nodes and leaves. The leaves are the decisions or the final outcomes. And the decision nodes are where the data is split. While a single Decision Tree is easy to interpret, ensemble techniques like the Random Forest algorithm often deliver more stable and accurate predictions in real-world scenarios."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=YkYpGhsCx4c",
+      "score": 0.76173395,
+      "content": "In this video, I show you how to build a decision tree machine learning algorithm using sklearn and Python. Decision trees are supervised machine learning models that use pre-labeled data and split information based on different criteria, similar to how a flowchart works. We walk through the entire process, from understanding the structure of root nodes, decision nodes, and leaf nodes, to coding a complete example using baseball statistics. [...] today we're gonna be covering how you can build out a decision tree machine learning algorithm through sklearn and also python now what this is is a supervised machine learning model that uses pre-labeled data how this works essentially is we split the data based off of different criteria think of like how a flow chart works now how this is broken down at the very top we have a root node followed by decision nodes on each side and when we get to a final outcome that's going to be considered a leaf node kind of a good example of this is if someone is going to complete an ultra marathon we may look at different data points such as like how many miles of training per week does a runner have what's the farthest distance run by the runner has that Runner completed an ultra marathon before and"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=7YTeMIq6-9s",
+      "score": 0.7447496,
+      "content": "categories it is called the classification tree when it predicts numeric values it is known as a regression tree actually in machine learning decision trees are categorized under supervised learning techniques which are defined by the use of label data sets label data is where the predictive value is known for example who is likely to purchase the house supervised learning does so by creating a training model that can pull out decision rules from the prior training data and then use it to predict the class or value of the target variable it consists of nodes divided into three types a decision node an internal node and a leaf node a decision node or a root node is at the very top of the decision tree it represents the question and it has two or more branches also called internal nodes [...] a house if the area of the house is above 1000 square feet you will have further constraints and parameters to decide from such as the number of rooms and the nearby areas if any of these conditions are not met the house won't be bought however the individual may consider purchasing the house if it is above 1000 square feet or has more rooms than five with amenities nearby but it's not always as small as it seems to be in this example it often gets complicated to select the best attribute among them to get an accurate answer for the root node and the subnauts we use attribute selection techniques to solve that problem the attribute selection method techniques calculate values for every attribute the values are sorted and attributes are placed in the tree by following the order in brief [...] # Decision Trees Explained | Introduction to Decision Trees\n## Data Science Dojo\n122000 subscribers\n133 likes\n\n### Description\n13174 views\nPosted: 24 Sep 2022\nThe decision trees algorithm belongs to the family of supervised learning algorithms. Just like other supervised learning algorithms, decision trees model relationships, and dependencies between the predictive outputs and the input feat"
+    },
+    {
+      "url": "https://www.sciencedirect.com/topics/computer-science/decision-trees",
+      "score": 0.70702106,
+      "content": "Decision Trees in Computer Science are structures composed of nodes and links, which are used to represent goals and decisions respectively."
+    },
+    {
+      "url": "https://towardsdatascience.com/decision-trees-explained-d7678c43a59e",
+      "score": 0.6929958,
+      "content": "In this post we\u2019re going to discuss a commonly used machine learning model called decision tree. Decision trees are preferred for many applications, mainly due to their high explainability, but also due to the fact that they are relatively simple to set up and train, and the short time it takes to perform a prediction with a decision tree. Decision trees are natural to tabular data, and, in fact, they currently seem to outperform neural networks on that type of data (as opposed to images). Unlike neural networks, trees don\u2019t require input normalization, since their training is not based on gradient descent and they have very few parameters to optimize on. They can even train on data with missing values, but nowadays this practice is less recommended, and missing values are usually [...] Among the well-known use-cases for decision trees are recommendation systems (what are your predicted movie preferences based on your past choices and other features, e.g. age, gender etc.) and search engines.\n\nThe prediction process in a tree is composed of a sequence of comparisons of the sample\u2019s attributes (features) with pre-learned threshold values. Starting from the top (the root of the tree) and going downward (toward the leaves, yes, opposite to real-life trees), in each step the result of the comparison determines if the sample goes left or right in the tree, and by that \u2013 determines the next comparison step. When our sample reaches a leaf (an end node) \u2013 the decision, or prediction, is made, based on the majority class in the leaf. [...] ## Conclusion\n\nIn this post we learned that decision trees are basically comparison sequences that can train to perform classification and regression tasks. We ran python scripts that trained a decision tree classifier, used our classifier to predict the class of several data samples, and computed the precision and recall metrics of the predictions on the training set and the test set. We also learned the mathematical mechanism behind the "
+    },
+    {
+      "url": "https://doc.arcgis.com/en/allsource/1.2/analysis/geoprocessing-tools/geoai/how-decision-tree-classification-and-regression-works.htm",
+      "score": 0.6747586,
+      "content": "Back to Top\n\n# How Decision tree classification and regression algorithm works\n\nDecision trees is a type of supervised machine learning algorithm that is used by the Train Using AutoML tool and classifies or regresses the data using true or false answers to certain questions. The resulting structure, when visualized, is in the form of a tree with different types of nodes\u2014root, internal, and leaf. The root node is the starting place for the decision tree, which then branches to internal nodes and leaf nodes. The leaf nodes are the final classification categories or real values. Decision trees are easy to understand and are explainable."
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "decision-trees",
+      "chunk_index": 0,
+      "distance": 0.3744,
+      "rrf_score": 0.03306,
+      "text": "# Decision Trees\n\n## Definition\nA decision tree is a non-parametric supervised learning model that recursively partitions the feature space into axis-aligned regions, assigning a constant prediction to each region. Classification trees predict the majority class; regression trees predict the mean target. The structure is a binary tree where each internal node tests a feature against a threshold, and each leaf holds a prediction.\n\n## Intuition\nThe model repeatedly asks yes/no questions about the features. At each step, it splits the data to make the resulting subsets as homogeneous as possible with respect to the target. The final leaf nodes represent pure or nearly pure groups; predictions are formed by summarizing the training instances that fall into each leaf.\n\n## Mathematical Formulation\nConsider classification with K classes. Let p_k be the proportion of class k in a node. Common impurity measures:\n- Gini impurity: G = 1 \u2212 \u03a3 p_k\u00b2\n- Entropy: H = \u2212 \u03a3 p_k log\u2082(p_k)\n\nFor regression, impurity is mean squared error: MSE = (1/N) \u03a3 (y\u1d62 \u2212 \u0233)\u00b2, with \u0233 the node mean.\n\nA split divides node R into two child nodes R_left and R_right via a feature j and threshold s. The split is chosen to maximize the impurity reduction:\n\u0394I = I(parent) \u2212 (N_left/N) I(left) \u2212 (N_right/N) I(right)\n\nThe tree is grown greedily until a stopping criterion (min samples per leaf, max depth, or pure nodes). Post-hoc pruning (e.g., cost-complexity pruning) removes branches to minimize:\nR_\u03b1(T) = \u03a3_leaf N_leaf \u00b7 I(leaf) + \u03b1 |leaves|\n\nwhere \u03b1 controls the trade-off. The final prediction for x is f(x) = mean or mode of training y in leaf containing x.\n\n## Estimation\nThe standard CART algorithm uses a top"
+    },
+    {
+      "source": "random-forest",
+      "chunk_index": 0,
+      "distance": 0.54,
+      "rrf_score": 0.03205,
+      "text": "# Random Forest\n\n## Definition\nRandom Forest is an ensemble method that constructs multiple decision trees and combines them by majority vote (classification) or averaging (regression). Randomness is injected through bootstrap resampling of the training data and random feature subsets at each split, decorrelating the trees and reducing variance.\n\n## Intuition\nA single decision tree has low bias but high variance. Averaging many nearly unbiased but noisy trees reduces variance without increasing bias, provided the trees are not all identical. The double randomization (bootstrap samples and random feature subsets) ensures diversity among trees, so their errors cancel out.\n\n## Mathematical Formulation\nFor i = 1 to B trees:\n1. Draw bootstrap sample D_i of size N from training data D.\n2. Grow tree T_i on D_i: at each node, select m \u2264 p features at random, choose the best split among those m.\nFinal prediction:\n- Classification: \u0177 = majority vote {T_i(x)}.\n- Regression: \u0177 = (1/B) \u03a3 T_i(x).\n\nNo explicit objective function is optimized globally; the ensemble aggregates identically distributed but not independent trees. The generalization error for classification converges to an upper bound involving the strength (accuracy) of individual trees and their correlation (dependence).\n\n## Estimation\nHyperparameters: number of trees B, number of features sampled at each split m, and parameters controlling individual tree growth (e.g., max depth, min samples leaf). Typical defaults: m = sqrt(p) for classification, m = p/3 for regression. B is set large enough for error to stabilize. No pruning is applied; individual trees are grown deep. Out-of-bag (OOB) samples \u2014 observations not in a tree's bootstrap \u2014 provide an unbiased estimate of generalization error. Variable importance is estimated from OOB error increase when permuting a feature or from total impurity reduction.\n\n## Assumptions\nIndependence of errors across trees is"
+    },
+    {
+      "source": "decision-trees",
+      "chunk_index": 2,
+      "distance": 0.4585,
+      "rrf_score": 0.03178,
+      "text": "-linearities exist, and interactions are suspected. Serve as base learners for ensemble methods. Do not use when smooth additive relationships dominate and a linear model would be more efficient; when extrapolation beyond training feature ranges is needed; or when very high-dimensional data makes trees deep and unstable without ensembles.\n\n## Variants / Extensions\nC4.5 (uses gain ratio, multi-way splits), CHAID (chi-square based multi-way splits), oblique trees (linear combinations at nodes), model trees (linear models at leaves), ensemble methods like Random Forests and Gradient Boosted Trees that reduce variance and bias, Bayesian trees, and evolutionary trees.\n\n## Minimal Example (Python)\n```python\nfrom sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor\nX = [[0,0], [1,1], [1,0], [0,1]]\ny_clf = [0, 1, 0, 1]\ny_reg = [0.1, 1.2, 0.3, 1.0]\n\nclf = DecisionTreeClassifier(max_depth=2).fit(X, y_clf)\nprint(clf.predict([[0.5, 0.5]]))\n\nreg = DecisionTreeRegressor(max_depth=2).fit(X, y_reg)\nprint(reg.predict([[0.5, 0.5]]))\n```\n## Claim-Dense Reference Facts\n\n- scikit-learn's DecisionTreeClassifier uses CART algorithm; splits minimise weighted Gini impurity by default.\n- Gini impurity: G = 1 - \u03a3 p_i\u00b2, where p_i is the proportion of class i at the node.\n- Information gain uses entropy: H = -\u03a3 p_i log\u2082(p_i); split selects feature maximising gain = H(parent) - weighted H(children).\n- max_depth=None by default in scikit-learn, causing full tree growth until pure leaves (high overfitting risk).\n- min_samples_split ("
+    },
+    {
+      "source": "decision-trees",
+      "chunk_index": 3,
+      "distance": 0.4905,
+      "rrf_score": 0.03175,
+      "text": "\u2082(p_i); split selects feature maximising gain = H(parent) - weighted H(children).\n- max_depth=None by default in scikit-learn, causing full tree growth until pure leaves (high overfitting risk).\n- min_samples_split (default 2) and min_samples_leaf (default 1) are the primary pre-pruning controls.\n- Post-pruning via cost-complexity pruning: ccp_alpha parameter; higher values prune more aggressively.\n- Decision tree training is O(n \u00b7 m \u00b7 log n) where n = samples, m = features.\n- Feature importance is computed as total impurity reduction weighted by node sample count, normalised to sum to 1.\n- Regression trees minimise MSE; leaf prediction is the mean of all training samples reaching that leaf.\n- Oblique splits (linear combinations of features) are not supported by scikit-learn CART; axis-aligned only."
+    },
+    {
+      "source": "decision-trees",
+      "chunk_index": 1,
+      "distance": 0.4876,
+      "rrf_score": 0.03175,
+      "text": " \u00b7 I(leaf) + \u03b1 |leaves|\n\nwhere \u03b1 controls the trade-off. The final prediction for x is f(x) = mean or mode of training y in leaf containing x.\n\n## Estimation\nThe standard CART algorithm uses a top-down greedy search over all features and possible thresholds. At each node, the best split is chosen. Continuous features are sorted and midpoint thresholds evaluated; categorical features are split by grouping categories. The process repeats until stopping criteria are met. Pruning is performed by weakest-link cutting, often using cross-validation to select \u03b1. Hyperparameters include max depth, min samples split, min samples leaf, and pruning constant.\n\n## Assumptions\nPiecewise constant target function; axis-aligned decision boundaries; training samples are i.i.d.; feature interactions that can be approximated by sequential univariate splits; noise does not dominate the signal. No distributional or scaling assumptions on features.\n\n## Key Properties\nInterpretability: tree structure directly shows decision rules. Handles both numerical and categorical variables without scaling or encoding. Captures non-linear relationships and interactions. Variable importance can be derived from total impurity reduction. High variance: small data changes can yield completely different trees. Tends to overfit, but controlled by pruning or ensemble methods.\n\n## Failure Modes\nOverfitting to noise without pruning/regularization. Instability: small perturbations cause large structural changes. Bias toward features with more levels or higher cardinality. Oblique decision boundaries are poorly approximated by axis-aligned splits, requiring many nodes. Regression trees cannot extrapolate beyond training range. Imbalanced data can bias splits unless adjustments are made.\n\n## When to Use / Not Use\nUse when interpretability is required, features are mixed-type, non-linearities exist, and interactions are suspected. Serve as base learners for ensemble methods. Do not use when smooth additive relation"
+    }
+  ],
+  "attribution": {
+    "web": 29,
+    "kb": 0,
+    "none": 1,
+    "unresolved": 0
+  }
+}

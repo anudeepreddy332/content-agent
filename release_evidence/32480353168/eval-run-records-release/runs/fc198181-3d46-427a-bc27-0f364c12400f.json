@@ -1,0 +1,895 @@
+{
+  "run_id": "fc198181-3d46-427a-bc27-0f364c12400f",
+  "topic": "CatBoost",
+  "slug": "catboost",
+  "timestamp": "2026-08-21T12:16:25.713756+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 28,
+      "S": 30,
+      "V": 38,
+      "W": 2,
+      "U": 0,
+      "N": 40,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.884,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Gradient boosted decision trees (GBDT) are a workhorse for tabular data, but they have a dirty secret: categorical features.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+        },
+        {
+          "claim": "Most implementations force you to preprocess categories into numbers \u2014 one-hot encoding, label encoding, or target statistics \u2014 before training.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+        },
+        {
+          "claim": "One-hot explodes with high-cardinality columns.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+        },
+        {
+          "claim": "Label encoding imposes an arbitrary order.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+        },
+        {
+          "claim": "Target statistics leak information if computed on the full dataset.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "CatBoost, an open-source library from Yandex, solves this by building categorical encoding directly into the boosting algorithm.",
+          "source_url": "https://en.wikipedia.org/wiki/CatBoost",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/CatBoost"
+        },
+        {
+          "claim": "It uses permutation-driven target statistics that avoid leakage, and an ordered boosting scheme that reduces prediction shift.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "The result: you can feed raw categories to the model, get strong baselines with default hyperparameters, and train fast on GPU.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "This matters because real-world data is full of categorical columns \u2014 customer IDs, product codes, geographic regions \u2014 and handling them poorly silently degrades model quality.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+        },
+        {
+          "claim": "CatBoost removes that preprocessing burden and gives you a robust, production-ready GBDT implementation.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+        },
+        {
+          "claim": "CatBoost is a gradient boosting library that builds an ensemble of oblivious (symmetric) decision trees.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "In a standard tree, each node can split on a different feature.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "In an oblivious tree, the same split criterion (feature and threshold) is applied at every node at a given depth.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "A tree of depth d has exactly 2^d leaves.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "This symmetry makes inference fast: you can evaluate the tree by indexing into a flat array of leaf values based on binary decisions at each level.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "Classical target statistics (TS) replace a category with the mean target value for that category.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+        },
+        {
+          "claim": "The problem: if you compute TS on the full dataset, the model sees the target for the same row it's predicting, causing target leakage.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "CatBoost's Ordered TS avoids this by using a random permutation of the dataset.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "For each object j, the TS for a category is computed only from objects that appear before j in the permutation.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "The formula is: TS_v = (sum_{i in D_k, before j} y_i + a * p) / (count_{i in D_k, before j} + a) where D_k is the set of objects with that category, 'before j' restricts to preceding objects in the permutation, a is a smoothing parameter, and p is the global average target.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "This ensures no object's own target is used to encode its own category.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "Ordered Boosting addresses prediction shift \u2014 a bias that arises in standard boosting because the gradient for a training example is estimated using the model that was trained on that same example.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "CatBoost uses the same random permutation from Ordered TS.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "For each step, it maintains a separate model for each prefix of the permutation, and the gradient for object j is computed using the model trained only on objects before j.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "This reduces overfitting and improves generalization, though it increases training cost.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "Failure mode: Ordered TS and Ordered Boosting rely on random permutations.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "If the permutation is not truly random or if the dataset has a temporal structure, the permutation can break that structure.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "For time-series data, you should use the `cat_features` parameter carefully and consider using a custom permutation that respects time order.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.7,
+          "status": "weak",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "Another caveat: oblivious trees are less flexible than asymmetric trees.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "If your data requires highly asymmetric interactions \u2014 where different branches need very different splits \u2014 CatBoost may underperform XGBoost or LightGBM.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "Also, the smoothing parameter a in TS must be tuned; too small and you overfit to rare categories, too large and you lose signal.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "In practice, CatBoost's defaults are strong.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "You can often get a good model without hyperparameter tuning.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "The library supports GPU training, which significantly speeds up experiments on large datasets.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "For very large datasets that don't fit in memory, a common approach is to fit a CatBoost model on a representative sample using the Python API, then apply it to the full dataset via a distributed framework like Spark.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "CatBoost handles categorical features natively via Ordered TS, which uses random permutations to avoid target leakage.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "Ordered Boosting reduces prediction shift by computing gradients using models trained only on preceding objects in a permutation.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        },
+        {
+          "claim": "CatBoost builds oblivious (symmetric) trees, which make inference fast but can be less flexible than asymmetric trees for highly uneven interactions.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "Use CatBoost when you have many categorical features or want a strong default baseline; consider XGBoost/LightGBM if you need asymmetric tree structures.",
+          "source_url": "https://www.igmguru.com/blog/catboost",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.igmguru.com/blog/catboost"
+        },
+        {
+          "claim": "For time-series data, be careful with the permutation \u2014 you may need to control it to respect temporal order.",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+          "confidence": 0.8,
+          "status": "weak",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically accurate, but the technical depth is uneven: the Ordered TS formula and oblivious tree explanation are solid, yet the discussion of Ordered Boosting is too brief and lacks a concrete example or comparison to standard boosting. The code examples are minimal and the realistic example uses a tiny 5-row dataset, which undermines credibility for senior engineers. Writing is mostly direct, but phrases like 'dirty secret' and 'silently degrades' are slightly informal; tighten the prose and expand on failure modes with more specificity.",
+  "grounding_score": 0.884,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 16324,
+  "total_cost_usd": 0.00887,
+  "latency_ms": {
+    "retrieve": 9533,
+    "retrieve_web": 9514,
+    "retrieve_kb": 19,
+    "draft": 12432,
+    "verify": 13910,
+    "reflect": 2316,
+    "html_gen": 4523,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 38,
+  "claims_weak": 2,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 2,
+    "mean_confidence_verified": 0.891,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 28,
+    "S": 30,
+    "V": 38,
+    "N": 40,
+    "verified_fraction": 0.95,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Gradient boosted decision trees (GBDT) are a workhorse for tabular data, but they have a dirty secret: categorical features.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+    },
+    {
+      "claim": "Most implementations force you to preprocess categories into numbers \u2014 one-hot encoding, label encoding, or target statistics \u2014 before training.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+    },
+    {
+      "claim": "One-hot explodes with high-cardinality columns.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+    },
+    {
+      "claim": "Label encoding imposes an arbitrary order.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+    },
+    {
+      "claim": "Target statistics leak information if computed on the full dataset.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "CatBoost, an open-source library from Yandex, solves this by building categorical encoding directly into the boosting algorithm.",
+      "source_url": "https://en.wikipedia.org/wiki/CatBoost",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/CatBoost"
+    },
+    {
+      "claim": "It uses permutation-driven target statistics that avoid leakage, and an ordered boosting scheme that reduces prediction shift.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "The result: you can feed raw categories to the model, get strong baselines with default hyperparameters, and train fast on GPU.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "This matters because real-world data is full of categorical columns \u2014 customer IDs, product codes, geographic regions \u2014 and handling them poorly silently degrades model quality.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+    },
+    {
+      "claim": "CatBoost removes that preprocessing burden and gives you a robust, production-ready GBDT implementation.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+    },
+    {
+      "claim": "CatBoost is a gradient boosting library that builds an ensemble of oblivious (symmetric) decision trees.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "In a standard tree, each node can split on a different feature.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "In an oblivious tree, the same split criterion (feature and threshold) is applied at every node at a given depth.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "A tree of depth d has exactly 2^d leaves.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "This symmetry makes inference fast: you can evaluate the tree by indexing into a flat array of leaf values based on binary decisions at each level.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "Classical target statistics (TS) replace a category with the mean target value for that category.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms"
+    },
+    {
+      "claim": "The problem: if you compute TS on the full dataset, the model sees the target for the same row it's predicting, causing target leakage.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "CatBoost's Ordered TS avoids this by using a random permutation of the dataset.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "For each object j, the TS for a category is computed only from objects that appear before j in the permutation.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "The formula is: TS_v = (sum_{i in D_k, before j} y_i + a * p) / (count_{i in D_k, before j} + a) where D_k is the set of objects with that category, 'before j' restricts to preceding objects in the permutation, a is a smoothing parameter, and p is the global average target.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "This ensures no object's own target is used to encode its own category.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "Ordered Boosting addresses prediction shift \u2014 a bias that arises in standard boosting because the gradient for a training example is estimated using the model that was trained on that same example.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "CatBoost uses the same random permutation from Ordered TS.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "For each step, it maintains a separate model for each prefix of the permutation, and the gradient for object j is computed using the model trained only on objects before j.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "This reduces overfitting and improves generalization, though it increases training cost.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "Failure mode: Ordered TS and Ordered Boosting rely on random permutations.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "If the permutation is not truly random or if the dataset has a temporal structure, the permutation can break that structure.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "For time-series data, you should use the `cat_features` parameter carefully and consider using a custom permutation that respects time order.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.7,
+      "status": "weak",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "Another caveat: oblivious trees are less flexible than asymmetric trees.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "If your data requires highly asymmetric interactions \u2014 where different branches need very different splits \u2014 CatBoost may underperform XGBoost or LightGBM.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "Also, the smoothing parameter a in TS must be tuned; too small and you overfit to rare categories, too large and you lose signal.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "In practice, CatBoost's defaults are strong.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "You can often get a good model without hyperparameter tuning.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "The library supports GPU training, which significantly speeds up experiments on large datasets.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "For very large datasets that don't fit in memory, a common approach is to fit a CatBoost model on a representative sample using the Python API, then apply it to the full dataset via a distributed framework like Spark.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "CatBoost handles categorical features natively via Ordered TS, which uses random permutations to avoid target leakage.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "Ordered Boosting reduces prediction shift by computing gradients using models trained only on preceding objects in a permutation.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    },
+    {
+      "claim": "CatBoost builds oblivious (symmetric) trees, which make inference fast but can be less flexible than asymmetric trees for highly uneven interactions.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "Use CatBoost when you have many categorical features or want a strong default baseline; consider XGBoost/LightGBM if you need asymmetric tree structures.",
+      "source_url": "https://www.igmguru.com/blog/catboost",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.igmguru.com/blog/catboost"
+    },
+    {
+      "claim": "For time-series data, be careful with the permutation \u2014 you may need to control it to respect temporal order.",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "confidence": 0.8,
+      "status": "weak",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7610170",
+      "score": 0.85509074,
+      "content": "these frameworks include GBDT implementations. For example, Spark MLlib\u2019s GradientBoostedTrees module, , is one such implementation. For examples of GBDT applications in Spark please see  and  . However, as long as the distributed framework supports a language that the Gradient Boosted Decision Tree implementation has an application programming interface $\\text{API}$ available for, it is possible to use that implementation in the framework; thus, freeing the user to select from the most appealing GBDT implementation available. For researchers wishing to employ CatBoost with very large datasets, one viable approach is to fit a CatBoost model to a representative sample using the CatBoost Python API, then apply a CatBoost model to the larger dataset using a distributed framework such as [...] CatBoost is an implementation of Gradient Boosted Decision Trees that avoids conditional shift with Ordered TS and prediction shift with Ordered Boosting. Both Ordered TS and Ordered Boosting rely on iterating through random permutations of a dataset. In Ordered TS we ensure that we do not use a specific training example $\\left(\\mathbf{x}_{k},,,y_{k}\\right)$ to encode any categorical component $x_{k}^{i}$ of $\\mathbf{x}_{k}$. In Ordered Boosting, we use the same random permutation we use in Ordered TS to ensure we do not use the training example $\\left(\\mathbf{x}_{k},,,y_{k}\\right)$ to estimate the rate of change of the loss function we are using to improve (boost) the model\u2019s estimate of $y_{k}$ for the input value $\\mathbf{x}_{k}$. Also, in Ordered Boosting, we use several random [...] One example where CatBoost as a classifier outperforms other classifiers is \u201cScreening of anxiety and depression among the seafarers using machine learning technology\u201d by Sau and Bhakta . In this study CatBoost outperforms Random Forest, Logistic Regression, Na\u00efve Bayes, and Support Vector Machine classifiers in the task of identifying individuals that suffer from anxiety or depression. It is impo"
+    },
+    {
+      "url": "https://www.igmguru.com/blog/catboost",
+      "score": 0.8252664,
+      "content": "## Installing CatBoost\n\nRunning CatBoost takes less than a minute. It is available for Python and R, and the installation process is straightforward either way.\n\nCatBoost is not included in Python's standard library, so you need to install it first.\n\nFor Python:\n\n|  |\n\n| ``` pip install catboost ``` |\n\nIf you are working in a Jupyter notebook:\n\n|  |\n\n| ``` !pip install catboost ``` |\n\nFor R:\n\n|  |\n\n| ``` install.packages(\"catboost\") library(catboost)  ``` |\n\n## Implementing CatBoost in Python: Step-by-Step\n\nLet's walk through a complete example using the classic Iris dataset for classification. Then we will look at how to handle actual categorical features.\n\n### Step 1: Import Libraries\n\n|  | [...] Blog Machine Learning CatBoost in Machine Learning\n\nCatBoost \n\n# CatBoost in Machine Learning\n\nRavi\n\nAugust 12th, 2026\n\n2186\n\n15:00 Minutes\n\n## \n\n1. What is CatBoost?\n\n2. How Does CatBoost Work?\n\n1. Ordered Boosting\n\n2. Native Categorical Feature Handling\n\n3. Symmetric (Oblivious) Trees-trees)\n\n4. GPU Support\n\n3. Key Features of CatBoost\n\n4. Installing CatBoost\n\n5. Implementing CatBoost in Python: Step-by-Step\n\nStep 1: Import Libraries\n\nStep 2: Load and Split the Data\n\nStep 3: Initialize and Train the Model\n\nStep 4: Make Predictions and Evaluate\n\nWorking with Categorical Features\n\n6. CatBoost for Regression\n\n7. CatBoost Hyperparameters You Should Know\n\n8. Feature Importance with CatBoost\n\n9. Real-World Applications of CatBoost\n\n10. Common Challenges and How to Handle Them [...] CatBoost changes that completely.\n\nIn this guide, you will learn what CatBoost is, how it works under the hood, what makes it different from XGBoost and LightGBM, and how to implement it in Python. Whether you are just starting out or looking to sharpen your skills, this article has everything you need in one place.\n\n## What is CatBoost?\n\nCatBoost is an open-source gradient boosting library developed by Yandex, the Russian technology and search engine company. Yandex originally built CatBoost to im"
+    },
+    {
+      "url": "https://machinelearningmastery.com/gradient-boosting-with-scikit-learn-xgboost-lightgbm-and-catboost",
+      "score": 0.82082915,
+      "content": "How to Configure the Gradient Boosting Algorithm\n\nThere are many implementations of the gradient boosting algorithm available in Python. Perhaps the most used implementation is the version provided with the scikit-learn library.\n\nAdditional third-party libraries are available that provide computationally efficient alternate implementations of the algorithm that often achieve better results in practice. Examples include the XGBoost library, the LightGBM library, and the CatBoost library.\n\nDo you have a different favorite gradient boosting implementation?  \n Let me know in the comments below.\n\nWhen using gradient boosting on your predictive modeling project, you may want to test each implementation of the algorithm. [...] There are many implementations of gradient boosting available, including standard implementations in SciPy and efficient third-party libraries. Each uses a different interface and even different names for the algorithm.\n\nIn this tutorial, you will discover how to use gradient boosting models for classification and regression in Python.\n\nStandardized code examples are provided for the four major implementations of gradient boosting in Python, ready for you to copy-paste and use in your own predictive modeling project.\n\nAfter completing this tutorial, you will know: [...] |  |  |\n --- |\n| 1  2  3 | # check catboost version  import catboost  print(catboost.\\_\\_version\\_\\_) |\n\nRunning the example, you should see the following version number or higher.\n\n|  |  |\n --- |\n| 1 | 0.21 |\n\nThe CatBoost library provides wrapper classes so that the efficient algorithm implementation can be used with the scikit-learn library, specifically via the CatBoostClassifier and CatBoostRegressor classes.\n\nLet\u2019s take a closer look at each in turn.\n\n### CatBoost for Classification\n\nThe example below first evaluates a CatBoostClassifier on the test problem using repeated k-fold cross-validation and reports the mean accuracy. Then a single model is fit on all available data and "
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/CatBoost",
+      "score": 0.79215926,
+      "content": "CatBoost is an open-source software library \"Library (computing)\") developed by Yandex. It provides a gradient boosting framework which, among other features, attempts to solve for categorical features using a permutation-driven alternative to the classical algorithm. It works on Linux, Windows, macOS, and is available in Python \"Python (programming language)\"), R \"R (programming language)\"), and models built using CatBoost can be used for predictions in C++, Java \"Java (programming language)\"), C# \"C Sharp (programming language)\"), Rust \"Rust (programming language)\"), Core ML, ONNX, and PMML. The source code is licensed under Apache License and available on GitHub."
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/catboost-algorithms",
+      "score": 0.78294516,
+      "content": "CatBoost is an acronym that refers to \"Categorical Boosting\" and is intended to perform well in classification and regression tasks. CatBoost's ability to handle categorical variables without the requirement for manual encoding is one of its primary advantages. It employs a method known as Ordered Boosting to handle the difficulties faced by categorical features such as large cardinality. This enables CatBoost to handle categorical data automatically, saving the user time and effort.CatBoost's basic idea is its ability to effectively and efficiently handle categorical features. It implements a novel technique called Ordered Boosting, which generates a numerical representation by permuting the categorical variables. This method maintains the category information while allowing the model to [...] ### Workings of Catboost\n\nCatBoost is a powerful gradient-boosting technique designed for machine learning tasks, particularly those involving structured input. It leverages the concept of gradient boosting, which is an ensemble learning method. The algorithm starts by making an initial guess, often the mean of the target variable. It then gradually constructs an ensemble of decision trees, with each tree aiming to reduce the errors or residuals from the previous trees. [...] One of the key strengths of CatBoost is its ability to handle categorical features effectively. It employs a technique called \"ordered boosting\" to directly process categorical data, leading to faster training and improved model performance. This is achieved by encoding the categorical features in a way that preserves the natural ordering of the categories.\n\nTo prevent overfitting, CatBoost incorporates regularization techniques. These techniques introduce penalties or constraints during the training process to discourage the model from becoming too complex and fitting th\u0435 training data too closely. Regularization helps to generalize the model and make it more robust to unseen data."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=Eem9ndI9JiU",
+      "score": 0.7613083,
+      "content": "# Understanding CatBoost!\n## The ML Tech Lead!\n13100 subscribers\n145 likes\n\n### Description\n8513 views\nPosted: 10 Jun 2024\nCatBoost was developed by Yandex in 2017: CatBoost: unbiased boosting with categorical features. They realized that the boosting process induces a special case of data leakage. To prevent that, they developed two new techniques, the expanding mean target encoding and the ordered boosting.\n\n- The Gradient Boosted Algorithm Explained: \n- Understanding XGBoost From A to Z: [...] Works let's get into it cat boost is another boosting tree algorithm that has\nbeen introduced in 2017 by Yandex yendex is a Russian company C boost introduced\ntwo different techniques the first one is a target encoding\ntechnique that allows to encode categorical variables in an efficient\nmanner the second one is called ordered boosting they recognize that one of the\nproblem of the boosting algorithm is to use the error that we measure on the\nprevious saturation of the boosting algorithm and this leads to a special\ncase of data leakage at each saturation of the boosting algorithm we reuse the\nsame targets and this leads to overfitting so let's see how the address\nthis so first of all let's try to understand what is a target encoding for [...] 13 comments\n### Transcript:\ncat boost may be the easiest supervised\nlearning algorithm to use today on large tabular data it is highly parallelizable\nit automatically deals with missing values and categorical variables and\neven more than xgy boost it is built to prevent overfitting if you throw some\ndata into it without much work you are pretty much guaranteed to get\nstate-of-the-art results well this assumes that your data is training ready\nbut even and then it is almost too good to be true I made a previous video where\nI explained how the gr boosting algorithm works and another video where\nI explain how XG boost work cat boost very much Builds on top of those two\nalgorithms so make sure to check them out now let's dig into how cat boo"
+    },
+    {
+      "url": "https://aravindkolli.medium.com/understanding-catboost-the-gradient-boosting-algorithm-for-categorical-data-73ddb200895d",
+      "score": 0.7593865,
+      "content": "## Introduction to CatBoost\n\nCatBoost, short for \u201cCategory Boosting\u201d is an open-source gradient boosting library developed by Yandex. It\u2019s specifically designed to work with categorical variables straight out of the box. Unlike other machine learning algorithms that require categorical variables to be converted into numerical format through one-hot encoding or similar techniques, CatBoost can process these variables natively, which significantly simplifies the data preparation process and enhances model performance.\n\n## How CatBoost Works [...] ## How CatBoost Works\n\nCatBoost operates on the principle of gradient boosting, where it builds the model in a stage-wise fashion. It starts with a simple model and incrementally improves it by adding new models that correct the errors made by the preceding ones. However, CatBoost introduces several key innovations that distinguish it from other gradient boosting methods:\n\n### 1. Handling Categorical Features:\n\nCatBoost converts categorical values into numerical values using a novel algorithm that takes into account the target variable for ordering categorical levels. This process, known as \u201ctarget statistics,\u201d helps in reducing overfitting and provides a more accurate representation of categorical data.\n\n### 2. Ordered Boosting: [...] Sitemap\n\nOpen in app\n\nSign in\n\nSearch\n\nSign in\n\n# Understanding CatBoost: The Gradient Boosting Algorithm for Categorical Data\n\nAravind Kolli\n\nAravind Kolli\n\n6 min read\n\n\u00b7\n\nFeb 13, 2024\n\n--\n\nCatboost\n\nIn the realm of machine learning, gradient boosting techniques have revolutionized the way we approach both regression and classification problems. Among these, CatBoost stands out as a powerful, efficient, and versatile algorithm designed to handle categorical data directly, without the need for extensive preprocessing. This article dives deep into the workings of CatBoost, exploring its unique features, how it\u2019s built, and its practical applications across various domains.\n\n## Introduction to Ca"
+    },
+    {
+      "url": "https://www.datacamp.com/tutorial/catboost",
+      "score": 0.7498395,
+      "content": "## What is CatBoost?\n\nCatBoost is an advanced gradient-boosting library specifically designed to address the challenges of handling categorical data in machine learning. CatBoost is an open-source technology that has become quite popular quickly because it can produce high-performance models without requiring a lot of data preprocessing. In contrast to other gradient boosting techniques, CatBoost is a superior option for tasks involving complicated, real-world datasets since it is good at handling categorical information natively.\n\n### Origins and evolution"
+    },
+    {
+      "url": "https://www.frontiersin.org/journals/built-environment/articles/10.3389/fbuil.2026.1859711/full",
+      "score": 0.5504388,
+      "content": "A notable limitation of existing approaches is their tendency to emphasise either short-term fluctuations or long-term temporal dependencies, with limited"
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/catboost-ml",
+      "score": 0.5441965,
+      "content": "## CatBoost Applications\n\nClassification Tasks:\n\n Sentiment analysis\n Email spam detection\n Breast cancer prediction\n\n> For more details you can refer to these articles:\n>\n>  Binary classification using CatBoost\n>  Multiclass classification using CatBoost\n\nRegression Tasks:\n\n House price prediction\n Fuel consumption prediction\n Stock market prediction\n\n> For more details you can refer to this article: Regression using CatBoost\n\n## Limitations of CatBoost\n\nDespite of the various features or advantages of catboost it has the following limitations: [...] ## Working of Catboost\n\nCatboost (categorical boosting) is based on the concept of gradient boosting technique where decision trees are built sequentially to minimize errors and improve predictions. The process works by constructing a decision tree and evaluating how much error are there in predictions. Once the first tree is built the next tree is created to correct the errors made by the previous one. This process continues iteratively with each new tree focusing on improving the model\u2019s predictions by reducing previous errors this process continue till a predefined number of iterations met. The result is a ensemble of decision trees that work together to provide accurate predictions. [...] | Default CatBoost | Tuned CatBoost | Default LightGBM | Tuned LightGBM | Default XGBoost | Tuned XGBoost | Default H2O |\n ---  ---  --- \n| Adult | 0.272978 (\u00b10.0004) (+1.20%) | 0.269741 (\u00b10.0001) | 0.287165 (\u00b10.0000) (+6.46%) | 0.276018 (\u00b10.0003) (+2.33%) | 0.280087 (\u00b10.0000) (+3.84%) | 0.275423 (\u00b10.0002) (+2.11%) |\n| Amazon | 0.138114 (\u00b10.0004) (+0.29%) | 0.137720 (\u00b10.0005) | 0.167159 (\u00b10.0000) (+21.38%) | 0.163600 (\u00b10.0002) (+18.79%) | 0.165365 (\u00b10.0000) (+20.07%) | 0.163271 (\u00b10.0001) (+18.55%) |\n| Appet | 0.071382 (\u00b10.0002) (-0.18%) | 0.071511 (\u00b10.0001) | 0.074823 (\u00b10.0000) (+4.63%) | 0.071795 (\u00b10.0001) (+0.40%) | 0.074659 (\u00b10.0000) (+4.40%) | 0.071760 (\u00b10.0000) (+0.35%) |"
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "catboost",
+      "chunk_index": 0,
+      "distance": 0.421,
+      "rrf_score": 0.03306,
+      "text": "# CatBoost\n\n## Definition\nCatBoost is a gradient boosting library that builds an ensemble of oblivious decision trees. It is distinguished by native handling of categorical features without manual preprocessing, using ordered target statistics with permutations to avoid target leakage, and employs an ordered boosting mechanism to reduce overfitting.\n\n## Intuition\nTraditional GBDT requires conversion of categorical features to numerical ones (one-hot, label encoding), which can cause combinatorial explosion or introduce arbitrary ordering. CatBoost encodes categories by computing target statistics: replacing a category with the mean target (or a smoothed variant) conditioned on that category. To prevent data leakage from using the same target to encode and predict, CatBoost uses permutations and lag-exclusion, encoding each instance using only past data within a random ordering. This yields a powerful, yet leakage-free, representation of categorical variables.\n\n## Mathematical Formulation\nStandard gradient boosting objective: add tree f_t to minimize sum L(y_i, F_{t-1}(x_i) + f_t(x_i)) + Omega(f_t). CatBoost uses oblivious trees, where the same splitting criterion and the same feature-threshold pair are applied to all nodes at a given depth. A tree of depth d has 2^d leaves.\n\nFor categorical feature k with value v, the ordered target statistic is:\nTS_{v} = (sum_{i in D_k, before j} y_i + a * p) / (count_{i in D_k, before j} + a)\nwhere j is the index in a random permutation, D_k is the set of objects with that category, \u201cbefore j\u201d restricts to preceding objects in the permutation, a is a smoothing strength, and p is the global average target. This ensures that the target for object j is encoded only using data preceding it.\n\nThe oblivious tree structure enables evaluation via flat index from binary features, making inference extremely fast.\n\n## Estimation\nA sequence of random permutations is drawn. For each"
+    },
+    {
+      "source": "catboost",
+      "chunk_index": 2,
+      "distance": 0.606,
+      "rrf_score": 0.03306,
+      "text": ".\n\n## When to Use / Not Use\nUse CatBoost when the data contains many categorical features, when quick strong baselines are needed, or when avoiding manual one-hot encoding. Excellent for competitions and production due to default robustness. Not ideal if the tree depth needs to model highly asymmetric interactions (consider XGBoost/LightGBM with asymmetric trees), or when domain-specific encoding already exists and is superior. Inference speed benefit of oblivious trees diminishes if extremely deep trees are required.\n\n## Variants / Extensions\nCatBoost for ranking (YetiRank, PairLogit), multitask regression, survival analysis. Integration with scikit-learn API. Text feature embeddings via transformers. Other GBDT libraries: LightGBM (leaf\u2011wise growth, gradient-based one-side sampling), XGBoost (level\u2011wise, regularized).\n\n## Minimal Example (Python)\n```python\nfrom catboost import CatBoostClassifier\nX = [['cat', 1], ['dog', 2], ['cat', 3], ['dog', 1]]\ny = [0, 1, 0, 1]\nmodel = CatBoostClassifier(iterations=10, depth=2, verbose=0,\n                           cat_features=[0])\nmodel.fit(X, y)\nprint(model.predict([['cat', 2]]))\n```"
+    },
+    {
+      "source": "xgboost",
+      "chunk_index": 2,
+      "distance": 0.7664,
+      "rrf_score": 0.03226,
+      "text": " to Use / Not Use\nUse for structured/tabular data where predictive accuracy is paramount, for competitions, and when feature importance insights are desired. Not use when model interpretability is critical (white-box decisions), when the dataset is tiny, or when testing with extreme input values outside observed ranges.\n\n## Variants / Extensions\nLightGBM (gradient-based one-side sampling, leaf-wise growth), CatBoost (ordered boosting, symmetric trees), XGBoost for ranking, monotonic constraints, GPU-accelerated training, and DART (dropouts in boosting).\n\n## Minimal Example (Python)\n```python\nimport xgboost as xgb\nfrom sklearn.datasets import make_classification\nX, y = make_classification(n_samples=100, n_features=4, random_state=0)\nmodel = xgb.XGBClassifier(n_estimators=50, max_depth=3, learning_rate=0.1)\nmodel.fit(X, y)\nprint(model.predict(X[:2]))\n```"
+    },
+    {
+      "source": "catboost",
+      "chunk_index": 1,
+      "distance": 0.8565,
+      "rrf_score": 0.0308,
+      "text": " target. This ensures that the target for object j is encoded only using data preceding it.\n\nThe oblivious tree structure enables evaluation via flat index from binary features, making inference extremely fast.\n\n## Estimation\nA sequence of random permutations is drawn. For each permutation, target statistics are computed with per-instance leave-out. Trees are built greedily using these statistics and gradients. Hyperparameters: iterations, learning_rate, depth (tree depth; number of leaves = 2^depth), l2_leaf_reg, random_strength (amount of randomness in scoring splits), bagging_temperature, and one_hot_max_size for categories. Early stopping by validation set is recommended.\n\n## Assumptions\nThe boosted model is an additive expansion of trees. The approximation with gradient descent is suitable; loss is differentiable. Categorical features contain meaningful signal exploitable via target encoding. No scaling or distributional assumptions on numeric features; missing values are handled by treating them as a special category or value.\n\n## Key Properties\nTop-tier predictive performance with minimal hyperparameter tuning (defaults work well). Native categorical feature handling reduces feature engineering. Ordered TS encoding effectively combats overfitting due to target leakage. Oblivious trees make inference fast and model size small. Built-in support for text features (since version 0.19). Provides feature importance and supports GPU training.\n\n## Failure Modes\nWhen target encoding for a category has too few observations, estimates are noisy; smoothing mitigates but does not eliminate. Oblivious trees may struggle to capture complex interactions that require different splits across nodes at same depth, limiting expressiveness relative to asymmetric trees. Very large number of categorical features can make permutation-based encoding memory intensive. With many iterations, overfitting still occurs if not stopped early.\n\n## When to Use / Not Use\nUse CatBoost when the da"
+    },
+    {
+      "source": "xgboost",
+      "chunk_index": 0,
+      "distance": 0.7875,
+      "rrf_score": 0.01587,
+      "text": "# XGBoost\n\n## Definition\nXGBoost (eXtreme Gradient Boosting) is a scalable machine learning framework that builds an ensemble of regression trees via gradient boosting. It uses second-order Taylor approximation of the loss function, explicit regularization, and system optimizations to achieve high performance and speed.\n\n## Intuition\nTrees are added sequentially; each new tree is trained to reduce the residual error of the current ensemble. Instead of fitting raw residuals, XGBoost fits the gradient and curvature of the loss, enabling custom loss functions and faster convergence. Complexity penalties on number of leaves and leaf weights prevent overfitting, while shrinkage (learning rate) makes boosting more robust.\n\n## Mathematical Formulation\nThe t-th tree f_t is chosen to minimize an objective function at step t:\n\nObj = sum_i L(y_i, y_hat_i^(t-1) + f_t(x_i)) + Omega(f_t)\n\nL is approximated via second-order Taylor expansion around y_hat^(t-1):\n\nL(y_i, y_hat^(t-1) + f_t(x_i)) \u2248 L(y_i, y_hat^(t-1)) + g_i f_t(x_i) + 0.5 h_i [f_t(x_i)]^2\n\nwhere g_i = \u2202L/\u2202y_hat and h_i = \u2202\u00b2L/\u2202y_hat\u00b2 (gradient and hessian). Regularization Omega(f_t) = gamma T + 0.5 lambda ||w||\u00b2, with T leaves and leaf weights w.\n\nFor a fixed tree structure, optimal leaf weight for leaf j:\n\nw_j* = - (sum_{i in leaf j} g_i) / (sum_{i in leaf j} h_i + lambda)\n\nThe resulting optimal objective reduction (split gain) is:\n\nGain = 0.5 [ (G_L)^2/(H_L + lambda) + (G_R)^2/(H_R + lambda"
+    }
+  ],
+  "attribution": {
+    "web": 40,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

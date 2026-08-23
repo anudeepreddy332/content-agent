@@ -1,0 +1,625 @@
+{
+  "run_id": "63716526-f473-4dc5-8f03-831d002004a1",
+  "topic": "Naive Bayes",
+  "slug": "naive-bayes",
+  "timestamp": "2026-08-21T12:12:55.319155+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 22,
+      "S": 22,
+      "V": 25,
+      "W": 0,
+      "U": 0,
+      "N": 25,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.88,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Naive Bayes is a family of probabilistic classifiers that applies Bayes' theorem with the assumption that features are conditionally independent given the class label.",
+          "source_url": "https://github.com/gbroques/naive-bayes",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/gbroques/naive-bayes"
+        },
+        {
+          "claim": "The independence assumption dramatically reduces the number of parameters to estimate, making the model tractable even with many features and limited data.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Naive Bayes is widely used for text classification, spam filtering, and other tasks where speed and simplicity matter more than perfect probability calibration.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/naive-bayes-scratch-implementation-using-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/naive-bayes-scratch-implementation-using-python"
+        },
+        {
+          "claim": "Despite the naive independence assumption, Naive Bayes often preserves the ranking of classes, yielding correct decisions even when features are correlated.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Naive Bayes is based on Bayes' theorem: P(y|x) = P(y) * P(x|y) / P(x).",
+          "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+        },
+        {
+          "claim": "For classification, only the numerator is needed because the denominator is constant across classes.",
+          "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+        },
+        {
+          "claim": "The decision rule is y_hat = argmax_y P(y) * product_i P(x_i | y).",
+          "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+        },
+        {
+          "claim": "The naive assumption reduces the number of parameters from exponential to linear in the number of features.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Parameters are estimated via maximum likelihood.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/naive-bayes-scratch-implementation-using-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/naive-bayes-scratch-implementation-using-python"
+        },
+        {
+          "claim": "The class prior P(y) is the fraction of training samples in class y.",
+          "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+        },
+        {
+          "claim": "For Gaussian Naive Bayes, each feature's likelihood is modeled as a normal distribution with mean mu_{y,i} and variance sigma^2_{y,i} estimated from the training data within each class.",
+          "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+        },
+        {
+          "claim": "The Gaussian likelihood formula is P(x_i|y) = (1 / sqrt(2 * pi * sigma^2_{y,i})) * exp(-(x_i - mu_{y,i})^2 / (2 * sigma^2_{y,i})).",
+          "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+        },
+        {
+          "claim": "Multinomial Naive Bayes models the likelihood as a multinomial distribution with parameters p_{y,i} for each feature i in class y.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Multinomial parameters are estimated as sample proportions with additive smoothing: p_{y,i} = (sum_{x in y} x_i + alpha) / (sum_i (sum_{x in y} x_i + alpha)).",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "alpha=1 is Laplace smoothing.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Smoothing prevents zero probabilities for unobserved feature values, which would otherwise zero out the entire product.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Bernoulli Naive Bayes is for binary features (0/1).",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Each Bernoulli feature is modeled as a Bernoulli distribution with parameter p_{y,i}, estimated similarly with smoothing.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Training and prediction are extremely fast: linear in the number of features, instances, and classes.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "No hyperparameter tuning is needed beyond the smoothing alpha in basic form.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "The independence assumption is often violated in real data.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Highly redundant features can inflate confidence and degrade probability calibration, though classification accuracy may remain acceptable.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Continuous features that are multimodal or heavy-tailed do not fit the Gaussian assumption well, leading to poor likelihood estimates.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "The model assumes no missing features; missing data requires additional handling.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        },
+        {
+          "claim": "Naive Bayes often gives poorly calibrated probabilities, so calibration techniques like Platt scaling may be needed.",
+          "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically accurate, but the technical depth is uneven: the math is stated correctly yet the explanation of why the independence assumption works in practice (e.g., ranking preservation) is asserted without derivation or citation. The code examples are minimal and don't demonstrate edge cases or real-world usage (e.g., handling text with TF-IDF, or calibration), which would be expected for senior engineers. Writing is clear and direct, but the intro and takeaways repeat the same points, and the failure modes section could be expanded with concrete examples of when Naive Bayes fails catastrophically.",
+  "grounding_score": 0.88,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 15329,
+  "total_cost_usd": 0.00762,
+  "latency_ms": {
+    "retrieve": 9163,
+    "retrieve_web": 9145,
+    "retrieve_kb": 18,
+    "draft": 11075,
+    "verify": 9836,
+    "reflect": 2423,
+    "html_gen": 3671,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 25,
+  "claims_weak": 0,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 0,
+    "mean_confidence_verified": 0.88,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 22,
+    "S": 22,
+    "V": 25,
+    "N": 25,
+    "verified_fraction": 1.0,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Naive Bayes is a family of probabilistic classifiers that applies Bayes' theorem with the assumption that features are conditionally independent given the class label.",
+      "source_url": "https://github.com/gbroques/naive-bayes",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/gbroques/naive-bayes"
+    },
+    {
+      "claim": "The independence assumption dramatically reduces the number of parameters to estimate, making the model tractable even with many features and limited data.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Naive Bayes is widely used for text classification, spam filtering, and other tasks where speed and simplicity matter more than perfect probability calibration.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/naive-bayes-scratch-implementation-using-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/naive-bayes-scratch-implementation-using-python"
+    },
+    {
+      "claim": "Despite the naive independence assumption, Naive Bayes often preserves the ranking of classes, yielding correct decisions even when features are correlated.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Naive Bayes is based on Bayes' theorem: P(y|x) = P(y) * P(x|y) / P(x).",
+      "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+    },
+    {
+      "claim": "For classification, only the numerator is needed because the denominator is constant across classes.",
+      "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+    },
+    {
+      "claim": "The decision rule is y_hat = argmax_y P(y) * product_i P(x_i | y).",
+      "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+    },
+    {
+      "claim": "The naive assumption reduces the number of parameters from exponential to linear in the number of features.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Parameters are estimated via maximum likelihood.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/naive-bayes-scratch-implementation-using-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/naive-bayes-scratch-implementation-using-python"
+    },
+    {
+      "claim": "The class prior P(y) is the fraction of training samples in class y.",
+      "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+    },
+    {
+      "claim": "For Gaussian Naive Bayes, each feature's likelihood is modeled as a normal distribution with mean mu_{y,i} and variance sigma^2_{y,i} estimated from the training data within each class.",
+      "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+    },
+    {
+      "claim": "The Gaussian likelihood formula is P(x_i|y) = (1 / sqrt(2 * pi * sigma^2_{y,i})) * exp(-(x_i - mu_{y,i})^2 / (2 * sigma^2_{y,i})).",
+      "source_url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=TLInuAorxqE"
+    },
+    {
+      "claim": "Multinomial Naive Bayes models the likelihood as a multinomial distribution with parameters p_{y,i} for each feature i in class y.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Multinomial parameters are estimated as sample proportions with additive smoothing: p_{y,i} = (sum_{x in y} x_i + alpha) / (sum_i (sum_{x in y} x_i + alpha)).",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "alpha=1 is Laplace smoothing.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Smoothing prevents zero probabilities for unobserved feature values, which would otherwise zero out the entire product.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Bernoulli Naive Bayes is for binary features (0/1).",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Each Bernoulli feature is modeled as a Bernoulli distribution with parameter p_{y,i}, estimated similarly with smoothing.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Training and prediction are extremely fast: linear in the number of features, instances, and classes.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "No hyperparameter tuning is needed beyond the smoothing alpha in basic form.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "The independence assumption is often violated in real data.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Highly redundant features can inflate confidence and degrade probability calibration, though classification accuracy may remain acceptable.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Continuous features that are multimodal or heavy-tailed do not fit the Gaussian assumption well, leading to poor likelihood estimates.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "The model assumes no missing features; missing data requires additional handling.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    },
+    {
+      "claim": "Naive Bayes often gives poorly calibrated probabilities, so calibration techniques like Platt scaling may be needed.",
+      "source_url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://www.analyticsvidhya.com/blog/2021/01/a-guide-to-the-naive-bayes-algorithm",
+      "score": 0.88372874,
+      "content": "Source: Unsplash\n\n## Implementation of Naive Bayes in Python Programming\n\nNow let\u2019s implement Naive Bayes step by step using the python programming language\n\nWe are using the Social network ad dataset. The dataset contains the details of users on a social networking site to find whether a user buys a product by clicking the ad on the site based on their salary, age, and gender.\n\nStep 1: Importing the libraries\n\nLet\u2019s start the programming by importing the essential libraries required.\n\n```\nimport numpy as np import matplotlib.pyplot as plt import pandas as pd import sklearn\n```\n\nStep 2: Importing the dataset  \nPython Code: [...] ```\n y_pred  \n```\n\n```\ny_test\n```\n\nFor the first 8 values, both are the same. We can evaluate our matrix using the confusion matrix and accuracy score by comparing the predicted and actual test values\n\n```\nfrom sklearn.metrics import confusion_matrix,accuracy_score cm = confusion_matrix(y_test, y_pred) ac = accuracy_score(y_test,y_pred)\n```\n\nconfusion matrix\n\nac \u2013 0.9125\n\nAccuracy is good. Note that you can achieve better results for this problem using different algorithms.\n\n#### Full Python Tutorial"
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/naive-bayes-scratch-implementation-using-python",
+      "score": 0.8690161,
+      "content": "Last Updated : 24 Mar, 2026\n\nNaive Bayes is a probabilistic machine learning algorithms based on the Bayes Theorem. It is popular method for classification applications such as spam filtering and text classification.\n\nNaive-Bayes\n\nNaive Bayes Working Pipeline\n\nHere we are implementing a Naive Bayes Algorithm from Scratch in Python using Gaussian distributions. It performs all the necessary steps from data preparation and model training to testing and evaluation.\n\n### 1. Importing Libraries\n\nImporting necessary libraries:\n\n math: for mathematical operations\n random: for random number generation\n pandas: for data manipulation\n numpy: for scientific computing\n\n Python  ````\n import math import random import pandas as pd import numpy as np\n```` \n\n### 2. Encoding Class [...] Python  ````\n filename ='diabetes.csv' df = pd. read_csv(filename, comment = '#') mydata = df. values. tolist() mydata = encode_class(mydata) for i in range(len(mydata)): for j in range(len(mydata[i]) - 1): mydata[i][j] = float(mydata[i][j])\n```` \n\n### 10. Splitting Data into Training and Testing Sets\n\nThe code splits the data into training and testing sets using a specified ratio. It then trains the model by calculating the mean and standard deviation for each attribute in each class.\n\n Python  ````\n ratio =0.7 train_data, test_data = splitting(mydata, ratio) print('Total number of examples:', len(mydata)) print('Training examples:', len(train_data)) print('Test examples:', len(test_data))\n```` \n\nOutput: [...] ### 7. Predicting for Test Set\n\n The predict function takes the information dictionary and a test data point as arguments. It calculates the class probabilities and returns the class with the highest probability.\n The getPredictions function takes the information dictionary and the test set as arguments. It iterates through each test data point and predicts its class using the predict function.\n\n Python  ````\n def predict(info, test): probabilities = calculateClassProbabilities(info, test) bes"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=TLInuAorxqE",
+      "score": 0.85008353,
+      "content": "with class labels and features then we can say that the probability of Y given X is the probability of x given y times the probability of y divided by the probability of X and in this case y are the class labels that we want to predict and X is the feature Vector so then we do the assumption that the features are mutually independent for example if we want to predict if someone takes the bus or walks and we have two features if it's raining or not and the distance to the destination so then we make the assumption that these two features are independent and in reality often this is not the case but this assumption still works really well for this classifier that's also why we say this is a naive assumption so if we make this assumption we can split this part here P of x given Y into the [...] let's split this into denominator and numerator so let's first get the mean so we say mean equals self doore mean of this class index and the same for the variance so we say VAR equals self doore VAR of this class index and then we say the numerator equals and now we apply this so we say numpy this is the exponential function of minus and then we say x minus the mean to the power of 2 divided by 2  the variance so let's put this into parentheses as well and also this part so minus and then this and then for the the nominator equals so this is num square root over and here we have 2  numpy do pi times the variance so then we want to return the numerator divided by the denominator and this is all that we need so now we are done and now we can test this so I already prepared some code for [...] and that's it so let's jump to the code so first let's import numpy of course and then we want to create a class class that we call naive B and here we don't need an init function because we don't have any parameters to configure this so instead we want a fit method which gets the training samples and the training labels and then we also want a predict method with self and the test samples s"
+    },
+    {
+      "url": "https://github.com/gbroques/naive-bayes",
+      "score": 0.8361405,
+      "content": "## Dataset\n\n#### Loan Defaulters\n\n| Home Owner | Marital Status | Annual Income | Defaulted Borrower |\n ---  --- |\n| Yes | Single | $125,000 | No |\n| No | Married | $100,000 | No |\n| No | Single | $70,000 | No |\n| Yes | Married | $120,000 | No |\n| No | Divorced | $95,000 | Yes |\n| No | Married | $60,000 | No |\n| Yes | Divorced | $220,000 | No |\n| No | Single | $85,000 | Yes |\n| No | Married | $75,000 | No |\n| No | Single | $90,000 | Yes |\n\nSource: Introduction to Data Mining (1st Edition) by Pang-Ning Tan\n\nFigure 5.9, Page 230\n\n## How to Run\n\nPlease run with Python 3 or greater.\n\n`python main`\n\n`python main`\n\n## About\n\nA Python implementation of Naive Bayes from scratch.\n\n### Topics\n\n### Resources\n\n### Stars\n\n### Watchers\n\n### Forks\n\n## Releases\n\n## Packages\n\n## Contributors [...] Build Status\n\nBuild Status\n\nA custom implementation of a Naive Bayes Classifier written from scratch in Python 3.\n\nBayes Theorem\n\nBayes Theorem\n\nFrom Wikipedia:\n\nIn machine learning, naive Bayes classifiers are a family of simple probabilistic classifiers based on applying Bayes' theorem with strong (naive) independence assumptions between the features.\n\n## Dataset\n\n#### Loan Defaulters [...] ## Navigation Menu\n\n## Latest commit\n\n## History\n\n## Folders and files\n\n| Name | | Name | Last commit message | Last commit date |\n ---  --- \n| datasets | | datasets |  |  |\n| exceptions | | exceptions |  |  |\n| feature | | feature |  |  |\n| model\\_selection | | model\\_selection |  |  |\n| naive\\_bayes | | naive\\_bayes |  |  |\n| statistics | | statistics |  |  |\n| test | | test |  |  |\n| util | | util |  |  |\n| .gitignore | | .gitignore |  |  |\n| .travis.yml | | .travis.yml |  |  |\n| LICENSE | | LICENSE |  |  |\n| README.md | | README.md |  |  |\n| bayes-theorem.png | | bayes-theorem.png |  |  |\n| config.py | | config.py |  |  |\n| main.py | | main.py |  |  |\n| View all files | | |\n\n## Repository files navigation\n\n# Naive Bayes from Scratch in Python\n\nBuild Status\n\nBuild Status"
+    },
+    {
+      "url": "https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained",
+      "score": 0.7959917,
+      "content": "The Naive Bayes classifier is a popular supervised machine learning algorithm used for classification tasks such as text classification. It belongs to the family of generative learning algorithms, which means that it models the distribution of inputs for a given class or category. This approach is based on the assumption that the features of the input data are conditionally independent given the class, allowing the algorithm to make predictions quickly and accurately.\n\nAlso Read : Naive Bayes Algorithm Guide for Data Science Enthusiasts\n\n### A Brief Review of Bayesian Statistics [...] ### A Brief Review of Bayesian Statistics\n\nIn statistics, naive Bayes are simple probabilistic classifiers that apply Bayes\u2019 theorem. This theorem is based on the probability of a hypothesis, given the data and some prior knowledge. The naive Bayes classifier assumes that all features in the input data are independent of each other, which is often not true in real-world scenarios. However, despite this simplifying assumption, the naive Bayes classifier is widely used because of its efficiency and good performance in many real-world applications. [...] Gaussian Naive Bayes: gaussiannb is used in classification tasks and it assumes that feature values follow a gaussian distribution.\n Multinomial Naive Bayes:It is used for discrete counts. For example, let\u2019s say,  we have a text classification problem. Here we can consider Bernoulli trials which is one step further and instead of \u201cword occurring in the document\u201d, we have \u201ccount how often word occurs in the document\u201d, you can think of it as \u201cnumber of times outcome number x\\_i is observed over the n trials\u201d."
+    },
+    {
+      "url": "https://www.researchgate.net/publication/374774100_A_Comprehensive_Survey_on_Naive_Bayes_Algorithm_Advantages_Limitations_and_Applications",
+      "score": 0.7890553,
+      "content": "A Comprehensive Survey on Naive Bayes Algorithm: Advantages, Limitations ... production process downtime, safety risks, and costly environmental accidents."
+    },
+    {
+      "url": "https://www.linkedin.com/advice/0/what-limitations-naive-bayes-algorithm-software-9mzhf",
+      "score": 0.7604555,
+      "content": "One of the main limitations of naive Bayes is that it is sensitive to the quality of the data. If the data is noisy, incomplete, imbalanced, or"
+    },
+    {
+      "url": "https://medium.com/@kavyasrirelangi100/naive-bayes-classifier-explained-assumptions-types-and-uses-bef767a758a3",
+      "score": 0.74961954,
+      "content": "## Conclusion\n\nT he Naive Bayes algorithm is a powerful and straightforward algorithm that excels in various classification tasks, particularly when dealing with large datasets and high-dimensional data. Its simplicity and speed make it a go-to choice for many practical applications, including spam filtering, sentiment analysis, and medical diagnosis. Despite its assumption of feature independence, which may not always hold true in real-world scenarios, Naive Bayes often performs surprisingly well, thanks to the robustness of probabilistic reasoning. [...] Assumption: Each feature is independent and can be modeled by a Bernoulli distribution. This means the probability of each feature value (0 or 1) is independent of other features.\n\nApplications:\n\n> Sentiment analysisclassifying tweets as positive or negative based on the presence of specific words (e.g., \u201chappy\u201d = 1, \u201csad\u201d = 0).\n> \n> \n> Image classification identifying the presence or absence of objects in an image (e.g., \u201ccar\u201d = 1, \u201cnot car\u201d = 0).\n> \n> \n> Gene expression analysis classifying genes as \u201con\u201d or \u201coff\u201d based on their activity level.\n\nThe decision rule for Bernoulli Naive Bayes is:\n\nImage 15\n\nwhere, iis an event, and x_i needs to be binary (0 or 1).\n\n## How Naive Bays really works:\n\nLet\u2019s explain it using an example to make things clear: [...] _Efficiency:_ Naive Bayes is known for its simplicity and speed. It can make quick predictions even with large datasets, which is invaluable in real-time applications.\n   _Easy to Implement:_ With fewer parameters to tune, Naive Bayes can be easier to implement compared to more complex models like neural networks.\n   _Good Performance with Small Data:_ Unlike some models that require vast amounts of training data to perform well, Naive Bayes can achieve good results even with a smaller dataset.\n   _Probabilistic Interpretation:_ The model provides probabilities for outcomes, offering more insight into the results, such as how likely a given class is the correct c"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=O2L2Uv9pdDA",
+      "score": 0.7471924,
+      "content": "it is just a bag full of words and each message is a random handful of them. Naive Bayes ignores all the rules because keeping track of every single reasonable phrase in a language would be impossible. That said, even though Naive Bayes is naive, it tends to perform surprisingly well when separating normal messages from spam. In machine learning lingo, we'd say that by ignoring relationships among words, Naive Bayes has high bias. But, because it works well in practice, Naive Bayes has low variance. Shameless self-promotion. If you are not already familiar with the terms bias and variance, check out the quest. The link is in the description below. Triple spam. Oh, no! It's one last shameless self-promotion. One awesome way to support StatQuest is to purchase the Naive Bayes StatQuest [...] I'm at home during lockdown, working on my StatQuest, yeah. I'm at home during lockdown, working on my StatQuest, yeah. StatQuest. Hello, I'm Josh Starmer, and welcome to StatQuest. Today, we're going to talk about naive Bayes, and it's going to be clearly explained. This StatQuest is sponsored by Jad Bio, just add data, and their automatic machine learning algorithms will do the rest of the work for you. For more details, follow the link in the pinned comment below. Note, when most people want to learn about naive Bayes, they want to learn about the multinomial naive Bayes classifier, and that's what we talk about in this video. However, just know that there is another commonly used version of naive Bayes called Gaussian naive Bayes classification, and I cover that in a follow-up [...] message but now when we calculate the value for spam we get a value greater than zero. And since the value for spam is greater than the one for a normal message we classify the message as spam. Spam. Now let's talk about why Naive Bayes is naive. The thing that makes Naive Bayes so naive is that it treats all word orders the same. For example the normal message score for the phrase \"dear friend\" is"
+    },
+    {
+      "url": "https://www.machinelearningmastery.com/naive-bayes-classifier-scratch-python",
+      "score": 0.73322314,
+      "content": "Naive Bayes is a classification algorithm for binary (two-class) and multiclass classification problems. It is called Naive Bayes or idiot Bayes because the calculations of the probabilities for each class are simplified to make their calculations tractable.\n\nRather than attempting to calculate the probabilities of each attribute value, they are assumed to be conditionally independent given the class value.\n\nThis is a very strong assumption that is most unlikely in real data, i.e. that the attributes do not interact. Nevertheless, the approach performs surprisingly well on data where this assumption does not hold.\n\nFor an in-depth introduction to Naive Bayes, see the tutorial:\n\n How to Develop a Naive Bayes Classifier\n\n### Iris Flower Species Dataset"
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "naive-bayes",
+      "chunk_index": 0,
+      "distance": 0.3724,
+      "rrf_score": 0.03333,
+      "text": "# Naive Bayes\n\n## Definition\nNaive Bayes is a family of probabilistic classifiers based on Bayes\u2019 theorem, applying the \u201cnaive\u201d assumption that features are conditionally independent given the class label. Different variants handle continuous, categorical, or count features by specifying appropriate per-feature likelihoods.\n\n## Intuition\nBy combining the prior probability of each class with the likelihood of the features under that class, classification reduces to a product of per-feature contributions. The independence assumption dramatically reduces the number of parameters to estimate, making the model tractable even with many features and limited data, while often preserving a competitive decision boundary.\n\n## Mathematical Formulation\nGiven class y and feature vector x = (x\u2081,\u2026,x\u209a), Bayes\u2019 rule gives P(y|x) \u221d P(y) \u00b7 P(x|y). Under conditional independence, P(x|y) = \u220f\u1d62 P(x\u1d62|y). The decision rule is \u0177 = argmax_y P(y) \u220f\u1d62 P(x\u1d62|y). The likelihood form P(x\u1d62|y) depends on the data type:\n- Gaussian NB: P(x\u1d62|y) = (1/\u221a(2\u03c0\u03c3\u00b2_{y,i})) exp(\u2212(x\u1d62 \u2212 \u03bc_{y,i})\u00b2/(2\u03c3\u00b2_{y,i})) for continuous x\u1d62.\n- Multinomial NB: P(x|y) = ( (\u2211\u1d62 x\u1d62)! / \u220f\u1d62 x\u1d62! ) \u220f\u1d62 p_{y,i}^{x\u1d62}, modelling count vectors, often used with term frequencies.\n- Bernoulli NB: each x\u1d62 \u2208 {0,1}, with P(x\u1d62|y) = p_{y,i}^{x\u1d62} (1 \u2212 p_{y,i})"
+    },
+    {
+      "source": "naive-bayes",
+      "chunk_index": 1,
+      "distance": 0.6175,
+      "rrf_score": 0.03279,
+      "text": " with term frequencies.\n- Bernoulli NB: each x\u1d62 \u2208 {0,1}, with P(x\u1d62|y) = p_{y,i}^{x\u1d62} (1 \u2212 p_{y,i})^{1\u2212x\u1d62}.\n\n## Estimation\nParameters are estimated via maximum likelihood (or Bayesian MAP with a smoothing prior). The class prior P(y) is the fraction of training samples in class y. For Gaussian NB, \u03bc_{y,i} and \u03c3\u00b2_{y,i} are the empirical within-class mean and variance. For multinomial/Bernoulli NB, the probabilities p_{y,i} are sample proportions smoothed with an additive parameter \u03b1 (Laplace smoothing if \u03b1=1): p_{y,i} = (\u2211_{x\u2208y} x\u1d62 + \u03b1) / (\u2211_{i}(\u2211_{x\u2208y} x\u1d62 + \u03b1)). Smoothing prevents zero estimates for unobserved feature values.\n\n## Assumptions\nFeatures are conditionally independent given the class (the naive assumption). The chosen parametric form (e.g., Gaussian) is appropriate for each feature within a class. Observations are independent and identically distributed. No missing features; handling of missingness requires additional marginalization.\n\n## Key Properties\nTraining and prediction are extremely fast (linear in number of features, instances, and classes). The naive independence assumption biases probability estimates but often preserves the ranking of classes, yielding a correct maximum a posteriori decision even with feature correlations. Handles high-dimensional data and small samples robustly. Interpretable: per-feature class-conditional parameters give direct insight. Smoothing guarantees non-zero likelihoods. No hyperparameter tuning beyond smoothing \u03b1 in basic form.\n\n## Failure Modes\nSevere violation of conditional independence (e.g., highly redundant features) can inflate confidence and degrade probability calibration while possibly keeping classification accurate. Continuous features that are multimodal or heavy"
+    },
+    {
+      "source": "naive-bayes",
+      "chunk_index": 3,
+      "distance": 0.7159,
+      "rrf_score": 0.01613,
+      "text": "nb.predict([[0, 0]]))\n\nX_counts = np.array([[0,1,1], [1,0,1], [1,2,0], [2,1,0]])\ny = np.array([0, 0, 1, 1])\nmnb = MultinomialNB(alpha=1).fit(X_counts, y)\nprint(mnb.predict([[0, 2, 1]]))\n```"
+    },
+    {
+      "source": "k-nearest-neighbors",
+      "chunk_index": 1,
+      "distance": 0.0,
+      "rrf_score": 0.01613,
+      "text": " data. Choosing a smaller k reduces bias but increases variance, while a larger k does the opposite. Feature scaling (e.g., standardization) is essential to prevent certain features from dominating the distance calculation.\n\n## Assumptions\nLocally constant or slowly varying target function. Independence and representativeness of training samples. Equal relevance of all features to the distance metric unless explicitly weighted. The distance metric must reflect meaningful similarity in the data space. No assumptions about the global distribution of the data.\n\n## Key Properties\nNon-parametric: no functional form is imposed. Lazy learning: training is merely storing the dataset. The decision boundary is a Voronoi tessellation (for k=1) or a smoothed version. As training size n \u2192 \u221e with k \u2192 \u221e and k/n \u2192 0, the risk converges to the Bayes risk (consistent, under certain conditions). Query time complexity is O(nd) for brute-force; memory footprint is O(nd). Suffers from the curse of dimensionality: data sparsity makes local neighborhoods nearly empty in high dimensions.\n\n## Failure Modes\nCurse of dimensionality: in high-dimensional spaces, all points become nearly equidistant, so the notion of \u201cnearest\u201d degrades. Large n makes prediction slow without spatial indexing. Irrelevant or noisy features distort distances, harming prediction. Imbalanced classes can cause the majority class to dominate smaller neighborhoods. Outliers heavily influence small k. Sparse regions yield unreliable extrapolation. Sensitive to the choice of distance metric and feature scaling.\n\n## When to Use / Not Use\nUse for small-to-medium-sized, low-dimensional datasets where a simple, interpretable baseline is needed, or when local explanations are valuable. Do not use for high-dimensional data (e.g., text, images, hundreds of features), ultra-large training sets with real-time latency requirements, or when feature importance is non-uniform and unknown without additional weighting. Not suited for extr"
+    },
+    {
+      "source": "naive-bayes",
+      "chunk_index": 2,
+      "distance": 0.7717,
+      "rrf_score": 0.01587,
+      "text": " No hyperparameter tuning beyond smoothing \u03b1 in basic form.\n\n## Failure Modes\nSevere violation of conditional independence (e.g., highly redundant features) can inflate confidence and degrade probability calibration while possibly keeping classification accurate. Continuous features that are multimodal or heavy-tailed violate the Gaussian assumption, harming performance. Strongly overlapping classes with similar feature means yield poor separation. Zero-frequency problem without smoothing yields undefined predictions. Cannot model feature interactions directly.\n\n## When to Use / Not Use\nUse as a strong baseline for text classification (spam filtering, topic categorization), real-time applications requiring fast online updates, and when probabilistic outputs are needed. Not suited when feature interactions are crucial (e.g., image pixels) and a linear/non-linear discriminative model would be better, or when precise probability estimation is required and independence is grossly violated.\n\n## Variants / Extensions\nGaussian NB for continuous data, Multinomial NB for term frequencies, Bernoulli NB for binary occurrences, Complement NB for imbalanced text, Categorical NB for categorical features. Tree-Augmented NB relaxes independence by adding a tree structure among features. AODE (Averaged One-Dependence Estimators) averages over all possible one-dependence structures. Semi-supervised NB uses unlabeled data for parameter estimation.\n\n## Minimal Example (Python)\n```python\nfrom sklearn.naive_bayes import GaussianNB, MultinomialNB\nimport numpy as np\n\nX = np.array([[-1, -1], [-2, -1], [1, 1], [2, 1]])\ny = np.array([0, 0, 1, 1])\ngnb = GaussianNB().fit(X, y)\nprint(gnb.predict([[0, 0]]))\n\nX_counts = np.array([[0,1,1], [1,0,1], [1,2,0], [2,1,0]])\ny = np.array([0, "
+    }
+  ],
+  "attribution": {
+    "web": 25,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

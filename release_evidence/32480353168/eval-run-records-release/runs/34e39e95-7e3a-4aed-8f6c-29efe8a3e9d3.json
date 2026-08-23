@@ -1,0 +1,787 @@
+{
+  "run_id": "34e39e95-7e3a-4aed-8f6c-29efe8a3e9d3",
+  "topic": "Backpropagation",
+  "slug": "backpropagation",
+  "timestamp": "2026-08-21T12:18:37.033731+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 26,
+      "S": 27,
+      "V": 32,
+      "W": 2,
+      "U": 0,
+      "N": 34,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.925,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Training a neural network means finding weights and biases that minimize a loss function.",
+          "source_url": "https://www.ibm.com/think/topics/backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+        },
+        {
+          "claim": "The loss measures how wrong the network's predictions are.",
+          "source_url": "https://www.ibm.com/think/topics/backpropagation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+        },
+        {
+          "claim": "To minimize the loss, you need to know how the loss changes when each parameter changes \u2014 that's the gradient.",
+          "source_url": "https://www.ibm.com/think/topics/backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+        },
+        {
+          "claim": "Computing the gradient naively, by perturbing each weight and measuring the loss change, is expensive: a network with millions of parameters would require millions of forward passes per update.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.7,
+          "status": "weak",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Backpropagation solves this by computing all gradients in one backward pass, using the chain rule from calculus.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "It's the algorithm that makes deep learning practical.",
+          "source_url": "https://www.ibm.com/think/topics/backpropagation",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+        },
+        {
+          "claim": "Without it, training modern networks would be computationally infeasible.",
+          "source_url": "https://www.ibm.com/think/topics/backpropagation",
+          "confidence": 0.7,
+          "status": "weak",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+        },
+        {
+          "claim": "Backpropagation is also called reverse-mode automatic differentiation.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "It's what frameworks like PyTorch and TensorFlow use under the hood.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Backpropagation computes the gradient of the loss with respect to every parameter in a neural network.",
+          "source_url": "https://www.ibm.com/think/topics/backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+        },
+        {
+          "claim": "It does this by applying the chain rule recursively, from the output layer back to the input layer.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "The gradient for a weight in an earlier layer depends on the gradients of the layers after it.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "By propagating error signals backward, you reuse intermediate results instead of recomputing them, making the total cost roughly 2-3 times the cost of a forward pass.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "For a feedforward network, define the forward pass as: a^(0) = x, z^(l) = W^(l) a^(l-1) + b^(l), a^(l) = g_l(z^(l)), where g_l is the activation function.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "The loss is L = \u2113(a^(L), y).",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "The backward pass starts by computing the error signal at the output layer: \u03b4^(L) = \u2202L/\u2202a^(L) \u2299 g_L'(z^(L)), where \u2299 is elementwise multiplication.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Then, for each layer l from L-1 down to 1, propagate the error: \u03b4^(l) = (W^(l+1))^T \u03b4^(l+1) \u2299 g_l'(z^(l)).",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "The gradients for the weights and biases are then: \u2202L/\u2202W^(l) = \u03b4^(l) (a^(l-1))^T, \u2202L/\u2202b^(l) = \u03b4^(l).",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "These gradients are used by an optimizer like SGD: w = w - lr * grad.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Backpropagation requires the network to be a directed acyclic graph (DAG).",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Recurrent networks are handled by unrolling them in time, which increases memory usage.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "All operations must be differentiable almost everywhere.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Non-differentiable operations, like hard thresholding, break gradient flow unless you use surrogate gradients.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Numerical instability: operations like division by zero or log of zero can produce NaN or Inf gradients.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Exploding gradients, where the error signal grows exponentially as it propagates backward, are common in deep networks and are typically mitigated by gradient clipping or careful weight initialization.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Memory is another constraint: storing all intermediate activations for the backward pass can exhaust RAM, especially for large models.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Techniques like gradient checkpointing recompute activations during the backward pass to trade compute for memory.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Backpropagation computes exact analytical gradients, unlike finite differences which are approximate and slow.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "The gradient is computed for a single input-output pair; in practice, you average gradients over a mini-batch to get a stable estimate of the true gradient.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Backpropagation is an efficient application of the chain rule that computes gradients for all parameters in one backward pass, costing roughly 2-3x a forward pass.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "The error signal \u03b4^(l) propagates backward via \u03b4^(l) = (W^(l+1))^T \u03b4^(l+1) \u2299 g_l'(z^(l)), and gradients are \u2202L/\u2202W^(l) = \u03b4^(l) (a^(l-1))^T.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Backpropagation requires a differentiable DAG; recurrent networks must be unrolled, and non-differentiable ops break gradient flow.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "Watch for NaN/Inf gradients from numerical instability, exploding gradients in deep nets, and memory exhaustion from storing activations.",
+          "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+        },
+        {
+          "claim": "You can implement backpropagation from scratch with NumPy in a few lines, which clarifies how frameworks like PyTorch compute gradients automatically.",
+          "source_url": "https://medium.com/@andresberejnoi/how-to-implement-backpropagation-with-numpy-andres-berejnoi-e7c14f2e683a",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@andresberejnoi/how-to-implement-backpropagation-with-numpy-andres-berejnoi-e7c14f2e683a"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is technically sound and well-structured, with all four sections present and coherent. The mathematical notation and code example are clear and correct for a senior audience. However, the writing occasionally reads as slightly generic (e.g., 'It's the algorithm that makes deep learning practical'), and the technical deep-dive could benefit from a more concrete discussion of computational complexity or a comparison with forward-mode AD to sharpen the senior-level depth. Minor tightening of prose and adding one practical debugging insight would elevate it.",
+  "grounding_score": 0.925,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 17468,
+  "total_cost_usd": 0.00893,
+  "latency_ms": {
+    "retrieve": 10554,
+    "retrieve_web": 10534,
+    "retrieve_kb": 20,
+    "draft": 12811,
+    "verify": 11836,
+    "reflect": 2947,
+    "html_gen": 4104,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 32,
+  "claims_weak": 2,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 2,
+    "mean_confidence_verified": 0.939,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 26,
+    "S": 27,
+    "V": 32,
+    "N": 34,
+    "verified_fraction": 0.941,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Training a neural network means finding weights and biases that minimize a loss function.",
+      "source_url": "https://www.ibm.com/think/topics/backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+    },
+    {
+      "claim": "The loss measures how wrong the network's predictions are.",
+      "source_url": "https://www.ibm.com/think/topics/backpropagation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+    },
+    {
+      "claim": "To minimize the loss, you need to know how the loss changes when each parameter changes \u2014 that's the gradient.",
+      "source_url": "https://www.ibm.com/think/topics/backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+    },
+    {
+      "claim": "Computing the gradient naively, by perturbing each weight and measuring the loss change, is expensive: a network with millions of parameters would require millions of forward passes per update.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.7,
+      "status": "weak",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Backpropagation solves this by computing all gradients in one backward pass, using the chain rule from calculus.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "It's the algorithm that makes deep learning practical.",
+      "source_url": "https://www.ibm.com/think/topics/backpropagation",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+    },
+    {
+      "claim": "Without it, training modern networks would be computationally infeasible.",
+      "source_url": "https://www.ibm.com/think/topics/backpropagation",
+      "confidence": 0.7,
+      "status": "weak",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+    },
+    {
+      "claim": "Backpropagation is also called reverse-mode automatic differentiation.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "It's what frameworks like PyTorch and TensorFlow use under the hood.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Backpropagation computes the gradient of the loss with respect to every parameter in a neural network.",
+      "source_url": "https://www.ibm.com/think/topics/backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.ibm.com/think/topics/backpropagation"
+    },
+    {
+      "claim": "It does this by applying the chain rule recursively, from the output layer back to the input layer.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "The gradient for a weight in an earlier layer depends on the gradients of the layers after it.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "By propagating error signals backward, you reuse intermediate results instead of recomputing them, making the total cost roughly 2-3 times the cost of a forward pass.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "For a feedforward network, define the forward pass as: a^(0) = x, z^(l) = W^(l) a^(l-1) + b^(l), a^(l) = g_l(z^(l)), where g_l is the activation function.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "The loss is L = \u2113(a^(L), y).",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "The backward pass starts by computing the error signal at the output layer: \u03b4^(L) = \u2202L/\u2202a^(L) \u2299 g_L'(z^(L)), where \u2299 is elementwise multiplication.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Then, for each layer l from L-1 down to 1, propagate the error: \u03b4^(l) = (W^(l+1))^T \u03b4^(l+1) \u2299 g_l'(z^(l)).",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "The gradients for the weights and biases are then: \u2202L/\u2202W^(l) = \u03b4^(l) (a^(l-1))^T, \u2202L/\u2202b^(l) = \u03b4^(l).",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "These gradients are used by an optimizer like SGD: w = w - lr * grad.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Backpropagation requires the network to be a directed acyclic graph (DAG).",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Recurrent networks are handled by unrolling them in time, which increases memory usage.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "All operations must be differentiable almost everywhere.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Non-differentiable operations, like hard thresholding, break gradient flow unless you use surrogate gradients.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Numerical instability: operations like division by zero or log of zero can produce NaN or Inf gradients.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Exploding gradients, where the error signal grows exponentially as it propagates backward, are common in deep networks and are typically mitigated by gradient clipping or careful weight initialization.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Memory is another constraint: storing all intermediate activations for the backward pass can exhaust RAM, especially for large models.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Techniques like gradient checkpointing recompute activations during the backward pass to trade compute for memory.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Backpropagation computes exact analytical gradients, unlike finite differences which are approximate and slow.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "The gradient is computed for a single input-output pair; in practice, you average gradients over a mini-batch to get a stable estimate of the true gradient.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Backpropagation is an efficient application of the chain rule that computes gradients for all parameters in one backward pass, costing roughly 2-3x a forward pass.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "The error signal \u03b4^(l) propagates backward via \u03b4^(l) = (W^(l+1))^T \u03b4^(l+1) \u2299 g_l'(z^(l)), and gradients are \u2202L/\u2202W^(l) = \u03b4^(l) (a^(l-1))^T.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Backpropagation requires a differentiable DAG; recurrent networks must be unrolled, and non-differentiable ops break gradient flow.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "Watch for NaN/Inf gradients from numerical instability, exploding gradients in deep nets, and memory exhaustion from storing activations.",
+      "source_url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Backpropagation"
+    },
+    {
+      "claim": "You can implement backpropagation from scratch with NumPy in a few lines, which clarifies how frameworks like PyTorch compute gradients automatically.",
+      "source_url": "https://medium.com/@andresberejnoi/how-to-implement-backpropagation-with-numpy-andres-berejnoi-e7c14f2e683a",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@andresberejnoi/how-to-implement-backpropagation-with-numpy-andres-berejnoi-e7c14f2e683a"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://pyimagesearch.com/2021/05/06/backpropagation-from-scratch-with-python",
+      "score": 0.8827621,
+      "content": "### Backpropagation with Python Example #1: Bitwise XOR\n\nNow that we have implemented our `NeuralNetwork` class, let\u2019s go ahead and train it on the bitwise XOR dataset. As we know from our work with the Perceptron, this dataset is not linearly separable \u2014 our goal will be to train a neural network that can model this nonlinear function.\n\nGo ahead and open a new file, name it `nn_xor.py`, and insert the following code:\n\n```\n# import the necessary packages from pyimagesearch.nn import NeuralNetwork import numpy as np # construct the XOR dataset X = np.array() y = np.array()\n```\n\nLines 2 and 3 import our required Python packages. Notice how we are importing our newly implemented `NeuralNetwork` class. Lines 6 and 7 then construct the XOR dataset. [...] ### Backpropagation with Python Example: MNIST Sample\n\nAs a second, more interesting example, let\u2019s examine a subset of the MNIST dataset (Figure 4) for handwritten digit recognition. This subset of the MNIST dataset is built-into the scikit-learn library and includes 1,797 example digits, each of which are 8\u00d78 grayscale images (the original images are 28\u00d728). When flattened, these images are represented by an 8\u00d78 = 64-dim vector.\n\nFigure 4: A sample of the MNIST dataset. The goal of this dataset is to correctly classify the handwritten digits, 0\u22129.\n\nLet\u2019s go ahead and train our `NeuralNetwork` implementation on this MNIST subset now. Open a new file, name it `nn_mnist.py`, and we\u2019ll get to work: [...] ### Implementing Backpropagation with Python\n\nLet\u2019s go ahead and get started implementing backpropagation. Open a new file, name it `neuralnetwork.py`, store it in the `nn` submodule of `pyimagesearch` (like we did with `perceptron.py`), and let\u2019s get to work:\n\n```\n# import the necessary packages import numpy as np class NeuralNetwork: def __init__(self, layers, alpha=0.1): # initialize the list of weights matrices, then store the # network architecture and learning rate self.W = [] self.layers = layers self.alpha = alpha\n"
+    },
+    {
+      "url": "https://medium.com/@andresberejnoi/how-to-implement-backpropagation-with-numpy-andres-berejnoi-e7c14f2e683a",
+      "score": 0.8568246,
+      "content": "In neural networks, bias nodes are positioned at each layer but they are not affected by the nodes in the previous layer. They always output 1 and have their own weights, which need to be updated during backpropagation. Here is another diagram showing our example neural network, including bias nodes.\n\n## Implementing Backpropagation in Python\n\nTo implement this algorithm, I repurposed some old code I wrote for a Python package called `netbuilder` and adapted it for this post. There are four main new functions in the `NeuralNet` class: `_gradient_descent()`, `backprop()`, `train()`, and `_train_helper()`. I also had to modify a few things in `feedforward()` and `__init__()` so that everything works smoothly. [...] Sign up\n\nSign in\n\nSign up\n\nSign in\n\nUnknown user\n\n# Implementing Backpropagation in Python: Building a Neural Network from Scratch \u2014 Andres Berejnoi\n\nAndr\u00e9s Berejnoi\n\n--\n\n1\n\nListen\n\nShare\n\nIn today\u2019s post, we will implement a matrix-based backpropagation algorithm with gradient descent in Python. For this purpose, we\u2019ll only use the Numpy library to explain a bit of the mathematics behind the process (mainly multivariate calculus). To better cement the concept, we\u2019ll build an XOR neural network (a network that learns to behave like an XOR logic gate).\n\nConsider this post as part 2 of my series on neural networks, starting with \u201c How to Build a Feedforward Neural Network in Python\u201d.\n\n## Resources [...] The Python code to create this network, using our `NeuralNet` class from the previous post is:\n\n`NeuralNet`\n\nYou can find the new jupyter notebook for this post here.\n\n## What Is Backpropagation?\n\nFirst of all, remember that I\u2019m not a mathematician, so terms and fundamental concepts might get fuzzy here. The goal of backpropagation is to figure out the error throughout the network during the training phase and update the network weights to reduce that error.\n\nFirst, we perform a feedforward propagation of inputs, which is when the network gives us a prediction"
+    },
+    {
+      "url": "https://github.com/HBevilacqua/neural_network_backprop_fromscratch",
+      "score": 0.80070794,
+      "content": "I git this soft to sum up what I've learned and add some features proposed by Jason Bronwlee in the \"Extensions\" part of his tutorial.\n\nTo understand backpropagation calculations through a concrete example, take a look at \"A Step by Step Backpropagation Example\" by Matt Mazur:  \n \n\n  \n \\bacpropagation.py\\ implements a \\\\multilayer feed foward neural network\\\\.\n\n## About the architecture of our neural network\n\n#### Input layer\n\nThere is no activation function because we want to get the characteristics of the raw input vector.\n\n#### Hidden layer [...] ## History\n\n36 Commits\n\n36 Commits\n\n## Folders and files\n\n| Name | Name | Last commit message | Last commit date |\n ---  --- |\n| README.md | README.md |  |  |\n| backpropagation.py | backpropagation.py |  |  |\n| seeds\\_dataset.csv | seeds\\_dataset.csv |  |  |\n|  |\n\n## Repository files navigation\n\n# Neural network backpropagation from scratch in Python\n\nThe initial software is provided by the amazing tutorial \"How to Implement the Backpropagation Algorithm From Scratch In Python\" by Jason Brownlee.  \n \n\nYou should read this tuto which outlines the following steps:\n\n Initialize Network\n Forward Propagation\n Backpropagation\n Train Network\n Predict\n Seeds Dataset Case Study"
+    },
+    {
+      "url": "https://www.ibm.com/think/topics/backpropagation",
+      "score": 0.7975099,
+      "content": "Abstractly speaking, the purpose of backpropagation is to train a neural network to make better predictions through supervised learning. More fundamentally, the goal of backpropagation is to determine how model weights and biases should be adjusted to minimize error as measured by a \"loss function\".\n\nOn a technical, mathematical level, the goal of backpropagation is to calculate the gradient of the loss function with respect to each of the individual parameters of the neural network. In simpler terms, backpropagation uses the chain rule to calculate the rate at which loss changes in response to any change to a specific weight (or bias) in the network.\n\nGenerally speaking, training neural networks with backpropagation entails the following steps: [...] # What is backpropagation?\n\nDave Bergmann \n\nSenior Staff Writer, AI Models\n\nIBM Think\n\nCole Stryker \n\nStaff Editor, AI Models\n\nIBM Think\n\n## What is backpropagation?\n\nBackpropagation is a machine learning technique essential to the optimization of artificial neural networks. It facilitates the use of gradient descent algorithms to update network weights, which is how the deep learning models driving modern artificial intelligence (AI) \u201clearn.\u201d\n\nShort for \"backward propagation of error\", backpropagation is an elegant method to calculate how changes to any of the weights or biases of a neural network will affect the accuracy of model predictions. It\u2019s essential to the use of supervised learning, semi-supervised learning or self-supervised learning to train neural networks. [...] Formulas and visualizations for common activation functions in neural networks. LEFT: sigmoid; CENTER: tanh; RIGHT: ReLU   Formulas and visualizations for common activation functions in neural networks. LEFT: sigmoid; CENTER: tanh; RIGHT: ReLU\n\n## Why use backpropagation?\n\nAs will be explained in the following sections, backpropagation is a remarkably fast, efficient algorithm to untangle the massive web of interconnected variables and equations "
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Backpropagation",
+      "score": 0.7876867,
+      "content": "In machine learning, backpropagation is a gradient computation method commonly used for training a neural network \"Neural network (machine learning)\") in computing parameter updates.\n\nIt is an efficient application of the chain rule to neural networks. Backpropagation efficiently computes the gradient of the loss with respect to the network weights for a single input\u2013output example. It does this by propagating derivatives backward, one layer at a time, from the output layer to the input layer, thereby avoiding redundant chain-rule calculations. [...] Strictly speaking, the term backpropagation refers only to an algorithm for efficiently computing the gradient, not how the gradient is used, but the term is often used loosely to refer to the entire learning algorithm. This includes changing model parameters in the negative direction of the gradient, such as by stochastic gradient descent, or as an intermediate step in a more complicated optimizer, such as Adaptive Moment Estimation.\n\nBackpropagation had multiple discoveries and partial discoveries, with a tangled history and terminology (see \u00a7 History). Some other names for the technique include \"reverse mode of automatic differentiation\" or \"reverse accumulation\".\n\n## Overview\n\n[edit] [...] Backpropagation computes the gradient for a fixed input\u2013output pair {\\displaystyle (x_{i},y_{i})}, where the weights {\\displaystyle w_{jk}^{l}} can vary. Each individual component of the gradient, {\\displaystyle \\partial C/\\partial w_{jk}^{l},} can be computed by the chain rule; but doing this separately for each weight is inefficient. Backpropagation efficiently computes the gradient by avoiding duplicate calculations and not computing unnecessary intermediate values, by computing the gradient of each layer \u2013 specifically the gradient of the weighted input of each layer, denoted by {\\displaystyle \\delta ^{l}} \u2013 from back to front."
+    },
+    {
+      "url": "https://www.askpython.com/python/examples/backpropagation-in-python",
+      "score": 0.7827459,
+      "content": "## Types of Backpropagation in Python\n\nThere are mainly two types of backpropagation methods i.e Static backpropagation and Recurrent backpropagation. Let\u2019s look at what each of the two types actually means. In static backpropagation, static inputs generate static outputs. This is specifically used for static classification problems such as Optical Character Recognition. On the other hand, recurrent propagation keeps on taking place until it reaches a definite value or threshold value. Once it reaches the fixed value, the error is propagated backward.\n\n## Implementing Backpropagation in Python\n\nLet\u2019s see how we can implement Backpropagation in Python in a step-by-step manner. First of all, we need to import all the necessary libraries.\n\n### 1. Import Libraries [...] Skip to content\n\nWe use cookies to ensure that we give you the best experience on our website.\n\n\ud83d\ude80 Supercharge your YouTube channel's growth with AI.\n\nTry YTGrowAI Free\n\n# Backpropagation in Python \u2013 A Quick Guide\n\n Adrita DasAdrita Das\n Python Programming Examples\n\nBackpropagation\n\nBackpropagation\n\nSometimes you need to improve the accuracy of your neural network model, and backpropagation exactly helps you achieve the desired accuracy. The backpropagation algorithm helps you to get a good prediction of your neural network model. In this article, we will learn about the backpropagation algorithm in detail and also how to implement it in Python.\n\n## What is backprograpation and why is it necessary? [...] ```\n# Helper functions def sigmoid(x): return 1 / (1 + np.exp(-x)) def mean_squared_error(y_pred, y_true): # One-hot encode y_true (i.e., convert [0, 1, 2] into ) y_true_one_hot = np.eye(output_size)[y_true] # Reshape y_true_one_hot to match y_pred shape y_true_reshaped = y_true_one_hot.reshape(y_pred.shape) # Compute the mean squared error between y_pred and y_true_reshaped error = ((y_pred - y_true_reshaped)2).sum() / (2y_pred.size) return error def accuracy(y_pred, y_true): acc = y_pred.argmax(axis=1) "
+    },
+    {
+      "url": "https://www.machinelearningmastery.com/implement-backpropagation-algorithm-scratch-python",
+      "score": 0.7795405,
+      "content": "Below is a function named predict() that implements this procedure. It returns the index in the network output that has the largest probability. It assumes that class values have been converted to integers starting at 0.\n\n|  |  |\n --- |\n| 1  2  3  4 | # Make a prediction with a network  def predict(network, row):  outputs = forward\\_propagate(network, row)  return outputs.index(max(outputs)) |\n\nWe can put this together with our code above for forward propagating input and with our small contrived dataset to test making predictions with an already-trained network. The example hardcodes a network trained from the previous step.\n\nThe complete example is listed below. [...] 3. \\\\Implementation of Gradients\\\\:  \n\u2013 Check the formula for computing weight updates to ensure it matches the error definition.\n\n\u2014\n\n### \\\\Example: Adjusting Weight Updates\\\\  \nSuppose a neuron\u2019s weight update rule is:  \n\\[  \nw = w + \\eta \\cdot error \\cdot input  \n\\]  \nIf:  \n\u2013 `error = expected[j] - output`: Use this directly.  \n\u2013 `error = output - expected[j]`: You might need to flip the sign or adjust the gradient computation accordingly.\n\n`error = expected[j] - output`\n`error = output - expected[j]`\n\n\u2014\n\n### \\\\Conclusion\\\\  \nBoth `error = expected[j] - output` and `error = output - expected[j]` are valid, but they reflect different conventions for defining error. The important thing is to maintain \\\\consistency\\\\ in how the error is defined and used in the backpropagation process. [...] Hello Jason, great tutorial that helped me a lot!\n\nI have a question concerning the back-propagation : what if instead of having an error function I only have a desired gradient for the output (in the case of an actor-critic model for example)?  \nHow can I change your backprop function to make it work? Or can I just use the gradient as the error?\n\nSorry, I don\u2019t follow, perhaps you can restate your question with an example?\n\nHi Jason , thank you for providing this tutorial. I\u2019m confused of how can I implement the s"
+    },
+    {
+      "url": "https://developer.nvidia.com/blog/a-data-scientists-guide-to-gradient-descent-and-backpropagation-algorithms",
+      "score": 0.7295395,
+      "content": "The critical mathematical process involved in backpropagation is the calculation of derivatives. The backpropagation\u2019s operations calculate the partial derivative of the cost function with respect to the weights, biases, and previous layer activations to identify which values affect the gradient of the cost function.\n\nThe minimization of the cost function by calculating the gradient leads to a local minimum. In each iteration or training step, the weights in the network are updated by the calculated gradient, alongside the learning rate, which controls the factor of modification made to weight values. This process is repeated for each step to be taken during the training phase of a neural network. Ideally, the goal is to be closer to a local minimum after each step. [...] Backwards propagation. Gif shows the backwards propagation of errors through a network.\n\nFigure 4: Backwards propagation of errors (Backpropagation). Gif Source from 3Blue1Brown, Chapter 3, Deep Learning.\n\nThe name \u201cBackpropagation\u201d comes from the process\u2019s literal meaning, which is \u201cbackwards propagation of errors\u201d. The partial derivative of the gradient quantifies the error. By propagating the errors backwards through the network, the partial derivative of the gradient of the last layer (closest layer to the output layer) is used to calculate the gradient of the second to the last layer. [...] Local Minimum: The minimum parameter values within a specified range or sector of the cost function.\n Global Minimum: This is the smallest parameter value within the entire cost function domain.\n\nThe gradient descent algorithm guides the search for values that minimize the function at a local/global minimum by calculating the gradient of a differentiable function and moving in the opposite direction of the gradient.\n\nBackpropagation is the mechanism by which components that influence the output of a neuron (bias, weights, activations) are iteratively adjusted to reduce the cost function. In the architecture"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=S5AGN9XfPK4",
+      "score": 0.69573146,
+      "content": "the accuracy of the network's output during subsequent forward propagation. It's a process of optimization, often employing a technique known as gradient descent. Now, gradient descent, that's the topic of a whole video of its own, but essentially, gradient descent is an algorithm used to find the optimal weights and biases that minimize the lost function. It iteratively adjusts the weights and biases in the direction that reduces the error most rapidly. And that means the steepest descent. Now, back propagation is widely used in many neural networks. So let's consider a speech recognition system. We provide as input a spoken word, and it outputs a written transcript of that word. Now, if during training our spoken inputs, it turns out that it doesn't match the written outputs, then back [...] # What is Back Propagation\n## IBM Technology\n1760000 subscribers\n4898 likes\n\n### Description\n196070 views\nPosted: 22 Jun 2023\nLearn about watsonx\u2192 \n\nNeural networks are great for predictive modeling \u2014 everything from stock trends to language translations. But what if the answer is wrong, how do they \u201clearn\u201d to do better? Martin Keen explains that during a process called backward propagation, the generated output is compared to the expected output, and then the error contributed by each neuron (or \u201cnode\u201d) is examined. By adjusting the node\u2019s weights and biases, error is reduced and thus the overall accuracy improved.\n\nGet started for free on IBM Cloud \u2192 \n\nSubscribe to see more videos like this in the future \u2192 [...] back propagation is the backbone of the learning in neural networks. It tests for errors, working its way back from the output layer to the input layer, adjusting the weights as it goes with the goal to minimize future errors. Errors like how to pronounce Martin in a passible American accent. MART-EN... MAR-EN... MART-ENNE."
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/backpropagation-in-neural-network",
+      "score": 0.6426349,
+      "content": "Model Evaluation and Tuning\n\n Evaluation Metrics\n Regularization\n Cross Validation\n Hyperparameter Tuning\n Underfitting and Overfitting\n Bias and Variance\n\nAdvanced Techniques\n\n Reinforcement Learning\n Semi-Supervised Learning\n Self-Supervised Learning\n Ensemble Learning\n\nMachine Learning Practice\n\n Interview Questions\n ML Projects\n\nCourses\n\n Data Science and ML Course\n Generative AI Course\n Explore GATE Course\n\n- Summer SkillUpExplore\n\n# Backpropagation in Neural Network\n\nLast Updated : 12 May, 2026\n\nBackpropagation is an algorithm that trains neural networks by reducing prediction error. It works by propagating errors backward, computing gradients using the chain rule, and updating weights and biases to improve performance."
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "backpropagation",
+      "chunk_index": 0,
+      "distance": 0.3363,
+      "rrf_score": 0.03333,
+      "text": "# Backpropagation\n\n## Definition\nBackpropagation is an algorithm that computes the gradient of a scalar loss function with respect to all parameters of a differentiable computational graph by applying the chain rule recursively from output to input. It enables efficient gradient-based learning in neural networks.\n\n## Intuition\nA deep network is a composition of many functions. Backpropagation computes the gradient of the loss with respect to each internal parameter by propagating error signals backward through the network, reusing partial results to avoid redundant computation and achieving linear time complexity in the number of parameters.\n\n## Mathematical Formulation\nConsider a feedforward graph with layers l=1,...,L. Forward: a^(0)=x, a^(l)=f_l(a^(l-1); \u03b8^(l)). Loss L = \u2113(a^(L), y). Define the error signal \u03b4^(L) = \u2202L/\u2202a^(L) \u00b7 f_L'(z^(L)) (for elementwise activation). For each layer l = L down to 1:\n\n\u03b4^(l) = ((W^(l+1))^T \u03b4^(l+1)) \u2299 g_l'(z^(l))\n\nwhere z^(l) = W^(l) a^(l-1) + b^(l), and g_l is activation with derivative g_l'. Gradients w.r.t. parameters:\n\n\u2202L/\u2202W^(l) = \u03b4^(l) (a^(l-1))^T\n\u2202L/\u2202b^(l) = \u03b4^(l)\n\nThese accumulate over mini-batches. More generally, for an arbitrary scalar output y and tensor input x, backpropagation computes vector-Jacobian products: \u2202y/\u2202x = \u03a3_i (\u2202y/\u2202x_i) e_i, efficiently using the transpose of the Jacobian of each operation.\n\n## Estimation\nBackpropagation is the gradient computation step within parameter estimation. During"
+    },
+    {
+      "source": "backpropagation",
+      "chunk_index": 1,
+      "distance": 0.4566,
+      "rrf_score": 0.03279,
+      "text": "y/\u2202x = \u03a3_i (\u2202y/\u2202x_i) e_i, efficiently using the transpose of the Jacobian of each operation.\n\n## Estimation\nBackpropagation is the gradient computation step within parameter estimation. During training:\n1. Forward pass: compute and store activations and intermediate tensors.\n2. Compute scalar loss.\n3. Backward pass: invoke backpropagation to obtain gradients of loss w.r.t. every parameter tensor.\n4. Update parameters using an optimizer (e.g., SGD).\nAutomatic differentiation frameworks (PyTorch, JAX, TensorFlow) track the computation graph and perform backpropagation automatically.\n\n## Assumptions\n- All operations in the graph are differentiable almost everywhere and their local derivatives are known.\n- The graph is a directed acyclic graph (DAG); recurrent structures are unrolled.\n- Sufficient memory exists to store intermediate activations for the backward pass (or recomputation is used).\n- No irreversible operations that destroy gradient flow (e.g., discrete sampling) unless surrogate gradients are employed.\n\n## Key Properties\n- **Linear time complexity**: Total cost of one forward and one backward pass is at most a small constant factor (typically ~2\u20133x) of the forward pass alone.\n- **Modular**: Each operator only needs to provide a forward function and a backward (VJP) function.\n- **Exact gradients**: Computes analytical gradients to numerical precision, avoiding error of finite differences.\n- **Memory cost**: Scales with the number of stored intermediate values, which can be large for deep or high-resolution networks.\n\n## Failure Modes\n- **NaN/Inf gradients**: Arise from operations like division by zero, log of zero, or exploding intermediate values.\n- **Numerical instability**: Large dynamic ranges can cause underflow/overflow in gradient mathematics.\n- **Memory exhaustion**: Storing all activations for a large graph can exceed RAM.\n- **Broken gradient flow**: Non-differentiable operations (hard threshold"
+    },
+    {
+      "source": "feedforward-neural-networks",
+      "chunk_index": 0,
+      "distance": 0.492,
+      "rrf_score": 0.032,
+      "text": "# Feedforward Neural Networks\n\n## Definition\nA feedforward neural network (FFNN) is an artificial neural network where connections between nodes do not form cycles. Information moves in one direction\u2014from input, through hidden layers, to output\u2014without feedback loops. When composed of fully connected layers with nonlinear activation functions, it is often called a multilayer perceptron (MLP).\n\n## Intuition\nThe network learns a mapping from input vectors to output vectors by composing simple, parameterized transformations. Each layer extracts progressively abstract representations, enabling the model to capture complex, nonlinear relationships in data.\n\n## Mathematical Formulation\nAn L-layer feedforward network defines a function f(x; \u03b8) = f_L \u2218 f_{L-1} \u2218 ... \u2218 f_1(x), where each layer l computes:\n\nh^(l) = g_l( W^(l) h^(l-1) + b^(l) )\n\n- h^(0) = x (input vector)\n- W^(l) is a weight matrix, b^(l) a bias vector\n- g_l is a nonlinear activation function (e.g., ReLU, sigmoid, tanh)\n- h^(l) is the activation output of layer l\n- For regression, output layer typically has identity activation; for classification, softmax or sigmoid.\n\nAll parameters are collected in \u03b8 = {W^(l), b^(l)}_{l=1}^L.\n\n## Estimation\nParameters are learned by minimizing a loss function L(y_true, f(x; \u03b8)) on a training set, using gradient-based optimization. Common procedure:\n1. Forward pass: compute predictions.\n2. Compute loss.\n3. Backward pass: compute gradients of loss w.r.t. parameters via backpropagation (chain rule).\n4. Update parameters using an optimizer (SGD, Adam, etc.) with learning rate \u03b7: \u03b8 \u2190 \u03b8 \u2212 \u03b7 \u2207_\u03b8 L.\n"
+    },
+    {
+      "source": "feedforward-neural-networks",
+      "chunk_index": 1,
+      "distance": 0.4963,
+      "rrf_score": 0.03126,
+      "text": " of loss w.r.t. parameters via backpropagation (chain rule).\n4. Update parameters using an optimizer (SGD, Adam, etc.) with learning rate \u03b7: \u03b8 \u2190 \u03b8 \u2212 \u03b7 \u2207_\u03b8 L.\nRegularization (L1/L2, dropout) may be added. Training uses mini-batches.\n\n## Assumptions\n- Training examples are independent and identically distributed (i.i.d.).\n- The target function can be approximated by a composition of affine transformations and elementwise nonlinearities.\n- Sufficient network capacity (width, depth) exists for the task.\n- Input features are appropriately scaled (normalized).\n\n## Key Properties\n- **Universal approximation**: A single hidden layer with a non-polynomial activation can approximate any continuous function on a compact set, given enough units.\n- **Differentiability**: The entire network is a differentiable function, enabling gradient-based training.\n- **Representation hierarchy**: Deeper layers can learn hierarchical and distributed representations.\n- **Scalability**: Training can be parallelized over data and model parameters.\n\n## Failure Modes\n- **Overfitting**: Too many parameters relative to data; poor generalization.\n- **Vanishing/exploding gradients**: In deep networks, gradients may become extremely small or large, impeding training (mitigated by ReLU, batch normalization, skip connections).\n- **Local minima / saddle points**: Optimization may converge to suboptimal solutions, though often benign in high dimensions.\n- **Dead neurons**: With ReLU, large negative bias can permanently deactivate units.\n- **Inability to handle variable-length inputs or sequential dependence** without architectural changes.\n\n## When to Use / Not Use\n**Use**: Tabular data, classification, regression, approximating static mappings, when relationships are nonlinear but not inherently sequential or spatially structured. Good for baseline models and problems with fixed-size input.\n\n**Not use**: When data exhibits temporal dynamics (use RNNs, LST"
+    },
+    {
+      "source": "backpropagation",
+      "chunk_index": 2,
+      "distance": 0.5841,
+      "rrf_score": 0.03125,
+      "text": "- **Numerical instability**: Large dynamic ranges can cause underflow/overflow in gradient mathematics.\n- **Memory exhaustion**: Storing all activations for a large graph can exceed RAM.\n- **Broken gradient flow**: Non-differentiable operations (hard thresholding) yield zero or incorrect gradients unless smoothed.\n- **Incorrect custom gradients**: Manual implementation of backward rules can introduce errors.\n\n## When to Use / Not Use\n**Use**: Always when training any differentiable parametric model with gradient descent; it is the standard method for computing gradients in deep learning.\n\n**Not use**: When the model is not differentiable, when gradient-free optimization is preferred (e.g., evolutionary strategies), or when exact symbolic differentiation of a small fixed function via closed form is simpler and memory is not an issue.\n\n## Variants / Extensions\n- **Backpropagation through time (BPTT)**: Unrolls recurrent networks over sequence steps and applies backprop.\n- **Truncated BPTT**: Limits the unrolling length a timent for efficiency.\n- **Gradient checkpointing**: Trades computation for memory by recomputing select activations during backward.\n- **Second-order backprop (Hessian-vector products)**: Computes products with the Hessian using a second backward pass.\n- **Synthetic gradients**: Use learned models to approximate backpropagation signals for decoupling layers.\n\n## Minimal Example (Python)\n```python\nimport torch\n\nx = torch.tensor(2.0, requires_grad=True)\ny = x**3 + 2 * x**2\ny.backward()          # computes dy/dx\nprint(x.grad)         # 3*2^2 + 4*2 = 20\n```\n\n## Claim-Dense Reference Facts\n\n- PyTorch autograd records operations on tensors with requires_grad=True in a dynamic computation graph.\n- The `.backward()` call in PyTorch accumulates gradients in `.grad` attributes; call `.zero_grad()` to reset.\n- Gradient"
+    }
+  ],
+  "attribution": {
+    "web": 34,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

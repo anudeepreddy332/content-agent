@@ -1,0 +1,751 @@
+{
+  "run_id": "dcc58ceb-acce-42e6-9484-bdc772127e20",
+  "topic": "K-Nearest Neighbors",
+  "slug": "k-nearest-neighbors",
+  "timestamp": "2026-08-21T12:12:11.768084+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 25,
+      "S": 25,
+      "V": 32,
+      "W": 0,
+      "U": 0,
+      "N": 32,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.944,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "K-Nearest Neighbors (KNN) is a non-parametric, instance-based learning algorithm.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "There is no training phase in the traditional sense \u2014 the model just stores the training data and does all computation at prediction time.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "KNN works well for small to medium datasets with low dimensionality.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "Prediction is slow because it computes distances to every stored point.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "KNN degrades badly as the number of features grows.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "KNN works by defining a distance metric, typically Euclidean distance.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "For a query point x, compute d(x, x_i) for every training point x_i.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "For classification, the predicted class is the majority vote among the labels of those k neighbors: \u0177 = argmax_y \u03a3_{i\u2208N_k(x)} I(y_i = y).",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "For regression, the prediction is the average of the neighbor targets: \u0177 = (1/k) \u03a3_{i\u2208N_k(x)} y_i.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "Weighted variants assign weights w_i = 1/d(x, x_i) and compute a weighted average or vote, which reduces the influence of far neighbors.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "Small k (like 1) gives low bias but high variance \u2014 the decision boundary is jagged and sensitive to noise.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "Large k smooths the boundary but increases bias, potentially washing out local structure.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "In binary classification, choose k odd to avoid ties.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "For k=1, training accuracy is always 100% because every point is its own nearest neighbor.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "Feature scaling is not optional. KNN computes distances across all features. If one feature has a range of 0\u20131000 and another has 0\u20131, the first dominates the distance calculation.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "Standardize (StandardScaler) or normalize (MinMaxScaler) before fitting. Without scaling, the model effectively ignores features with small ranges.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "As the number of features d grows, the ratio of the maximum to minimum distance between any two points approaches 1.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "In high dimensions, all points become roughly equidistant, so 'nearest' loses meaning.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "This is why KNN performs poorly on text or image data with thousands of features.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "For high-dimensional sparse data, Manhattan distance (L1) is often preferred over Euclidean (L2) because it is more robust to the concentration of distances.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "A naive implementation computes distances to all N training points for each prediction \u2014 O(N) per query.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "scikit-learn offers tree-based accelerations: KD-tree for low dimensions (d < 20) with O(log N) query time, and ball tree for higher dimensions.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "The algorithm='auto' option lets scikit-learn choose the best structure.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "The leaf_size parameter (default 30) trades memory for query speed.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "For very large datasets, approximate nearest neighbor methods like locality-sensitive hashing are used, but they trade accuracy for speed.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "KNN is a lazy learner: no training phase, all computation happens at prediction time.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "The hyperparameter k controls the bias-variance tradeoff: small k overfits, large k underfits.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "Use cross-validation to tune k.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "Feature scaling is mandatory. Use StandardScaler or MinMaxScaler before fitting; otherwise, features with larger ranges dominate the distance calculation.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "The curse of dimensionality makes KNN ineffective for high-dimensional data (e.g., text, images). In high dimensions, all points become nearly equidistant.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "scikit-learn's KNeighborsClassifier defaults to n_neighbors=5, metric='minkowski' with p=2 (Euclidean).",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        },
+        {
+          "claim": "Use algorithm='auto' to let it pick between KD-tree and ball tree for speed.",
+          "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically accurate, covering key concepts like the bias-variance tradeoff, feature scaling, and the curse of dimensionality at an appropriate depth for senior engineers. The code examples are clear and practical, and the manual implementation adds pedagogical value. However, the writing occasionally reads as slightly formulaic (e.g., 'Feature scaling is not optional' and the list-style takeaways), and the problem framing could be tightened to avoid a slightly generic opening. Overall, publishable with minor edits to sharpen the prose and reduce a few clich\u00e9d transitions.",
+  "grounding_score": 0.944,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 16372,
+  "total_cost_usd": 0.00839,
+  "latency_ms": {
+    "retrieve": 8070,
+    "retrieve_web": 8050,
+    "retrieve_kb": 20,
+    "draft": 11234,
+    "verify": 11700,
+    "reflect": 2718,
+    "html_gen": 4706,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 32,
+  "claims_weak": 0,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 0,
+    "mean_confidence_verified": 0.944,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 25,
+    "S": 25,
+    "V": 32,
+    "N": 32,
+    "verified_fraction": 1.0,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "K-Nearest Neighbors (KNN) is a non-parametric, instance-based learning algorithm.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "There is no training phase in the traditional sense \u2014 the model just stores the training data and does all computation at prediction time.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "KNN works well for small to medium datasets with low dimensionality.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "Prediction is slow because it computes distances to every stored point.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "KNN degrades badly as the number of features grows.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "KNN works by defining a distance metric, typically Euclidean distance.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "For a query point x, compute d(x, x_i) for every training point x_i.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "For classification, the predicted class is the majority vote among the labels of those k neighbors: \u0177 = argmax_y \u03a3_{i\u2208N_k(x)} I(y_i = y).",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "For regression, the prediction is the average of the neighbor targets: \u0177 = (1/k) \u03a3_{i\u2208N_k(x)} y_i.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "Weighted variants assign weights w_i = 1/d(x, x_i) and compute a weighted average or vote, which reduces the influence of far neighbors.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "Small k (like 1) gives low bias but high variance \u2014 the decision boundary is jagged and sensitive to noise.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "Large k smooths the boundary but increases bias, potentially washing out local structure.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "In binary classification, choose k odd to avoid ties.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "For k=1, training accuracy is always 100% because every point is its own nearest neighbor.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "Feature scaling is not optional. KNN computes distances across all features. If one feature has a range of 0\u20131000 and another has 0\u20131, the first dominates the distance calculation.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "Standardize (StandardScaler) or normalize (MinMaxScaler) before fitting. Without scaling, the model effectively ignores features with small ranges.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "As the number of features d grows, the ratio of the maximum to minimum distance between any two points approaches 1.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "In high dimensions, all points become roughly equidistant, so 'nearest' loses meaning.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "This is why KNN performs poorly on text or image data with thousands of features.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "For high-dimensional sparse data, Manhattan distance (L1) is often preferred over Euclidean (L2) because it is more robust to the concentration of distances.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "A naive implementation computes distances to all N training points for each prediction \u2014 O(N) per query.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "scikit-learn offers tree-based accelerations: KD-tree for low dimensions (d < 20) with O(log N) query time, and ball tree for higher dimensions.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "The algorithm='auto' option lets scikit-learn choose the best structure.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "The leaf_size parameter (default 30) trades memory for query speed.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "For very large datasets, approximate nearest neighbor methods like locality-sensitive hashing are used, but they trade accuracy for speed.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "KNN is a lazy learner: no training phase, all computation happens at prediction time.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "The hyperparameter k controls the bias-variance tradeoff: small k overfits, large k underfits.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "Use cross-validation to tune k.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "Feature scaling is mandatory. Use StandardScaler or MinMaxScaler before fitting; otherwise, features with larger ranges dominate the distance calculation.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "The curse of dimensionality makes KNN ineffective for high-dimensional data (e.g., text, images). In high dimensions, all points become nearly equidistant.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "scikit-learn's KNeighborsClassifier defaults to n_neighbors=5, metric='minkowski' with p=2 (Euclidean).",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    },
+    {
+      "claim": "Use algorithm='auto' to let it pick between KD-tree and ball tree for speed.",
+      "source_url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://github.com/chingisooinar/KNN-python-implementation"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://medium.com/@avijit.bhattacharjee1996/implementing-the-k-nearest-neighbors-knn-algorithm-from-scratch-in-python-3b83a4fe8",
+      "score": 0.8839694,
+      "content": "Sitemap\n\nOpen in app\n\nSign up\n\nSign in\n\n Algorithm from Scratch in Python\n\nImage 2: Avijit Bhattacharjee\n\nAvijit Bhattacharjee\n\n2 min read\n\n\u00b7\n\nSep 24, 2023\n\n.\n3.   Sort the distances in ascending order and select the top k data points.\n4.   For classification, count the occurrences of each class among the k neighbors and assign the class with the highest count as the predicted class.\n5.   For regression, take the average of the target values of the k neighbors and assign it as the predicted value.\n\nNow, let\u2019s implement KNN from scratch in Python.\n\nimport numpy as np\n\nclass KNN:\n\n def __init__(self, k=3):\n\n self.k = k\n\n def fit(self, X, y):\n\n self.X_train = X\n\n self.y_train = y\n\n def euclidean_distance(self, x1, x2):\n\n return np.sqrt(np.sum((x1 - x2)  2))\n\n def predict(self, X): [...] from sklearn.datasets import make_classification\n\nfrom sklearn.model_selection import train_test_split\n\nX, y = make_classification(n_samples = 50,\n\n n_features = 2,\n\n n_informative = 2,\n\n n_redundant = 0,\n\n n_classes = 2,\n\n weights = [0.51, .49])\n\n# using the train test split function\n\nX_train, X_test,y_train, y_test = train_test_split(X,y ,\n\n random_state=104, \n\n test_size=0.25, \n\n shuffle=True)\n\n# Create a KNN classifier with k=2\n\nknn = KNN(k=2)\n\nknn.fit(X_train, y_train)\n\n# Predict a new data point\n\nX_new = np.array()\n\nprediction = knn.predict(X_test)\n\nprint(\"Predicted class:\", prediction)\n\nprint(\"Actual class:\", y_test)\n\nThis code snippet demonstrates how to create a KNN classifier, fit it to training data, and use it to predict the class of a new data point. [...] def predict(self, X):\n\n y_pred = [self._predict(x) for x in X]\n\n return np.array(y_pred)\n\n def _predict(self, x):\n\n # Compute distances between x and all examples in the training set\n\n distances = [self.euclidean_distance(x, x_train) for x_train in self.X_train]\n\n # Sort by distance and return indices of the first k neighbors\n\n k_indices = np.argsort(distances)[:self.k]\n\n # Extract the labels of the k nearest neighbor tra"
+    },
+    {
+      "url": "https://domino.ai/blog/knn-with-examples-in-python",
+      "score": 0.8803145,
+      "content": "A data point represented by a green cross is illustrated and the aim is to identify which class this data point belongs to. A circle is drawn around this point of interest and the number of points within this circle is counted. A total of 19 points with 11 red and 8 yellow are counted around this cross. Therefore, this point belongs to the red class if \\(k=19\\) is selected, as the probability of belonging to the red and blue class is 11/19 and 8/19 respectively.\n\nKNN implementation using different values [...] Herein, we will implement KNN using the commonly-used and freely available Iris dataset . Iris is a genus of species of flowering plants with showy flowers. There are 3 Iris species included in this dataset; Setosa, Versicolor and Virginica which share a similar colour: dark violet/blue. One way to visually differentiate these is through the measurements of the dimension (length and width) of their petals and sepals. The features provided are sepal and petal length and width in cm.\n\nThere are two major steps in this process: 1) data pre-processing & exploratory data analysis to allow for inspecting the dataset and for exploratory visualisation, and 2) building the KNN model and evaluating prediction performance on the training and testing subsets. [...] These distances are sorted, and the nearest neighbours based on the \\(k\\)-th minimum distance is determined. Essentially, KNN will estimate the conditional probability for class j as the fraction of points in\\(N\\_0\\) whose response values equal \\(j\\) according to the following equation:\n\n$$ \\begin{equation} Pr(Y=j|X=x\\_0)=\\frac{1}{K}\\sum\\_{i \\in N\\_0}I(y\\_i=j) \\end{equation} $$\n\nSubsequently, KNN assigns the test observation \\(x\\_0\\) to the class with the largest probability calculated using the above equation .\n\n## How to select the optimal K value?"
+    },
+    {
+      "url": "https://blog.quantinsti.com/machine-learning-k-nearest-neighbors-knn-algorithm-python",
+      "score": 0.86413884,
+      "content": "### Step 1 - Import the Libraries\n\nWe will start by importing the necessary python libraries required to implement the KNN Algorithm in Python. We will import the numpy libraries for scientific calculation. (You can learn all about numpy here and about matplotlib here).\n\nNext, we will import the matplotlib.pyplot library for plotting the graph.\n\nWe will import two machine learning libraries:\n\n KNeighborsClassifier from sklearn.neighbors to implement the k-nearest neighbors vote and\n accuracyscore from sklearn.metrics for accuracy classification score.\n\nWe will also import fixyahoo\\_finance package to fetch data from Yahoo.\n\n### Step 2 - Fetch the data\n\nNow, we will fetch the data using yfinance.\n\nOutput: [...] ### Feature scaling\n\nScale the selected features to ensure they are on a similar scale. As mentioned earlier, KNN is sensitive to feature scaling, so it's important to bring all features to a consistent range to avoid biases or dominance by certain features.\n\n### Determine K value\n\nChoose an appropriate value for K, the number of nearest neighbors to consider. This value should be determined through experimentation and validation to find the optimal balance between bias and variance in the model.\n\n### Model training\n\nUse the training dataset to fit the KNN model. The model learns by memorising the feature vectors and corresponding target variables.\n\n### Model evaluation [...] Selecting the Optimal 'k\u2019 - Experiment with different values of 'k' to strike the right balance between bias and variance in your trading model.\n\nDefining the Distance Metric - Choose a suitable distance metric that captures the similarity between trading patterns and behaviours.\n\nModel Training - Fit the KNN model to your training data, allowing it to learn from historical trading patterns and outcomes.\n\nMaking Predictions - Apply the trained model to new market data, predicting the most likely trading outcomes based on the collective wisdom of similar historical data points.\n\n## Step-by"
+    },
+    {
+      "url": "https://github.com/chingisooinar/KNN-python-implementation",
+      "score": 0.8512743,
+      "content": "It is important to note that there is a large variety of options to choose as a metric; however, I want to use Euclidean Distance as an example. It is the most common metric used to calculate distances among vectors since it is straightforward and easy to explain.\n\nLet\u2019s compare our implementation with the one provided by scikit learn. I am going to use a simple toy dataset that contains two predictors, which are age and salary. Thus, we want to predict if a customer is willing to purchase our product. Finally, I will define both models and fit our data. Please refer to the KNN implementation provided above. I am selecting 5 as our default k value. Note that for the latter model the default metric is minkowski, and with p=2 is equivalent to the standard Euclidean metric.\n\n# Results [...] ## History\n\n9 Commits\n\n9 Commits\n\n## Folders and files\n\n| Name | Name | Last commit message | Last commit date |\n ---  --- |\n| Python Implementation of K-Nearest Neighbours (kNN d054ba7e11524969817e6ca2468e9804 | Python Implementation of K-Nearest Neighbours (kNN d054ba7e11524969817e6ca2468e9804 |  |  |\n| README.md | README.md |  |  |\n| Social\\_Network\\_Ads.csv | Social\\_Network\\_Ads.csv |  |  |\n| k\\_nearest\\_neighbors\\_from\\_scratch.ipynb | k\\_nearest\\_neighbors\\_from\\_scratch.ipynb |  |  |\n|  |\n\n## Repository files navigation\n\n# Python Implementation of K-Nearest Neighbours (kNN) Algorithm [...] K-Nearest Neighbours is considered to be one of the most intuitive machine learning algorithms since it is simple to understand and explain. Additionally, it is quite convenient to demonstrate how everything goes visually. However, the kNN algorithm is still a common and very useful algorithm to use for a large variety of classification problems. If you are new to machine learning, make sure you test yourself on an understanding of both of this simple yet wonderful algorithm.\n\n> Read more on Medium: \n\n# About\n\nHere is a Python implementation of the K-Nearest Neighbours algorithm."
+    },
+    {
+      "url": "https://www.w3schools.com/python/python_ml_knn.asp",
+      "score": 0.83093774,
+      "content": "## How does it work?\n\nK is the number of nearest neighbors to use.\nFor classification, a majority vote is used to determined which class a new observation should fall into.\nLarger values of K are often more robust to outliers and produce more stable decision boundaries than\nvery small values (K=3 would be better than K=1, which might produce undesirable results.\n\n### Example\n\nStart by visualizing some data points:\n\n### Result\n\nNow we fit the KNN algorithm with K=1:\n\n`from sklearn.neighbors import KNeighborsClassifier  \n  \ndata = list(zip(x, y))  \nknn = KNeighborsClassifier(n_neighbors=1)  \n  \nknn.fit(data, classes)`\n\n`from sklearn.neighbors import KNeighborsClassifier  \n  \ndata = list(zip(x, y))  \nknn = KNeighborsClassifier(n_neighbors=1)  \n  \nknn.fit(data, classes)`"
+    },
+    {
+      "url": "https://www.unidata.ucar.edu/blogs/news/entry/k-nearest-neighbors",
+      "score": 0.8302782,
+      "content": "Fred Rogers\nFred Rogers\n\nK Nearest Neighbors (KNN) is a supervised machine learning method that 'memorizes' (stores) an entire dataset, then relies on the concepts of proximity and similarity to make predictions about new data. The basic idea is that if a new data point is in some sense 'close' to existing data points, its value is likely to be similar to the values of its neighbors. In the Earth Systems Sciences, such techniques can be useful for small- to moderate-scale classification and regression problems; one example uses KNN techniques to derive local-scale information about precipitation and temperature from regional- or global-scale numerical weather prediction model output."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=wTF6vzS9fy4",
+      "score": 0.79637206,
+      "content": "In k-NN classification, the output is a class membership. An object is classified by a plurality vote of its neighbors, with the object being assigned to the class most common among its k nearest neighbors (k is a positive integer, typically small). If k = 1, then the object is simply assigned to the class of that single nearest neighbor.\nIn k-NN regression, the output is the property value for the object. This value is the average of the values of k nearest neighbors.\nk-NN is a type of instance-based learning, or lazy learning, where the function is only approximated locally and all computation is deferred until classification. The k-NN algorithm is among the simplest of all machine learning algorithms. [...] Both for classification and regression, a useful technique can be used to assign weight to the contributions of the neighbors, so that the nearer neighbors contribute more to the average than the more distant ones. For example, a common weighting scheme consists in giving each neighbor a weight of 1/d, where d is the distance to the neighbor.\n\nReferences : Jose Portilla Project Implementation. This video is dedicated to him. thank you for serving the community\n\ngithub url: \n\nYou can buy my book on Finance with ML and DL using python from the below link\n\namazon url: [...] # K Nearest Neighbour Easily Explained with Implementation\n## Krish Naik\n1480000 subscribers\n4164 likes\n\n### Description\n261642 views\nPosted: 18 Jun 2019\nIn pattern recognition, the k-nearest neighbors algorithm (k-NN) is a non-parametric method used for classification and regression. In both cases, the input consists of the k closest training examples in the feature space. The output depends on whether k-NN is used for classification or regression:"
+    },
+    {
+      "url": "https://medium.com/swlh/k-nearest-neighbor-ca2593d7a3c4",
+      "score": 0.7882741,
+      "content": "Antony Christopher\n\n--\n\n9\n\nListen\n\nShare\n\nIntroduction\n\nK-nearest neighbors (KNN) is a type of supervised learning algorithm used for both regression and classification. KNN tries to predict the correct class for the test data by calculating the distance between the test data and all the training points. Then select the K number of points which is closet to the test data. The KNN algorithm calculates the probability of the test data belonging to the classes of \u2018K\u2019 training data and class holds the highest probability will be selected. In the case of regression, the value is the mean of the \u2018K\u2019 selected training points.\n\nLet see the below example to make it a better understanding [...] How does K-NN work?\n\nThe K-NN working can be explained on the basis of the below algorithm:\n\nSuppose we have a new data point and we need to put it in the required category. Consider the below image:\n\nHow to choose a K value?\n\nKvalue indicates the count of the nearest neighbors. We have to compute distances between test points and trained labels points. Updating distance metrics with every iteration is computationally expensive, and that\u2019s why KNN is a lazy learning algorithm.\n\nThen how to select the optimal K value?\n\nNow you will get the idea of choosing the optimal K value by implementing the model.\n\nCalculating distance: [...] Calculating distance:\n\nThe first step is to calculate the distance between the new point and each training point. There are various methods for calculating this distance, of which the most commonly known methods are \u2014 Euclidian, Manhattan (for continuous) and Hamming distance (for categorical).\n\nEuclidean Distance: Euclidean distance is calculated as the square root of the sum of the squared differences between a new point (x) and an existing point (y).\n\nManhattan Distance: This is the distance between real vectors using the sum of their absolute difference.\n\nHamming Distance: It is used for categorical variables. If the value (x) and the value (y) are the sam"
+    },
+    {
+      "url": "https://www.pinecone.io/learn/k-nearest-neighbor",
+      "score": 0.7722049,
+      "content": "After the user defines a distance function, like the ones we mentioned earlier, KNN calculates the distance between data points in order to find the closest data points from our training data for any new data point. The existing data points closest to the new data point using the defined distance will become the \u201ck-neighbors\u201d. For a classification task, KNN will use the most frequent of all values from the k-neighbors to predict the new data label. For a regression task, the algorithm will use the average of all values from the k-neighbors to predict the new data value.\n\nIn a classification task with K=3, an unlabelled data point is labeled as pink due to the majority vote of the 3 most similar labeled examples.\n\nSource:Towards Data Science [...] As opposed to unsupervised learning \u2014 where there is no output variable to guide the learning process and where data is explored by algorithms to find patterns \u2014 in supervised learning your existing data is already labeled and you know which behavior you want to predict in the new data you obtain.\n\nThe KNN algorithm predicts responses for new data (testing data) based upon its similarity with other known data (training) samples. It assumes that data with similar traits sit together and uses distance measures at its core.\n\nKNN belongs to the class of non-parametric models as it doesn\u2019t learn parameters from the training dataset to come up with a discriminative function to predict new unseen data. It operates by memorizing the training dataset. [...] A distance measure is an objective score that summarizes the relative difference between two objects in a problem domain and plays an important role in most algorithms. Some of the main measures are:\n\n Euclidean is probably the most intuitive one and represents the shortest distance between two points. It\u2019s calculated using the well-known Pythagorean theorem. Conceptually, it should be used whenever we are comparing observations with continuous features, like height, weight, or s"
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/k-nearest-neighbours",
+      "score": 0.72907686,
+      "content": "geeksforgeeks\n\nsearch icon\n\n Interview Prep\n\n Python for Machine Learning\n Machine Learning with R\n Machine Learning Algorithms\n EDA\n Math for Machine Learning\n Machine Learning Interview Questions\n ML Projects\n Deep Learning\n NLP\n Computer vision\n Data Science\n Artificial Intelligence\n\n# K-Nearest Neighbor(KNN) Algorithm\n\nLast Updated : 2 May, 2026\n\nK\u2011Nearest Neighbor (KNN) is a simple and widely used machine learning technique for classification and regression tasks. It works by identifying the K closest data points to a given input and making predictions based on the majority class or average value of those neighbors. [...] When you want to classify a data point into a category like spam or not spam, the KNN algorithm looks at the K closest points in the dataset. These closest points are called neighbors. The algorithm then looks at which category the neighbors belong to and picks the one that appears the most. This is called majority voting.\n In regression, the algorithm still looks for the K closest points. But instead of voting for a class in classification, it takes the average of the values of those K neighbors. This average is the predicted value for the new point for the algorithm. [...] KNN assigns the category based on the majority of nearby points. The image shows how KNN predicts the category of a new data point based on its closest neighbours.\n The green points represent Category 1 and the red points represent Category 2.\n The new data point checks its closest neighbors (circled points).\n Since the majority of its closest neighbors are red points (Category 2) KNN predicts the new data point belongs to Category 2.\n\nKNN works by using proximity and majority voting to make predictions.\n\n## 'K' in K Nearest Neighbour\n\nIn the KNN algorithm k is just a number that tells the algorithm how many nearby points or neighbors to look at when it makes a decision."
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "k-nearest-neighbors",
+      "chunk_index": 0,
+      "distance": 0.3451,
+      "rrf_score": 0.03333,
+      "text": "# K-Nearest Neighbors\n\n## Definition\nK-Nearest Neighbors (KNN) is a non-parametric, instance-based learning algorithm. For a query point, it identifies the k closest training instances according to a chosen distance metric. Classification uses majority vote among these neighbors; regression uses the average of their target values. No explicit training phase occurs; all computation is deferred until prediction time (lazy learning).\n\n## Intuition\nPredict the label of a new point by looking at the labels of its nearest neighbors. Nearness in feature space implies similarity. The hyperparameter k controls the locality of the decision: a small k captures fine details but is sensitive to noise, while a large k averages over a wider region, producing a smoother boundary. The underlying assumption is that the target function is locally smooth.\n\n## Mathematical Formulation\nGiven training set D = {(x_i, y_i)}, a distance metric d (e.g., Euclidean), and a query x, define N_k(x) as the indices of the k training points with smallest d(x, x_i).\n\nClassification: predicted class \u0177 = argmax_y \u03a3_{i\u2208N_k(x)} I(y_i = y).  \nRegression: \u0177 = (1/k) \u03a3_{i\u2208N_k(x)} y_i.  \nWeighted variants use weights w_i = 1 / d(x, x_i) or a kernel, then \u0177 = \u03a3 w_i y_i / \u03a3 w_i.\n\n## Estimation\nNo model parameters are estimated in a traditional sense. The algorithm\u2019s performance depends on the choice of k, distance metric, and any feature weighting. These hyperparameters are typically tuned via cross-validation on the training data. Choosing a smaller k reduces bias but increases variance, while a larger k does the opposite. Feature scaling (e.g., standardization) is essential to prevent certain features from dominating the distance calculation.\n\n## Assumptions\nLocally constant or"
+    },
+    {
+      "source": "k-nearest-neighbors",
+      "chunk_index": 2,
+      "distance": 0.3865,
+      "rrf_score": 0.03279,
+      "text": " data (e.g., text, images, hundreds of features), ultra-large training sets with real-time latency requirements, or when feature importance is non-uniform and unknown without additional weighting. Not suited for extrapolation far from training data.\n\n## Variants / Extensions\nWeighted KNN uses distance-based weights to reduce the influence of far neighbors. Radius-based neighbors uses all points within a fixed radius. Data reduction methods (condensed nearest neighbor, edited nearest neighbor) remove noisy or redundant instances. Approximate nearest neighbor algorithms (k-d trees, ball trees, locality-sensitive hashing) accelerate search for large datasets. KNN regression with local linear or polynomial fitting. Multi-label KNN, Bayesian KNN.\n\n## Minimal Example (Python)\n```python\nfrom sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor\nX = [[0], [1], [2], [3]]\ny_clf = [0, 0, 1, 1]\ny_reg = [0, 0.1, 2, 2.1]\n\nclf = KNeighborsClassifier(n_neighbors=3).fit(X, y_clf)\nprint(clf.predict([[1.5]]))\n\nreg = KNeighborsRegressor(n_neighbors=2).fit(X, y_reg)\nprint(reg.predict([[1.5]]))\n```\n## Claim-Dense Reference Facts\n\n- scikit-learn's KNeighborsClassifier defaults to n_neighbors=5, metric='minkowski' with p=2 (Euclidean).\n- KD-tree query time is O(log N) for d < 20 dimensions; for d > 20, brute-force becomes competitive.\n- Ball tree handles high-dimensional data better than KD-tree; scikit-learn auto-selects via algorithm='auto'.\n- Weighted KNN uses w = 1/distance; uniform voting uses w = 1 for all k neighbors.\n- Optimal k is typically found via cross-validation; small k overfits, large k underfits ("
+    },
+    {
+      "source": "k-nearest-neighbors",
+      "chunk_index": 3,
+      "distance": 0.4356,
+      "rrf_score": 0.01613,
+      "text": " algorithm='auto'.\n- Weighted KNN uses w = 1/distance; uniform voting uses w = 1 for all k neighbors.\n- Optimal k is typically found via cross-validation; small k overfits, large k underfits (high bias).\n- For binary classification, k is chosen odd to avoid ties; for k=1, training accuracy is always 100%.\n- Curse of dimensionality: in d=100 dimensions, the ratio of max to min distance between points approaches 1.\n- Manhattan distance (L1) is preferred over Euclidean (L2) for high-dimensional sparse data like text.\n- Normalisation (MinMaxScaler or StandardScaler) is required before KNN; unnormalized features with large ranges dominate distance.\n- scikit-learn's BallTree and KDTree support leaf_size parameter (default 30) trading memory for query speed."
+    },
+    {
+      "source": "embedding-models-vector-search",
+      "chunk_index": 0,
+      "distance": 0.586,
+      "rrf_score": 0.01587,
+      "text": "# Embedding Models & Vector Search\n\n## Definition\nEmbedding models are functions that map discrete inputs (text tokens, images, audio) into dense, fixed-dimensional real-valued vectors, such that semantically similar items are placed close in the vector space. Vector search is the task of efficiently retrieving the top-k vectors most similar to a query vector from a large collection, using a distance metric (cosine, Euclidean) and approximate nearest neighbor (ANN) indexing.\n\n## Intuition\nEmbeddings compress semantic meaning into a numeric point; items with related meaning cluster together. Vector search enables fast lookup of relevant items from millions of candidates by navigating a pre-built index, avoiding exhaustive pairwise comparison.\n\n## Mathematical Formulation\nAn embedding model f: X \u2192 R^d maps input x to v = f(x). Similarity between query q and document d is measured via cosine similarity: cos(q,d) = (q\u00b7d) / (||q|| ||d||). The top-k retrieval solves k = argmax_{i\u2208D} cos(f(q), f(d_i)). Approximate algorithms (HNSW, IVF-PQ) build graph or partition-based indices to achieve sub-linear O(log N) query time by trading minimal accuracy.\n\n## Estimation\nEmbedding models are trained using contrastive or triplet losses that maximize similarity between positive pairs and minimize similarity for negatives. Training data comes from parallel corpora, question-answer pairs, or co-occurrence signals. The vector index is built offline: all document vectors are ingested and an ANN index is constructed (e.g., HNSW graph, IVF centroids). At query time, the same encoder produces the query vector, and the ANN index returns top-k results.\n\n## Assumptions\n- Embedding space is Euclidean, and the consistency metric captures semantic similarity.\n- Query distribution matches training data; domain shift can degrade relevance.\n- Cosine similarity (or chosen metric) is a valid relevance"
+    },
+    {
+      "source": "k-nearest-neighbors",
+      "chunk_index": 1,
+      "distance": 0.6234,
+      "rrf_score": 0.01562,
+      "text": " data. Choosing a smaller k reduces bias but increases variance, while a larger k does the opposite. Feature scaling (e.g., standardization) is essential to prevent certain features from dominating the distance calculation.\n\n## Assumptions\nLocally constant or slowly varying target function. Independence and representativeness of training samples. Equal relevance of all features to the distance metric unless explicitly weighted. The distance metric must reflect meaningful similarity in the data space. No assumptions about the global distribution of the data.\n\n## Key Properties\nNon-parametric: no functional form is imposed. Lazy learning: training is merely storing the dataset. The decision boundary is a Voronoi tessellation (for k=1) or a smoothed version. As training size n \u2192 \u221e with k \u2192 \u221e and k/n \u2192 0, the risk converges to the Bayes risk (consistent, under certain conditions). Query time complexity is O(nd) for brute-force; memory footprint is O(nd). Suffers from the curse of dimensionality: data sparsity makes local neighborhoods nearly empty in high dimensions.\n\n## Failure Modes\nCurse of dimensionality: in high-dimensional spaces, all points become nearly equidistant, so the notion of \u201cnearest\u201d degrades. Large n makes prediction slow without spatial indexing. Irrelevant or noisy features distort distances, harming prediction. Imbalanced classes can cause the majority class to dominate smaller neighborhoods. Outliers heavily influence small k. Sparse regions yield unreliable extrapolation. Sensitive to the choice of distance metric and feature scaling.\n\n## When to Use / Not Use\nUse for small-to-medium-sized, low-dimensional datasets where a simple, interpretable baseline is needed, or when local explanations are valuable. Do not use for high-dimensional data (e.g., text, images, hundreds of features), ultra-large training sets with real-time latency requirements, or when feature importance is non-uniform and unknown without additional weighting. Not suited for extr"
+    }
+  ],
+  "attribution": {
+    "web": 32,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

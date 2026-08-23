@@ -1,0 +1,559 @@
+{
+  "run_id": "1b4d08af-2bc1-452a-9935-99fa9f7cb915",
+  "topic": "Feedforward Neural Networks",
+  "slug": "feedforward-neural-networks",
+  "timestamp": "2026-08-21T12:17:09.506821+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 8,
+      "S": 12,
+      "V": 14,
+      "W": 2,
+      "U": 5,
+      "N": 21,
+      "uvr": 0.238,
+      "verification_status": "completed",
+      "grounding_score": 0.669,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [
+        "Linear models like logistic regression can only draw straight-line boundaries, which fail on data with nonlinear structure.",
+        "Given enough capacity and training data, a feedforward network can approximate any continuous function.",
+        "Understanding feedforward networks is the prerequisite for everything else in neural networks, from CNNs to transformers.",
+        "ReLU helps but can cause dead neurons if weights push activations into the negative region where the gradient is zero.",
+        "Another failure mode is overfitting: a network with many parameters can memorize the training set, so you need regularization like dropout or weight decay, or more data."
+      ],
+      "grounding_report": [
+        {
+          "claim": "Linear models like logistic regression can only draw straight-line boundaries, which fail on data with nonlinear structure.",
+          "source_url": null,
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "none",
+          "source_ref": null
+        },
+        {
+          "claim": "Feedforward neural networks solve nonlinear problems by composing many simple, parameterized transformations into a single function that can approximate complex mappings.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "Each layer applies a weighted sum followed by a nonlinear activation, so the network can represent curved decision surfaces and interactions between features.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "Feedforward networks are the foundation for nearly all modern deep learning, including the transformer blocks used in LLMs.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.7,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "Given enough capacity and training data, a feedforward network can approximate any continuous function.",
+          "source_url": null,
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "none",
+          "source_ref": null
+        },
+        {
+          "claim": "You must choose the right depth, width, and activation functions, and you must train the network with gradient descent, which can be slow or unstable if not set up carefully.",
+          "source_url": "https://medium.com/@andresberejnoi/how-to-build-a-feedforward-neural-network-in-python-andres-berejnoi-a96668c025e5",
+          "confidence": 0.6,
+          "status": "weak",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@andresberejnoi/how-to-build-a-feedforward-neural-network-in-python-andres-berejnoi-a96668c025e5"
+        },
+        {
+          "claim": "Understanding feedforward networks is the prerequisite for everything else in neural networks, from CNNs to transformers.",
+          "source_url": null,
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "generic",
+          "source_kind": "none",
+          "source_ref": null
+        },
+        {
+          "claim": "A feedforward network is a composition of layers, where each layer computes h^(l) = g_l(W^(l) h^(l-1) + b^(l)), with h^(0) as the input vector, W^(l) a weight matrix, b^(l) a bias vector, and g_l a nonlinear activation function like ReLU or sigmoid.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "The output layer uses identity activation for regression or softmax for classification.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "The network defines a function f(x; \u03b8) = f_L \u2218 f_{L-1} \u2218 ... \u2218 f_1(x), with all parameters collected in \u03b8 = {W^(l), b^(l)}.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "Training means finding \u03b8 that minimizes a loss function L(y_true, f(x; \u03b8)) on a training set.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "The standard training procedure is: forward pass to compute predictions, compute loss, backward pass via backpropagation to compute gradients, then update parameters with an optimizer like SGD or Adam.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "The update rule is \u03b8 \u2190 \u03b8 \u2212 \u03b7 \u2207_\u03b8 L, where \u03b7 is the learning rate.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "Backpropagation applies the chain rule recursively from output to input, computing error signals \u03b4^(l) = ((W^(l+1))^T \u03b4^(l+1)) \u2299 g_l'(z^(l)), where z^(l) = W^(l) a^(l-1) + b^(l).",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "Backpropagation gives gradients \u2202L/\u2202W^(l) = \u03b4^(l) (a^(l-1))^T and \u2202L/\u2202b^(l) = \u03b4^(l).",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "Backpropagation runs in linear time in the number of parameters, reusing partial results.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "A key failure mode is vanishing gradients: with sigmoid or tanh activations, the derivative saturates near zero for large or small inputs, so gradients shrink as they propagate backward through many layers, making early layers learn very slowly.",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        },
+        {
+          "claim": "ReLU helps but can cause dead neurons if weights push activations into the negative region where the gradient is zero.",
+          "source_url": null,
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "none",
+          "source_ref": null
+        },
+        {
+          "claim": "Weight initialization matters: random values that are too large or too small can cause activations to saturate or gradients to explode.",
+          "source_url": "https://medium.com/@andresberejnoi/how-to-build-a-feedforward-neural-network-in-python-andres-berejnoi-a96668c025e5",
+          "confidence": 0.7,
+          "status": "weak",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@andresberejnoi/how-to-build-a-feedforward-neural-network-in-python-andres-berejnoi-a96668c025e5"
+        },
+        {
+          "claim": "Another failure mode is overfitting: a network with many parameters can memorize the training set, so you need regularization like dropout or weight decay, or more data.",
+          "source_url": null,
+          "confidence": 0.0,
+          "status": "unverified",
+          "specificity": "substantive",
+          "source_kind": "none",
+          "source_ref": null
+        },
+        {
+          "claim": "Feedforward networks assume inputs are independent and fixed-size; they are not suited for sequences (use RNNs) or images with spatial structure (use CNNs).",
+          "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically accurate for senior engineers, but the grounding score of 0.67 indicates a significant portion of claims lack source support, which weakens credibility. The writing is direct and avoids AI filler, though the technical deep-dive could benefit from a brief concrete example of backpropagation's chain rule application to enhance clarity. Minor edits to tighten the problem framing and explicitly cite sources for key claims would elevate it to publishable.",
+  "grounding_score": 0.669,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 14338,
+  "total_cost_usd": 0.00714,
+  "latency_ms": {
+    "retrieve": 10644,
+    "retrieve_web": 10625,
+    "retrieve_kb": 19,
+    "draft": 10714,
+    "verify": 8808,
+    "reflect": 2648,
+    "html_gen": 4092,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 14,
+  "claims_weak": 2,
+  "claims_unverified": 5,
+  "grounding_breakdown": {
+    "unverified_no_source": 5,
+    "unverified_has_source": 0,
+    "weak_count": 2,
+    "mean_confidence_verified": 0.911,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 8,
+    "S": 12,
+    "V": 14,
+    "N": 21,
+    "verified_fraction": 0.667,
+    "unverified_fraction": 0.238
+  },
+  "grounding_report": [
+    {
+      "claim": "Linear models like logistic regression can only draw straight-line boundaries, which fail on data with nonlinear structure.",
+      "source_url": null,
+      "confidence": 0.0,
+      "status": "unverified",
+      "specificity": "generic",
+      "source_kind": "none",
+      "source_ref": null
+    },
+    {
+      "claim": "Feedforward neural networks solve nonlinear problems by composing many simple, parameterized transformations into a single function that can approximate complex mappings.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "Each layer applies a weighted sum followed by a nonlinear activation, so the network can represent curved decision surfaces and interactions between features.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "Feedforward networks are the foundation for nearly all modern deep learning, including the transformer blocks used in LLMs.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.7,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "Given enough capacity and training data, a feedforward network can approximate any continuous function.",
+      "source_url": null,
+      "confidence": 0.0,
+      "status": "unverified",
+      "specificity": "substantive",
+      "source_kind": "none",
+      "source_ref": null
+    },
+    {
+      "claim": "You must choose the right depth, width, and activation functions, and you must train the network with gradient descent, which can be slow or unstable if not set up carefully.",
+      "source_url": "https://medium.com/@andresberejnoi/how-to-build-a-feedforward-neural-network-in-python-andres-berejnoi-a96668c025e5",
+      "confidence": 0.6,
+      "status": "weak",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@andresberejnoi/how-to-build-a-feedforward-neural-network-in-python-andres-berejnoi-a96668c025e5"
+    },
+    {
+      "claim": "Understanding feedforward networks is the prerequisite for everything else in neural networks, from CNNs to transformers.",
+      "source_url": null,
+      "confidence": 0.0,
+      "status": "unverified",
+      "specificity": "generic",
+      "source_kind": "none",
+      "source_ref": null
+    },
+    {
+      "claim": "A feedforward network is a composition of layers, where each layer computes h^(l) = g_l(W^(l) h^(l-1) + b^(l)), with h^(0) as the input vector, W^(l) a weight matrix, b^(l) a bias vector, and g_l a nonlinear activation function like ReLU or sigmoid.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "The output layer uses identity activation for regression or softmax for classification.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "The network defines a function f(x; \u03b8) = f_L \u2218 f_{L-1} \u2218 ... \u2218 f_1(x), with all parameters collected in \u03b8 = {W^(l), b^(l)}.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "Training means finding \u03b8 that minimizes a loss function L(y_true, f(x; \u03b8)) on a training set.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "The standard training procedure is: forward pass to compute predictions, compute loss, backward pass via backpropagation to compute gradients, then update parameters with an optimizer like SGD or Adam.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "The update rule is \u03b8 \u2190 \u03b8 \u2212 \u03b7 \u2207_\u03b8 L, where \u03b7 is the learning rate.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "Backpropagation applies the chain rule recursively from output to input, computing error signals \u03b4^(l) = ((W^(l+1))^T \u03b4^(l+1)) \u2299 g_l'(z^(l)), where z^(l) = W^(l) a^(l-1) + b^(l).",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "Backpropagation gives gradients \u2202L/\u2202W^(l) = \u03b4^(l) (a^(l-1))^T and \u2202L/\u2202b^(l) = \u03b4^(l).",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "Backpropagation runs in linear time in the number of parameters, reusing partial results.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "A key failure mode is vanishing gradients: with sigmoid or tanh activations, the derivative saturates near zero for large or small inputs, so gradients shrink as they propagate backward through many layers, making early layers learn very slowly.",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    },
+    {
+      "claim": "ReLU helps but can cause dead neurons if weights push activations into the negative region where the gradient is zero.",
+      "source_url": null,
+      "confidence": 0.0,
+      "status": "unverified",
+      "specificity": "substantive",
+      "source_kind": "none",
+      "source_ref": null
+    },
+    {
+      "claim": "Weight initialization matters: random values that are too large or too small can cause activations to saturate or gradients to explode.",
+      "source_url": "https://medium.com/@andresberejnoi/how-to-build-a-feedforward-neural-network-in-python-andres-berejnoi-a96668c025e5",
+      "confidence": 0.7,
+      "status": "weak",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@andresberejnoi/how-to-build-a-feedforward-neural-network-in-python-andres-berejnoi-a96668c025e5"
+    },
+    {
+      "claim": "Another failure mode is overfitting: a network with many parameters can memorize the training set, so you need regularization like dropout or weight decay, or more data.",
+      "source_url": null,
+      "confidence": 0.0,
+      "status": "unverified",
+      "specificity": "substantive",
+      "source_kind": "none",
+      "source_ref": null
+    },
+    {
+      "claim": "Feedforward networks assume inputs are independent and fixed-size; they are not suited for sequences (use RNNs) or images with spatial structure (use CNNs).",
+      "source_url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://medium.com/@andresberejnoi/how-to-build-a-feedforward-neural-network-in-python-andres-berejnoi-a96668c025e5",
+      "score": 0.89302075,
+      "content": "## Feedforward Neural Network In Python Code\n\nIn Python, we could represent the network as a class, and if you need a refresher on Python classes, check out my previous post. Here is a simple implementation:\n\nFor our example image, we would pass the following values: because we have 3 input nodes, 4 nodes in the hidden layer, and 2 in the output layer. Each item in `topology` represents another layer.\n\n`topology`\n\nThe matrices are initialized to random values. I did not pay much attention to the initialization method because it is not the focus of the post. However, it can have a big effect on training times if weights are not initialized with some care. I will cover this topic in a later post.\n\n## Feed-Forward Propagation [...] We can represent this network as a series of matrices, where each row represents a node, and each column is the connection to the next layer\u2019s nodes.\n\nFor instance, in the example network in the image, we will have 2 matrices in total. The first matrix represents the connections between the input layer and the hidden layer, resulting in a 3\u00d74 matrix.\n\nWe have 3 rows, one for each input node, and the values along that row are all the connections from that input node to all the hidden nodes in the next layer. We do the same for the next two layers (L2 and L3), resulting in a 4\u00d72 matrix.\n\n## Feedforward Neural Network In Python Code [...] Sign up\n\nSign in\n\nSign up\n\nSign in\n\nUnknown user\n\n# How To Build a Feedforward Neural Network In Python \u2014 Andres Berejnoi\n\nAndr\u00e9s Berejnoi\n\n--\n\n1\n\nListen\n\nShare\n\nWelcome back to another Python post. Today\u2019s topic is about how to create a feedforward neural network in Python, from scratch. That means, without using Tensorflow, Keras, Pytorch, etc. The main library we\u2019ll be using is `numpy`, which is the computing library for Python.\n\n`numpy`"
+    },
+    {
+      "url": "https://github.com/LuketheDukeBates/Feed-forward-Neural-Network-Demo/blob/master/Feed-Forward+Neural+Network+Demo.ipynb",
+      "score": 0.81875163,
+      "content": "In this repo, we implement a feed-forward neural network in python from scratch and in Keras - Feed-forward-Neural-Network-Demo/Feed-Forward Neural Network Demo.ipynb at master \u00b7 LuketheDukeBates/Feed-forward-Neural-Network-Demo"
+    },
+    {
+      "url": "https://github.com/LuketheDukeBates/Feed-forward-Neural-Network-Demo/blob/master/Feed-Forward%20Neural%20Network%20Demo.ipynb",
+      "score": 0.8170061,
+      "content": "In this repo, we implement a feed-forward neural network in python from scratch and in Keras - Feed-forward-Neural-Network-Demo/Feed-Forward Neural Network"
+    },
+    {
+      "url": "https://www.sciencedirect.com/topics/computer-science/feedforward-neural-network",
+      "score": 0.81347597,
+      "content": "Skip to Main content\n\nImage 1: Elsevier logo\n\n   Journals & Books\n\n   Help   \n   Search \n\nMy account\n\nSign in\n\n# Feedforward Neural Network\n\nIn subject area:Computer Science\n\nA Feedforward Neural Network is a type of artificial neural network that can autonomously learn from input data to perform specific tasks, such as image classification. It predicts the classification label of a given image by mapping the input data to a vector of scores (prediction probabilities) for each classification label. The label with the highest score is considered the predicted category. The network's structure is inspired by the neuronal system of the human brain, where signals propagate through interconnected neurons. The network's performance depends on the weights and biases assigned to its connections. [...] A feedforwardneural network (or fully connected neural network) is one of the earliest neural network models invented in the field of artificial intelligence . It is able to learn autonomously via the input data to complete specific tasks. Here we take image classification, one of the core problems in the field of computer vision, as an example to illustrate the principle of a feedforward neural network. The so-called classification problem is allocating a label to each input data on the premise of a fixed set of classification labels. The task of a feedforward neural network is predicting the classification label of a given image. The prediction is made by giving scores (prediction probabilities) of the image under each classification label in the form of a vector, which are also the [...] Deep feedforward networks, also known as feedforward neural networks or multilayer perceptrons (MLPs), are deep learning models whose objective is to approximate some function $f^{}$. This network defines a mapping $y = f \\left(\\right. x ; \\phi \\left.\\right)$ where $x$ and $y$ are the input and output (or target) data respectively. This network learns the value of the parameters $\\phi$ that"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=C94d_NHtVSQ",
+      "score": 0.8124067,
+      "content": "[Music] Welcome to this video on feed forward neural networks, often abbreviated as FNN's. In this lesson, we'll break down what they are, how they work, and where they fit in the larger world of artificial neural networks. A feed forward neural network is the simplest kind of artificial neural network. As the name suggests, the data in these networks flows in one direction only from input to output. There are no loops, no feedback connections. It's a straight path just like water flowing downhill. It all starts at the input layer. This is where the network receives the raw data. It could be anything. Pixel values from an image, sensor data, or numerical features from a data set. Next, the data moves to one or more hidden layers. These layers perform computations, applying weights, adding [...] Each input is treated independently. Unlike recurrent neural networks which loop back information for sequential tasks, FNNs are better suited for problems where each input is independent. That's why FNN's are commonly used for tasks like image classification, tabular data analysis, and simple regression problems. Think of it like this. Feed forward neural networks are like reading a list top to bottom. While recurrent neural networks are like remembering each item you read one after another. During training, the model adjusts its internal parameters using a method called back propagation combined with an optimization algorithm like stochastic gradient descent. This process minimizes the error between predicted and actual outputs helping the model learn the right patterns. Feed forward. [...] helping the model learn the right patterns. Feed forward. Neural networks are a great starting point for anyone beginning their journey into deep learning. They lay the foundation for understanding more complex architectures like convolutional neural networks for images, recurrent neural networks for sequences, and transformers for language. To recap, feed forward neural networks are sim"
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/deep-learning/feedforward-neural-network",
+      "score": 0.8095324,
+      "content": "geeksforgeeks\n\nsearch icon\n\n Interview Prep\n\n DSA\n Practice Problems\n C\n C++\n Java\n Python\n JavaScript\n Data Science\n Machine Learning\n Courses\n Linux\n DevOps\n\n# Feedforward Neural Network\n\nLast Updated : 26 Jul, 2025\n\nFeedforward Neural Network (FNN) is a type of artificial neural network in which information flows in a single direction i.e from the input layer through hidden layers to the output layer without loops or feedback. It is mainly used for pattern recognition tasks like image and speech classification.\n\nFor example in a credit scoring system, banks use an FNN which analyze users financial profiles such as income, credit history and spending habits to determine their creditworthiness. [...] Each connection between neurons in these layers has an associated weight that is adjusted during the training process to minimize the error in predictions.\n\nFNN\n\nFeed Forward Neural Network\n\n## Activation Functions\n\nActivation functions introduce non-linearity into the network enabling it to learn and model complex data patterns.\n\nCommon activation functions include:\n\n Sigmoid: \\sigma(x) = \\frac{1}{1 + e^{-x}}\n Tanh: \\text{tanh}(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}}\n ReLU: \\text{ReLU}(x) = \\max(0, x)\n\n## Training a Feedforward Neural Network\n\nTraining a Feedforward Neural Network involves adjusting the weights of the neurons to minimize the error between the predicted output and the actual output. This process is typically performed using backpropagation and gradient descent. [...] Each piece of information flows through the network\u2019s layers where various calculations are made to produce a final score.\n\n## Structure of a Feedforward Neural Network\n\nFeedforward Neural Networks have a structured layered design where data flows sequentially through each layer."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=dgGyGY0p9jM",
+      "score": 0.7900289,
+      "content": "Feed-forward is the process where the inputs are propagated through the neural network starting from the input layer through the hidden layers."
+    },
+    {
+      "url": "https://medium.com/hackernoon/building-a-feedforward-neural-network-from-scratch-in-python-d3526457156b",
+      "score": 0.78866494,
+      "content": "December 18, 2019 - In this section, we will take a very simple feedforward neural network and build it from scratch in python. The network has three neurons in total \u2014 two in the first hidden layer and one in the output layer. For each of these neurons, pre-activation is represented by \u2018a\u2019 and post-activation is represented by \u2018h\u2019. In the network, we have a total of 9 parameters \u2014 6 weight parameters and 3 bias terms. ... Similar to the Sigmoid Neuron implementation, we will write our neural network in a class called FirstFFNetwork."
+    },
+    {
+      "url": "https://medium.com/@sasirekharameshkumar/deep-learning-basics-part-10-feed-forward-neural-networks-ffnn-93a708f84a31",
+      "score": 0.78413767,
+      "content": "Sign up\n\nSign in\n\nSign up\n\nSign in\n\nUnknown user\nSasirekha Cota\n\n## Sasirekha Cota\n\nTechnology Enthusiast and AI strategist\n\n# Deep Learning Basics \u2014 Part 7 \u2014 Feed Forward Neural Networks (FFNN)\n\nSasirekha Cota\n\n--\n\n2\n\nListen\n\nShare\n\nA Feedforward Neural Network (FNN) is a type of artificial neural network where information moves only in one direction, from the input layer through any hidden layers and finally to the output layer. This is the simplest kind of artificial neural network. There are no cycles or loops in the network. The term \u201cfeedforward\u201d refers to the fact that the connections between the units do not form a cycle, unlike in more complex types of networks (like RNN)."
+    },
+    {
+      "url": "https://apxml.com/courses/introduction-to-deep-learning/chapter-7-intro-specialized-architectures/feedforward-network-limitations",
+      "score": 0.64236575,
+      "content": "Title: Limitations of Feedforward Networks\nIntroduction to Deep LearningChapter 1: Neural Network FoundationsFrom Machine Learning to Deep LearningBiological Inspiration: The NeuronThe Artificial Neuron: A Mathematical ModelThe Perceptron: The Simplest Neural NetworkLimitations of Single-Layer PerceptronsMulti-Layer Perceptrons (MLPs): Adding DepthHands-on Practical: Building a Simple Perceptron ModelQuiz for Chapter 1Chapter 2: Activation Functions and Network ArchitectureThe Role of Activation FunctionsSigmoid ActivationHyperbolic Tangent (Tanh) ActivationRectified Linear Unit (ReLU)Variants of ReLU (Leaky ReLU, PReLU, ELU)Choosing the Right Activation FunctionUnderstanding Network Layers: Input, Hidden, OutputDesigning Feedforward Network ArchitecturesHands-on Practical: Implementing Different ActivationsQuiz for Chapter 2Chapter 3: Training Neural Networks: Loss and OptimizationMeasuring Performance: Loss FunctionsCommon Loss Functions for Regression (MSE, MAE)Common Loss Functions for Classification (Cross-Entropy)Optimization: Finding the Best WeightsGradient Descent AlgorithmLearning RateStochastic Gradient Descent (SGD)Challenges with Gradient DescentHands-on Practical: Visualizing Gradient DescentQuiz for Chapter 3Chapter 4: Backpropagation and Advanced OptimizationCalculating Gradients: The Chain RuleComputational GraphsThe Backpropagation Algorithm ExplainedForward Pass vs. Feedforward neural networks, also known as Multi-Layer Perceptrons (MLPs), can learn complex, non-linear relationships in data. Let's examine two significant areas where standard feedforward networks often fall short: processing grid-structured data like images, and handling sequential data like text or time series. Because each input pixel is treated uniquely by the weights connecting to it, the network essentially needs to learn to detect the features of a cat separately for every possible position it might appear in. These limitations highlight the need for network architectures spe"
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "feedforward-neural-networks",
+      "chunk_index": 0,
+      "distance": 0.4077,
+      "rrf_score": 0.03306,
+      "text": "# Feedforward Neural Networks\n\n## Definition\nA feedforward neural network (FFNN) is an artificial neural network where connections between nodes do not form cycles. Information moves in one direction\u2014from input, through hidden layers, to output\u2014without feedback loops. When composed of fully connected layers with nonlinear activation functions, it is often called a multilayer perceptron (MLP).\n\n## Intuition\nThe network learns a mapping from input vectors to output vectors by composing simple, parameterized transformations. Each layer extracts progressively abstract representations, enabling the model to capture complex, nonlinear relationships in data.\n\n## Mathematical Formulation\nAn L-layer feedforward network defines a function f(x; \u03b8) = f_L \u2218 f_{L-1} \u2218 ... \u2218 f_1(x), where each layer l computes:\n\nh^(l) = g_l( W^(l) h^(l-1) + b^(l) )\n\n- h^(0) = x (input vector)\n- W^(l) is a weight matrix, b^(l) a bias vector\n- g_l is a nonlinear activation function (e.g., ReLU, sigmoid, tanh)\n- h^(l) is the activation output of layer l\n- For regression, output layer typically has identity activation; for classification, softmax or sigmoid.\n\nAll parameters are collected in \u03b8 = {W^(l), b^(l)}_{l=1}^L.\n\n## Estimation\nParameters are learned by minimizing a loss function L(y_true, f(x; \u03b8)) on a training set, using gradient-based optimization. Common procedure:\n1. Forward pass: compute predictions.\n2. Compute loss.\n3. Backward pass: compute gradients of loss w.r.t. parameters via backpropagation (chain rule).\n4. Update parameters using an optimizer (SGD, Adam, etc.) with learning rate \u03b7: \u03b8 \u2190 \u03b8 \u2212 \u03b7 \u2207_\u03b8 L.\n"
+    },
+    {
+      "source": "feedforward-neural-networks",
+      "chunk_index": 2,
+      "distance": 0.5605,
+      "rrf_score": 0.03254,
+      "text": " classification, regression, approximating static mappings, when relationships are nonlinear but not inherently sequential or spatially structured. Good for baseline models and problems with fixed-size input.\n\n**Not use**: When data exhibits temporal dynamics (use RNNs, LSTMs), spatial locality (use CNNs), graph structure (use GNNs), or when interpretability is critical. Also not ideal for extremely low-data regimes where simpler models suffice.\n\n## Variants / Extensions\n- **Deep feedforward networks**: Increased depth for hierarchical features.\n- **Convolutional neural networks (CNNs)**: Replace matrix multiplication with convolution for spatial invariance.\n- **Recurrent neural networks (RNNs)**: Add feedback connections for sequences.\n- **Residual networks (ResNets)**: Introduce skip connections to ease gradient flow in deep architectures.\n- **Transformer feedforward blocks**: Position-wise FFNNs used within transformer layers.\n\n## Minimal Example (Python)\n```python\nimport torch.nn as nn\n\nmodel = nn.Sequential(\n    nn.Linear(10, 64),\n    nn.ReLU(),\n    nn.Linear(64, 32),\n    nn.ReLU(),\n    nn.Linear(32, 1)  # regression output\n)\n# Loss: MSELoss, Optimizer: Adam\n```"
+    },
+    {
+      "source": "backpropagation",
+      "chunk_index": 0,
+      "distance": 0.4603,
+      "rrf_score": 0.03227,
+      "text": "# Backpropagation\n\n## Definition\nBackpropagation is an algorithm that computes the gradient of a scalar loss function with respect to all parameters of a differentiable computational graph by applying the chain rule recursively from output to input. It enables efficient gradient-based learning in neural networks.\n\n## Intuition\nA deep network is a composition of many functions. Backpropagation computes the gradient of the loss with respect to each internal parameter by propagating error signals backward through the network, reusing partial results to avoid redundant computation and achieving linear time complexity in the number of parameters.\n\n## Mathematical Formulation\nConsider a feedforward graph with layers l=1,...,L. Forward: a^(0)=x, a^(l)=f_l(a^(l-1); \u03b8^(l)). Loss L = \u2113(a^(L), y). Define the error signal \u03b4^(L) = \u2202L/\u2202a^(L) \u00b7 f_L'(z^(L)) (for elementwise activation). For each layer l = L down to 1:\n\n\u03b4^(l) = ((W^(l+1))^T \u03b4^(l+1)) \u2299 g_l'(z^(l))\n\nwhere z^(l) = W^(l) a^(l-1) + b^(l), and g_l is activation with derivative g_l'. Gradients w.r.t. parameters:\n\n\u2202L/\u2202W^(l) = \u03b4^(l) (a^(l-1))^T\n\u2202L/\u2202b^(l) = \u03b4^(l)\n\nThese accumulate over mini-batches. More generally, for an arbitrary scalar output y and tensor input x, backpropagation computes vector-Jacobian products: \u2202y/\u2202x = \u03a3_i (\u2202y/\u2202x_i) e_i, efficiently using the transpose of the Jacobian of each operation.\n\n## Estimation\nBackpropagation is the gradient computation step within parameter estimation. During"
+    },
+    {
+      "source": "attention-transformers",
+      "chunk_index": 0,
+      "distance": 0.6278,
+      "rrf_score": 0.03083,
+      "text": "# Attention Mechanism & Transformers\n\n## Definition\nAn attention mechanism maps a query and a set of key-value pairs to an output, where the output is a weighted sum of values. Weights (attention scores) are computed via a compatibility function between the query and each key. A Transformer is a neural architecture built entirely on attention, without recurrence or convolution, using multi-head self-attention, feedforward layers, and positional encodings (Vaswani et al., 2017).\n\n## Intuition\nAttention dynamically aggregates information from all positions based on learned relevance. Transformers exploit this to capture long-range dependencies in parallel across the full sequence, avoiding the sequential bottleneck of recurrent models.\n\n## Mathematical Formulation\n**Scaled Dot-Product Attention**  \nGiven queries Q, keys K (dim d_k), values V (dim d_v):  \nAttention(Q, K, V) = softmax( Q K^T / \u221ad_k ) V.\n\n**Multi-Head Attention**  \nLinearly project Q, K, V h times, apply attention in parallel, concatenate, and project:  \nhead_i = Attention(Q W_i^Q, K W_i^K, V W_i^V)  \nMultiHead(Q,K,V) = Concat(head_1,\u2026 ,head_h) W^O.\n\n**Transformer Layer**  \nInput x (batch \u00d7 seq_len \u00d7 d_model):  \n1. Multi-head self-attention (Q = K = V = x), with residual connection and layer normalization.  \n2. Position-wise feedforward network (two linear layers with activation, typically ReLU/GELU), with residual connection and layer normalization.  \nPositional encodings (fixed sinusoidal or learned) are added to input embeddings to encode order.\n\n## Estimation\nTransformers are trained end-to-end with backpropagation. Loss functions are task-specific: cross-entropy for language modeling or sequence-to-sequence tasks. Optimization often uses Adam with warm-up and gradient clipping. Aut"
+    },
+    {
+      "source": "gradient-descent",
+      "chunk_index": 1,
+      "distance": 0.6088,
+      "rrf_score": 0.03031,
+      "text": "} \u2207_\u03b8 L(f(x_i; \u03b8_t), y_i).\n   b. Update \u03b8_{t+1} = \u03b8_t \u2212 \u03b7 g_t.\n3. Stop when gradient magnitude or loss improvement falls below a threshold, or after a fixed number of epochs.\n\nConvergence is monitored via training/validation loss. The estimate \u03b8_final is the minimizer found.\n\n## Assumptions\n- The loss function J(\u03b8) is differentiable (almost everywhere, or subgradients exist).\n- Learning rate \u03b7 is suitably chosen; too large causes divergence, too small causes slow convergence.\n- Data examples are i.i.d. samples from the target distribution (for generalization).\n- The parameter space is unconstrained or handled via projection (or penalty) if constrained.\n\n## Key Properties\n- **Monotonic improvement**: For sufficiently small \u03b7 and convex J, J(\u03b8_{t+1}) \u2264 J(\u03b8_t). For non-convex J, this holds locally with careful step sizing.\n- **Linear convergence rate** for strongly convex, smooth functions with constant step size; sublinear for convex, non-strongly convex.\n- **Sensitivity to scaling**: Performance depends heavily on the conditioning of the problem; ill-conditioned problems lead to slow zigzagging.\n- **Global convergence to stationary point** under Lipschitz gradient and diminishing step sizes (for stochastic variants).\n\n## Failure Modes\n- **Divergence**: Learning rate too high; loss increases to infinity.\n- **Slow progress**: Learning rate too small or poorly conditioned curvature.\n- **Oscillations**: Near steep ravines, constant step size leads to bouncing, slowing convergence.\n- **Saddle points and local minima**: May stall in flat regions or local minima for non-convex functions, though high-dimensional saddle points are more prevalent.\n- **Vanishing/exploding gradients**: Severely scaled gradients in deep networks disrupt updates.\n\n##"
+    }
+  ],
+  "attribution": {
+    "web": 16,
+    "kb": 0,
+    "none": 5,
+    "unresolved": 0
+  }
+}

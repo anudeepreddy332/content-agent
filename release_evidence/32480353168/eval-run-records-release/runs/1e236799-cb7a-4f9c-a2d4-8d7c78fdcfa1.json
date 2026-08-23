@@ -1,0 +1,751 @@
+{
+  "run_id": "1e236799-cb7a-4f9c-a2d4-8d7c78fdcfa1",
+  "topic": "Support Vector Machines",
+  "slug": "support-vector-machines",
+  "timestamp": "2026-08-21T12:11:26.214002+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 31,
+      "S": 31,
+      "V": 32,
+      "W": 0,
+      "U": 0,
+      "N": 32,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.944,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Support Vector Machines (SVMs) solve classification by choosing the line that maximizes the margin, the distance between the decision boundary and the closest points from each class.",
+          "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial"
+        },
+        {
+          "claim": "The closest points to the decision boundary are called support vectors, and they alone define the boundary.",
+          "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+        },
+        {
+          "claim": "Margin maximization gives SVMs a strong theoretical foundation and often leads to better generalization than other linear classifiers, especially when the number of features is large relative to the number of samples.",
+          "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+        },
+        {
+          "claim": "SVMs handle non-linear boundaries through the kernel trick, which implicitly maps data into a higher-dimensional space without computing the transformation explicitly.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "SVMs are memory-efficient because only the support vectors are stored, not the entire training set.",
+          "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+        },
+        {
+          "claim": "SVMs are sensitive to hyperparameters like C and kernel parameters.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "SVMs do not naturally produce probability estimates.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "SVMs are used in domains like text classification, bioinformatics, and image recognition.",
+          "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+        },
+        {
+          "claim": "For a binary classification problem with labels y_i \u2208 {\u22121, +1}, the primal hard-margin objective is: minimize (1/2)||w||\u00b2 subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "The margin is 2/||w||, so minimizing ||w|| maximizes the margin.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "In practice, data is rarely perfectly separable, so slack variables \u03be_i \u2265 0 are introduced, leading to the soft-margin objective: minimize (1/2)||w||\u00b2 + C \u03a3 \u03be_i, subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1 \u2212 \u03be_i.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "The parameter C controls the trade-off between margin width and misclassification.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "A large C makes the margin hard, forcing points to lie outside it, which can lead to overfitting.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "A small C allows points to creep into the margin, producing a softer boundary that may generalize better but can underfit if too small.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "The dual formulation of the SVM is: maximize \u03a3 \u03b1_i \u2212 (1/2) \u03a3_i \u03a3_j \u03b1_i \u03b1_j y_i y_j K(x_i, x_j), subject to 0 \u2264 \u03b1_i \u2264 C and \u03a3 \u03b1_i y_i = 0.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "The kernel function K(x_i, x_j) = \u27e8\u03c6(x_i), \u03c6(x_j)\u27e9 computes dot products in the transformed feature space without explicitly constructing \u03c6.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "Common kernels include linear, polynomial, and radial basis function (RBF).",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "The decision function is f(x) = sign(\u03a3 \u03b1_i y_i K(x_i, x) + b).",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "Only the points with \u03b1_i > 0 \u2014 the support vectors \u2014 influence the decision boundary.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "This sparsity makes the model memory-efficient and robust to points far from the boundary.",
+          "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+        },
+        {
+          "claim": "For the RBF kernel, the parameter \u03b3 controls the influence of each training point.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "A small \u03b3 leads to a smooth decision boundary that may underfit, while a large \u03b3 can cause overfitting by creating complex boundaries that hug individual points.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "The optimal C and \u03b3 must be tuned using cross-validation.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "To get probabilities from an SVM, you must apply Platt scaling, which fits a logistic regression on the SVM scores.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "SVMs require feature scaling; otherwise, features with larger ranges dominate the margin calculation, distorting the boundary.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "Training time scales poorly with dataset size \u2014 typically quadratic to cubic in the number of samples \u2014 making SVMs impractical for very large datasets.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "For multi-class problems, SVMs use one-vs-one or one-vs-rest strategies, which can be less interpretable than a single multi-class model.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "SVMs find the hyperplane that maximizes the margin between classes, which typically leads to better generalization than arbitrary separating lines.",
+          "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial"
+        },
+        {
+          "claim": "The parameter C controls the trade-off between a hard margin (large C) and a soft margin (small C); tune it via cross-validation.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "The kernel trick lets SVMs handle non-linear boundaries without explicitly computing high-dimensional feature maps.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        },
+        {
+          "claim": "Only support vectors define the decision boundary, making the model memory-efficient and robust to distant points.",
+          "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+        },
+        {
+          "claim": "Always scale features before training an SVM; otherwise, features with larger ranges dominate the margin calculation.",
+          "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is technically sound and well-grounded, with all four sections present and coherent. The deep-dive covers the primal/dual formulations, kernel trick, and hyperparameter sensitivity at an appropriate level for senior engineers. However, the writing has a slightly formulaic, textbook feel \u2014 the opening paragraph reads like a summary of everything the article will cover, and the code example is minimal (no grid search for C/gamma, no demonstration of Platt scaling or multi-class strategies despite these being mentioned). Tighten the prose, cut the preview paragraph, and make the code demonstrate the tuning advice given in the text.",
+  "grounding_score": 0.944,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 15572,
+  "total_cost_usd": 0.00841,
+  "latency_ms": {
+    "retrieve": 7820,
+    "retrieve_web": 7801,
+    "retrieve_kb": 19,
+    "draft": 10619,
+    "verify": 13769,
+    "reflect": 2993,
+    "html_gen": 5523,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 32,
+  "claims_weak": 0,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 0,
+    "mean_confidence_verified": 0.944,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 31,
+    "S": 31,
+    "V": 32,
+    "N": 32,
+    "verified_fraction": 1.0,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Support Vector Machines (SVMs) solve classification by choosing the line that maximizes the margin, the distance between the decision boundary and the closest points from each class.",
+      "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial"
+    },
+    {
+      "claim": "The closest points to the decision boundary are called support vectors, and they alone define the boundary.",
+      "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+    },
+    {
+      "claim": "Margin maximization gives SVMs a strong theoretical foundation and often leads to better generalization than other linear classifiers, especially when the number of features is large relative to the number of samples.",
+      "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+    },
+    {
+      "claim": "SVMs handle non-linear boundaries through the kernel trick, which implicitly maps data into a higher-dimensional space without computing the transformation explicitly.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "SVMs are memory-efficient because only the support vectors are stored, not the entire training set.",
+      "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+    },
+    {
+      "claim": "SVMs are sensitive to hyperparameters like C and kernel parameters.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "SVMs do not naturally produce probability estimates.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "SVMs are used in domains like text classification, bioinformatics, and image recognition.",
+      "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+    },
+    {
+      "claim": "For a binary classification problem with labels y_i \u2208 {\u22121, +1}, the primal hard-margin objective is: minimize (1/2)||w||\u00b2 subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "The margin is 2/||w||, so minimizing ||w|| maximizes the margin.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "In practice, data is rarely perfectly separable, so slack variables \u03be_i \u2265 0 are introduced, leading to the soft-margin objective: minimize (1/2)||w||\u00b2 + C \u03a3 \u03be_i, subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1 \u2212 \u03be_i.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "The parameter C controls the trade-off between margin width and misclassification.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "A large C makes the margin hard, forcing points to lie outside it, which can lead to overfitting.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "A small C allows points to creep into the margin, producing a softer boundary that may generalize better but can underfit if too small.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "The dual formulation of the SVM is: maximize \u03a3 \u03b1_i \u2212 (1/2) \u03a3_i \u03a3_j \u03b1_i \u03b1_j y_i y_j K(x_i, x_j), subject to 0 \u2264 \u03b1_i \u2264 C and \u03a3 \u03b1_i y_i = 0.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "The kernel function K(x_i, x_j) = \u27e8\u03c6(x_i), \u03c6(x_j)\u27e9 computes dot products in the transformed feature space without explicitly constructing \u03c6.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "Common kernels include linear, polynomial, and radial basis function (RBF).",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "The decision function is f(x) = sign(\u03a3 \u03b1_i y_i K(x_i, x) + b).",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "Only the points with \u03b1_i > 0 \u2014 the support vectors \u2014 influence the decision boundary.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "This sparsity makes the model memory-efficient and robust to points far from the boundary.",
+      "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+    },
+    {
+      "claim": "For the RBF kernel, the parameter \u03b3 controls the influence of each training point.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "A small \u03b3 leads to a smooth decision boundary that may underfit, while a large \u03b3 can cause overfitting by creating complex boundaries that hug individual points.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "The optimal C and \u03b3 must be tuned using cross-validation.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "To get probabilities from an SVM, you must apply Platt scaling, which fits a logistic regression on the SVM scores.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "SVMs require feature scaling; otherwise, features with larger ranges dominate the margin calculation, distorting the boundary.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "Training time scales poorly with dataset size \u2014 typically quadratic to cubic in the number of samples \u2014 making SVMs impractical for very large datasets.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "For multi-class problems, SVMs use one-vs-one or one-vs-rest strategies, which can be less interpretable than a single multi-class model.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "SVMs find the hyperplane that maximizes the margin between classes, which typically leads to better generalization than arbitrary separating lines.",
+      "source_url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial"
+    },
+    {
+      "claim": "The parameter C controls the trade-off between a hard margin (large C) and a soft margin (small C); tune it via cross-validation.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "The kernel trick lets SVMs handle non-linear boundaries without explicitly computing high-dimensional feature maps.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    },
+    {
+      "claim": "Only support vectors define the decision boundary, making the model memory-efficient and robust to distant points.",
+      "source_url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine"
+    },
+    {
+      "claim": "Always scale features before training an SVM; otherwise, features with larger ranges dominate the margin calculation.",
+      "source_url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://data-flair.training/blogs/svm-support-vector-machine-tutorial",
+      "score": 0.8482825,
+      "content": "### How does SVM work?\n\nThe basic principle behind the working of Support vector machines is simple \u2013 Create a hyperplane that separates the dataset into classes. Let us start with a sample problem. Suppose that for a given dataset, you have to classify red triangles from blue circles. Your goal is to create a line that classifies the data into two classes, creating a distinction between red triangles and blue circles.\n\nWhile one can hypothesize a clear line that separates the two classes, there can be many lines that can do this job. Therefore, there is not a single line that you can agree on which can perform this task. Let us visualize some of the lines that can differentiate between the two classes as follows \u2013 [...] Next in this SVM Tutorial, we will see implementing SVM in Python. So, before moving on I recommend revise your Python Concepts.\n\n### How to implement SVM in Python?\n\nIn the first step, we will import the important libraries that we will be using in the implementation of SVM in our project.\n\nCode:\n\n```\nimport pandas as pd import numpy as np                            #DataFlair import matplotlib.pyplot as plt from matplotlib.colors import ListedColormap import matplotlib.pyplot as plt from sklearn import datasets from sklearn.svm import SVC from sklearn.model_selection import train_test_split from sklearn.preprocessing import StandardScaler %pylab inline\n```\n\nScreenshot: [...] Screenshot:\n\nIn the second step of implementation of SVM in Python, we will use the iris dataset that is available with the load\\_iris() method. We will only make use of the petal length and width in this analysis.\n\nCode:\n\n```\npylab.rcParams['figure.figsize'] = (10, 6) iris_data = datasets.load_iris() # We'll use the petal length and width only for this analysis X = iris_data.data[:, [2, 3]] y = iris_data.target # Input the iris data into the pandas dataframe iris_dataframe = pd.DataFrame(iris_data.data[:, [2, 3]],                   columns=iris_data.feature_names[2:]) # View "
+    },
+    {
+      "url": "https://jakevdp.github.io/PythonDataScienceHandbook/05.07-support-vector-machines.html",
+      "score": 0.8051581,
+      "content": "## Example: Face Recognition\u00b6\n\nAs an example of support vector machines in action, let's take a look at the facial recognition problem.\nWe will use the Labeled Faces in the Wild dataset, which consists of several thousand collated photos of various public figures.\nA fetcher for the dataset is built into Scikit-Learn:\n\nLet's plot a few of these faces to see what we're working with: [...] To handle this case, the SVM implementation has a bit of a fudge-factor which \"softens\" the margin: that is, it allows some of the points to creep into the margin if that allows a better fit.\nThe hardness of the margin is controlled by a tuning parameter, most often known as $C$.\nFor very large $C$, the margin is hard, and points cannot lie in it.\nFor smaller $C$, the margin is softer, and can grow to encompass some points.\n\nThe plot shown below gives a visual picture of how a changing $C$ parameter affects the final fit, via the softening of the margin:\n\nThe optimal value of the $C$ parameter will depend on your dataset, and should be tuned using cross-validation or a similar procedure (refer back to Hyperparameters and Model Validation).\n\n## Example: Face Recognition\u00b6 [...] We begin with the standard imports:\n\n## Motivating Support Vector Machines\u00b6\n\nAs part of our disussion of Bayesian classification (see In Depth: Naive Bayes Classification), we learned a simple model describing the distribution of each underlying class, and used these generative models to probabilistically determine labels for new points.\nThat was an example of generative classification; here we will consider instead discriminative classification: rather than modeling each class, we simply find a line or curve (in two dimensions) or manifold (in multiple dimensions) that divides the classes from each other.\n\nAs an example of this, consider the simple case of a classification task, in which the two classes of points are well separated:"
+    },
+    {
+      "url": "https://github.com/youssefHosni/Practical-Machine-Learning/blob/main/Practical%20Guide%20to%20Support%20Vector%20Machines%20in%20Python%20.ipynb",
+      "score": 0.79484755,
+      "content": "Support vector machine (SVM) is one of the powerful machine learning algorithms. In the example below, This code trains an SVM classifier using a 3rd-degree"
+    },
+    {
+      "url": "https://www.snowflake.com/en/artificial-intelligence/machine-learning/models/support-vector-machine",
+      "score": 0.77405477,
+      "content": "## Overview\n\nSupport vector machines (SVMs) are algorithms used to help supervised machine learning models separate different categories of data by establishing clear boundaries between them. As an SVM classifier, it\u2019s designed to create decision boundaries for accurate classification. It is one of the key techniques data scientists use to create AI and ML models with a wide range of practical applications, including image recognition, fraud detection and spam filtering.\n\nSVMs excel at processing high-dimensional data, such as a brain scan containing millions of data points. They can also protect against over-fitting, where a model performs well making predictions using the data on which it was trained but fares poorly when encountering new data. [...] They\u2019re effective with small data sets. SVMs can build reliable models even when training data is limited, making them ideal for specialized domains like medical diagnoses or rare event detection. Their mathematical foundation allows them to extract maximum information from minimal examples, avoiding the over-fitting problems that plague other algorithms when data is scarce.\n\nThey\u2019re memory efficient. SVMs only store the support vectors (the critical data points near the decision boundary) rather than the entire training data set. This makes them computationally efficient for making predictions and reduces storage requirements, especially valuable in applications with limited computational resources. [...] #### Support vector regression (SVR)\n\nThis type of machine uses SVM techniques to predict numbers instead of categories. Rather than drawing a line that separates different groups, SVR draws a line that best fits through the data points with some wiggle room for errors. SVRs are used for predicting things like prices, temperatures or sales figures. \n\n#### Multi-class SVM\n\nMulti-class machines handle classification problems involving more than two categories by combining multiple regular SVMs. Since standard SVMs can"
+    },
+    {
+      "url": "https://www.kdnuggets.com/2016/07/support-vector-machines-simple-explanation.html",
+      "score": 0.77261686,
+      "content": "A Support Vector Machine (SVM) is a supervised machine learning algorithm that can be employed for both classification and regression purposes."
+    },
+    {
+      "url": "https://www.datacamp.com/tutorial/svm-classification-scikit-learn-python",
+      "score": 0.7722049,
+      "content": "`K(x,xi) = exp(-gamma  sum((x \u2013 xi^2))`\n\nHere gamma is a parameter, which ranges from 0 to 1. A higher value of gamma will perfectly fit the training dataset, which causes over-fitting. Gamma=0.1 is considered to be a good default value. The value of gamma needs to be manually specified in the learning algorithm.\n\n## Classifier Building in Scikit-learn\n\nUntil now, you have learned about the theoretical background of SVM. Now you will learn about its implementation in Python using scikit-learn.\n\nIn the model the building part, you can use the cancer dataset, which is a very famous multi-class classification problem. This dataset is computed from a digitized image of a fine needle aspirate (FNA) of a breast mass. They describe characteristics of the cell nuclei present in the image. [...] ### Generating Model\n\nLet's build support vector machine model. First, import the SVM module and create support vector classifier object by passing argument kernel as the linear kernel in `SVC()` function.\n\n`SVC()`\n\nThen, fit your model on train set using `fit()` and perform prediction on the test set using `predict()`.\n\n`fit()`\n`predict()`\n`#Import svm model\nfrom sklearn import svm\n#Create a svm Classifier\nclf = svm.SVC(kernel='linear') # Linear Kernel\n#Train the model using the training sets\nclf.fit(X_train, y_train)\n#Predict the response for test dataset\ny_pred = clf.predict(X_test)`\n\n### Evaluating the Model\n\nLet's estimate how accurately the classifier or model can predict the breast cancer of patients. [...] Higher Dimension\n\nHigher Dimension\n\n## SVM Kernels\n\nThe SVM algorithm is implemented in practice using a kernel. A kernel transforms an input data space into the required form. SVM uses a technique called the kernel trick. Here, the kernel takes a low-dimensional input space and transforms it into a higher dimensional space. In other words, you can say that it converts nonseparable problem to separable problems by adding more dimension to it. It is most useful in non-linear"
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Support_vector_machine",
+      "score": 0.7574541,
+      "content": "In machine learning, a support vector machine (SVM) or support vector network is a supervised max-margin model with associated learning algorithms that analyze data for classification and regression analysis. Developed at AT&T Bell Laboratories, SVMs are one of the most studied models, being based on statistical learning frameworks of VC theory proposed by Vapnik (1982, 1995) and Chervonenkis (1974). [...] SVMs are helpful in text and hypertext categorization, as their application can significantly reduce the need for labeled training instances in both the standard inductive and transductive \"Transduction (machine learning)\") settings. Some methods for shallow semantic parsing are based on support vector machines.\n Classification of images can also be performed using SVMs. Experimental results show that SVMs achieve significantly higher search accuracy than traditional query refinement schemes after just three to four rounds of relevance feedback. This is also true for image segmentation systems, including those using a modified version SVM that uses the privileged approach as suggested by Vapnik.\n Classification of satellite data like SAR data using supervised SVM. [...] 28. \u2191 Meyer, David; Leisch, Friedrich; Hornik, Kurt (September 2003). \"The support vector machine under test\". Neurocomputing. 55 (1\u20132): 169\u2013186. doi \"Doi (identifier)\"):10.1016/S0925-2312(03)00431-4.\n29. \u2191 Hsu, Chih-Wei; Chang, Chih-Chung & Lin, Chih-Jen (2003). A Practical Guide to Support Vector Classification (PDF) (Technical report). Department of Computer Science and Information Engineering, National Taiwan University. Archived (PDF) from the original on 2013-06-25."
+    },
+    {
+      "url": "https://www.mathworks.com/discovery/support-vector-machine.html",
+      "score": 0.7283819,
+      "content": "Table of Contents\n\n## How Support Vector Machines Work\n\nA support vector machine is a supervised machine learning algorithm often used for classification and regression problems in applications such as signal processing, natural language processing (NLP), and speech and\u202fimage recognition. The objective of the SVM algorithm is to find a hyperplane that, to the best degree possible, separates data points of one class from those of another class. This hyperplane can be a line for 2D space or a plane for an n-dimensional space, where n is the number of features for each observation in the data set. There can be multiple hyperplanes that separate classes in the data. The optimal hyperplane, derived by the SVM algorithm, is the one that maximizes the margin between the two classes. [...] Plot of the predicted response versus the actual response for a regression model trained in the Regression Learner app. The closer the points are to the line, the better the prediction. (See MATLAB code.)\n\n#### Keep Exploring This Topic\n\n## Support Vector Machine FAQs\n\nWhat is a support vector machine?\n\nA support vector machine (SVM) is a supervised machine learning algorithm that finds the hyperplane that best separates data points of one class from those of another class.\n\nWhat is a hyperplane in an SVM?\n\nA hyperplane is the decision boundary that separates data points of different classes and can be a line in 2D space or a plane in n-dimensional space.\n\nWhat are support vectors? [...] MathWorks\n\nTraining\n\nEvents\n\nLearning Resources\n\nVisit the Help Center to explore product documentation, engage with community forums, check release notes, and more.\n\nMATLAB and Simulink Videos\n\nLearn about products, watch demonstrations, and explore what's new.\n\nCompany\n\nCareers\n\nSustainability at MathWorks\n\nSee how MathWorks is protecting and restoring Earth's resources.\n\nSearch\n\n# Support Vector Machine (SVM)\n\n## What Is a Support Vector Machine?\n\nA support vector machine (SVM) is a supervised machine "
+    },
+    {
+      "url": "https://uk.mathworks.com/discovery/support-vector-machine.html",
+      "score": 0.7283819,
+      "content": "Table of Contents\n\n## How Support Vector Machines Work\n\nA support vector machine is a supervised machine learning algorithm often used for classification and regression problems in applications such as signal processing, natural language processing (NLP), and speech and\u202fimage recognition. The objective of the SVM algorithm is to find a hyperplane that, to the best degree possible, separates data points of one class from those of another class. This hyperplane can be a line for 2D space or a plane for an n-dimensional space, where n is the number of features for each observation in the data set. There can be multiple hyperplanes that separate classes in the data. The optimal hyperplane, derived by the SVM algorithm, is the one that maximizes the margin between the two classes. [...] Plot of the predicted response versus the actual response for a regression model trained in the Regression Learner app. The closer the points are to the line, the better the prediction. (See MATLAB code.)\n\n#### Keep Exploring This Topic\n\n## Support Vector Machine FAQs\n\nWhat is a support vector machine?\n\nA support vector machine (SVM) is a supervised machine learning algorithm that finds the hyperplane that best separates data points of one class from those of another class.\n\nWhat is a hyperplane in an SVM?\n\nA hyperplane is the decision boundary that separates data points of different classes and can be a line in 2D space or a plane in n-dimensional space.\n\nWhat are support vectors? [...] MathWorks\n\nTraining\n\nEvents\n\nLearning Resources\n\nVisit the Help Center to explore product documentation, engage with community forums, check release notes, and more.\n\nMATLAB and Simulink Videos\n\nLearn about products, watch demonstrations, and explore what's new.\n\nCompany\n\nCareers\n\nSustainability at MathWorks\n\nSee how MathWorks is protecting and restoring Earth's resources.\n\nSearch\n\n# Support Vector Machine (SVM)\n\n## What Is a Support Vector Machine?\n\nA support vector machine (SVM) is a supervised machine "
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/classifying-data-using-support-vector-machinessvms-in-python",
+      "score": 0.7161595,
+      "content": "### 2. Loading the Dataset\n\nWe will load the dataset and select only two features for visualization:\n\n load\\_breast\\_cancer(): Returns a dataset with 569 samples and 30 features.\n data.data[:, [0, 1]]: Selects only two features (mean radius and mean texture) for simplicity and visualization.\n data.target: Contains the binary target labels (malignant or benign).\n\n Python  ````\n data = load_breast_cancer() X = data. data[:,[0, 1]] y = data. target\n```` \n\n### 3. Splitting the Data\n\nWe will split the dataset into training and test sets:\n\n train\\_test\\_split: splits data into training (80%) and test (20%) sets\n random\\_state=42: ensures reproducibility\n\n Python  ````\n X_train, X_test, y_train, y_test = train_test_split(X, y, test_size =0.2, random_state = 42)\n```` \n\n### 4. Scale the Features [...] np.meshgrid() : creates a grid of points across the feature space\n predict() : classifies each point in the grid using the trained model\n plt.contourf() : fills regions based on predicted classes\n plt.scatter() : plots the actual data points [...] ### Common Kernel Functions\n\n Linear Kernel: Ideal for linearly separable data, offers the fastest computation and serves as a reliable baseline.\n Polynomial Kernel: Models polynomial relationships with complexity controlled by degree d, allowing curved decision boundaries.\n Radial Basis Function (RBF) Kernel: Maps data to infinite-dimensional space, widely used for non-linear problems with parameter \\gamma controlling influence of each sample.\n Sigmoid Kernel: Resembles neural network activation functions but is less common in practice due to limited effectiveness.\n\n## Implementing SVM Classification in Python\n\n### 1. Importing Required Libraries\n\nWe will import required python libraries"
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "support-vector-machines",
+      "chunk_index": 0,
+      "distance": 0.3751,
+      "rrf_score": 0.03333,
+      "text": "# Support Vector Machines\n\n## Definition\nA Support Vector Machine (SVM) is a supervised learning algorithm that constructs a hyperplane in a high-dimensional space to separate classes. The objective is to maximize the margin between the closest points of different classes. Flexibility for non-linear boundaries is provided by the kernel trick, which implicitly computes dot products in a transformed feature space. The method also extends to regression (support vector regression) and novelty detection.\n\n## Intuition\nThe separating hyperplane with the largest margin is preferred because it is expected to generalize better, as it tolerates small perturbations without misclassifying. Only the training points lying exactly on the margin or violating it (support vectors) determine the solution, making the model sparse and the decision boundary robust to points far away.\n\n## Mathematical Formulation\nFor a binary classification problem with labels y_i \u2208 {\u22121,+1}, the primal hard-margin objective is: minimize (1/2)\u2016w\u2016\u00b2 subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1. To handle non-separable data, slack variables \u03be_i \u2265 0 are introduced: minimize (1/2)\u2016w\u2016\u00b2 + C \u03a3 \u03be_i subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1 \u2212 \u03be_i, where C > 0 controls the trade-off between margin width and misclassification.\n\nThe dual formulation is: maximize \u03a3 \u03b1_i \u2212 (1/2) \u03a3_i \u03a3_j \u03b1_i \u03b1_j y_i y_j K(x_i, x_j), subject to 0 \u2264 \u03b1_i \u2264 C and \u03a3 \u03b1_i y_i = 0. The kernel function K(x_i, x_j) = \u27e8\u03c6(x_i), \u03c6(x_j)\u27e9 avoids explicit computation of \u03c6. The decision function becomes: f(x) = sign(\u03a3 \u03b1_i y_i K(x_i, x) + b).\n\nFor"
+    },
+    {
+      "source": "embedding-models-vector-search",
+      "chunk_index": 0,
+      "distance": 0.6538,
+      "rrf_score": 0.03227,
+      "text": "# Embedding Models & Vector Search\n\n## Definition\nEmbedding models are functions that map discrete inputs (text tokens, images, audio) into dense, fixed-dimensional real-valued vectors, such that semantically similar items are placed close in the vector space. Vector search is the task of efficiently retrieving the top-k vectors most similar to a query vector from a large collection, using a distance metric (cosine, Euclidean) and approximate nearest neighbor (ANN) indexing.\n\n## Intuition\nEmbeddings compress semantic meaning into a numeric point; items with related meaning cluster together. Vector search enables fast lookup of relevant items from millions of candidates by navigating a pre-built index, avoiding exhaustive pairwise comparison.\n\n## Mathematical Formulation\nAn embedding model f: X \u2192 R^d maps input x to v = f(x). Similarity between query q and document d is measured via cosine similarity: cos(q,d) = (q\u00b7d) / (||q|| ||d||). The top-k retrieval solves k = argmax_{i\u2208D} cos(f(q), f(d_i)). Approximate algorithms (HNSW, IVF-PQ) build graph or partition-based indices to achieve sub-linear O(log N) query time by trading minimal accuracy.\n\n## Estimation\nEmbedding models are trained using contrastive or triplet losses that maximize similarity between positive pairs and minimize similarity for negatives. Training data comes from parallel corpora, question-answer pairs, or co-occurrence signals. The vector index is built offline: all document vectors are ingested and an ANN index is constructed (e.g., HNSW graph, IVF centroids). At query time, the same encoder produces the query vector, and the ANN index returns top-k results.\n\n## Assumptions\n- Embedding space is Euclidean, and the consistency metric captures semantic similarity.\n- Query distribution matches training data; domain shift can degrade relevance.\n- Cosine similarity (or chosen metric) is a valid relevance"
+    },
+    {
+      "source": "support-vector-machines",
+      "chunk_index": 2,
+      "distance": 0.5431,
+      "rrf_score": 0.03202,
+      "text": "ization error. SVMs directly handle high-dimensional data and, with a suitable kernel, can yield complex non-linear boundaries without an explicit feature map.\n\n## Failure Modes\nSensitive to the choice of C and kernel parameters: a small RBF \u03b3 leads to overfitting, a large \u03b3 to underfitting. No direct probabilistic output (requires Platt scaling). Training time scales poorly for very large datasets (quadratic to cubic in n). SVMs struggle when classes heavily overlap with no clear margin and when noise dominates. Multi-class problems require decompositions (one-vs-one, one-vs-rest) that may not capture full structure. Features must be scaled; otherwise, the margin is distorted.\n\n## When to Use / Not Use\nUse when the number of attributes is large relative to the number of instances (e.g., text classification, bioinformatics), a clear separation is feasible, and model sparsity (few support vectors) is beneficial. Do not use when interpretability of coefficients is required (kernel SVM has black-box weights), when the data set is very large and linear models suffice, or when probability estimates are needed without calibration.\n\n## Variants / Extensions\nC-SVC (penalty C) and \u03bd-SVC (parameter \u03bd bounds fraction of support vectors and margin errors). One-class SVM for outlier detection. \u03b5-SVR for regression. Weighted SVM for class imbalance. Approximations like linear SVM (LinearSVC) and kernel approximation (Nystr\u00f6m, random Fourier features) scale to massive datasets. Multi-class extensions use one-vs-one or one-vs-rest.\n\n## Minimal Example (Python)\n```python\nfrom sklearn.svm import SVC, SVR\nX = [[0,0], [1,1], [1,0], [0,1]]\ny = [0, 1, 0, 1]\nclf = SVC(kernel='rbf', C=1.0, gamma='scale').fit(X, y)\nprint(clf.predict([[0"
+    },
+    {
+      "source": "support-vector-machines",
+      "chunk_index": 1,
+      "distance": 0.6736,
+      "rrf_score": 0.03126,
+      "text": "(x_i, x_j) = \u27e8\u03c6(x_i), \u03c6(x_j)\u27e9 avoids explicit computation of \u03c6. The decision function becomes: f(x) = sign(\u03a3 \u03b1_i y_i K(x_i, x) + b).\n\nFor regression (SVR), an \u03b5-insensitive loss is used: minimize (1/2)\u2016w\u2016\u00b2 + C \u03a3 (\u03be_i + \u03be_i^*), with constraints y_i \u2212 w\u00b7\u03c6(x_i) \u2212 b \u2264 \u03b5 + \u03be_i, etc.\n\n## Estimation\nThe dual is a convex quadratic program. Sequential Minimal Optimization (SMO) decomposes it into small sub-problems, enabling efficient training. The bias b is computed from the KKT conditions. Common kernels: linear K(u,v)=u\u00b7v; polynomial K(u,v)=(\u03b3 u\u00b7v + r)^d; RBF K(u,v)=exp(\u2212\u03b3\u2016u\u2212v\u2016\u00b2). Hyperparameters C and kernel parameters are typically selected via grid search with cross-validation.\n\n## Assumptions\nData is assumed to be (approximately) linearly separable in the kernel-induced feature space. The chosen kernel must be a valid Mercer kernel. Feature scaling (normalization/standardization) is essential for distance-based kernels like RBF. No prior distribution on the data is required. The support vectors define the boundary; data points far from the boundary have no influence.\n\n## Key Properties\nThe solution is sparse: only a subset of training points become support vectors. The optimization is convex, guaranteeing a unique global optimum for the dual (for convex K). The margin maximization principle relates to structural risk minimization and provides theoretical bounds on generalization error. SVMs directly handle high-dimensional data and, with a suitable kernel, can yield complex non-linear boundaries without an explicit feature map.\n\n## Failure Modes\nSensitive to the choice of C and kernel parameters: a small RBF \u03b3 leads to"
+    },
+    {
+      "source": "gradient-descent",
+      "chunk_index": 0,
+      "distance": 0.0,
+      "rrf_score": 0.01613,
+      "text": "# Gradient Descent\n\n## Definition\nGradient descent is a first-order iterative optimization algorithm for finding a local minimum of a differentiable function. It moves parameters in the direction of the negative gradient of the objective function with respect to the parameters.\n\n## Intuition\nThe gradient of a function points in the direction of steepest ascent. By repeatedly taking small steps in the opposite direction, the algorithm travels downhill on the error surface, converging to a point where the gradient is zero (a critical point).\n\n## Mathematical Formulation\nGiven a parameter vector \u03b8 \u2208 R^d and a differentiable loss function J(\u03b8), the update rule for step t is:\n\n\u03b8_{t+1} = \u03b8_t \u2212 \u03b7 \u00b7 \u2207J(\u03b8_t)\n\nwhere \u03b7 > 0 is the learning rate (step size). The gradient \u2207J(\u03b8_t) is the vector of partial derivatives [\u2202J/\u2202\u03b8_1, ..., \u2202J/\u2202\u03b8_d] evaluated at \u03b8_t.\n\nFor a dataset of m examples, the full-batch gradient uses:\n\n\u2207J(\u03b8) = (1/m) \u03a3_{i=1}^m \u2207L(f(x_i; \u03b8), y_i)\n\nIn practice, the gradient is often approximated using a mini-batch of size B \u226a m.\n\n## Estimation\nGradient descent estimates model parameters by minimizing a loss function. The procedure:\n1. Initialize \u03b8_0 (e.g., small random values).\n2. For t = 0, 1, ..., until convergence:\n   a. Compute gradient estimate g_t = (1/|B|) \u03a3_{i\u2208B} \u2207_\u03b8 L(f(x_i; \u03b8_t), y_i).\n   b. Update \u03b8_{t+1} = \u03b8_t \u2212 \u03b7 g_t.\n3. Stop when gradient magnitude or loss improvement falls below a"
+    }
+  ],
+  "attribution": {
+    "web": 32,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

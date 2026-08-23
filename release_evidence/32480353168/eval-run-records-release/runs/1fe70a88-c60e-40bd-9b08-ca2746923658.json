@@ -1,0 +1,751 @@
+{
+  "run_id": "1fe70a88-c60e-40bd-9b08-ca2746923658",
+  "topic": "Retrieval Augmented Generation (RAG)",
+  "slug": "retrieval-augmented-generation-rag",
+  "timestamp": "2026-08-21T12:20:08.653298+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 16,
+      "S": 16,
+      "V": 32,
+      "W": 0,
+      "U": 0,
+      "N": 32,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.9,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Large language models store knowledge in their weights, and that knowledge freezes at training time.",
+          "source_url": "https://www.k2view.com/what-is-retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.k2view.com/what-is-retrieval-augmented-generation"
+        },
+        {
+          "claim": "Fine-tuning can push new facts into the weights, but it is expensive, slow, and still doesn't guarantee the model will recall them accurately.",
+          "source_url": "https://www.k2view.com/what-is-retrieval-augmented-generation",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.k2view.com/what-is-retrieval-augmented-generation"
+        },
+        {
+          "claim": "RAG solves the problem of static knowledge by moving knowledge out of the weights and into an external index.",
+          "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+        },
+        {
+          "claim": "At query time, the RAG system retrieves relevant documents and stuffs them into the prompt as context, and the model generates an answer grounded in that context.",
+          "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+        },
+        {
+          "claim": "RAG allows you to update your knowledge base without retraining, and you can point the model at your own data.",
+          "source_url": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation"
+        },
+        {
+          "claim": "RAG was first proposed in 2020 and has become the standard way to give LLMs access to private or up-to-date information.",
+          "source_url": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation"
+        },
+        {
+          "claim": "RAG is not a replacement for fine-tuning; it is a different tool for a different job.",
+          "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+        },
+        {
+          "claim": "Use RAG when you need dynamic, verifiable, domain-specific answers, and use fine-tuning when you need to change the model's behavior or style.",
+          "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+        },
+        {
+          "claim": "RAG has four core components: indexing, retrieval, augmentation, and generation.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Indexing is the offline step where you chunk documents into pieces, embed each chunk into a vector, and store those vectors in a vector database.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "At query time, you embed the user's question and search for the most similar chunks using cosine similarity or another distance metric.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "The retriever typically returns the top k chunks, where k is commonly 3 to 5.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Increasing k improves recall but also increases the context length and latency.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "The retrieved chunks are prepended to the original prompt, and the LLM generates an answer conditioned on that augmented context.",
+          "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+        },
+        {
+          "claim": "A bi-encoder maps both queries and documents to dense vectors, and the retriever scores a document z for a query x using a similarity function, often the dot product: score(z, x) = d(z)^T q(x).",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "The top k documents are selected based on the similarity score.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Dense Passage Retrieval (DPR) uses separate BERT-base encoders for questions and passages.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "A common failure mode is noisy retrieval, where irrelevant chunks distract the generator and produce worse answers than if it had no context at all.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Reranking with a cross-encoder, which processes the query and document together, can reorder the top-k results.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "ms-marco-MiniLM-L-6-v2 is a small cross-encoder that can improve top-1 precision by 10-20% over bi-encoder retrieval alone.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Another failure mode is factual distortion, where the model mixes information from multiple documents and creates inconsistent statements.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "You can mitigate factual distortion by keeping chunks small and focused, and by instructing the model to only use the provided context.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Retrieval adds an extra network call to the vector database and an extra embedding step, which can be the difference between 200ms and 2 seconds for real-time applications.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "You can reduce latency by caching embeddings, using approximate nearest neighbor search, or by limiting the number of retrieved documents.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Staleness is an issue: if your index is not updated, the retrieved information becomes outdated, so you need a pipeline to add, update, and delete documents from the index.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "RAG does not eliminate hallucinations; if the retrieved context is irrelevant or the model ignores it, you still get made-up answers.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Evaluation frameworks like RAGAS measure faithfulness, answer relevancy, and context recall to catch these problems.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "RAG grounds LLM outputs in external documents, reducing hallucinations and enabling access to private or up-to-date data without retraining.",
+          "source_url": "https://www.salesforce.com/agentforce/what-is-rag",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.salesforce.com/agentforce/what-is-rag"
+        },
+        {
+          "claim": "The core pipeline is: chunk documents, embed them, store in a vector DB, retrieve top-k at query time, and prepend to the prompt.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Retrieval quality matters more than generation quality; noisy retrieval degrades answers, so consider reranking with a cross-encoder.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "RAG adds latency and requires an index maintenance pipeline; it is not a free lunch.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        },
+        {
+          "claim": "Evaluate RAG systems with RAGAS (faithfulness, answer relevancy, context recall) to catch failures early.",
+          "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically sound, covering the core RAG pipeline, retrieval math, failure modes, and practical code. However, the writing occasionally reads like a textbook summary rather than a senior-engineer perspective\u2014it lacks critical comparison of RAG variants (e.g., hybrid search, GraphRAG) and real-world deployment pitfalls (e.g., chunking strategies, embedding drift). The code examples are useful but the first one hides too much behind LangChain abstractions; a brief note on what's happening under the hood would elevate it. Overall, publishable with minor edits to add more nuanced engineering judgment.",
+  "grounding_score": 0.9,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 16205,
+  "total_cost_usd": 0.00844,
+  "latency_ms": {
+    "retrieve": 10967,
+    "retrieve_web": 10945,
+    "retrieve_kb": 22,
+    "draft": 12751,
+    "verify": 12010,
+    "reflect": 2797,
+    "html_gen": 4011,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 32,
+  "claims_weak": 0,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 0,
+    "mean_confidence_verified": 0.9,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 16,
+    "S": 16,
+    "V": 32,
+    "N": 32,
+    "verified_fraction": 1.0,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Large language models store knowledge in their weights, and that knowledge freezes at training time.",
+      "source_url": "https://www.k2view.com/what-is-retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.k2view.com/what-is-retrieval-augmented-generation"
+    },
+    {
+      "claim": "Fine-tuning can push new facts into the weights, but it is expensive, slow, and still doesn't guarantee the model will recall them accurately.",
+      "source_url": "https://www.k2view.com/what-is-retrieval-augmented-generation",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.k2view.com/what-is-retrieval-augmented-generation"
+    },
+    {
+      "claim": "RAG solves the problem of static knowledge by moving knowledge out of the weights and into an external index.",
+      "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+    },
+    {
+      "claim": "At query time, the RAG system retrieves relevant documents and stuffs them into the prompt as context, and the model generates an answer grounded in that context.",
+      "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+    },
+    {
+      "claim": "RAG allows you to update your knowledge base without retraining, and you can point the model at your own data.",
+      "source_url": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation"
+    },
+    {
+      "claim": "RAG was first proposed in 2020 and has become the standard way to give LLMs access to private or up-to-date information.",
+      "source_url": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation"
+    },
+    {
+      "claim": "RAG is not a replacement for fine-tuning; it is a different tool for a different job.",
+      "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+    },
+    {
+      "claim": "Use RAG when you need dynamic, verifiable, domain-specific answers, and use fine-tuning when you need to change the model's behavior or style.",
+      "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+    },
+    {
+      "claim": "RAG has four core components: indexing, retrieval, augmentation, and generation.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Indexing is the offline step where you chunk documents into pieces, embed each chunk into a vector, and store those vectors in a vector database.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "At query time, you embed the user's question and search for the most similar chunks using cosine similarity or another distance metric.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "The retriever typically returns the top k chunks, where k is commonly 3 to 5.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Increasing k improves recall but also increases the context length and latency.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "The retrieved chunks are prepended to the original prompt, and the LLM generates an answer conditioned on that augmented context.",
+      "source_url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation"
+    },
+    {
+      "claim": "A bi-encoder maps both queries and documents to dense vectors, and the retriever scores a document z for a query x using a similarity function, often the dot product: score(z, x) = d(z)^T q(x).",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "The top k documents are selected based on the similarity score.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Dense Passage Retrieval (DPR) uses separate BERT-base encoders for questions and passages.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "A common failure mode is noisy retrieval, where irrelevant chunks distract the generator and produce worse answers than if it had no context at all.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Reranking with a cross-encoder, which processes the query and document together, can reorder the top-k results.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "ms-marco-MiniLM-L-6-v2 is a small cross-encoder that can improve top-1 precision by 10-20% over bi-encoder retrieval alone.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Another failure mode is factual distortion, where the model mixes information from multiple documents and creates inconsistent statements.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "You can mitigate factual distortion by keeping chunks small and focused, and by instructing the model to only use the provided context.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Retrieval adds an extra network call to the vector database and an extra embedding step, which can be the difference between 200ms and 2 seconds for real-time applications.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "You can reduce latency by caching embeddings, using approximate nearest neighbor search, or by limiting the number of retrieved documents.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Staleness is an issue: if your index is not updated, the retrieved information becomes outdated, so you need a pipeline to add, update, and delete documents from the index.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "RAG does not eliminate hallucinations; if the retrieved context is irrelevant or the model ignores it, you still get made-up answers.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Evaluation frameworks like RAGAS measure faithfulness, answer relevancy, and context recall to catch these problems.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "RAG grounds LLM outputs in external documents, reducing hallucinations and enabling access to private or up-to-date data without retraining.",
+      "source_url": "https://www.salesforce.com/agentforce/what-is-rag",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.salesforce.com/agentforce/what-is-rag"
+    },
+    {
+      "claim": "The core pipeline is: chunk documents, embed them, store in a vector DB, retrieve top-k at query time, and prepend to the prompt.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Retrieval quality matters more than generation quality; noisy retrieval degrades answers, so consider reranking with a cross-encoder.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "RAG adds latency and requires an index maintenance pipeline; it is not a free lunch.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    },
+    {
+      "claim": "Evaluate RAG systems with RAGAS (faithfulness, answer relevancy, context recall) to catch failures early.",
+      "source_url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.pinecone.io/learn/retrieval-augmented-generation"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://www.pinecone.io/learn/retrieval-augmented-generation",
+      "score": 0.87981987,
+      "content": "## What is Retrieval-Augmented Generation?\n\nRetrieval-augmented generation, or RAG, is a technique that uses authoritative, external data to improve the accuracy, relevancy, and usefulness of a model\u2019s output. It does this through the following four core components, which we\u2019ll cover in more detail later in this article:"
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation",
+      "score": 0.8790744,
+      "content": "Type of information retrieval using LLMs\n\nRetrieval-augmented generation (RAG) is a technique that enables large language models (LLMs) to retrieve and incorporate new information from external data sources. With RAG, LLMs first refer to a specified set of documents, then respond to user queries. These documents supplement information from the LLM's pre-existing training data. This allows LLMs to use domain-specific and/or updated information that is not available in the training data. For example, this enables LLM-based chatbots to access internal company data or generate responses based on authoritative sources. The technique was first proposed in 2020 and has since become a widely adopted approach in modern AI systems. [...] ## Process\n\n[edit]\n\nRetrieval-augmented generation (RAG) enhances large language models (LLMs) by incorporating an information-retrieval mechanism that allows models to access and utilize additional data beyond their original training set. Ars Technica notes that \"when new information becomes available, rather than having to retrain the model, all that's needed is to augment the model's external knowledge base with the updated information\" (\"augmentation\"). IBM states that \"in the generative phase, the LLM draws from the augmented prompt and its internal representation of its training data to synthesize\" an answer.\n\n### RAG key stages\n\n[edit] [...] RAG improves LLMs by incorporating information retrieval before generating responses. Unlike LLMs that rely on static training data, RAG pulls relevant text from databases, uploaded documents, or web sources. According to Ars Technica, \"RAG is a way of improving LLM performance, in essence by blending the LLM process with a web search or other document look-up process to help LLMs stick to the facts.\" This method helps reduce AI hallucinations, which have caused chatbots to describe policies that don't exist, or recommend nonexistent legal cases to lawyers that are looking for citations to support "
+    },
+    {
+      "url": "https://www.salesforce.com/agentforce/what-is-rag",
+      "score": 0.87605256,
+      "content": "# What Is Retrieval-Augmented Generation (RAG)?\n\nRetrieval-augmented generation (RAG) is a natural language processing technique that merges the best of retrieval-based and generative models. Information from a database or knowledge base is used to enhance the context and accuracy of generated text.\n\nShare the story\n\nLarge language models (LLMs) \u2014 the force behind generative AI \u2014 can do everything from answering complicated questions to creating original content. However, businesses face a key challenge with LLMs: data limitations. That\u2019s where retrieval-augmented generation (RAG) comes into play. [...] ### What is RAG (Retrieval Augmented Generation)?\n\nRAG, or Retrieval Augmented Generation, is an AI technique that enhances large language models (LLMs) by allowing them to retrieve relevant information from external knowledge bases before generating a response.\n\n### How does RAG improve LLM responses?\n\nRAG mitigates LLM \"hallucinations\" and provides more accurate, up-to-date, and contextually relevant answers by grounding the LLM's generation in factual, retrieved data.\n\n### What are the key components of a RAG system?\n\nA RAG system typically involves a retriever (to find relevant documents/text) and a generator (an LLM that then uses the retrieved information to form a response).\n\n### When is RAG particularly useful? [...] RAG allows companies to connect their data with LLMs, enabling artificial intelligence opportunities for businesses that are more trustworthy, pertinent, and timely. For example, once the connection is made to internal data with RAG, autonomous AI agents can deliver customer service responses that take into account past questions or generate marketing briefs based on current brand guidelines.\n\nLet's take a look at exactly what RAG is, what benefits it can deliver for your business, how it works, and how to get started.\n\nWhat we'll cover:\n\n## What is retrieval-augmented generation (RAG)?\n\nRetrieval-augmented generation is a technique that delivers"
+    },
+    {
+      "url": "https://www.databricks.com/blog/what-is-retrieval-augmented-generation",
+      "score": 0.8737439,
+      "content": "# What is Retrieval Augmented Generation (RAG)?\n\nTechnique enhancing LLM responses by retrieving relevant info from external knowledge bases before generation, grounding outputs in facts\n\nby  Databricks Staff\n\n## What Is Retrieval Augmented Generation, or RAG?\n\nRetrieval augmented generation (RAG) is a hybrid AI framework that bolsters large language models (LLMs) by combining them with external, up-to-date data sources. Instead of relying solely on static training data, RAG retrieves relevant documents at query time and feeds them into the model as context. By incorporating new and context-aware data, AI can generate more accurate, current and domain-specific responses. [...] ## Frequently asked questions (FAQ)\n\nWhat is retrieval augmented generation (RAG)?  \nRAG is an AI architecture that strengthens LLMs by retrieving relevant documents and injecting them into the prompt. This enables more accurate, current and domain-specific responses without taking time to retrain the model.\n\nWhen should I use RAG instead of fine-tuning?  \nUse RAG when you want to incorporate dynamic data without the cost or complexity of fine-tuning. It is ideal for use cases where accurate and timely information is required. [...] Prompt engineering\n\nRetrieval augmented generation (RAG)\n\nFine-tuning\n\nPretraining\n\nRegardless of the technique selected, building a solution in a well-structured, modularized manner ensures organizations will be prepared to iterate and adapt. Learn more about this approach and more in The Big Book of MLOps.\n\nRetrieval Augmented Generation\n\nRetrieval Augmented Generation\n\n### Common challenges in RAG implementation\n\nImplementing RAG at scale introduces several technical and operational challenges.\n\n### What is a reference architecture for RAG applications?\n\nThere are many ways to implement a retrieval augmented generation system, depending on specific needs and data nuances. Below is one commonly adopted workflow to provide a foundational understanding of the proce"
+    },
+    {
+      "url": "https://www.k2view.com/what-is-retrieval-augmented-generation",
+      "score": 0.86954874,
+      "content": "### 01\n\n## What is Retrieval-Augmented Generation (RAG)?\n\nRetrieval-Augmented Generation (RAG) is a Generative AI (GenAI) architecture that augments a Large Language Model (LLM) with fresh, trusted data retrieved from authoritative internal knowledge bases and enterprise systems, to generate more informed and reliable responses.\n\nThe acronym \u201cRAG\u201d is attributed to the 2020 publication, \u201cRetrieval-Augmented Generation for Knowledge-Intensive Tasks\u201d, submitted by Facebook AI Research (now Meta AI). The paper describes RAG as \u201ca general-purpose fine-tuning recipe\u201d because it\u2019s meant to connect any LLM with any internal or external knowledge source. [...] ## 1. What is Retrieval-Augmented Generation (RAG)?\n\nRetrieval-Augmented Generation (RAG) is a Generative AI (GenAI) framework that augments a Large Language Model (LLM) with fresh, trusted data retrieved from authoritative internal knowledge bases and enterprise systems. RAG generates more informed and reliable responses to LLM prompts, minimizing hallucinations and increasing user trust in GenAI apps.\n\n## 2. What\u2019s the relationship between Generative AI, LLMs, and RAG? [...] Generative AI leverages Large Language Models (LLMs) that are trained on massive amounts of publicly available (Internet) information. The few LLM vendors (such as Microsoft, Google, AWS, and Meta) can't  retrain their models frequently due to the high cost and time involved. Since LLMs ingest public data as of a certain time and date, they\u2019re never current \u2013 and have no access to the highly valuable, private data stored in an organization. Therefore, large language models are also prone to LLM hallucination issues.\n\nRetrieval-Augmented Generation (RAG) is an emerging generative AI technology that addresses these limitations.\n\n> A complete RAG implementation retrieves structured data from enterprise systems and unstructured data from company knowledge bases."
+    },
+    {
+      "url": "https://github.com/HenryHengLUO/Retrieval-Augmented-Generation-Intro-Project",
+      "score": 0.8473754,
+      "content": "+ `1_Basic_RAG_Pipeline.ipynb`: This notebook demonstrates the basic RAG pipeline. It's a great starting point for understanding the fundamentals of RAG.\n  + `2_Sentence_window_retrieval.ipynb`: This notebook explores the concept of sentence window retrieval using RAG. Discover how RAG can retrieve information from a specific context window.\n  + `3_Auto-merging_Retrieval.ipynb`: In this notebook, you'll learn about auto-merging retrieval and how it improves the generation process. Exciting stuff!\n data: The `data` folder is where you can store your own documents of interest for retrieval. For now, we have included an example file named `Henry.txt`. Feel free to replace it with your own documents to experiment with RAG. [...] 5. Explore the three Jupyter Notebook files (`1_Basic_RAG_Pipeline.ipynb`, `2_Sentence_window_retrieval.ipynb`, and `3_Auto-merging_Retrieval.ipynb`) in the `code` folder. Run the notebooks to see RAG in action!\n6. Experiment with RAG by modifying the provided examples or using your own documents in the `data` folder. Feel free to get creative and have fun with it! \ud83c\udf8a [...] 1. Clone or download this project repository to your local machine.\n2. Import the `NLP.yml` file in the `python_env` folder to create a dedicated Python environment. This ensures all dependencies are properly installed.\n3. In the `common` folder, open the `openAI.env` file and enter your OpenAI API key. This step is crucial for accessing OpenAI models.\n4. Familiarize yourself with the project by reading the `Intro of Retrieval Augmented Generation (RAG) and application demos_Henry.pdf` file in the `files` folder. It provides important background information and hands-on experiments."
+    },
+    {
+      "url": "https://promptql.io/blog/fundamental-failure-modes-in-rag-systems",
+      "score": 0.8464638,
+      "content": "Retrieval-Augmented Generation (RAG) has emerged as a critical approach for enhancing Large Language Models (LLMs) with external knowledge. However, traditional RAG implementations demonstrate significant accuracy limitations when handling complex, multi-hop reasoning tasks. This paper presents a comprehensive evaluation of three RAG approaches using the FRAMES benchmark dataset, revealing that PromptQL's plan-based execution methodology achieves near-perfect accuracy (~100%) compared to approximately 40% for naive RAG and 60% for agentic RAG implementations. Through systematic analysis, we identify four primary failure modes in conventional RAG systems: extraction errors in processing, context size limitations, inexhaustive computation patterns, and computational reasoning failures. Our [...] ## Introduction\n\n### Background and Motivation\n\nThe integration of Large Language Models (LLMs) with external knowledge bases through Retrieval-Augmented Generation (RAG) has become increasingly critical for enterprise AI applications. While RAG systems promise to ground LLM outputs in factual information, their practical deployment reveals significant accuracy limitations, particularly for complex queries requiring multi-step reasoning and information synthesis from multiple sources. [...] ### Theoretical Insights\n\nOur results suggest that the fundamental limitation of traditional RAG lies not in retrieval quality but in the conflation of planning and execution within a probabilistic context. Separating these concerns allows each component to operate optimally:\n\n LLMs excel at high-level reasoning and plan generation\n Programmatic environments excel at precise execution and data manipulation\n\n## Conclusion\n\nThis comprehensive evaluation using the complete FRAMES benchmark demonstrates that achieving near-perfect accuracy in RAG systems is possible through architectural innovation. PromptQL's approach of separating plan generation from execution addresses fundamental limitatio"
+    },
+    {
+      "url": "https://arjunjaggi.com/blog/why-rag-fails-in-production",
+      "score": 0.843393,
+      "content": "Then you go to production, and you discover that retrieval is harder than it looks. The four failure modes I describe in this post account for the vast majority of production RAG failures I have seen in enterprise deployments. They are not obscure edge cases. They are predictable consequences of how semantic search actually works when deployed against real organizational knowledge bases with all their messiness, inconsistency, and volume. Understanding them before you build is the difference between a system that works and a system that gets replaced.\n\n42%\n\nof RAG queries return at least one irrelevant top-k chunk in typical enterprise deployments\n\n60%\n\naccuracy drop when source document quality is poor\n\n8x\n\nlatency increase with naive cross-encoder reranking on full context [...] ## Failure Mode 1: The Chunking Problem\n\nThe most common RAG failure is invisible at the index level but catastrophic at the retrieval level: your documents have been chunked in a way that destroys the contextual coherence that makes retrieval work. Most RAG implementations chunk documents at fixed token boundaries\u2014every 512 tokens, say, with a 50-token overlap. This is simple to implement and performs reasonably in benchmarks built on clean, structured datasets. It performs poorly on real enterprise documents. [...] And they measure retrieval quality continuously in production. A proportion of production queries are periodically evaluated against a maintained ground truth set, retrieval recall is tracked as a metric over time, and alerts fire when recall degrades below thresholds. Document collection growth, index updates, and embedding model updates can all silently degrade retrieval quality. Continuous measurement ensures that degradation is caught before users experience it at scale.\n\n## What to Ask Your CTO\n\nIf your organization is deploying or evaluating a RAG system, these are the diagnostic questions that will reveal whether your architecture team has addressed the four failure mod"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=xSt0lmIuG4c",
+      "score": 0.8184036,
+      "content": "then we get back a bunch of results and you know everything that matches the query right so we get some Prius 5 we get some other Prius right we get all this information that might be helpful and then we send both the user's question and the results to the llm and say hey answer the user's question according to these sources stick to the sources don't use anything else and then we can get an answer from the llm so that's this the simplest rag so that's what we're going to code first so going back to the repo here let me make this bigger so I'm GNA open up ragor CSV py this one ragor cv. py and um and so what you can see at the top here is that this is set up so that you can try this example with either uh Azure openai olama or GitHub models uh so if you're in the codes space you're going [...] of long unstructured documents so when we are doing rag on these sorts of documents then we need an some sort of ingestion flow so for example uh we could take a PDF and we could extract the text from it using pimu PDF that's a p on package uh we could also use as your document intelligence uh we could use some sort of other OCR service but basically we need some way of being able to extract the content from the document right so the first step would be Doc content extraction the next step is to split that content into chunks because we can't just store the entire document in you know one uh doc as one thing in our in our search index because it's a lot of times it's just too big so we need to split that content into chunks uh and we're usually going to you know chunk it into reasonable [...] entire web uh so that's if you're trying you know if you don't want to sift through search results and you just want an answer like this then you can you know ask the Bing co-pilot and it'll rag the web so as you can see rag is really really helpful and it's super necessary for so many use cases for llms today and that's why we spend so much time talking about it so now we're going to act"
+    },
+    {
+      "url": "https://medium.com/@bhagyarana80/10-rag-failure-modes-at-scale-and-how-to-fix-them-158240ce3a05",
+      "score": 0.8127637,
+      "content": "Sign up\n\nSign in\n\nSign up\n\nSign in\n\nUnknown user\nBhagya Rana\n\n## Bhagya Rana\n\nProfessional & Motivational Helping you turn chaos into clarity through systems, focus & smart productivity. Progress over perfection. \u23f3\u2728\n\n# 10 RAG Failure Modes at Scale (and How to Fix Them)\n\n## Production RAG breaks in predictable ways \u2014 here\u2019s how to spot the signals, patch the architecture, and keep answer quality stable as traffic and data explode.\n\nBhagya Rana\n\n--\n\nListen\n\nShare\n\nThe 10 RAG failure modes that show up in production \u2014 drift, stale indexes, bad chunking, reranker bugs, context overload \u2014 plus battle-tested fixes.\n\nYou ship a Retrieval-Augmented Generation (RAG) system. It works. People clap.\n\nThen usage doubles. Data triples. Teams dump PDFs into the bucket like it\u2019s a wishing well. [...] ## Fix\n\nA lightweight eval harness sketch:\n\nThis won\u2019t replace careful evaluation, but it will catch \u201cwe broke retrieval\u201d within hours instead of weeks.\n\n## The production triage shortcut\n\nWhen something feels off, I like this quick diagnostic:\n\nIt\u2019s not perfect, but it narrows the search space fast. And at scale, speed matters.\n\n## Conclusion: RAG reliability is an engineering problem (good news)\n\nThe nice thing about these failure modes? They\u2019re not mystical. They\u2019re observable, testable, and fixable \u2014 often without changing the LLM at all.\n\nIf you\u2019re running RAG in production, pick two upgrades this week:\n\nYour future on-call self will thank you."
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "retrieval-augmented-generation",
+      "chunk_index": 0,
+      "distance": 0.2823,
+      "rrf_score": 0.03333,
+      "text": "# Retrieval Augmented Generation (RAG)\n\n## Definition\nRetrieval Augmented Generation (RAG) is a framework that combines a pre-trained parametric memory (a sequence-to-sequence generator) with a non-parametric memory (a dense vector index of documents) via a neural retriever. At inference time, relevant documents are fetched from the index and provided as additional context for generation, enabling factual grounding and access to external knowledge without enlarging model parameters.\n\n## Intuition\nStandard language models store knowledge implicitly in their weights, which is expensive to update and prone to hallucination. RAG offloads factual recall to an external, easily updatable retrieval corpus, allowing the generator to focus on synthesizing an answer from retrieved evidence.\n\n## Mathematical Formulation\nGiven an input query x, a retriever with parameters \u03b7 assigns a document z from corpus D a probability p_\u03b7(z|x) \u221d exp( d(z)^T q(x) ), where q and d are dense encoders (e.g., BERT-based). A generator with parameters \u03b8 produces target y. Two common formulations:\n\n**RAG-Sequence** marginalizes over the top-k documents Z:\np_Seq(y|x) = \u03a3_{z\u2208Z} p_\u03b7(z|x) \u220f_t p_\u03b8(y_t | y_{<t}, z, x)\n\n**RAG-Token** marginalizes per generated token:\np_Token(y|x) = \u220f_t \u03a3_{z\u2208Z} p_\u03b7(z|x) p_\u03b8(y_t | y_{<t}, z, x)\n\nIn practice, often a single set of k retrieved documents Z is concatenated with x and passed to a generator that models p_\u03b8(y|x, Z) without marginalization, using architectures like FiD where all documents are encoded jointly.\n\n## Estimation\nTraining maximizes the log-likelihood of target y. The retriever is typically initialized from"
+    },
+    {
+      "source": "retrieval-augmented-generation",
+      "chunk_index": 3,
+      "distance": 0.4874,
+      "rrf_score": 0.03252,
+      "text": "=\"pt\").input_ids\ngenerated = model.generate(input_ids)\nprint(tokenizer.decode(generated[0], skip_special_tokens=True))\n```\n## Claim-Dense Reference Facts\n\n- LlamaIndex and LangChain both implement RAG pipelines; LlamaIndex defaults to chunk_size=1024, chunk_overlap=20 tokens.\n- Standard RAG retrieves k=3\u20135 documents; increasing to k=10 improves recall but increases context length and latency.\n- Reranking with cross-encoders (e.g., ms-marco-MiniLM-L-6-v2) improves top-1 precision by 10\u201320% over bi-encoder retrieval alone.\n- HyDE (Hypothetical Document Embeddings) generates a fake answer to the query and embeds it, improving retrieval for abstract queries.\n- Parent-child chunking stores small chunks for retrieval but passes their larger parent chunks to the generator for context.\n- RAG-Fusion generates multiple query variants, retrieves for each, and merges results with Reciprocal Rank Fusion.\n- Contextual compression reduces retrieved text to only the relevant portions before passing to the generator.\n- RAGAS is the standard evaluation framework for RAG pipelines, measuring faithfulness, answer relevancy, and context recall.\n- Dense Passage Retrieval (DPR) uses separate question and passage encoders; both are BERT-base sized (110M parameters).\n- Self-RAG uses four special tokens: [Retrieve], [ISREL], [ISSUP], [ISUSE] to decide when to retrieve and evaluate relevance."
+    },
+    {
+      "source": "retrieval-augmented-generation",
+      "chunk_index": 2,
+      "distance": 0.6059,
+      "rrf_score": 0.03227,
+      "text": ", causing the model to ignore or hallucinate.\n- **Noisy retrieval**: Irrelevant documents distract the generator, degrading answer quality.\n- **Factual distortion**: Mixing information from multiple documents can create inconsistent statements.\n- **Staleness**: If the index is not updated, retrieved information becomes outdated.\n- **Latency**: Retrieval step adds inference time, critical for real-time applications.\n\n## When to Use / Not Use\n**Use**: Open-domain question answering, fact verification, enterprise knowledge integration, long-tail knowledge tasks, any scenario requiring up-to-date or verifiable information grounded in documents.\n\n**Not Use**: Tasks where the model\u2019s implicit knowledge is sufficient and retrieval overhead is unacceptable; online chat requiring minimal latency without a retrieval backend; domains where the corpus is unavailable, unreliable, or too small to matter.\n\n## Variants / Extensions\n- **FiD (Fusion-in-Decoder)**: Concatenates all retrieved documents in the encoder, generates from fused representation.\n- **RETRO**: Interleaves chunked retrieval with cross-attention in intermediate layers.\n- **Atlas**: Jointly trains retriever and generator via a unified loss with full backpropagation through retrieval using approximate gradients.\n- **Self-RAG**: Incorporates retrieval on-demand with reflection tokens to judge relevance.\n- **REALM**: Pre-trains a masked language model with retrieval for open-domain representations.\n\n## Minimal Example (Python)\n```python\nfrom transformers import RagTokenizer, RagSequenceForGeneration\n\ntokenizer = RagTokenizer.from_pretrained(\"facebook/rag-sequence-nq\")\nmodel = RagSequenceForGeneration.from_pretrained(\"facebook/rag-sequence-nq\")\ninput_ids = tokenizer(\"What is the capital of France?\", return_tensors=\"pt\").input_ids\ngenerated = model.generate(input_ids)\nprint(tokenizer.decode(generated[0], skip_special_tokens=True))\n```\n## Claim-Dense Reference Facts\n\n- LlamaIndex and LangChain both implement RAG pipeline"
+    },
+    {
+      "source": "retrieval-augmented-generation",
+      "chunk_index": 1,
+      "distance": 0.495,
+      "rrf_score": 0.032,
+      "text": " a generator that models p_\u03b8(y|x, Z) without marginalization, using architectures like FiD where all documents are encoded jointly.\n\n## Estimation\nTraining maximizes the log-likelihood of target y. The retriever is typically initialized from a pre-trained dense retriever (DPR) and can be kept frozen or fine-tuned. Direct backpropagation through discrete retrieval is circumvented by treating the top-k documents as fixed latent variables from the current retriever, computing the generator\u2019s loss for those documents, and updating the retriever via re-indexing and asynchronous parameter updates, or by using an EM-like approach. The index is built offline with document encoders, and refreshed periodically. Contrastive training of the retriever uses in-batch negatives and hard negatives.\n\n## Assumptions\n- The external corpus contains documents relevant to the queries.\n- The dense retriever can effectively index and rank documents by semantic similarity.\n- The generator can handle variable-length concatenated evidence without confusion.\n- Retrieval latency is within the application\u2019s tolerance.\n- The document index can be rebuilt or updated as knowledge evolves.\n\n## Key Properties\n- **Decoupled knowledge**: Model parameters and factual knowledge are separate; knowledge updates only require re-indexing.\n- **Reduced hallucination**: Outputs are grounded in retrieved text, with provenance for verification.\n- **Scalability**: The corpus can be arbitrarily large, limited only by retrieval efficiency.\n- **Modularity**: Retriever and generator can be swapped or independently improved.\n- **Optimization challenge**: Discrete retrieval is a non-differentiable bottleneck; training requires workarounds.\n\n## Failure Modes\n- **Retrieval failure**: The correct document is not in the top-k, causing the model to ignore or hallucinate.\n- **Noisy retrieval**: Irrelevant documents distract the generator, degrading answer quality.\n- **Factual distortion**: Mixing information from multiple docu"
+    },
+    {
+      "source": "embedding-models-vector-search",
+      "chunk_index": 0,
+      "distance": 0.6523,
+      "rrf_score": 0.02988,
+      "text": "# Embedding Models & Vector Search\n\n## Definition\nEmbedding models are functions that map discrete inputs (text tokens, images, audio) into dense, fixed-dimensional real-valued vectors, such that semantically similar items are placed close in the vector space. Vector search is the task of efficiently retrieving the top-k vectors most similar to a query vector from a large collection, using a distance metric (cosine, Euclidean) and approximate nearest neighbor (ANN) indexing.\n\n## Intuition\nEmbeddings compress semantic meaning into a numeric point; items with related meaning cluster together. Vector search enables fast lookup of relevant items from millions of candidates by navigating a pre-built index, avoiding exhaustive pairwise comparison.\n\n## Mathematical Formulation\nAn embedding model f: X \u2192 R^d maps input x to v = f(x). Similarity between query q and document d is measured via cosine similarity: cos(q,d) = (q\u00b7d) / (||q|| ||d||). The top-k retrieval solves k = argmax_{i\u2208D} cos(f(q), f(d_i)). Approximate algorithms (HNSW, IVF-PQ) build graph or partition-based indices to achieve sub-linear O(log N) query time by trading minimal accuracy.\n\n## Estimation\nEmbedding models are trained using contrastive or triplet losses that maximize similarity between positive pairs and minimize similarity for negatives. Training data comes from parallel corpora, question-answer pairs, or co-occurrence signals. The vector index is built offline: all document vectors are ingested and an ANN index is constructed (e.g., HNSW graph, IVF centroids). At query time, the same encoder produces the query vector, and the ANN index returns top-k results.\n\n## Assumptions\n- Embedding space is Euclidean, and the consistency metric captures semantic similarity.\n- Query distribution matches training data; domain shift can degrade relevance.\n- Cosine similarity (or chosen metric) is a valid relevance"
+    }
+  ],
+  "attribution": {
+    "web": 32,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

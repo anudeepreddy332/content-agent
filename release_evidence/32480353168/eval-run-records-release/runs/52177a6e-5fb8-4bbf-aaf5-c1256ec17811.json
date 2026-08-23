@@ -1,0 +1,572 @@
+{
+  "run_id": "52177a6e-5fb8-4bbf-aaf5-c1256ec17811",
+  "topic": "Prompt Engineering for Production",
+  "slug": "prompt-engineering-for-production",
+  "timestamp": "2026-08-21T12:23:29.362232+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 11,
+      "S": 13,
+      "V": 20,
+      "W": 2,
+      "U": 0,
+      "N": 22,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.834,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Prompt engineering for production treats prompts as versioned, testable, and monitorable artifacts.",
+          "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+        },
+        {
+          "claim": "A prompt template is a function that maps input data to a token sequence.",
+          "source_url": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production"
+        },
+        {
+          "claim": "In Python, you can use f-strings or a library like Jinja2 to construct prompts dynamically.",
+          "source_url": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production"
+        },
+        {
+          "claim": "Keeping the template separate from the data that fills it allows versioning the template and the data independently.",
+          "source_url": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production"
+        },
+        {
+          "claim": "With the OpenAI Responses API (v1.66+), you can define a Pydantic model and pass it as the text_format parameter to enforce a schema, returning a parsed object or raising an error.",
+          "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+        },
+        {
+          "claim": "Structured output eliminates regex parsing and silent field-missing bugs.",
+          "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+        },
+        {
+          "claim": "System prompts define rules, but few-shot examples show the rules in action.",
+          "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+        },
+        {
+          "claim": "For format-sensitive tasks, include 2-3 examples in the prompt to lock in the format more reliably than instructions alone.",
+          "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+          "confidence": 0.7,
+          "status": "weak",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+        },
+        {
+          "claim": "Few-shot examples add tokens and cost.",
+          "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+        },
+        {
+          "claim": "Prompt injection occurs when unvalidated user input overwrites instructions or leaks system prompts.",
+          "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+        },
+        {
+          "claim": "Mitigations for prompt injection include sanitizing input, using delimiters, and validating output.",
+          "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+          "confidence": 0.7,
+          "status": "weak",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+        },
+        {
+          "claim": "No prompt is fully immune to injection; you must assume injection is possible and design your system to fail safely.",
+          "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+        },
+        {
+          "claim": "Prompts tuned for one model version can break on upgrade (brittleness to model changes).",
+          "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+        },
+        {
+          "claim": "You need a regression test suite that runs your prompt against a golden dataset before every model upgrade.",
+          "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+        },
+        {
+          "claim": "Overfitting to your evaluation set is common: you tune the prompt until it passes your test cases, but it fails on real-world variety.",
+          "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+        },
+        {
+          "claim": "Verbose prompts with many examples increase token usage and latency.",
+          "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+        },
+        {
+          "claim": "Even with structured output, you should validate the content (e.g., severity in range, verdict in allowed set) before using it in your pipeline.",
+          "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+        },
+        {
+          "claim": "Treat prompts as versioned code: store them in Git, review changes, and roll back when needed.",
+          "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+        },
+        {
+          "claim": "Use structured output (e.g., Pydantic models with the OpenAI Responses API) to eliminate regex parsing and silent failures.",
+          "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+        },
+        {
+          "claim": "Always validate model output programmatically, even with structured output, to catch out-of-range values or unexpected content.",
+          "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+        },
+        {
+          "claim": "Design for prompt injection: never trust user input in prompts; sanitize and validate output.",
+          "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+        },
+        {
+          "claim": "Build a regression test suite with a golden dataset to catch prompt brittleness before model upgrades.",
+          "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and coherent, and the technical content is appropriately deep for senior engineers, covering templating, structured output, few-shot examples, and failure modes with concrete code. However, the writing occasionally slips into generic AI-slop phrasing (e.g., 'the most dangerous is prompt injection' and 'non-negotiable') and lacks specific, sourced evidence for claims like model brittleness or injection mitigations, which weakens the grounding despite the high verification count. Tighten the prose, add concrete examples of failure modes with real-world incidents, and cite sources inline to elevate it from publishable-with-minor-edits to good.",
+  "grounding_score": 0.834,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "rejected",
+  "git_status": null,
+  "total_tokens": 15316,
+  "total_cost_usd": 0.00743,
+  "latency_ms": {
+    "retrieve": 9438,
+    "retrieve_web": 9419,
+    "retrieve_kb": 19,
+    "draft": 11720,
+    "verify": 9614,
+    "reflect": 2681,
+    "html_gen": 3970
+  },
+  "error_log": [
+    "[html_gen] policy failure: unreplaced placeholders in article body"
+  ],
+  "claims_verified": 20,
+  "claims_weak": 2,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 2,
+    "mean_confidence_verified": 0.847,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 11,
+    "S": 13,
+    "V": 20,
+    "N": 22,
+    "verified_fraction": 0.909,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Prompt engineering for production treats prompts as versioned, testable, and monitorable artifacts.",
+      "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+    },
+    {
+      "claim": "A prompt template is a function that maps input data to a token sequence.",
+      "source_url": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production"
+    },
+    {
+      "claim": "In Python, you can use f-strings or a library like Jinja2 to construct prompts dynamically.",
+      "source_url": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production"
+    },
+    {
+      "claim": "Keeping the template separate from the data that fills it allows versioning the template and the data independently.",
+      "source_url": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production"
+    },
+    {
+      "claim": "With the OpenAI Responses API (v1.66+), you can define a Pydantic model and pass it as the text_format parameter to enforce a schema, returning a parsed object or raising an error.",
+      "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+    },
+    {
+      "claim": "Structured output eliminates regex parsing and silent field-missing bugs.",
+      "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+    },
+    {
+      "claim": "System prompts define rules, but few-shot examples show the rules in action.",
+      "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+    },
+    {
+      "claim": "For format-sensitive tasks, include 2-3 examples in the prompt to lock in the format more reliably than instructions alone.",
+      "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+      "confidence": 0.7,
+      "status": "weak",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+    },
+    {
+      "claim": "Few-shot examples add tokens and cost.",
+      "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+    },
+    {
+      "claim": "Prompt injection occurs when unvalidated user input overwrites instructions or leaks system prompts.",
+      "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+    },
+    {
+      "claim": "Mitigations for prompt injection include sanitizing input, using delimiters, and validating output.",
+      "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+      "confidence": 0.7,
+      "status": "weak",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+    },
+    {
+      "claim": "No prompt is fully immune to injection; you must assume injection is possible and design your system to fail safely.",
+      "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+    },
+    {
+      "claim": "Prompts tuned for one model version can break on upgrade (brittleness to model changes).",
+      "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+    },
+    {
+      "claim": "You need a regression test suite that runs your prompt against a golden dataset before every model upgrade.",
+      "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+    },
+    {
+      "claim": "Overfitting to your evaluation set is common: you tune the prompt until it passes your test cases, but it fails on real-world variety.",
+      "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+    },
+    {
+      "claim": "Verbose prompts with many examples increase token usage and latency.",
+      "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+    },
+    {
+      "claim": "Even with structured output, you should validate the content (e.g., severity in range, verdict in allowed set) before using it in your pipeline.",
+      "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+    },
+    {
+      "claim": "Treat prompts as versioned code: store them in Git, review changes, and roll back when needed.",
+      "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+    },
+    {
+      "claim": "Use structured output (e.g., Pydantic models with the OpenAI Responses API) to eliminate regex parsing and silent failures.",
+      "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+    },
+    {
+      "claim": "Always validate model output programmatically, even with structured output, to catch out-of-range values or unexpected content.",
+      "source_url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj"
+    },
+    {
+      "claim": "Design for prompt injection: never trust user input in prompts; sanitize and validate output.",
+      "source_url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://myengineeringpath.dev/genai-engineer/prompt-engineering"
+    },
+    {
+      "claim": "Build a regression test suite with a golden dataset to catch prompt brittleness before model upgrades.",
+      "source_url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://www.sundeepteki.org/advice/the-definitive-guide-to-prompt-engineering-from-principles-to-production",
+      "score": 0.82694983,
+      "content": "(e.g., {customer\\_query}) to create modular and reusable prompts that can be integrated into automated pipelines.    A Python implementation might use a templating library like Jinja or simple f-strings to construct prompts dynamically, ensuring a clean separation between logic and data.    # Example of a reusable prompt template in Python  def create\\_summary\\_prompt(article\\_text: str, audience: str, length\\_words: int) -> str:      \"\"\"      Generates a structured prompt for summarizing an article.      \"\"\"      template = f\"\"\"      ### ROLE ###      You are an expert editor for a major news publication.        ### TASK ###      Summarize the following article for an audience of {audience}.        ### CONSTRAINTS ###      - The summary must be no more than {length\\_words} words.      - [...] search results can derail its reasoning process.42 In decision-making tasks that require interacting with an environment (e.g., ALFWorld, WebShop), ReAct's ability to decompose goals and react to environmental feedback gives it a substantial advantage over action-only models.42    Practical Implementation:  A production-ready ReAct agent requires a robust architecture for parsing the model's output, a tool-use module to execute actions, and a prompt manager to construct the next input. A typical implementation in Python would involve a loop that:  1. Sends the current prompt to the LLM. 2. Parses the response to separate the Thought and Action. 3. If the action is Finish, the loop terminates and returns the answer. 4. If it's a tool-use action, it calls the corresponding function (e.g., a [...] prompt templates.  Understand the relationship between prompt structure and the Transformer architecture's attention mechanism.      Prerequisites: Python programming, familiarity with calling REST APIs, foundational knowledge of neural networks.      Core Lessons:  1. From Software 1.0 to 3.0: The new paradigm of programming LLMs. 2. Anatomy of a Prompt: Deconstructing Role, Context, I"
+    },
+    {
+      "url": "https://realpython.com/practical-prompt-engineering",
+      "score": 0.7251239,
+      "content": "`(venv) $ python app.py chats.txt > sanitized-chats.txt\n(venv) $ python app.py testing-chats.txt > sanitized-testing-chats.txt`\n\nYou could continue to build on top of the previous prompt, but eventually you\u2019ll hit a wall when you\u2019re asking the model to do too many edits at once. The classification step is conceptually distinct from the text sanitation, so it\u2019s a good cut-off point to start a new pipeline.\n\nThe sanitized chat conversation files are also included in the example codebase:\n\nGet Sample Code: Click here to download the sample code that you\u2019ll use to get the most out of large language models through prompt engineering. [...] Your text prompt instructs the LLM\u2019s responses, so tweaking it can get you vastly different output. In this tutorial, you\u2019ll apply multiple prompt engineering techniques to a real-world example. You\u2019ll experience prompt engineering as an iterative process, see the effects of applying various techniques, and learn about related concepts from machine learning and data engineering.\n\nIn this tutorial, you\u2019ll learn how to:\n\nYou\u2019ll work with a Python script that you can repurpose to fit your own LLM-assisted task. So if you\u2019d like to use practical examples to discover how you can use prompt engineering to get better results from an LLM, then you\u2019ve found the right tutorial! [...] ## Get to Know the Practical Prompt Engineering Project\n\nYou\u2019ll explore various prompt engineering techniques in service of a practical example: sanitizing customer chat conversations. By practicing different prompt engineering techniques on a single real-world project, you\u2019ll get a good idea of why you might want to use one technique over another and how you can apply them in practice.\n\nImagine that you\u2019re the resident Python developer at a company that handles thousands of customer support chats on a daily basis. Your job is to format and sanitize these conversations. You also help with deciding which of them require additional attention.\n\n### Collect Your Tasks"
+    },
+    {
+      "url": "https://dev.to/klement_gunndu/5-prompt-engineering-patterns-that-actually-work-in-production-4mcj",
+      "score": 0.7171114,
+      "content": "Here's how it works with the OpenAI Python SDK using the Responses API (as of v1.66+, March 2026):\n\n```\nfrom openai import OpenAI from pydantic import BaseModel, Field client = OpenAI() class CodeReview(BaseModel): verdict: str = Field(description = \"PASS, FAIL, or NEEDS_REVIEW \") reason: str = Field(description = \"One-line explanation \") severity: int = Field(ge = 1, le = 5, description = \"1=minor, 5=critical \") response = client. responses. parse(model = \"gpt-4o \", input =[{\" role \": \" system \", \" content \": \"Review the code. Return structured output. \"},{\" role \": \" user \", \" content \": f \"Review: \\n\\n{code_snippet} \"},], text_format = CodeReview,) review = response. output_parsed # CodeReview instance print(review. verdict) # \"FAIL\" print(review. severity) # 4 \n``` [...] Why this matters in production: Without structured output, you write regex to extract fields, handle edge cases where the model wraps its response in markdown, and debug silent failures when a field is missing. With Pydantic, the contract is enforced at the API level. If the response doesn't match your schema, you get an error \u2014 not corrupted data.\n\nThe pattern: Define your output as a Pydantic model. Pass it to the API. Never parse free text in an automated pipeline.\n\n## 3. Use Few-Shot Examples to Lock In Format\n\nSystem prompts define the rules. Few-shot examples show the rules in action. [...] ```\nfromlangchain_core.prompts import ChatPromptTemplate review_prompt = ChatPromptTemplate. from_messages([(\" system \", \"You are a {role} reviewing {artifact_type}. \" \"Apply these standards: {standards}. \" \"Return: verdict (PASS/FAIL), issues found, suggestions. \"),(\" human \", \"Review this {artifact_type}: \\n\\n{content} \"),]) # Reuse across different review types code_messages = review_prompt. format_messages(role = \" senior Python developer \", artifact_type = \" pull request \", standards = \"PEP 8, type hints required, no bare exceptions \", content = pr_diff,) doc_messages = review_prompt. format_messag"
+    },
+    {
+      "url": "https://myengineeringpath.dev/genai-engineer/prompt-engineering",
+      "score": 0.7043437,
+      "content": "- If the documentation does not contain sufficient information to answer, respond: \"The documentation I have access to does not address this question directly.\"\n\n- Always cite the source number(s) you used at the end of your answer in brackets: , , etc.\n\n- Be concise. Answer in 2\u20134 sentences unless the question requires a detailed procedure.\n\n## Documentation\n\n{numbered_context_chunks}\n\n## Question\n\n{user_question}\n\n```\n\n## 7. Prompt Trade-offs and Pitfalls\n\nSection titled \u201c7. Prompt Trade-offs and Pitfalls\u201d\n\nEven well-designed prompts have failure modes \u2014 security vulnerabilities, example quality issues, conflicting constraints, and model-version sensitivity all degrade production reliability.\n\n### Prompt Injection\n\nSection titled \u201cPrompt Injection\u201d [...] ### Writing a Production System Prompt\n\nSection titled \u201cWriting a Production System Prompt\u201d\n\nStep 1: Define the task and role precisely\n\nStart with a one-sentence role statement that specifies the model\u2019s persona and the task domain. Be specific about the level of expertise \u2014 \u201cYou are a concise, technical code reviewer focused on security and correctness\u201d is better than \u201cYou are a helpful assistant.\u201d\n\nStep 2: List explicit behavioral constraints\n\nWrite constraints as rules, not suggestions. Use imperative language. Address the specific failure modes you care about:\n\n What the model should always do\n What the model should never do\n How the model should handle uncertainty or out-of-scope requests\n How the model should handle conflicting information [...] Section titled \u201cPrompt Engineering Checklist\u201d\n\n| Component | Best Practice |\n --- |\n| Role definition | Specific persona with domain expertise, not just \u201chelpful assistant\u201d |\n| Constraints | Explicit rules with imperative language; address known failure modes |\n| Output format | Exact schema or structure; use function calling for programmatic parsing |\n| Few-shot examples | 2\u20135 representative examples covering edge cases; verify quality carefully |\n| Temperature | L"
+    },
+    {
+      "url": "https://www.zenml.io/blog/prompt-engineering-management-in-production-practical-lessons-from-the-llmops-database",
+      "score": 0.69845337,
+      "content": "The field of prompt engineering continues to evolve alongside advances in language models, retrieval architectures, and development tooling. Several critical challenges and technical frontiers warrant attention as organizations scale their LLM operations.\n\nFirst, the complexity of managing prompts across larger engineering teams and diverse use cases demands more sophisticated infrastructure. Current versioning systems and evaluation frameworks, while functional, need to evolve to handle problems like prompt drift, regression testing, and systematic performance tracking across model versions. [...] Alex Strick van LinschotenAlex Strick van Linschoten\n\nPrompt Engineering & Management in Production: Practical Lessons from the LLMOps Database\n\nOn this page\n\nPrompt engineering is the art and science of crafting instructions that unlock the potential of large language models (LLMs). It\u2019s a critical skill for anyone working with LLMs, whether you\u2019re building cutting-edge applications or conducting fundamental research. But what does effective prompt engineering look like in practice, and how can we systematically improve our prompts over time? [...] Iterative prompt engineering was a key technique in developing Fiddler\u2019s documentation chatbot, enabling the creation of prompts that generalize well across diverse user queries. Instead of extensive fine-tuning, the team focused on designing domain-specific prompt templates and continuously refining them based on real-world interactions. This iterative approach allowed the chatbot to adapt flexibly to new questions while maintaining accuracy and relevance in its responses."
+    },
+    {
+      "url": "https://www.digitalapplied.com/blog/prompt-engineering-anti-patterns-10-mistakes-2026",
+      "score": 0.6929958,
+      "content": "median observed cadence\n\nEval-suite catch rate\n\n~85%\n\nindicative \u00b7 DA audits\n\nProduction prompt cap\n\nbefore audit becomes mandatory\n\nPrompt engineering anti-patterns are the failure modes most teams ship without naming. A prompt that works in a demo notebook can decay silently in production for months \u2014 the model still responds, outputs still look plausible, customer-facing quality still passes casual review \u2014 while accuracy drifts five points a week and the team has no instrumentation to notice. Naming the failure modes is the first defence; an eval suite is the second. [...] The framing is contrarian by design. The prompt engineering canon still leans heavily on tactics \u2014 \"add a persona,\" \"use few-shot examples,\" \"chain-of-thought it\" \u2014 without acknowledging that each of those tactics is also an anti-pattern when over-applied or applied without measurement. The goal here is to make the failure modes visible so prompt engineering can be treated as the engineering discipline it actually is.\n\nKey takeaways\n\n1. 01\n\n   Few-shot examples need auditing as carefully as prompts.Example contamination \u2014 an old example that contradicts current instructions \u2014 is the single most common silent-failure source in production prompts. Audit the example set whenever the instruction set changes.\n2. 02 [...] The silent-drift fix\n\nThe simplest, cheapest, most under-adopted intervention in prompt engineering is anightly cron that runs the eval suite against production prompts and pages the named owner when scores drop. Infrastructure cost is a GitHub Actions schedule trigger. Behavioural change is treating prompts as first-class production artefacts. The two together compound for the rest of the prompt library's lifetime. For agencies and engineering teams stepping into this discipline, our AI transformation engagements install the eval pipeline as the first deliverable, not the last.\n\nConclusion\n\n### Prompt engineering is engineering \u2014 anti-patterns are the failure modes you ship withou"
+    },
+    {
+      "url": "https://www.oracle.com/artificial-intelligence/prompt-engineering",
+      "score": 0.69274646,
+      "content": "## What Is Prompt Engineering?\n\nPrompt engineering is the practice of crafting instructions, or prompts, to guide a generative AI model to generate desired outputs. This process uses iterative efforts to improve how various formats, phrases, function calls from LLMs to other systems, and additional variable elements of an AI prompt perform. The goal is to provide the LLM with optimal specificity and context.\n\nThe following are some of the most important elements of prompt engineering: [...] 2. Balance precision and brevity  \nVague, open-ended prompts lead models to output vague or repetitive results. Specificity is the key to good prompt engineering, including both technical and practical elements. On the technical side, precise prompts factor in the preferred formats and known parameters of the LLM and app. On the practical side, key factors include target audience, app/model function, expected background knowledge, and precise instructions, as well as appropriate samples or parameters, such as the number of requested points or examples. [...] When integrated into a development workflow, a prompt engineer\u2019s skill set should lean more technical. Because a prompt may need to make external requests, for example, an understanding of how APIs and function calls work and competency in standard programming languages are valuable. In addition, a technical background allows prompt engineers to consider the computational costs of different prompting strategies so they can strike a balance between performance and cost-effectiveness.\n\n## Prompt Engineering Use Cases\n\nPrompt engineering can be a vital tool in improving both efficiency in AI resource use and user satisfaction. By integrating a base prompt into an app\u2019s workflow, apps can generate better, more accurate results even when humans provide vague inputs."
+    },
+    {
+      "url": "https://bigdataboutique.com/blog/from-prompt-engineering-to-context-engineering",
+      "score": 0.6826801,
+      "content": "### Why Agents Fail\n\nAccording to LangChain's 2025 State of Agent Engineering report, 57% of organizations now have AI agents in production, but 32% cite quality as their top barrier. Most quality failures trace back not to model capability but to poor context management - the model had the wrong information, too much information, or stale information when it needed to make a decision.\n\nDrew Breunig identified four context failure modes in production systems: poisoning (wrong information injected), distraction (irrelevant context drowning out relevant), confusion (contradictory information), and clash (conflicting instructions from different context sources). Each of these is a context engineering problem, not a prompt engineering problem. [...] Context engineering is the discipline of designing the full information environment an LLM receives - system instructions, retrieved knowledge, tool results, and conversation history - not just the prompt text.\n Prompt engineering is a subset of context engineering, not a separate practice. You still need good prompts, but they're one component of a larger system.\n Production AI agents fail primarily due to bad context, not bad prompts. The model had the wrong information, not the wrong instructions.\n The four strategies for managing context are write (persist for later), select (retrieve what's relevant), compress (fit within token limits), and isolate (separate concerns across agents). [...] ## The Rise and Limits of Prompt Engineering\n\nPrompt engineering gave us genuinely useful techniques. Few-shot prompting showed models how to respond by example. Chain-of-thought prompting (Wei et al., 2022) unlocked step-by-step reasoning. System prompts set behavioral boundaries. These techniques work well for single-turn interactions - ask a question, get an answer.\n\nBut prompt engineering assumes a static world. You write a prompt, test it, maybe iterate a few times, and ship it. The problems show up when your LLM application needs"
+    },
+    {
+      "url": "https://www.databricks.com/blog/what-is-prompt-engineering",
+      "score": 0.67140645,
+      "content": "Prompt engineering is an emerging field at the forefront of artificial intelligence (AI) development that focuses on the critical processes of crafting effective inputs for generative AI (GenAI) models. As AI systems become increasingly sophisticated, the ability to communicate with them effectively has become a crucial skill. Prompt engineering bridges the gap between human intent and machine understanding, ensuring that AI tools produce optimal outputs. [...] At its core, prompt engineering involves designing and refining the natural language instructions given to AI models. These instructions, known as prompts, guide the AI in performing specific tasks, from generating text and answering questions to creating images and writing code. The goal is to elicit the most accurate, relevant and useful responses from the AI system. [...] Prompt engineering is a critical skill. It requires a blend of creativity, technical knowledge and systematic testing. As AI continues to advance, the ability to craft effective prompts will become increasingly valuable across various industries and applications. By mastering the art and science of prompt engineering, we can unlock the full potential of AI technologies, enabling more accurate, creative and useful AI-generated outputs.\n\n## Additional Resources\n\n### Get the latest posts in your inbox\n\nSubscribe to our blog and get the latest posts delivered to your inbox.\n\n## Sign up\n\ndatabricks logo\ndatabricks logo\ndatabricks logo\ndatabricks logo\n\nDatabricks Inc.  \n160 Spear Street, 15th Floor  \nSan Francisco, CA 94105  \n1-866-330-0121\n\nSee Careers  \nat Databricks"
+    },
+    {
+      "url": "https://aws.amazon.com/what-is/prompt-engineering",
+      "score": 0.66777676,
+      "content": "## Page topics\n\n## What is prompt engineering?\n\nPrompt engineering is the process where you guide generative artificial intelligence (generative AI) solutions to generate desired outputs. Even though generative AI attempts to mimic humans, it requires detailed instructions to create high-quality and relevant output. In prompt engineering, you choose the most appropriate formats, phrases, words, and symbols that guide the AI to interact with your users more meaningfully. Prompt engineers use creativity plus trial and error to create a collection of input texts, so an application's generative AI works as expected.\n\n## What is a prompt? [...] ## What are prompt engineering techniques?\n\nPrompt engineering is a dynamic and evolving field. It requires both linguistic skills and creative expression to fine-tune prompts and obtain the desired response from the generative AI tools.\n\nRead the guide to prompt engineering by AWS PartyRock \u00bb\n\nHere are some more examples of techniques that prompt engineers use to improve their AI models' natural language processing (NLP) tasks.\n\n### Chain-of-thought prompting\n\nChain-of-thought prompting is a technique that breaks down a complex question into smaller, logical parts that mimic a train of thought. This helps the model solve problems in a series of intermediate steps rather than directly answering the question. This enhances its reasoning ability. [...] ## What is a prompt?\n\nA prompt is a natural language text that requests the generative AI to perform a specific task. Generative AI is an artificial intelligence solution that creates new content like stories, conversations, videos, images, and music. It's powered by very large machine learning (ML) models that use deep neural networks that have been pretrained on vast amounts of data.\n\nThe large language models (LLMs) are very flexible and can perform various tasks. For example, they can summarize documents, complete sentences, answer questions, and translate languages. For specific "
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "prompt-engineering-production",
+      "chunk_index": 0,
+      "distance": 0.4191,
+      "rrf_score": 0.03333,
+      "text": "# Prompt Engineering for Production\n\n## Definition\nPrompt engineering for production is the disciplined practice of designing, versioning, testing, deploying, and monitoring natural language prompts used in live language model applications. It treats prompts as maintainable configuration artifacts\u2014analogous to code\u2014governed by engineering rigor to ensure reliable, safe, and efficient model behavior under real-world variability.\n\n## Intuition\nProduction prompts are not one-off experimental instructions but robust operational components that must handle edge cases, adversarial inputs, model updates, and scale. They are embedded in software pipelines, require structured evaluation, and are continuously improved based on collected metrics.\n\n## Mathematical Formulation\nA prompt template p = (template_text, parameters) defines a function f(x; p) that maps input context x to a token sequence sent to the model. Prompt optimization seeks p* = argmax_{p\u2208P} E_{(x,y)\u223cD}[ M( m(f(x; p)), y) ] where M is a metric (accuracy, F1, safety), m is the model, and D is the task distribution. For discrete prompts, this is a combinatorial search; for soft prompts, optimization uses gradient descent.\n\n## Estimation\nPrompt quality is estimated offline via evaluation on curated golden datasets covering normal, edge, and adversarial cases. Metrics include task accuracy, format compliance, latency, and toxicity scores. Online estimation uses A/B testing, monitoring output distributions, and drift detection. Iterative refinement is based on logged errors and human feedback. Tools (e.g., LangSmith, Weights & Biases Prompts) track versions and scores.\n\n## Assumptions\n- The underlying language model is a fixed black box (API or self-hosted) with deterministic API.\n- A representative evaluation dataset exists or can be constructed.\n- Prompts are expressed as text strings with injected variables from safe sources.\n- Deployment pipeline supports versioned rollouts and rollback.\n- Output can be validate"
+    },
+    {
+      "source": "prompt-engineering-production",
+      "chunk_index": 1,
+      "distance": 0.5289,
+      "rrf_score": 0.03279,
+      "text": " self-hosted) with deterministic API.\n- A representative evaluation dataset exists or can be constructed.\n- Prompts are expressed as text strings with injected variables from safe sources.\n- Deployment pipeline supports versioned rollouts and rollback.\n- Output can be validated programmatically (e.g., regex, JSON parse).\n\n## Key Properties\n- **Controlled variability**: Inputs are bound to validated template slots; untrusted content is sanitized.\n- **Testable**: Prompts are unit-tested for structure and integrated with CI for regression detection.\n- **Monitorable**: Response quality, latency, and failure modes are tracked post-deploy.\n- **Versioned**: Stored in Git with audit trails, enabling rollback and comparative experiments.\n- **Composable**: Can be combined into chains/graphs while maintaining observability.\n\n## Failure Modes\n- **Prompt injection**: Unvalidated user input overwrites instructions or leaks system prompts.\n- **Brittleness to model change**: Prompts tuned for one model version break on upgrade.\n- **Overfitting to evaluation set**: Prompts that game selected examples but fail on live data.\n- **Unbounded output**: Model fails to follow format, breaking downstream parsers.\n- **Cost escalation**: Verbose prompts with many examples increase token usage and latency.\n- **Information staleness**: Hard-coded knowledge in prompt diverges from facts.\n\n## When to Use / Not Use\n**Use**: Building any production LLM feature accessible to external or internal users, requiring consistency, safety, and maintainability. When prompt behavior must be auditable and updateable without retraining.\n\n**Not use**: One-off exploratory data analysis or rapid prototyping where no operational footprint exists. When fine-tuned custom models yield better control and latency, or when deterministic non-LLM solutions are cheaper and more reliable.\n\n## Variants / Extensions\n- **Dynamic few-shot selection**: Retrieve relevant exemplars at runtime based on input.\n- **Meta-prompting**: U"
+    },
+    {
+      "source": "prompt-engineering-production",
+      "chunk_index": 2,
+      "distance": 0.6711,
+      "rrf_score": 0.032,
+      "text": " when deterministic non-LLM solutions are cheaper and more reliable.\n\n## Variants / Extensions\n- **Dynamic few-shot selection**: Retrieve relevant exemplars at runtime based on input.\n- **Meta-prompting**: Use an LLM to generate or optimize prompts.\n- **Chain-of-thought (CoT) prompting**: Including reasoning steps for complex tasks.\n- **Guardrails**: Output validation layers that enforce format, block toxicity, or check facts.\n- **DSPy**: Automatically optimize prompt and few-shot examples from data.\n- **Prompt ensembling**: Combining multiple prompt variants and aggregating results.\n\n## Minimal Example (Python)\n```python\nimport json\nprompt_template = \"\"\"Classify sentiment: {text}\\nReturn JSON: {{\"label\": \"positive\"|\"negative\"}}\"\"\"\ndef evaluate(text):\n    prompt = prompt_template.format(text=text)\n    # mock model call\n    response = '{\"label\": \"positive\"}'\n    return json.loads(response)[\"label\"]\n\n# Simple test\nassert evaluate(\"I love this!\") == \"positive\"\n```"
+    },
+    {
+      "source": "agentic-ai-production",
+      "chunk_index": 0,
+      "distance": 0.6316,
+      "rrf_score": 0.03062,
+      "text": "# Agentic AI in Real Production\n\n## Definition\nAgentic AI in real production is the deployment of autonomous language-model agents as live services that plan, execute tools, observe results, and adapt actions over multiple steps to accomplish complex user goals. It extends theoretical agent patterns with production-grade requirements: reliability, observability, oversight, cost control, and integration with existing infrastructure.\n\n## Intuition\nA lab agent only needs to solve a task once. A production agent must solve thousands of tasks correctly, safely, and within time and budget, while producing logs, handling malformed tool outputs, and refusing unsafe actions. It is a stateful, long-running process managed like a microservice.\n\n## Mathematical Formulation\nAn agent is a policy \u03c0 that, at step t with history H_t, outputs action A_t in a fixed action space A. The environment E provides observation O_t, producing extended history H_{t+1}=H_t\u222a{(A_t,O_t)}. Production constraints define: (1) a step budget N_max; (2) a total cost bound C_max=\u03a3_t c(A_t); (3) a latency deadline T_max per step. The agent task is to produce a final answer y within these bounds. Formally: y=\u03c0*(x) subject to t \u2264 N_max, \u03a3 c(A_t) \u2264 C_max, per-step latency \u2264 T_max. Validation includes output schema check \u03c8(y) \u2208 {valid, invalid} and optional safety filters.\n\n## Estimation\nAgent reliability is estimated via offline evaluation on curated task suites, measuring task success rate, average steps, cost, and safety violations. Online estimation uses metrics like completion rate, latency percentiles, tool failure recovery rate, and user feedback. Canary releases and A/B tests compare agent configurations. Fine-grained logging enables bottleneck analysis (e.g., planning failures vs. tool failures).\n\n## Assumptions\n- Tools and APIs used by the agent are idempotent"
+    },
+    {
+      "source": "react-agent-pattern",
+      "chunk_index": 1,
+      "distance": 0.7113,
+      "rrf_score": 0.0303,
+      "text": " the model on ReAct-augmented trajectories to improve action validity and reasoning coherence, using standard language-modeling objectives on token sequences that include special delimiters for thoughts and actions.\n\n## Assumptions\n- The model can reliably generate structured actions parsable by the environment (e.g., JSON, specific command text).\n- The environment provides informative textual observations for the model to interpret.\n- The action space is well-defined and the prompt conveys the available tools.\n- Few-shot examples correctly illustrate the desired interleaving format.\n\n## Key Properties\n- **Dynamic information seeking**: The model can decide when and what external information to fetch.\n- **Improved factual grounding**: Explicitly retrieved observations replace hallucinated knowledge.\n- **Interpretability**: The reasoning trace exposes the decision process.\n- **Synergy**: Reasoning helps guide actions; action observations correct and inform the next reasoning step.\n- **LLM agnostic**: Works with any instruction-following model capable of structured generation.\n\n## Failure Modes\n- **Action parsing errors**: Model produces malformed commands, breaking the execution loop.\n- **Reasoning-action misalignment**: Thought describes one intent but action does something else.\n- **Infinite loops**: Model never emits the finish action, cycling repetitively on the same action.\n- **Fabricated observations**: Model may hallucinate the outcome of an action instead of waiting for the real observation.\n- **Latency**: Multiple serial LLM calls increase response time.\n\n## When to Use / Not Use\n**Use**: Multi-hop question answering, interactive web navigation, API orchestration, complex research tasks requiring iterative lookups, debugging with external tools.\n\n**Not use**: Simple factual queries answerable in one step, latency-critical applications, environments where actions have irreversible side effects without human confirmation, or when the model\u2019s instruction-follow"
+    }
+  ],
+  "attribution": {
+    "web": 22,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

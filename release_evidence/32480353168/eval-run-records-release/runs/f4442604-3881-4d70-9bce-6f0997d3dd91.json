@@ -1,0 +1,697 @@
+{
+  "run_id": "f4442604-3881-4d70-9bce-6f0997d3dd91",
+  "topic": "XGBoost",
+  "slug": "xgboost",
+  "timestamp": "2026-08-21T12:15:35.786380+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 19,
+      "S": 20,
+      "V": 23,
+      "W": 6,
+      "U": 0,
+      "N": 29,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.852,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "XGBoost is the default first choice for winning competitions on structured data.",
+          "source_url": "https://blog.quantinsti.com/xgboost-python",
+          "confidence": 0.6,
+          "status": "weak",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.quantinsti.com/xgboost-python"
+        },
+        {
+          "claim": "XGBoost builds an ensemble of decision trees sequentially, where each new tree corrects the errors of the previous ones.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "XGBoost uses a second-order Taylor approximation of the loss function, which lets it converge faster and support custom loss functions.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "XGBoost includes L1 and L2 regularization to fight overfitting, which plain gradient boosting lacks.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "XGBoost handles missing values, supports GPU training, and gives feature importance scores out of the box.",
+          "source_url": "https://blog.quantinsti.com/xgboost-python",
+          "confidence": 0.5,
+          "status": "weak",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.quantinsti.com/xgboost-python"
+        },
+        {
+          "claim": "XGBoost builds an ensemble of regression trees.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "At step t, the model has predictions y_hat^(t-1) from the previous trees.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "The new tree f_t is chosen to minimize the objective: Obj = sum_i L(y_i, y_hat_i^(t-1) + f_t(x_i)) + Omega(f_t).",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "XGBoost approximates L with a second-order Taylor expansion around the current prediction.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "g_i is the first derivative (gradient) and h_i is the second derivative (Hessian) of the loss with respect to the prediction.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "XGBoost uses both gradient and curvature, unlike plain gradient boosting that only uses the gradient.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "The regularization term is Omega(f_t) = gamma * T + 0.5 * lambda * ||w||^2, where T is the number of leaves and w are the leaf weights.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "For a fixed tree structure, the optimal leaf weight for leaf j is: w_j* = - (sum_{i in leaf j} g_i) / (sum_{i in leaf j} h_i + lambda).",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "The split gain for a candidate split is computed as: Gain = 0.5 * [ (G_L)^2 / (H_L + lambda) + (G_R)^2 / (H_R + lambda) - (G_L + G_R)^2 / (H_L + H_R + lambda) ] - gamma.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "The gamma term penalizes adding leaves, so splits that do not reduce the objective enough are pruned.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "Setting max_depth low (e.g., 3) and n_estimators low reduces overfitting.",
+          "source_url": "https://blog.quantinsti.com/xgboost-python",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.quantinsti.com/xgboost-python"
+        },
+        {
+          "claim": "The learning_rate shrinks the contribution of each tree, making the model more robust but requiring more trees.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "A common failure mode is overfitting when you use too many trees or too deep trees.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "XGBoost can easily overfit on tiny datasets.",
+          "source_url": "https://blog.quantinsti.com/xgboost-python",
+          "confidence": 0.5,
+          "status": "weak",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.quantinsti.com/xgboost-python"
+        },
+        {
+          "claim": "XGBoost is not interpretable as a white-box model; if you need to explain decisions to regulators, you might prefer a single decision tree or a linear model.",
+          "source_url": "https://blog.quantinsti.com/xgboost-python",
+          "confidence": 0.5,
+          "status": "weak",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.quantinsti.com/xgboost-python"
+        },
+        {
+          "claim": "For extreme input values outside the training range, tree-based models extrapolate poorly \u2014 they can only output values seen in training leaves.",
+          "source_url": "https://blog.quantinsti.com/xgboost-python",
+          "confidence": 0.5,
+          "status": "weak",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.quantinsti.com/xgboost-python"
+        },
+        {
+          "claim": "XGBoost has a native DMatrix data structure that speeds up training and reduces memory usage.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting"
+        },
+        {
+          "claim": "You can enable categorical feature handling with enable_categorical=True.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting"
+        },
+        {
+          "claim": "The scikit-learn wrapper (XGBClassifier, XGBRegressor) integrates with pipelines and cross-validation.",
+          "source_url": "https://www.youtube.com/watch?v=aLOQD66Sj0g",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=aLOQD66Sj0g"
+        },
+        {
+          "claim": "XGBoost uses second-order Taylor expansion of the loss, giving it faster convergence and support for custom loss functions.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "Regularization (gamma, lambda, alpha) is built into the objective, which helps prevent overfitting compared to plain gradient boosting.",
+          "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+        },
+        {
+          "claim": "Set max_depth low (e.g., 3) and use early stopping to avoid overfitting when training many trees.",
+          "source_url": "https://blog.quantinsti.com/xgboost-python",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://blog.quantinsti.com/xgboost-python"
+        },
+        {
+          "claim": "Use the native DMatrix API for faster training and lower memory usage, especially on large datasets.",
+          "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting"
+        },
+        {
+          "claim": "XGBoost is not interpretable as a white-box model; for critical decisions, consider simpler models or use feature importance cautiously.",
+          "source_url": "https://blog.quantinsti.com/xgboost-python",
+          "confidence": 0.5,
+          "status": "weak",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://blog.quantinsti.com/xgboost-python"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is technically sound and well-structured, with all four sections present and coherent. The math is correct and appropriately detailed for the audience, and the code examples are practical. However, the writing has a slightly generic, textbook feel \u2014 the problem framing could be sharper about when XGBoost is NOT the right choice, and the takeaways repeat points already made rather than synthesizing deeper insights. Minor tightening of prose and adding a concrete production pitfall (e.g., feature leakage or calibration) would elevate it.",
+  "grounding_score": 0.852,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 17015,
+  "total_cost_usd": 0.00887,
+  "latency_ms": {
+    "retrieve": 6087,
+    "retrieve_web": 6068,
+    "retrieve_kb": 19,
+    "draft": 11644,
+    "verify": 11731,
+    "reflect": 2179,
+    "html_gen": 5104,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 23,
+  "claims_weak": 6,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 6,
+    "mean_confidence_verified": 0.939,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 19,
+    "S": 20,
+    "V": 23,
+    "N": 29,
+    "verified_fraction": 0.793,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "XGBoost is the default first choice for winning competitions on structured data.",
+      "source_url": "https://blog.quantinsti.com/xgboost-python",
+      "confidence": 0.6,
+      "status": "weak",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.quantinsti.com/xgboost-python"
+    },
+    {
+      "claim": "XGBoost builds an ensemble of decision trees sequentially, where each new tree corrects the errors of the previous ones.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "XGBoost uses a second-order Taylor approximation of the loss function, which lets it converge faster and support custom loss functions.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "XGBoost includes L1 and L2 regularization to fight overfitting, which plain gradient boosting lacks.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "XGBoost handles missing values, supports GPU training, and gives feature importance scores out of the box.",
+      "source_url": "https://blog.quantinsti.com/xgboost-python",
+      "confidence": 0.5,
+      "status": "weak",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.quantinsti.com/xgboost-python"
+    },
+    {
+      "claim": "XGBoost builds an ensemble of regression trees.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "At step t, the model has predictions y_hat^(t-1) from the previous trees.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "The new tree f_t is chosen to minimize the objective: Obj = sum_i L(y_i, y_hat_i^(t-1) + f_t(x_i)) + Omega(f_t).",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "XGBoost approximates L with a second-order Taylor expansion around the current prediction.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "g_i is the first derivative (gradient) and h_i is the second derivative (Hessian) of the loss with respect to the prediction.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "XGBoost uses both gradient and curvature, unlike plain gradient boosting that only uses the gradient.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "The regularization term is Omega(f_t) = gamma * T + 0.5 * lambda * ||w||^2, where T is the number of leaves and w are the leaf weights.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "For a fixed tree structure, the optimal leaf weight for leaf j is: w_j* = - (sum_{i in leaf j} g_i) / (sum_{i in leaf j} h_i + lambda).",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "The split gain for a candidate split is computed as: Gain = 0.5 * [ (G_L)^2 / (H_L + lambda) + (G_R)^2 / (H_R + lambda) - (G_L + G_R)^2 / (H_L + H_R + lambda) ] - gamma.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "The gamma term penalizes adding leaves, so splits that do not reduce the objective enough are pruned.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "Setting max_depth low (e.g., 3) and n_estimators low reduces overfitting.",
+      "source_url": "https://blog.quantinsti.com/xgboost-python",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.quantinsti.com/xgboost-python"
+    },
+    {
+      "claim": "The learning_rate shrinks the contribution of each tree, making the model more robust but requiring more trees.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "A common failure mode is overfitting when you use too many trees or too deep trees.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "XGBoost can easily overfit on tiny datasets.",
+      "source_url": "https://blog.quantinsti.com/xgboost-python",
+      "confidence": 0.5,
+      "status": "weak",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.quantinsti.com/xgboost-python"
+    },
+    {
+      "claim": "XGBoost is not interpretable as a white-box model; if you need to explain decisions to regulators, you might prefer a single decision tree or a linear model.",
+      "source_url": "https://blog.quantinsti.com/xgboost-python",
+      "confidence": 0.5,
+      "status": "weak",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.quantinsti.com/xgboost-python"
+    },
+    {
+      "claim": "For extreme input values outside the training range, tree-based models extrapolate poorly \u2014 they can only output values seen in training leaves.",
+      "source_url": "https://blog.quantinsti.com/xgboost-python",
+      "confidence": 0.5,
+      "status": "weak",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.quantinsti.com/xgboost-python"
+    },
+    {
+      "claim": "XGBoost has a native DMatrix data structure that speeds up training and reduces memory usage.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting"
+    },
+    {
+      "claim": "You can enable categorical feature handling with enable_categorical=True.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting"
+    },
+    {
+      "claim": "The scikit-learn wrapper (XGBClassifier, XGBRegressor) integrates with pipelines and cross-validation.",
+      "source_url": "https://www.youtube.com/watch?v=aLOQD66Sj0g",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=aLOQD66Sj0g"
+    },
+    {
+      "claim": "XGBoost uses second-order Taylor expansion of the loss, giving it faster convergence and support for custom loss functions.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "Regularization (gamma, lambda, alpha) is built into the objective, which helps prevent overfitting compared to plain gradient boosting.",
+      "source_url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f"
+    },
+    {
+      "claim": "Set max_depth low (e.g., 3) and use early stopping to avoid overfitting when training many trees.",
+      "source_url": "https://blog.quantinsti.com/xgboost-python",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://blog.quantinsti.com/xgboost-python"
+    },
+    {
+      "claim": "Use the native DMatrix API for faster training and lower memory usage, especially on large datasets.",
+      "source_url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting"
+    },
+    {
+      "claim": "XGBoost is not interpretable as a white-box model; for critical decisions, consider simpler models or use feature importance cautiously.",
+      "source_url": "https://blog.quantinsti.com/xgboost-python",
+      "confidence": 0.5,
+      "status": "weak",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://blog.quantinsti.com/xgboost-python"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://blog.quantinsti.com/xgboost-python",
+      "score": 0.8488849,
+      "content": "### Create predictors and target variables\n\nThe target variable is the next day's return. If the next day\u2019s return is positive we label it as 1 and if it is negative then we label it as -1. You can also try to create the target variables with three labels such as 1, 0 and -1 for long, no position and short.\n\nLet\u2019s see the code now.\n\nBefore we move on to the implementation of the XGBoost python model, let\u2019s first plot the daily returns of Apple stored in the dictionary to see if everything is working fine.\n\nOutput:\n\nAAPL_XGBoost\n\nAAPL\\_XGBoost\n\nYes. It all looks fine!\n\n### Initialise the XGBoost machine learning model\n\nWe will initialise the classifier model. We will set two hyperparameters namely max\\_depth and n\\_estimators. These are set on the lower side to reduce overfitting. [...] ### Import libraries\n\nWe have written the use of the library in the comments. For example, since we use XGBoost python library, we will import the same and write # Import XGBoost as a comment.\n\n### Define parameters\n\nWe have defined the list of stock, start date and the end date which we will be working with in this blog.\n\nJust to make things interesting, we will use the XGBoost python model on companies such as Apple, Amazon, Netflix, Nvidia and Microsoft. Creating predictors and target variables\n\nWe have also defined a list of predictors from which the model will pick the best predictors. Here, we have the percentage change and the standard deviation with different time periods as the predictor variables.\n\n### Create predictors and target variables [...] Sequential ensemble methods, known as \"boosting,\" work like a team of learners. Each learner tries to fix the mistakes made by the previous one. Think of it as a relay race where the baton is improving with each handoff.\n\nIn the example, the first classifier gets the training data. It makes some mistakes (shown with yellow and blue backgrounds), and those mistakes get extra attention. The second classifier focuses on fixing those er"
+    },
+    {
+      "url": "https://machinelearningmastery.com/develop-first-xgboost-model-python-scikit-learn",
+      "score": 0.8482825,
+      "content": "1. Install XGBoost for use with Python.\n2. Problem definition and download dataset.\n3. Load and prepare data.\n4. Train XGBoost model.\n5. Make predictions and evaluate model.\n6. Tie it all together and run the example.\n\n### Need help with XGBoost in Python?\n\nTake my free 7-day email course and discover xgboost (with sample code).\n\nClick to sign-up now and also get a free PDF Ebook version of the course.\n\n## 1. Install XGBoost for Use in Python\n\nAssuming you have a working SciPy environment, XGBoost can be installed easily using pip.\n\nFor example:\n\n|  |  |\n --- |\n|  | sudo pip install xgboost |\n\nTo update your installation of XGBoost you can type:\n\n|  |  |\n --- |\n| 1 | sudo pip install --upgrade xgboost | [...] We must separate the columns (attributes or features) of the dataset into input patterns (X) and output patterns (Y). We can do this easily by specifying the column indices in the NumPy array format.\n\n|  |  |\n --- |\n| 1  2  3 | # split data into X and y  X = dataset[:,0:8]  Y = dataset[:,8] |\n\nFinally, we must split the X and Y data into a training and test dataset. The training set will be used to prepare the XGBoost model and the test set will be used to make new predictions, from which we can evaluate the performance of the model.\n\nFor this we will use the train\\_test\\_split() function from the scikit-learn library. We also specify a seed for the random number generator so that we always get the same split of data each time this example is executed. [...] |  |  |\n --- |\n| 1  2  3 | # fit model no training data  model = XGBClassifier()  model.fit(X\\_train, y\\_train) |\n\nYou can see the parameters used in a trained model by printing the model, for example:\n\n|  |  |\n --- |\n| 1 | print(model) |\n\nYou can learn more about the defaults for the XGBClassifier and XGBRegressor classes in the XGBoost Python scikit-learn API.\n\nYou can learn more about the meaning of each parameter and how to configure them on the XGBoost parameters page.\n\nWe are now ready to use the trai"
+    },
+    {
+      "url": "https://medium.com/low-code-for-advanced-data-science/xgboost-explained-a-beginners-guide-095464ad418f",
+      "score": 0.8415267,
+      "content": "XGBoost, or Extreme Gradient Boosting, represents a cutting-edge approach to machine learning that has garnered widespread acclaim for its exceptional performance in tackling classification and regression problems. By leveraging an ensemble of decision trees, XGBoost constructs a powerful predictive model through an iterative process that focuses on minimising errors. This iterative refinement, driven by gradient descent optimisation (the ability of the model to find the answer with the least error quickly), enables XGBoost to continually enhance its predictive accuracy by strategically updating the parameters of the decision trees. Moreover, XGBoost incorporates regularisation techniques, or more simply, techniques to combat overfitting, ensuring the model\u2019s ability to generalise well to [...] ## How does XGBoost work?\n\nAt its core, XGBoost employs a technique called gradient boosting. This is where the algorithm starts by creating a simple decision tree and then iteratively adds more trees to the model, each one focusing on correcting the errors made by the previous trees. This process continues until a predetermined number of trees is reached or the model\u2019s performance no longer improves significantly.\n\nXGBoost introduces several key enhancements to the standard gradient boosting algorithm: [...] 1.   Regularisation: XGBoost incorporates regularisation techniques, such as L1 (Lasso Regression) and L2 (Ridge Regression) regularisation to prevent overfitting and improve model generalisation to help prevent models from getting too complex and overfitting the data. L1 regularisation simplifies the model by removing less important features, while L2 regularisation keeps the model stable by balancing the influence of different features.\n2.   Tree Pruning: XGBoost employs a technique called \u201ctree pruning\u201d to limit the depth of decision trees, avoiding overly complex and potentially overfit models.\n3.   Parallel Processing: XGBoost supports parallel processing, enabling "
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=aLOQD66Sj0g",
+      "score": 0.8184036,
+      "content": "example here let's set up a pipeline called pipe holding the parameter steps as this variable called estimators the estimators includes a list of tuples in sequential order first an encoder of Target encoder encoding like this is a standard pre-processing procedure and classification prediction problems it will transform the categorical features in our data set into numeric ones you can read more about Target encoders which I'll put a link below then an estimator clf of X Cube boost classifier this is the SK learn wrapper implementation of the xq Boost classification again we have the random State set here to get reproducible results if you're having a regression problem please use xgb regressor instead if we run the code and print out pipe actually you can see some warning messages but [...] how to train an XG boost model in Python this tutorial will get you started with an example step by step I'll show you what is xq Boost and how to implement it in Python including scikit-learn pipeline setup hyper parameter tuning model evaluation and feature importance plot by the end you'll be able to build your own xq boost model for your prediction tasks let's Dive In hi everyone I'm Justin welcome to just into Data where data science materials are shared and made simpler for you before jumping into the example in Python let's answer the question what is xq Boost xgboost stands for extreme gradient boosting it's an optimized implementation of the gradient boosting algorithm it became well known because of its outstanding accuracy and efficiency compared to other algorithms in machine [...] term added to the loss function we'll use some regularization parameters in our xgboost python example also more scalable xgboost was designed to be scalable it has implemented practices such as memory optimization cache optimization and distributed computing that can handle large data sets so overall xgboost is a faster framework that can build better models the xgboost framework has an "
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/machine-learning/implementation-of-xgboost-extreme-gradient-boosting",
+      "score": 0.81630427,
+      "content": "Python  ````\n X_train, X_test, y_train, y_test = train_test_split(X, y, test_size =0.25, random_state = 0)\n```` \n\n## Step 5: Converting Dataset into DMatrix\n\nWe will convert our dataset into DMatrix structure. DMatrix is a special data structure in XGBoost for faster training and less memory use.\n\n To convert our data to DMatrix format , we will use XGBoost's API. It takes both features and labels.\n Use enable\\_categorical = True to handle Pandas categorical columns automatically.\n\n Python  ````\n xgb_train = xgb. DMatrix(X_train, y_train, enable_categorical = True) xgb_test = xgb. DMatrix(X_test, y_test, enable_categorical = True)\n```` \n\n## Step 6: Creating XGboost Model [...] Let's build and train a model for classification task using XGboost.\n\n## Step 1: Importing necessary libraries\n\nWe will import numpy, matplotlib, pandas, scikit learn and XGBoost.\n\n Python  ````\n fromsklearn.metrics import accuracy_score import xgboost as xgb fromsklearn.model_selection import train_test_split import numpy as np importmatplotlib.pyplot as plt import pandas as pd\n```` \n\n## Step 2: Loading and splitting the dataset\n\nWe will be making a model for customer churn and its dataset can be downloaded from here.\n\n Python  ````\n dataset = pd. read_csv('Churn_Modelling.csv') X = dataset. iloc[:, 3: 13] y = dataset. iloc[:, 13]. values\n```` \n\n## Step 3: Converting categorical Columns [...] Python  ````\n params ={'objective':'binary:logistic', 'max_depth': 3, 'learning_rate':0.1,} n = 50 model = xgb. train(params = params, dtrain = xgb_train, num_boost_round = n)\n```` \n\n## Step 7: Making Predictions and Evaluating the Model\n\nWe will predict labels and then converts the predicted probabilities (`preds`) to integer labels allowing for a straightforward accuracy comparison with the true labels.\n\n Python  ````\n preds = model. predict(xgb_test) preds = np. round(preds) accuracy = accuracy_score(y_test, preds) print('Accuracy of the model is:', accuracy 100)\n```` \n\nOutput:\n\n> Accuracy of the mode"
+    },
+    {
+      "url": "https://medium.com/@weidagang/essential-python-for-machine-learning-xgboost-4b662cf19fcd",
+      "score": 0.81133276,
+      "content": "4. Interpretability is a Priority: If the primary requirement is to have a highly interpretable model, simpler models like logistic regression or decision trees might be more suitable. XGBoost, being an ensemble of decision trees, can be more challenging to interpret.\n\n5. Limited Computational Resources: XGBoost can be computationally intensive, especially when tuning hyperparameters. If computational resources are limited, simpler models or less resource-intensive algorithms might be more practical.\n\n## Code Example\n\nHere\u2019s a basic example of using XGBoost for classification in Python. The code is available in this colab notebook."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=33fGfuleXw0",
+      "score": 0.78963995,
+      "content": "Hi everyone, and welcome back. In a previous video, we explored gradient boosting, and if you haven't watched that video, I highly recommend you check it out first because today we are talking a deep dive into a powerful implementation of gradient boosting, XGBoost. So, what is XGBoost, and how does it work? XGBoost, or extreme gradient boosting, is a machine learning algorithm that has gained significant popularity due to its versatility and performance, winning a lot of competitions on platforms like Kaggle, and still outperforming deep learning models by quite a large margin on many tabular data sets. Digging a little bit deeper, at its core, XGBoost is just an extremely optimized gradient boosting model, which by itself is a powerful machine learning algorithm. However, XGBoost also [...] powerful machine learning algorithm. However, XGBoost also contains several key features that make it stand out. One, it incorporates both L1 and L2 regularization techniques used to prevent overfitting and enhance model generalization. This capability is particularly useful when dealing with large data sets and highly dimensional feature spaces. It has built-in capabilities to handle missing values, reducing the need for extensive data preprocessing. This feature comes especially in handy if you are just starting out in machine learning and are not really sure what's the correct way of filling out the missing data. It has built-in cross-validation capabilities, allowing you to perform cross-validation without the need for external libraries. This capability allows you to stop the [...] external libraries. This capability allows you to stop the training early when you no longer see any benefits, or it can also help you find the optimal number of iterations by looking at the model performance as it's training, and see at what point it should be stopped. XGBoost is also designed for speed and scalability. It can make efficient use of multi-core processors and distributed computed"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=Y0EJQFj0foo",
+      "score": 0.7817479,
+      "content": "with what a decision tree is, please watch our video. A link is posted in the description of this video as well. XGBoost, which is short for Extreme Gradient Boosting, is a fast, regularized form of gradient boosting using trees. A single small tree is like a rough sketch. Boosting adds another small tree that focuses on the leftover mistakes, which is also called residues. Then another tree and another, each one nudging predictions in the right direction by a small step. Note that this is different from what algorithms like Random Forest do, which grow many trees in parallel and then average. Boosting, on the other hand, grows many trees in sequence, each trained on what's still wrong. With this background, let's jump into how XGBoost works. XGBoost is a big algorithm with a lot of [...] XGBoost, short for Extreme Gradient Boosting, is an algorithm designed for big datasets. Datasets with a large number of features and samples. In this video, we'll look at the details of how this algorithm works using concrete examples. By the end, you'll have an intuitive sense of how it works, how you can tune it and use it for any problem you're solving using machine learning. Welcome to Schovia Labs, where we turn ML ideas into everyday intuition. Let's spend a minute revisiting how machine learning works with data. Data consists of features and labels. If labels are categories, it is called classification. If labels are numbers, it is called regression. We have seen in the past that decision trees can do both. If you're unfamiliar with what a decision tree is, please watch our video. [...] how XGBoost works. XGBoost is a big algorithm with a lot of components to it. There's gradient boosting, there's learning rate, there's tree capacity and stopping, and regularization. We'll go over each of these components one by one using a simple example. Note that the algorithm will look like an overkill for this small example. The idea is to show how it works on a small dataset, which he"
+    },
+    {
+      "url": "https://www.sciencedirect.com/topics/computer-science/extreme-gradient-boosting",
+      "score": 0.7724109,
+      "content": "XGBoost algorithm can prevent overfitting and improve accuracy and algorithm efficiency in intrusion detection research. However, with the development of the Internet and the advent of the era of big data and the Internet of Things, network security is facing more and more new technical challenges. Based on the XGBoost algorithm, researchers have made improvements to deal with various practical problems. [...] Extreme Gradient Boosting (XGBoost) is a machine learning algorithm that works based on gradient boosted decision trees. XGBoost, one of the new generation community learning algorithms, increases the model\u2019s overall accuracy by preventing the problem of overfitting in the process of training the algorithm. The main reason underlying this method\u2019s success is the purpose function it uses in the learning process. The objective function consists of the term Loss function and regularization. Loss function calculates the difference of each predicted value made by the model from its actual value. The term regularization controls the complexity of the model, which eliminates the over-fitting problem in the model. Devan and Khare performed feature selection using XGBoost for intrusion detection [...] ### XGBoost\n\nXGBoost 10 is an open-source library for optimized distributed gradient tree boosting  that gained popularity lately as it has been the algorithm of choice for many winning teams from several ML competitions. This gradient boosting framework provides parallel tree augmentation to solve many data science problems quickly. XGBoost runs in a distributed environment (Hadoop, SGE, MPI) and can solve big data problems. The term gradient boosting originates in the idea of enhancing or improving a single weak model by combining it with several other weak models to produce a collectively robust model. The weak learning models are reinforced through iterative learning.\n\nStrengths\u2022\nInterfaces for C ++, Java, Python, R, and Julia and works on Linux, Windows, and Mac OS."
+    },
+    {
+      "url": "https://www.ibm.com/think/topics/xgboost",
+      "score": 0.7557276,
+      "content": "# What is XGBoost?\n\n## What is XGBoost?\n\nXGBoost (eXtreme Gradient Boosting) is a distributed, open-source machine learning library that uses gradient boosted decision trees, a supervised learning boosting algorithm that makes use of gradient descent. It is known for its speed, efficiency and ability to scale well with large datasets.\n\nDeveloped by Tianqi Chen from the University of Washington, XGBoost is an advanced implementation of gradient boosting with the same general framework; that is, it combines weak learner trees into strong learners by adding up residuals. The library is available for C++, Python, R, Java, Scala and Julia.1\n\n### Decision trees vs. boosting"
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "xgboost",
+      "chunk_index": 2,
+      "distance": 0.4715,
+      "rrf_score": 0.03306,
+      "text": " to Use / Not Use\nUse for structured/tabular data where predictive accuracy is paramount, for competitions, and when feature importance insights are desired. Not use when model interpretability is critical (white-box decisions), when the dataset is tiny, or when testing with extreme input values outside observed ranges.\n\n## Variants / Extensions\nLightGBM (gradient-based one-side sampling, leaf-wise growth), CatBoost (ordered boosting, symmetric trees), XGBoost for ranking, monotonic constraints, GPU-accelerated training, and DART (dropouts in boosting).\n\n## Minimal Example (Python)\n```python\nimport xgboost as xgb\nfrom sklearn.datasets import make_classification\nX, y = make_classification(n_samples=100, n_features=4, random_state=0)\nmodel = xgb.XGBClassifier(n_estimators=50, max_depth=3, learning_rate=0.1)\nmodel.fit(X, y)\nprint(model.predict(X[:2]))\n```"
+    },
+    {
+      "source": "xgboost",
+      "chunk_index": 0,
+      "distance": 0.4637,
+      "rrf_score": 0.03306,
+      "text": "# XGBoost\n\n## Definition\nXGBoost (eXtreme Gradient Boosting) is a scalable machine learning framework that builds an ensemble of regression trees via gradient boosting. It uses second-order Taylor approximation of the loss function, explicit regularization, and system optimizations to achieve high performance and speed.\n\n## Intuition\nTrees are added sequentially; each new tree is trained to reduce the residual error of the current ensemble. Instead of fitting raw residuals, XGBoost fits the gradient and curvature of the loss, enabling custom loss functions and faster convergence. Complexity penalties on number of leaves and leaf weights prevent overfitting, while shrinkage (learning rate) makes boosting more robust.\n\n## Mathematical Formulation\nThe t-th tree f_t is chosen to minimize an objective function at step t:\n\nObj = sum_i L(y_i, y_hat_i^(t-1) + f_t(x_i)) + Omega(f_t)\n\nL is approximated via second-order Taylor expansion around y_hat^(t-1):\n\nL(y_i, y_hat^(t-1) + f_t(x_i)) \u2248 L(y_i, y_hat^(t-1)) + g_i f_t(x_i) + 0.5 h_i [f_t(x_i)]^2\n\nwhere g_i = \u2202L/\u2202y_hat and h_i = \u2202\u00b2L/\u2202y_hat\u00b2 (gradient and hessian). Regularization Omega(f_t) = gamma T + 0.5 lambda ||w||\u00b2, with T leaves and leaf weights w.\n\nFor a fixed tree structure, optimal leaf weight for leaf j:\n\nw_j* = - (sum_{i in leaf j} g_i) / (sum_{i in leaf j} h_i + lambda)\n\nThe resulting optimal objective reduction (split gain) is:\n\nGain = 0.5 [ (G_L)^2/(H_L + lambda) + (G_R)^2/(H_R + lambda"
+    },
+    {
+      "source": "catboost",
+      "chunk_index": 2,
+      "distance": 0.5571,
+      "rrf_score": 0.03226,
+      "text": ".\n\n## When to Use / Not Use\nUse CatBoost when the data contains many categorical features, when quick strong baselines are needed, or when avoiding manual one-hot encoding. Excellent for competitions and production due to default robustness. Not ideal if the tree depth needs to model highly asymmetric interactions (consider XGBoost/LightGBM with asymmetric trees), or when domain-specific encoding already exists and is superior. Inference speed benefit of oblivious trees diminishes if extremely deep trees are required.\n\n## Variants / Extensions\nCatBoost for ranking (YetiRank, PairLogit), multitask regression, survival analysis. Integration with scikit-learn API. Text feature embeddings via transformers. Other GBDT libraries: LightGBM (leaf\u2011wise growth, gradient-based one-side sampling), XGBoost (level\u2011wise, regularized).\n\n## Minimal Example (Python)\n```python\nfrom catboost import CatBoostClassifier\nX = [['cat', 1], ['dog', 2], ['cat', 3], ['dog', 1]]\ny = [0, 1, 0, 1]\nmodel = CatBoostClassifier(iterations=10, depth=2, verbose=0,\n                           cat_features=[0])\nmodel.fit(X, y)\nprint(model.predict([['cat', 2]]))\n```"
+    },
+    {
+      "source": "catboost",
+      "chunk_index": 0,
+      "distance": 0.6708,
+      "rrf_score": 0.01587,
+      "text": "# CatBoost\n\n## Definition\nCatBoost is a gradient boosting library that builds an ensemble of oblivious decision trees. It is distinguished by native handling of categorical features without manual preprocessing, using ordered target statistics with permutations to avoid target leakage, and employs an ordered boosting mechanism to reduce overfitting.\n\n## Intuition\nTraditional GBDT requires conversion of categorical features to numerical ones (one-hot, label encoding), which can cause combinatorial explosion or introduce arbitrary ordering. CatBoost encodes categories by computing target statistics: replacing a category with the mean target (or a smoothed variant) conditioned on that category. To prevent data leakage from using the same target to encode and predict, CatBoost uses permutations and lag-exclusion, encoding each instance using only past data within a random ordering. This yields a powerful, yet leakage-free, representation of categorical variables.\n\n## Mathematical Formulation\nStandard gradient boosting objective: add tree f_t to minimize sum L(y_i, F_{t-1}(x_i) + f_t(x_i)) + Omega(f_t). CatBoost uses oblivious trees, where the same splitting criterion and the same feature-threshold pair are applied to all nodes at a given depth. A tree of depth d has 2^d leaves.\n\nFor categorical feature k with value v, the ordered target statistic is:\nTS_{v} = (sum_{i in D_k, before j} y_i + a * p) / (count_{i in D_k, before j} + a)\nwhere j is the index in a random permutation, D_k is the set of objects with that category, \u201cbefore j\u201d restricts to preceding objects in the permutation, a is a smoothing strength, and p is the global average target. This ensures that the target for object j is encoded only using data preceding it.\n\nThe oblivious tree structure enables evaluation via flat index from binary features, making inference extremely fast.\n\n## Estimation\nA sequence of random permutations is drawn. For each"
+    },
+    {
+      "source": "catboost",
+      "chunk_index": 1,
+      "distance": 0.7654,
+      "rrf_score": 0.01562,
+      "text": " target. This ensures that the target for object j is encoded only using data preceding it.\n\nThe oblivious tree structure enables evaluation via flat index from binary features, making inference extremely fast.\n\n## Estimation\nA sequence of random permutations is drawn. For each permutation, target statistics are computed with per-instance leave-out. Trees are built greedily using these statistics and gradients. Hyperparameters: iterations, learning_rate, depth (tree depth; number of leaves = 2^depth), l2_leaf_reg, random_strength (amount of randomness in scoring splits), bagging_temperature, and one_hot_max_size for categories. Early stopping by validation set is recommended.\n\n## Assumptions\nThe boosted model is an additive expansion of trees. The approximation with gradient descent is suitable; loss is differentiable. Categorical features contain meaningful signal exploitable via target encoding. No scaling or distributional assumptions on numeric features; missing values are handled by treating them as a special category or value.\n\n## Key Properties\nTop-tier predictive performance with minimal hyperparameter tuning (defaults work well). Native categorical feature handling reduces feature engineering. Ordered TS encoding effectively combats overfitting due to target leakage. Oblivious trees make inference fast and model size small. Built-in support for text features (since version 0.19). Provides feature importance and supports GPU training.\n\n## Failure Modes\nWhen target encoding for a category has too few observations, estimates are noisy; smoothing mitigates but does not eliminate. Oblivious trees may struggle to capture complex interactions that require different splits across nodes at same depth, limiting expressiveness relative to asymmetric trees. Very large number of categorical features can make permutation-based encoding memory intensive. With many iterations, overfitting still occurs if not stopped early.\n\n## When to Use / Not Use\nUse CatBoost when the da"
+    }
+  ],
+  "attribution": {
+    "web": 29,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}

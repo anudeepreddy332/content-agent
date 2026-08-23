@@ -1,0 +1,553 @@
+{
+  "run_id": "fb408580-4e2b-44c0-80be-3487331ce3ae",
+  "topic": "Attention Mechanism & Transformers",
+  "slug": "attention-mechanism-and-transformers",
+  "timestamp": "2026-08-21T12:19:19.386728+00:00",
+  "prompt_version": "sha-0612680ae9be",
+  "prompt_hashes": {
+    "draft_system": "ab2c32162513",
+    "verify_system": "e7ac8744409d",
+    "reflect_system": "b4335ad3b720",
+    "html_template": "2678facf375b"
+  },
+  "iterations": 1,
+  "iteration_metrics": [
+    {
+      "iteration": 1,
+      "SV": 19,
+      "S": 19,
+      "V": 21,
+      "W": 0,
+      "U": 0,
+      "N": 21,
+      "uvr": 0.0,
+      "verification_status": "completed",
+      "grounding_score": 0.914,
+      "m4_feedback_claims": 0,
+      "unverified_claims": [],
+      "grounding_report": [
+        {
+          "claim": "Recurrent neural networks process sequences one token at a time, which makes them slow to train and prone to forgetting distant context.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "The attention mechanism lets each token directly look at every other token in the sequence, computing relevance scores and aggregating information accordingly.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "Transformers are neural architectures built entirely on attention, with no recurrence or convolution.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "All tokens are processed in parallel during training in Transformers, which is a massive speedup over RNNs.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "The path length between any two tokens is constant in Transformers, so long-range dependencies are captured without the vanishing gradient problem that plagues recurrent models.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "The attention mechanism maps a query and a set of key-value pairs to an output, where the output is a weighted sum of the values, with weights computed by a compatibility function between the query and each key.",
+          "source_url": "https://medium.com/@weidagang/demystifying-transformers-attention-mechanism-904a13da334a",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@weidagang/demystifying-transformers-attention-mechanism-904a13da334a"
+        },
+        {
+          "claim": "In the Transformer, attention is scaled dot-product attention: Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V.",
+          "source_url": "https://machinelearningmastery.com/the-transformer-attention-mechanism",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://machinelearningmastery.com/the-transformer-attention-mechanism"
+        },
+        {
+          "claim": "The scaling factor sqrt(d_k) prevents the dot products from growing too large in magnitude, which would push the softmax into regions with very small gradients.",
+          "source_url": "https://machinelearningmastery.com/the-transformer-attention-mechanism",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://machinelearningmastery.com/the-transformer-attention-mechanism"
+        },
+        {
+          "claim": "In self-attention, Q, K, and V are all derived from the same input sequence.",
+          "source_url": "https://www.youtube.com/watch?v=KMHkbXzHn7s",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=KMHkbXzHn7s"
+        },
+        {
+          "claim": "In the sentence 'Apple announced their newest phone', the word 'apple' will be represented as a weighted linear combination of all words, with weights based on similarity in embedding space.",
+          "source_url": "https://medium.com/@weidagang/demystifying-transformers-attention-mechanism-904a13da334a",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@weidagang/demystifying-transformers-attention-mechanism-904a13da334a"
+        },
+        {
+          "claim": "Multi-head attention runs the attention process multiple times in parallel, each with different learned linear projections of Q, K, and V, and the outputs are concatenated and projected again.",
+          "source_url": "https://www.youtube.com/watch?v=KMHkbXzHn7s",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=KMHkbXzHn7s"
+        },
+        {
+          "claim": "Multi-head attention lets the model attend to different aspects of the sequence simultaneously, such as syntactic relationships in one head and semantic relationships in another.",
+          "source_url": "https://www.youtube.com/watch?v=KMHkbXzHn7s",
+          "confidence": 0.8,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://www.youtube.com/watch?v=KMHkbXzHn7s"
+        },
+        {
+          "claim": "A Transformer layer consists of multi-head self-attention followed by a position-wise feedforward network, each with a residual connection and layer normalization.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "Positional encodings (fixed sinusoidal or learned) are added to the input embeddings because attention is permutation-equivariant; without position information, the model would treat 'the cat sat' and 'sat cat the' identically.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "Self-attention on n tokens costs O(n^2 * d) in time and memory.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "Sequences beyond roughly 10k tokens become impractical without specialized variants like sparse attention (Longformer) or linear attention (Performer).",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "Over-smoothing is a failure mode: in deep stacks, token representations can become indistinguishable if residual connections are not used.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "Training instability is common in large models, requiring careful normalization and learning rate schedules.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.95,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "Fixed positional encodings may not generalize to sequence lengths unseen during training, which is why some models use relative position encodings or rotary embeddings.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "substantive",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "Transformers are the architecture behind BERT, GPT, and virtually every modern large language model.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.85,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        },
+        {
+          "claim": "Attention is the core mechanism that makes modern AI models work.",
+          "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+          "confidence": 0.9,
+          "status": "verified",
+          "specificity": "generic",
+          "source_kind": "web",
+          "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+        }
+      ]
+    }
+  ],
+  "m4_feedback_claims": 0,
+  "experiment_flags": {
+    "m4_force_revise": "0",
+    "m4_grounding_feedback": "0",
+    "m4_freeze_cache": "0"
+  },
+  "reflection_score": 7,
+  "reflection_notes": "The draft is well-structured with all four sections present and technically accurate, but it reads like a competent textbook summary rather than a distinctive engineering perspective. The code examples are minimal and don't demonstrate the failure modes or scaling issues discussed, and the prose occasionally slips into generic phrasing ('Understanding attention is not optional') that could be sharper for a senior audience. Tighten the technical deep-dive with concrete trade-offs and add a note on when attention fails in practice to elevate it beyond a standard tutorial.",
+  "grounding_score": 0.914,
+  "verification_status": "completed",
+  "hitl_status": "approved",
+  "html_review_status": "approved",
+  "git_status": "dry_run",
+  "total_tokens": 15107,
+  "total_cost_usd": 0.00737,
+  "latency_ms": {
+    "retrieve": 9287,
+    "retrieve_web": 9269,
+    "retrieve_kb": 18,
+    "draft": 10171,
+    "verify": 9501,
+    "reflect": 2168,
+    "html_gen": 4517,
+    "git": 0
+  },
+  "error_log": [],
+  "claims_verified": 21,
+  "claims_weak": 0,
+  "claims_unverified": 0,
+  "grounding_breakdown": {
+    "unverified_no_source": 0,
+    "unverified_has_source": 0,
+    "weak_count": 0,
+    "mean_confidence_verified": 0.914,
+    "mean_confidence_unverified": 0.0
+  },
+  "grounded_depth": {
+    "SV": 19,
+    "S": 19,
+    "V": 21,
+    "N": 21,
+    "verified_fraction": 1.0,
+    "unverified_fraction": 0.0
+  },
+  "grounding_report": [
+    {
+      "claim": "Recurrent neural networks process sequences one token at a time, which makes them slow to train and prone to forgetting distant context.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "The attention mechanism lets each token directly look at every other token in the sequence, computing relevance scores and aggregating information accordingly.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "Transformers are neural architectures built entirely on attention, with no recurrence or convolution.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "All tokens are processed in parallel during training in Transformers, which is a massive speedup over RNNs.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "The path length between any two tokens is constant in Transformers, so long-range dependencies are captured without the vanishing gradient problem that plagues recurrent models.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "The attention mechanism maps a query and a set of key-value pairs to an output, where the output is a weighted sum of the values, with weights computed by a compatibility function between the query and each key.",
+      "source_url": "https://medium.com/@weidagang/demystifying-transformers-attention-mechanism-904a13da334a",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@weidagang/demystifying-transformers-attention-mechanism-904a13da334a"
+    },
+    {
+      "claim": "In the Transformer, attention is scaled dot-product attention: Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V.",
+      "source_url": "https://machinelearningmastery.com/the-transformer-attention-mechanism",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://machinelearningmastery.com/the-transformer-attention-mechanism"
+    },
+    {
+      "claim": "The scaling factor sqrt(d_k) prevents the dot products from growing too large in magnitude, which would push the softmax into regions with very small gradients.",
+      "source_url": "https://machinelearningmastery.com/the-transformer-attention-mechanism",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://machinelearningmastery.com/the-transformer-attention-mechanism"
+    },
+    {
+      "claim": "In self-attention, Q, K, and V are all derived from the same input sequence.",
+      "source_url": "https://www.youtube.com/watch?v=KMHkbXzHn7s",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=KMHkbXzHn7s"
+    },
+    {
+      "claim": "In the sentence 'Apple announced their newest phone', the word 'apple' will be represented as a weighted linear combination of all words, with weights based on similarity in embedding space.",
+      "source_url": "https://medium.com/@weidagang/demystifying-transformers-attention-mechanism-904a13da334a",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@weidagang/demystifying-transformers-attention-mechanism-904a13da334a"
+    },
+    {
+      "claim": "Multi-head attention runs the attention process multiple times in parallel, each with different learned linear projections of Q, K, and V, and the outputs are concatenated and projected again.",
+      "source_url": "https://www.youtube.com/watch?v=KMHkbXzHn7s",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=KMHkbXzHn7s"
+    },
+    {
+      "claim": "Multi-head attention lets the model attend to different aspects of the sequence simultaneously, such as syntactic relationships in one head and semantic relationships in another.",
+      "source_url": "https://www.youtube.com/watch?v=KMHkbXzHn7s",
+      "confidence": 0.8,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://www.youtube.com/watch?v=KMHkbXzHn7s"
+    },
+    {
+      "claim": "A Transformer layer consists of multi-head self-attention followed by a position-wise feedforward network, each with a residual connection and layer normalization.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "Positional encodings (fixed sinusoidal or learned) are added to the input embeddings because attention is permutation-equivariant; without position information, the model would treat 'the cat sat' and 'sat cat the' identically.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "Self-attention on n tokens costs O(n^2 * d) in time and memory.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "Sequences beyond roughly 10k tokens become impractical without specialized variants like sparse attention (Longformer) or linear attention (Performer).",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "Over-smoothing is a failure mode: in deep stacks, token representations can become indistinguishable if residual connections are not used.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "Training instability is common in large models, requiring careful normalization and learning rate schedules.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.95,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "Fixed positional encodings may not generalize to sequence lengths unseen during training, which is why some models use relative position encodings or rotary embeddings.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "substantive",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "Transformers are the architecture behind BERT, GPT, and virtually every modern large language model.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.85,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    },
+    {
+      "claim": "Attention is the core mechanism that makes modern AI models work.",
+      "source_url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "confidence": 0.9,
+      "status": "verified",
+      "specificity": "generic",
+      "source_kind": "web",
+      "source_ref": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352"
+    }
+  ],
+  "web_sources_count": 10,
+  "kb_results_count": 5,
+  "web_sources": [
+    {
+      "url": "https://medium.com/@weidagang/demystifying-transformers-attention-mechanism-904a13da334a",
+      "score": 0.85421735,
+      "content": "In essence, the attention mechanism tries to represent the query (Q) as a weighted linear combination of value vectors (V), and the weights are determined by the similarity between the query and keys (K). For example, in the sentence \u201cApple announced their newest phone\u201d, the word \u201capple\u201d will be represented as a weighted linear combination of \u201capple\u201d, \u201cannounced\u201d, \u201ctheir\u201d, \u201cnewest\u201d and \u201cphone\u201d, and the weights are determined by their similarity with \u201capple\u201d in the embedding space.\n\n## Python Example from Scratch\n\nLet\u2019s implement a basic version of the attention mechanism in Python. This example will simplify some aspects but will give you a clear idea of how attention works. The code is available in this colab notebook.\n\nimport numpy as np\n\ndef softmax(x):\n\n e_x = np.exp(x - np.max(x)) [...] [0.30317505 0.57733981 0.49906677 0.60679205 0.45915741]\nIn this example, `Q`, `K`, and `V` are randomly generated matrices representing queries, keys, and values, respectively. The `attention` function computes the attention scores, normalizes them using the `softmax` function, and then calculates the weighted sum of the values. This simplified model captures the essence of how attention mechanisms enable models to dynamically focus on different parts of the input data.\n\n## Conclusion"
+    },
+    {
+      "url": "https://www.machinelearningmastery.com/the-transformer-attention-mechanism",
+      "score": 0.83549726,
+      "content": "### Final Output of Attention Mechanism:  \n        The final output of the attention mechanism is a matrix with shape \\( (m, dv) \\), where \\( m \\) is the number of input tokens and \\( dv \\) is the dimension of the value vectors.\n\n       ### Code Example:\n\n       Here\u2019s an example in Python using NumPy to demonstrate this process:\n\n       `python  \n        import numpy as np`\n\n       # Dimensions  \n        m = 5 # number of tokens  \n        dq = dk = dv = 3 # dimensions of Q, K, V\n\n       # Randomly initialize Q, K, V matrices  \n        Q = np.random.rand(m, dq)  \n        K = np.random.rand(m, dk)  \n        V = np.random.rand(m, dv) [...] ### Example\n\n     Suppose we have the following:\n\n     \u2013 \\\\Query (Q)\\\\: \\( \\mathbf{Q} = \\begin{bmatrix} 1 & 0 & 1 \\end{bmatrix} \\)  \n      \u2013 \\\\Key (K)\\\\: \\( \\mathbf{K} = \\begin{bmatrix} 1 & 1 & 0 \\\\ 0 & 1 & 1 \\end{bmatrix} \\)  \n      \u2013 \\\\Value (V)\\\\: \\( \\mathbf{V} = \\begin{bmatrix} 1 & 0 \\\\ 2 & 1 \\end{bmatrix} \\)\n\n     Let the dimension \\(d\\_k = 2\\). You can compute the attention step-by-step. If you\u2019d like, I can proceed with calculations based on this example! Would you like me to continue?\n\n     Reply\n\n### Leave a Reply Click here to cancel reply. [...] Take my free 12-day email crash course now (with sample code).\n\nClick to sign-up and also get a free PDF Ebook version of the course.\n\n## Scaled Dot-Product Attention\n\nThe Transformer implements a scaled dot-product attention, which follows the procedure of the general attention mechanism that you had previously seen. \n\nAs the name suggests, the scaled dot-product attention first computes a dot product for each query, $\\mathbf{q}$, with all of the keys, $\\mathbf{k}$. It subsequently divides each result by $\\sqrt{d\\_k}$ and proceeds to apply a softmax function. In doing so, it obtains the weights that are used to scale the values, $\\mathbf{v}$.\n\n = \\text{softmax} \\left( \\frac{QK^T}{\\sqrt{d\\_k}} \\right) V$$"
+    },
+    {
+      "url": "https://machinelearningmastery.com/the-transformer-attention-mechanism",
+      "score": 0.8325776,
+      "content": "### Final Output of Attention Mechanism:  \n        The final output of the attention mechanism is a matrix with shape \\( (m, dv) \\), where \\( m \\) is the number of input tokens and \\( dv \\) is the dimension of the value vectors.\n\n       ### Code Example:\n\n       Here\u2019s an example in Python using NumPy to demonstrate this process:\n\n       `python  \n        import numpy as np`\n\n       # Dimensions  \n        m = 5 # number of tokens  \n        dq = dk = dv = 3 # dimensions of Q, K, V\n\n       # Randomly initialize Q, K, V matrices  \n        Q = np.random.rand(m, dq)  \n        K = np.random.rand(m, dk)  \n        V = np.random.rand(m, dv) [...] ### Example\n\n     Suppose we have the following:\n\n     \u2013 \\\\Query (Q)\\\\: \\( \\mathbf{Q} = \\begin{bmatrix} 1 & 0 & 1 \\end{bmatrix} \\)  \n      \u2013 \\\\Key (K)\\\\: \\( \\mathbf{K} = \\begin{bmatrix} 1 & 1 & 0 \\\\ 0 & 1 & 1 \\end{bmatrix} \\)  \n      \u2013 \\\\Value (V)\\\\: \\( \\mathbf{V} = \\begin{bmatrix} 1 & 0 \\\\ 2 & 1 \\end{bmatrix} \\)\n\n     Let the dimension \\(d\\_k = 2\\). You can compute the attention step-by-step. If you\u2019d like, I can proceed with calculations based on this example! Would you like me to continue?\n\n     Reply\n\n### Leave a Reply Click here to cancel reply. [...] Take my free 12-day email crash course now (with sample code).\n\nClick to sign-up and also get a free PDF Ebook version of the course.\n\n## Scaled Dot-Product Attention\n\nThe Transformer implements a scaled dot-product attention, which follows the procedure of the general attention mechanism that you had previously seen. \n\nAs the name suggests, the scaled dot-product attention first computes a dot product for each query, $\\mathbf{q}$, with all of the keys, $\\mathbf{k}$. It subsequently divides each result by $\\sqrt{d\\_k}$ and proceeds to apply a softmax function. In doing so, it obtains the weights that are used to scale the values, $\\mathbf{v}$.\n\n = \\text{softmax} \\left( \\frac{QK^T}{\\sqrt{d\\_k}} \\right) V$$"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=KMHkbXzHn7s",
+      "score": 0.8173562,
+      "content": "# How Attention Mechanism Works in Transformer Architecture\n## Under The Hood\n16800 subscribers\n4627 likes\n\n### Description\n128837 views\nPosted: 8 Mar 2025\n#llm #embedding #gpt \nThe attention mechanism in transformers is a key component that allows models to focus on different parts of an input sequence when making predictions. Attention assigns varying degrees of importance to different parts of the input, enabling the model to capture contextual relationships effectively. The most widely used form of attention in transformers is self-attention, where each token in a sequence attends to all other tokens, capturing long-range dependencies. This mechanism is further enhanced by multi-head attention, which enables the model to focus on multiple aspects of the data simultaneously. [...] There are several types of attention mechanisms, including self-attention, which is used in transformers to relate different words in the same sentence, and cross-attention, which is commonly seen in tasks like machine translation where the model attends to a separate input sequence. \n\nIn the video, I have visually explained each of these attention mechanisms with clear animations and step-by-step breakdowns.\n\nTimestamps:\n\n0:00 - Embedding and Attention\n2:12 - Self Attention Mechanism\n10:52 - Causal Self Attention\n14:12 - Multi Head Attention\n16:50 - Attention in Transformer Architecture\n17:54 - GPT-2 Model\n21:30 - Outro\n\nAttention is all you need paper: \n\nMusic by Vincent Rubinetti\nDownload the music on Bandcamp:\n\nStream the music on Spotify: [...] size results in four times more attention scores. As the context size increases, the attention weight matrix grows quadratically in size, meaning the number of attention scores that need to be computed and stored increases rapidly. This leads to higher memory usage and computational cost, making it challenging to scale transformers to very long sequences efficiently. Now, let's understand multi-head attention. So far, we have seen a single s"
+    },
+    {
+      "url": "https://medium.com/@stefanbschneider/understanding-attention-and-transformers-d84b016cd352",
+      "score": 0.8088086,
+      "content": "## The Attention Mechanism\n\nThe attention mechanism is at the core of the transformer architecture \u2014 thus the paper title \u201cAttention is all you need\u201d. In a transformer, the attention mechanism enables the model to assign different attention weights/scores to different tokens in a sequence. This way, the model can give more importance to relevant information, ignore irrelevant information, and effectively capture long-range dependencies in the data."
+    },
+    {
+      "url": "https://www.geeksforgeeks.org/nlp/transformer-attention-mechanism-in-nlp",
+      "score": 0.80698997,
+      "content": "1. Parallel Processing: Unlike RNNs, Transformers can process all words in a sequence simultaneously, significantly reducing training time.\n2. Long-Range Dependencies: The attention mechanism can capture relationships between distant words, addressing the limitations of traditional models that struggle with long-range dependencies.\n3. Scalability: Transformers can handle larger datasets and complex tasks due to their scalable architecture.\n\n## Implementation of Transformer Attention Mechanism\n\n### Step 1: Import Necessary Libraries\n\nFirst import TensorFlow and other required libraries.\n\n Python  ````\n import tensorflow as tf fromtensorflow.keras.layers import Layer, Dense, Dropout, LayerNormalization, Embedding import numpy as np\n```` \n\n### Step 2: Scaled Dot-Product Attention [...] Python  ````\n q = tf. random. uniform((64, 50, 512)) k = tf. random. uniform((64, 50, 512)) v = tf. random. uniform((64, 50, 512)) mask = None attention_output, attention_weights = ScaledDotProductAttention()(q, k, v, mask) print(\"Attention Output Shape:\", attention_output. shape) multi_head_attention = MultiHeadAttention(d_model = 512, num_heads = 8) output, attn_weights = multi_head_attention(v, k, q, mask) print(\"Multi-Head Attention Output Shape:\", output. shape)\n```` \n\nOutput:\n\n> Attention Output Shape: (64, 50, 512)   \n> Multi-Head Attention Output Shape: (64, 50, 512)"
+    },
+    {
+      "url": "https://medium.com/data-science-collective/understanding-transformer-attention-mechanism-ffed36e821bb",
+      "score": 0.7845341,
+      "content": "Sign up\n\nSign in\n\nSign up\n\nSign in\n\nUnknown user\n\n## Data Science Collective\n\nData Science Collective\n\nAdvice, insights, and ideas from the Medium data science community\n\nMember-only story\n\n# Diving Into the Transformer Attention Mechanism: Building a Minimal Transformer in Pure Python\n\n@anello\n\n--\n\n1\n\nListen\n\nShare\n\n## Overview\n\nIn this project, we\u2019ll implement the attention mechanism from the Transformer architecture using pure Python, without any frameworks.\n\nThe attention mechanism is essentially a set of matrix operations that form the mathematical foundation of the model.\n\nThere are two scenarios where building from scratch makes sense: either to customize the architecture or for educational purposes."
+    },
+    {
+      "url": "https://www.datacamp.com/blog/attention-mechanism-in-llms-intuition",
+      "score": 0.75616,
+      "content": "Consider the following sentence: \"Miami, coined the 'magic city,' has beautiful white-sand beaches.\" Traditional models would process each word in order. The attention mechanism, however, acts more like our brain. It assigns a score to each word based on its relevance to understanding the current focus. Words like \"Miami\" and \"beaches\" become more important when considering location, so they'd receive higher scores.\n\nIn this article, we\u2019ll provide an intuitive explanation of the attention mechanism. You can also find a more technical approach in this tutorial on how transformers work. Let\u2019s dive right in!\n\n## Traditional Language Models\n\nLet\u2019s start our journey in understanding the attention mechanism by considering the larger context of language models."
+    },
+    {
+      "url": "https://medium.com/@kalra.rakshit/introduction-to-transformers-and-attention-mechanisms-c29d252ea2c5",
+      "score": 0.7451949,
+      "content": "If you still haven\u2019t connected the dots, when you use GPT-4 to help you fix your grill by showing a picture of it, you are asking it to use a kind of vision transformer to understand the image of your grill and help you accordingly.\n\n## Conclusion\n\nIn conclusion, the introduction to Transformers and Attention Mechanisms has shed light on the revolutionary advancements in modeling sequential data.\n\nTransformers, with their self-attention mechanism, have surpassed traditional models like RNNs and LSTMs in various tasks, particularly in language modeling and text generation. [...] The importance of attention in Transformers cannot be overstated, as it enables the model to weigh the significance of different input tokens and capture long-range dependencies without sequential processing. As we delve deeper into the realm of NLP and Computer Vision, Transformers continue to play a pivotal role, showcasing their prowess in handling complex data structures with finesse and efficiency.\n\n## Frequently Asked Questions\n\n## What is the importance of attention mechanisms in Transformers?\n\nAttention mechanisms are crucial in Transformers as they allow different tokens within the input to be weighted differently based on their importance. This ensures that context is considered, enhancing the quality and coherence of the output. [...] Transformers, by contrast, are not constrained by sequence length. Their self-attention mechanism computes the relevance of all parts of the input sequence simultaneously, allowing for a global understanding of the data. This is a game-changer for tasks that require the synthesis of information spread across an entire sequence, such as document summarization or question answering.\n\nThe following list delineates the comparative advantages of Transformers over RNNs in handling long-range dependencies:"
+    },
+    {
+      "url": "https://www.deeplearning.ai/courses/attention-in-transformers-concepts-and-code-in-pytorch",
+      "score": 0.71425,
+      "content": "The attention mechanism was a breakthrough that led to transformers, the architecture powering large language models like ChatGPT. Transformers, introduced in the 2017 paper \u201cAttention is All You Need\u201d by Ashish Vaswani and others, revolutionized AI with their scalable design.\n\nLearn how this foundational architecture works to improve your intuition about building reliable, functional, and scalable AI applications.\n\nWhat you\u2019ll do:"
+    }
+  ],
+  "kb_results": [
+    {
+      "source": "attention-transformers",
+      "chunk_index": 0,
+      "distance": 0.3738,
+      "rrf_score": 0.03333,
+      "text": "# Attention Mechanism & Transformers\n\n## Definition\nAn attention mechanism maps a query and a set of key-value pairs to an output, where the output is a weighted sum of values. Weights (attention scores) are computed via a compatibility function between the query and each key. A Transformer is a neural architecture built entirely on attention, without recurrence or convolution, using multi-head self-attention, feedforward layers, and positional encodings (Vaswani et al., 2017).\n\n## Intuition\nAttention dynamically aggregates information from all positions based on learned relevance. Transformers exploit this to capture long-range dependencies in parallel across the full sequence, avoiding the sequential bottleneck of recurrent models.\n\n## Mathematical Formulation\n**Scaled Dot-Product Attention**  \nGiven queries Q, keys K (dim d_k), values V (dim d_v):  \nAttention(Q, K, V) = softmax( Q K^T / \u221ad_k ) V.\n\n**Multi-Head Attention**  \nLinearly project Q, K, V h times, apply attention in parallel, concatenate, and project:  \nhead_i = Attention(Q W_i^Q, K W_i^K, V W_i^V)  \nMultiHead(Q,K,V) = Concat(head_1,\u2026 ,head_h) W^O.\n\n**Transformer Layer**  \nInput x (batch \u00d7 seq_len \u00d7 d_model):  \n1. Multi-head self-attention (Q = K = V = x), with residual connection and layer normalization.  \n2. Position-wise feedforward network (two linear layers with activation, typically ReLU/GELU), with residual connection and layer normalization.  \nPositional encodings (fixed sinusoidal or learned) are added to input embeddings to encode order.\n\n## Estimation\nTransformers are trained end-to-end with backpropagation. Loss functions are task-specific: cross-entropy for language modeling or sequence-to-sequence tasks. Optimization often uses Adam with warm-up and gradient clipping. Aut"
+    },
+    {
+      "source": "attention-transformers",
+      "chunk_index": 1,
+      "distance": 0.5855,
+      "rrf_score": 0.03279,
+      "text": " encode order.\n\n## Estimation\nTransformers are trained end-to-end with backpropagation. Loss functions are task-specific: cross-entropy for language modeling or sequence-to-sequence tasks. Optimization often uses Adam with warm-up and gradient clipping. Autoregressive decoders apply causal masking to prevent attending to future tokens. Large-scale pre-training (BERT, GPT) uses self-supervised objectives, then fine-tuning on downstream tasks.\n\n## Assumptions\n- Dependencies can be modeled via pairwise attention scores, not requiring sequential processing.\n- Sufficient sequence length for learning long-range interactions.\n- Positional information must be explicitly supplied.\n- Residual connections are necessary for training deep architectures.\n- Quadratic attention cost is acceptable for typical sequence lengths.\n\n## Key Properties\n- **Global receptive field**: Each output can directly attend to any input, enabling O(1) path length for long-range dependencies.\n- **Parallel computation**: All timesteps processed simultaneously during training.\n- **Permutation equivariance** without positional encoding; position must be injected.\n- **O(n\u00b2\u00b7d) complexity** for self-attention on n tokens; memory-intensive.\n- **Interpretable attention weights** provide some insight into model focus.\n\n## Failure Modes\n- **Quadratic memory/time** prohibits very long sequences (>10k tokens) without specialized variants.\n- **Training instability** in large models may require careful normalization and learning rate schedules.\n- **Position insensitivity** with fixed encodings may fail to capture fine-grained relative order for unseen lengths.\n- **Over-smoothing**: Token representations may become indistinguishable in deep stacks without residual connections.\n- **Inductive bias poverty**: Lacks built-in locality or sequential bias; requires large data to learn these priors.\n\n## When to Use / Not Use\n**Use**: NLP tasks (translation, classification, generation), vision (Vision Transformers), speech, "
+    },
+    {
+      "source": "attention-transformers",
+      "chunk_index": 2,
+      "distance": 0.5922,
+      "rrf_score": 0.03226,
+      "text": " to learn these priors.\n\n## When to Use / Not Use\n**Use**: NLP tasks (translation, classification, generation), vision (Vision Transformers), speech, and any domain with global dependencies where parallel processing is beneficial. Pre-training + fine-tuning paradigm yields state-of-the-art results.\n\n**Not Use**: Very long sequences without efficient attention variants; real-time low-latency constraints on long inputs; extremely small data regimes where strong inductive biases (e.g., CNNs) are crucial.\n\n## Variants / Extensions\n- **Encoder-only** (BERT), **decoder-only** (GPT), **encoder-decoder** (T5).\n- **Efficient attention**: Sparse (Longformer), linear (Performer), low-rank approximations.\n- **Vision Transformer (ViT)**: Patch-based image processing.\n- **Transformer-XL**: Extended context via segment-level recurrence.\n- **Swin Transformer**: Hierarchical shifted windows for vision.\n\n## Minimal Example (Python)\n```python\nimport torch.nn as nn\n\nclass SelfAttnBlock(nn.Module):\n    def __init__(self, d_model, n_head):\n        super().__init__()\n        self.attn = nn.MultiheadAttention(d_model, n_head, batch_first=True)\n        self.norm = nn.LayerNorm(d_model)\n    def forward(self, x):\n        out, _ = self.attn(x, x, x)\n        return self.norm(x + out)\n```"
+    },
+    {
+      "source": "retrieval-augmented-generation",
+      "chunk_index": 2,
+      "distance": 0.7588,
+      "rrf_score": 0.03037,
+      "text": ", causing the model to ignore or hallucinate.\n- **Noisy retrieval**: Irrelevant documents distract the generator, degrading answer quality.\n- **Factual distortion**: Mixing information from multiple documents can create inconsistent statements.\n- **Staleness**: If the index is not updated, retrieved information becomes outdated.\n- **Latency**: Retrieval step adds inference time, critical for real-time applications.\n\n## When to Use / Not Use\n**Use**: Open-domain question answering, fact verification, enterprise knowledge integration, long-tail knowledge tasks, any scenario requiring up-to-date or verifiable information grounded in documents.\n\n**Not Use**: Tasks where the model\u2019s implicit knowledge is sufficient and retrieval overhead is unacceptable; online chat requiring minimal latency without a retrieval backend; domains where the corpus is unavailable, unreliable, or too small to matter.\n\n## Variants / Extensions\n- **FiD (Fusion-in-Decoder)**: Concatenates all retrieved documents in the encoder, generates from fused representation.\n- **RETRO**: Interleaves chunked retrieval with cross-attention in intermediate layers.\n- **Atlas**: Jointly trains retriever and generator via a unified loss with full backpropagation through retrieval using approximate gradients.\n- **Self-RAG**: Incorporates retrieval on-demand with reflection tokens to judge relevance.\n- **REALM**: Pre-trains a masked language model with retrieval for open-domain representations.\n\n## Minimal Example (Python)\n```python\nfrom transformers import RagTokenizer, RagSequenceForGeneration\n\ntokenizer = RagTokenizer.from_pretrained(\"facebook/rag-sequence-nq\")\nmodel = RagSequenceForGeneration.from_pretrained(\"facebook/rag-sequence-nq\")\ninput_ids = tokenizer(\"What is the capital of France?\", return_tensors=\"pt\").input_ids\ngenerated = model.generate(input_ids)\nprint(tokenizer.decode(generated[0], skip_special_tokens=True))\n```\n## Claim-Dense Reference Facts\n\n- LlamaIndex and LangChain both implement RAG pipeline"
+    },
+    {
+      "source": "react-agent-pattern",
+      "chunk_index": 2,
+      "distance": 0.6744,
+      "rrf_score": 0.01587,
+      "text": " actions have irreversible side effects without human confirmation, or when the model\u2019s instruction-following ability is insufficient to maintain the pattern.\n\n## Variants / Extensions\n- **ReAct + Reflexion**: Adds a posterior verbal critique step to improve future attempts.\n- **Tree-of-Thought + ReAct**: Expands the reasoning into a search tree, interleaving actions at nodes.\n- **ReWOO**: Decouples reasoning and actions into a planning phase, then parallel execution, reducing LLM calls.\n- **Fine-tuned ReAct**: Models like ReAct-T5 are trained explicitly to produce thought-action-observation sequences.\n- **Tool-use augmentation**: Integrating ReAct pattern into chat-optimized models via function calling (OpenAI functions).\n\n## Minimal Example (Python)\n```python\nimport openai\n\ndef react_agent(query, tools, max_steps=5):\n    history = [f\"Question: {query}\"]\n    for _ in range(max_steps):\n        response = openai.ChatCompletion.create(\n            model=\"gpt-4\",\n            messages=[{\"role\": \"user\", \"content\": \"\\n\".join(history)}],\n            stop=[\"Observation:\"]\n        )[\"choices\"][0][\"message\"][\"content\"]\n        thought, action = response.split(\"\\nAction: \")\n        history.append(thought)\n        history.append(f\"Action: {action}\")\n        # execute action via tools dict (not shown)\n        obs = tools.get(action.strip(), \"No such tool\")\n        history.append(f\"Observation: {obs}\")\n        if \"Finish\" in action:\n            return obs\n    return \"Max steps reached\"\n```"
+    }
+  ],
+  "attribution": {
+    "web": 21,
+    "kb": 0,
+    "none": 0,
+    "unresolved": 0
+  }
+}
