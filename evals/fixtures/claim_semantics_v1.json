@@ -1,0 +1,1206 @@
+{
+  "pack_id": "claim_semantics_v1",
+  "schema_version": 1,
+  "evaluator_id": "claim_semantics_v1",
+  "description": "Lean deterministic claim-semantics oracle fixtures. Human-adjudicated gold atoms and allowed-match edges only.",
+  "fixtures": [
+    {
+      "id": "F01",
+      "title": "Adam first/second moment \u2014 omission trap",
+      "draft_text": "Adam maintains an exponentially decaying average of past gradients (the first moment). Adam maintains an exponentially decaying average of past squared gradients (the second moment).",
+      "draft_sha256": "5a2abcf0488085a32e3f1ad9296eaa3d54727032843f3a4caf12a20ae0bbbd52",
+      "gold_atoms": [
+        {
+          "id": "F01.G.first_moment",
+          "canonical_id": "F01.ATOM.first_moment",
+          "text": "Adam maintains an exponentially decaying average of past gradients (the first moment).",
+          "span": [
+            0,
+            86
+          ],
+          "factual": true,
+          "material": true
+        },
+        {
+          "id": "F01.G.second_moment",
+          "canonical_id": "F01.ATOM.second_moment",
+          "text": "Adam maintains an exponentially decaying average of past squared gradients (the second moment).",
+          "span": [
+            87,
+            182
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F01.perfect.C1",
+              "canonical_id": "F01.C.first_moment",
+              "text": "Adam maintains an exponentially decaying average of past gradients (the first moment).",
+              "span": [
+                0,
+                86
+              ],
+              "roles": []
+            },
+            {
+              "id": "F01.perfect.C2",
+              "canonical_id": "F01.C.second_moment",
+              "text": "Adam maintains an exponentially decaying average of past squared gradients (the second moment).",
+              "span": [
+                87,
+                182
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F01.perfect.C1",
+              "gold_id": "F01.G.first_moment"
+            },
+            {
+              "candidate_id": "F01.perfect.C2",
+              "gold_id": "F01.G.second_moment"
+            }
+          ]
+        },
+        {
+          "id": "omission",
+          "candidates": [
+            {
+              "id": "F01.omission.C1",
+              "canonical_id": "F01.C.first_moment",
+              "text": "Adam maintains an exponentially decaying average of past gradients (the first moment).",
+              "span": [
+                0,
+                86
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F01.omission.C1",
+              "gold_id": "F01.G.first_moment"
+            }
+          ]
+        },
+        {
+          "id": "reordered",
+          "candidates": [
+            {
+              "id": "F01.perfect.C2",
+              "canonical_id": "F01.C.second_moment",
+              "text": "Adam maintains an exponentially decaying average of past squared gradients (the second moment).",
+              "span": [
+                87,
+                182
+              ],
+              "roles": []
+            },
+            {
+              "id": "F01.perfect.C1",
+              "canonical_id": "F01.C.first_moment",
+              "text": "Adam maintains an exponentially decaying average of past gradients (the first moment).",
+              "span": [
+                0,
+                86
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F01.perfect.C2",
+              "gold_id": "F01.G.second_moment"
+            },
+            {
+              "candidate_id": "F01.perfect.C1",
+              "gold_id": "F01.G.first_moment"
+            }
+          ]
+        },
+        {
+          "id": "empty",
+          "candidates": [],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "title": "L2 repeated paraphrase \u2014 duplicate trap",
+      "draft_text": "L2 regularization adds the squared Euclidean norm of the weights to the loss. Equivalently, the L2 penalty adds the squared Euclidean norm of the weights to the loss.",
+      "draft_sha256": "197c28002f7b29a9966aa58c8ffcf140088fa5b5c8ca906b0ddf3effaca6c10d",
+      "gold_atoms": [
+        {
+          "id": "F02.G.l2_a",
+          "canonical_id": "F02.ATOM.l2_penalty",
+          "text": "L2 regularization adds the squared Euclidean norm of the weights to the loss.",
+          "span": [
+            0,
+            77
+          ],
+          "factual": true,
+          "material": true
+        },
+        {
+          "id": "F02.G.l2_b",
+          "canonical_id": "F02.ATOM.l2_penalty",
+          "text": "the L2 penalty adds the squared Euclidean norm of the weights to the loss.",
+          "span": [
+            92,
+            166
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F02.perfect.C1",
+              "canonical_id": "F02.C.l2_penalty",
+              "text": "L2 regularization adds the squared Euclidean norm of the weights to the loss.",
+              "span": [
+                0,
+                77
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F02.perfect.C1",
+              "gold_id": "F02.G.l2_a"
+            }
+          ]
+        },
+        {
+          "id": "duplicate",
+          "candidates": [
+            {
+              "id": "F02.duplicate.C1",
+              "canonical_id": "F02.C.l2_penalty",
+              "text": "L2 regularization adds the squared Euclidean norm of the weights to the loss.",
+              "span": [
+                0,
+                77
+              ],
+              "roles": [
+                "duplicate"
+              ]
+            },
+            {
+              "id": "F02.duplicate.C2",
+              "canonical_id": "F02.C.l2_penalty",
+              "text": "the L2 penalty adds the squared Euclidean norm of the weights to the loss.",
+              "span": [
+                92,
+                166
+              ],
+              "roles": [
+                "duplicate"
+              ]
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F02.duplicate.C1",
+              "gold_id": "F02.G.l2_a"
+            },
+            {
+              "candidate_id": "F02.duplicate.C2",
+              "gold_id": "F02.G.l2_b"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "title": "Dropout masks activations + guarantees calibration \u2014 compound trap",
+      "draft_text": "Dropout randomly masks activations during training. Dropout guarantees that predicted probabilities are calibrated.",
+      "draft_sha256": "ed9fd3972feb059ada2fcc978a417635dd241426cbd4acf7d02437d1a552f903",
+      "gold_atoms": [
+        {
+          "id": "F03.G.masks",
+          "canonical_id": "F03.ATOM.masks_activations",
+          "text": "Dropout randomly masks activations during training.",
+          "span": [
+            0,
+            51
+          ],
+          "factual": true,
+          "material": true
+        },
+        {
+          "id": "F03.G.calibration",
+          "canonical_id": "F03.ATOM.guarantees_calibration",
+          "text": "Dropout guarantees that predicted probabilities are calibrated.",
+          "span": [
+            52,
+            115
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F03.perfect.C1",
+              "canonical_id": "F03.C.masks",
+              "text": "Dropout randomly masks activations during training.",
+              "span": [
+                0,
+                51
+              ],
+              "roles": []
+            },
+            {
+              "id": "F03.perfect.C2",
+              "canonical_id": "F03.C.calibration",
+              "text": "Dropout guarantees that predicted probabilities are calibrated.",
+              "span": [
+                52,
+                115
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F03.perfect.C1",
+              "gold_id": "F03.G.masks"
+            },
+            {
+              "candidate_id": "F03.perfect.C2",
+              "gold_id": "F03.G.calibration"
+            }
+          ]
+        },
+        {
+          "id": "compound",
+          "candidates": [
+            {
+              "id": "F03.compound.C1",
+              "canonical_id": "F03.C.compound_dropout",
+              "text": "Dropout randomly masks activations during training and guarantees that predicted probabilities are calibrated.",
+              "span": null,
+              "roles": [
+                "compound"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "title": "BatchNorm training vs inference statistics",
+      "draft_text": "During training, BatchNorm uses the current mini-batch mean and variance. During inference, BatchNorm uses the running population mean and variance.",
+      "draft_sha256": "fef76e748e7f477a2f560f1d105469100a9aaff076d3dc8814f90fe679b8f47d",
+      "gold_atoms": [
+        {
+          "id": "F04.G.train",
+          "canonical_id": "F04.ATOM.train_stats",
+          "text": "During training, BatchNorm uses the current mini-batch mean and variance.",
+          "span": [
+            0,
+            73
+          ],
+          "factual": true,
+          "material": true
+        },
+        {
+          "id": "F04.G.infer",
+          "canonical_id": "F04.ATOM.infer_stats",
+          "text": "During inference, BatchNorm uses the running population mean and variance.",
+          "span": [
+            74,
+            148
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F04.perfect.C1",
+              "canonical_id": "F04.C.train",
+              "text": "During training, BatchNorm uses the current mini-batch mean and variance.",
+              "span": [
+                0,
+                73
+              ],
+              "roles": []
+            },
+            {
+              "id": "F04.perfect.C2",
+              "canonical_id": "F04.C.infer",
+              "text": "During inference, BatchNorm uses the running population mean and variance.",
+              "span": [
+                74,
+                148
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F04.perfect.C1",
+              "gold_id": "F04.G.train"
+            },
+            {
+              "candidate_id": "F04.perfect.C2",
+              "gold_id": "F04.G.infer"
+            }
+          ]
+        },
+        {
+          "id": "fragmentation",
+          "candidates": [
+            {
+              "id": "F04.fragmentation.C1",
+              "canonical_id": "F04.C.train_mean_only",
+              "text": "During training, BatchNorm uses the current mini-batch mean",
+              "span": [
+                0,
+                59
+              ],
+              "roles": [
+                "fragment"
+              ]
+            },
+            {
+              "id": "F04.fragmentation.C2",
+              "canonical_id": "F04.C.train_var_only",
+              "text": "During training, BatchNorm uses variance",
+              "span": null,
+              "roles": [
+                "fragment"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "title": "Gradient clipping with year/norm/model/experiment qualifiers",
+      "draft_text": "In the 2019 Transformer-XL experiment, gradient clipping with a global L2 norm of 0.25 was applied to the 18-layer model.",
+      "draft_sha256": "15fe60547734cf6c194621ab2cd23ed0098183dbae8f717b1e37985e8600cb74",
+      "gold_atoms": [
+        {
+          "id": "F05.G.clip",
+          "canonical_id": "F05.ATOM.qualified_clipping",
+          "text": "In the 2019 Transformer-XL experiment, gradient clipping with a global L2 norm of 0.25 was applied to the 18-layer model.",
+          "span": [
+            0,
+            121
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F05.perfect.C1",
+              "canonical_id": "F05.C.clip",
+              "text": "In the 2019 Transformer-XL experiment, gradient clipping with a global L2 norm of 0.25 was applied to the 18-layer model.",
+              "span": [
+                0,
+                121
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F05.perfect.C1",
+              "gold_id": "F05.G.clip"
+            }
+          ]
+        },
+        {
+          "id": "qualifier_loss",
+          "candidates": [
+            {
+              "id": "F05.qualifier_loss.C_date",
+              "canonical_id": "F05.C.drop_date",
+              "text": "In the Transformer-XL experiment, gradient clipping with a global L2 norm of 0.25 was applied to the 18-layer model.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            },
+            {
+              "id": "F05.qualifier_loss.C_number",
+              "canonical_id": "F05.C.drop_number",
+              "text": "In the 2019 Transformer-XL experiment, gradient clipping with a global L2 norm was applied to the 18-layer model.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            },
+            {
+              "id": "F05.qualifier_loss.C_unit",
+              "canonical_id": "F05.C.drop_unit",
+              "text": "In the 2019 Transformer-XL experiment, gradient clipping with a global norm of 0.25 was applied to the 18-layer model.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            },
+            {
+              "id": "F05.qualifier_loss.C_model",
+              "canonical_id": "F05.C.drop_model",
+              "text": "In the 2019 Transformer-XL experiment, gradient clipping with a global L2 norm of 0.25 was applied.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            },
+            {
+              "id": "F05.qualifier_loss.C_experiment",
+              "canonical_id": "F05.C.drop_experiment",
+              "text": "In 2019, gradient clipping with a global L2 norm of 0.25 was applied to the 18-layer model.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "title": "12 layers / width 768 / 110M parameters",
+      "draft_text": "The encoder has 12 layers. The encoder has a hidden width of 768. The encoder has 110M parameters.",
+      "draft_sha256": "76bb00ed0e0e58ad9c8b1b0218e626b2b462d4cba1ed7f47a8bc375287bb6906",
+      "gold_atoms": [
+        {
+          "id": "F06.G.layers",
+          "canonical_id": "F06.ATOM.layers_12",
+          "text": "The encoder has 12 layers.",
+          "span": [
+            0,
+            26
+          ],
+          "factual": true,
+          "material": true
+        },
+        {
+          "id": "F06.G.width",
+          "canonical_id": "F06.ATOM.width_768",
+          "text": "The encoder has a hidden width of 768.",
+          "span": [
+            27,
+            65
+          ],
+          "factual": true,
+          "material": true
+        },
+        {
+          "id": "F06.G.params",
+          "canonical_id": "F06.ATOM.params_110m",
+          "text": "The encoder has 110M parameters.",
+          "span": [
+            66,
+            98
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F06.perfect.C1",
+              "canonical_id": "F06.C.layers",
+              "text": "The encoder has 12 layers.",
+              "span": [
+                0,
+                26
+              ],
+              "roles": []
+            },
+            {
+              "id": "F06.perfect.C2",
+              "canonical_id": "F06.C.width",
+              "text": "The encoder has a hidden width of 768.",
+              "span": [
+                27,
+                65
+              ],
+              "roles": []
+            },
+            {
+              "id": "F06.perfect.C3",
+              "canonical_id": "F06.C.params",
+              "text": "The encoder has 110M parameters.",
+              "span": [
+                66,
+                98
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F06.perfect.C1",
+              "gold_id": "F06.G.layers"
+            },
+            {
+              "candidate_id": "F06.perfect.C2",
+              "gold_id": "F06.G.width"
+            },
+            {
+              "candidate_id": "F06.perfect.C3",
+              "gold_id": "F06.G.params"
+            }
+          ]
+        },
+        {
+          "id": "omission",
+          "candidates": [
+            {
+              "id": "F06.omission.C1",
+              "canonical_id": "F06.C.layers",
+              "text": "The encoder has 12 layers.",
+              "span": [
+                0,
+                26
+              ],
+              "roles": []
+            },
+            {
+              "id": "F06.omission.C2",
+              "canonical_id": "F06.C.width",
+              "text": "The encoder has a hidden width of 768.",
+              "span": [
+                27,
+                65
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F06.omission.C1",
+              "gold_id": "F06.G.layers"
+            },
+            {
+              "candidate_id": "F06.omission.C2",
+              "gold_id": "F06.G.width"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "title": "Advice and hypothetical \u2014 zero factual atoms",
+      "draft_text": "You should usually start with Adam. If the cluster were ten times larger, the loss might fall further.",
+      "draft_sha256": "d4413190a2e5f59c66128c7d6bd206766beb1f79cea6838ce0214616ddf02ced",
+      "gold_atoms": [],
+      "exclusions": [
+        {
+          "id": "F07.X.advice",
+          "text": "You should usually start with Adam.",
+          "span": [
+            0,
+            35
+          ],
+          "reason": "instruction_advice"
+        },
+        {
+          "id": "F07.X.hypothetical",
+          "text": "If the cluster were ten times larger, the loss might fall further.",
+          "span": [
+            36,
+            102
+          ],
+          "reason": "explicit_hypothetical"
+        }
+      ],
+      "candidate_sets": [
+        {
+          "id": "empty",
+          "candidates": [],
+          "allowed_matches": []
+        },
+        {
+          "id": "invention",
+          "candidates": [
+            {
+              "id": "F07.invention.C1",
+              "canonical_id": "F07.C.advice_as_fact",
+              "text": "You should usually start with Adam.",
+              "span": [
+                0,
+                35
+              ],
+              "roles": [
+                "invention"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "title": "Hypothetical accuracy + real benchmark accuracy",
+      "draft_text": "If we trained for a year, top-1 accuracy might reach 95%. On ImageNet, ResNet-50 achieved 76.1% top-1 accuracy.",
+      "draft_sha256": "260b0d6a23e004a4b434d23d3ca5d09571cec424177b97ce91dfda5432a7f896",
+      "gold_atoms": [
+        {
+          "id": "F08.G.imagenet",
+          "canonical_id": "F08.ATOM.resnet50_imagenet",
+          "text": "On ImageNet, ResNet-50 achieved 76.1% top-1 accuracy.",
+          "span": [
+            58,
+            111
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [
+        {
+          "id": "F08.X.hypothetical",
+          "text": "If we trained for a year, top-1 accuracy might reach 95%.",
+          "span": [
+            0,
+            57
+          ],
+          "reason": "explicit_hypothetical"
+        }
+      ],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F08.perfect.C1",
+              "canonical_id": "F08.C.imagenet",
+              "text": "On ImageNet, ResNet-50 achieved 76.1% top-1 accuracy.",
+              "span": [
+                58,
+                111
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F08.perfect.C1",
+              "gold_id": "F08.G.imagenet"
+            }
+          ]
+        },
+        {
+          "id": "invention",
+          "candidates": [
+            {
+              "id": "F08.invention.C1",
+              "canonical_id": "F08.C.hypothetical_as_fact",
+              "text": "If we trained for a year, top-1 accuracy might reach 95%.",
+              "span": [
+                0,
+                57
+              ],
+              "roles": [
+                "invention"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F09",
+      "title": "Draft-own-code description \u2014 excluded",
+      "draft_text": "The companion snippet's draft-only function score_batch iterates the local tensor xs and writes acc into an in-memory dict.",
+      "draft_sha256": "c17849ec3956b68fcdf2336ab5a14982c6d9d9b23d6228c2bf7c18c7438d32c3",
+      "gold_atoms": [],
+      "exclusions": [
+        {
+          "id": "F09.X.own_code",
+          "text": "The companion snippet's draft-only function score_batch iterates the local tensor xs and writes acc into an in-memory dict.",
+          "span": [
+            0,
+            123
+          ],
+          "reason": "draft_own_code"
+        }
+      ],
+      "candidate_sets": [
+        {
+          "id": "empty",
+          "candidates": [],
+          "allowed_matches": []
+        },
+        {
+          "id": "invention",
+          "candidates": [
+            {
+              "id": "F09.invention.C1",
+              "canonical_id": "F09.C.own_code_as_fact",
+              "text": "The companion snippet's draft-only function score_batch iterates the local tensor xs and writes acc into an in-memory dict.",
+              "span": [
+                0,
+                123
+              ],
+              "roles": [
+                "invention"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "title": "Clipping can reduce explosions and does not guarantee convergence",
+      "draft_text": "Gradient clipping can reduce exploding gradients. Gradient clipping does not guarantee convergence.",
+      "draft_sha256": "d07780db6c4a710acc6ee70dee85c3e2f2b41a9f40c26e3ddb28a3c98d4205e3",
+      "gold_atoms": [
+        {
+          "id": "F10.G.can_reduce",
+          "canonical_id": "F10.ATOM.can_reduce_explosions",
+          "text": "Gradient clipping can reduce exploding gradients.",
+          "span": [
+            0,
+            49
+          ],
+          "factual": true,
+          "material": true
+        },
+        {
+          "id": "F10.G.no_guarantee",
+          "canonical_id": "F10.ATOM.no_convergence_guarantee",
+          "text": "Gradient clipping does not guarantee convergence.",
+          "span": [
+            50,
+            99
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F10.perfect.C1",
+              "canonical_id": "F10.C.can_reduce",
+              "text": "Gradient clipping can reduce exploding gradients.",
+              "span": [
+                0,
+                49
+              ],
+              "roles": []
+            },
+            {
+              "id": "F10.perfect.C2",
+              "canonical_id": "F10.C.no_guarantee",
+              "text": "Gradient clipping does not guarantee convergence.",
+              "span": [
+                50,
+                99
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F10.perfect.C1",
+              "gold_id": "F10.G.can_reduce"
+            },
+            {
+              "candidate_id": "F10.perfect.C2",
+              "gold_id": "F10.G.no_guarantee"
+            }
+          ]
+        },
+        {
+          "id": "qualifier_loss",
+          "candidates": [
+            {
+              "id": "F10.qualifier_loss.C_modality",
+              "canonical_id": "F10.C.drop_modality",
+              "text": "Gradient clipping reduces exploding gradients.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            },
+            {
+              "id": "F10.qualifier_loss.C_negation",
+              "canonical_id": "F10.C.drop_negation",
+              "text": "Gradient clipping guarantees convergence.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F11",
+      "title": "Conditional BCE y=1, p=0.8 -> -log(0.8)",
+      "draft_text": "When the binary label y equals 1 and the predicted probability p equals 0.8, binary cross-entropy equals -log(0.8).",
+      "draft_sha256": "1ab2193413ee62147d333432f9aff41e63679f86c6013f1a3221c2dfaa6627ae",
+      "gold_atoms": [
+        {
+          "id": "F11.G.bce",
+          "canonical_id": "F11.ATOM.conditional_bce",
+          "text": "When the binary label y equals 1 and the predicted probability p equals 0.8, binary cross-entropy equals -log(0.8).",
+          "span": [
+            0,
+            115
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F11.perfect.C1",
+              "canonical_id": "F11.C.bce",
+              "text": "When the binary label y equals 1 and the predicted probability p equals 0.8, binary cross-entropy equals -log(0.8).",
+              "span": [
+                0,
+                115
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F11.perfect.C1",
+              "gold_id": "F11.G.bce"
+            }
+          ]
+        },
+        {
+          "id": "qualifier_loss",
+          "candidates": [
+            {
+              "id": "F11.qualifier_loss.C_condition",
+              "canonical_id": "F11.C.drop_condition",
+              "text": "When the predicted probability p equals 0.8, binary cross-entropy equals -log(0.8).",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            },
+            {
+              "id": "F11.qualifier_loss.C_number",
+              "canonical_id": "F11.C.drop_number",
+              "text": "When the binary label y equals 1 and the predicted probability p equals 0.5, binary cross-entropy equals -log(0.8).",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F12",
+      "title": "8192-token context claim repeated by paraphrase",
+      "draft_text": "The model supports an 8192-token context window. Put differently, the architecture accepts a context of 8192 tokens.",
+      "draft_sha256": "c003d67e5f5bb97bca0869c2ca2b4c0b3ca2113f62ed2d1e0f11352537b639d7",
+      "gold_atoms": [
+        {
+          "id": "F12.G.ctx_a",
+          "canonical_id": "F12.ATOM.context_8192",
+          "text": "The model supports an 8192-token context window.",
+          "span": [
+            0,
+            48
+          ],
+          "factual": true,
+          "material": true
+        },
+        {
+          "id": "F12.G.ctx_b",
+          "canonical_id": "F12.ATOM.context_8192",
+          "text": "the architecture accepts a context of 8192 tokens.",
+          "span": [
+            66,
+            116
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F12.perfect.C1",
+              "canonical_id": "F12.C.context",
+              "text": "The model supports an 8192-token context window.",
+              "span": [
+                0,
+                48
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F12.perfect.C1",
+              "gold_id": "F12.G.ctx_a"
+            }
+          ]
+        },
+        {
+          "id": "duplicate",
+          "candidates": [
+            {
+              "id": "F12.duplicate.C1",
+              "canonical_id": "F12.C.context",
+              "text": "The model supports an 8192-token context window.",
+              "span": [
+                0,
+                48
+              ],
+              "roles": [
+                "duplicate"
+              ]
+            },
+            {
+              "id": "F12.duplicate.C2",
+              "canonical_id": "F12.C.context",
+              "text": "the architecture accepts a context of 8192 tokens.",
+              "span": [
+                66,
+                116
+              ],
+              "roles": [
+                "duplicate"
+              ]
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F12.duplicate.C1",
+              "gold_id": "F12.G.ctx_a"
+            },
+            {
+              "candidate_id": "F12.duplicate.C2",
+              "gold_id": "F12.G.ctx_b"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F13",
+      "title": "Sigmoid saturation causal gradient-shrink claim",
+      "draft_text": "When a sigmoid unit saturates, its local gradient shrinks toward zero.",
+      "draft_sha256": "6efe814ed89918e6e5dc0a6f7281a89a9098769fee4f92169b54880c366d6848",
+      "gold_atoms": [
+        {
+          "id": "F13.G.saturation",
+          "canonical_id": "F13.ATOM.sigmoid_saturation_shrink",
+          "text": "When a sigmoid unit saturates, its local gradient shrinks toward zero.",
+          "span": [
+            0,
+            70
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F13.perfect.C1",
+              "canonical_id": "F13.C.saturation",
+              "text": "When a sigmoid unit saturates, its local gradient shrinks toward zero.",
+              "span": [
+                0,
+                70
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F13.perfect.C1",
+              "gold_id": "F13.G.saturation"
+            }
+          ]
+        },
+        {
+          "id": "fragmentation",
+          "candidates": [
+            {
+              "id": "F13.fragmentation.C1",
+              "canonical_id": "F13.C.cause_only",
+              "text": "a sigmoid unit saturates",
+              "span": [
+                5,
+                29
+              ],
+              "roles": [
+                "fragment"
+              ]
+            },
+            {
+              "id": "F13.fragmentation.C2",
+              "canonical_id": "F13.C.effect_only",
+              "text": "its local gradient shrinks toward zero",
+              "span": [
+                31,
+                69
+              ],
+              "roles": [
+                "fragment"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    },
+    {
+      "id": "F14",
+      "title": "Method A 2 ms faster than B on the same hardware",
+      "draft_text": "On the same GPU, Method A is 2 ms faster than Method B.",
+      "draft_sha256": "9826a9c0293b0b52e32c3e89f5e08ae0be2f281124c4ca4271f62188236a67af",
+      "gold_atoms": [
+        {
+          "id": "F14.G.cmp",
+          "canonical_id": "F14.ATOM.a_faster_than_b",
+          "text": "On the same GPU, Method A is 2 ms faster than Method B.",
+          "span": [
+            0,
+            55
+          ],
+          "factual": true,
+          "material": true
+        }
+      ],
+      "exclusions": [],
+      "candidate_sets": [
+        {
+          "id": "perfect",
+          "candidates": [
+            {
+              "id": "F14.perfect.C1",
+              "canonical_id": "F14.C.cmp",
+              "text": "On the same GPU, Method A is 2 ms faster than Method B.",
+              "span": [
+                0,
+                55
+              ],
+              "roles": []
+            }
+          ],
+          "allowed_matches": [
+            {
+              "candidate_id": "F14.perfect.C1",
+              "gold_id": "F14.G.cmp"
+            }
+          ]
+        },
+        {
+          "id": "qualifier_loss",
+          "candidates": [
+            {
+              "id": "F14.qualifier_loss.C_number",
+              "canonical_id": "F14.C.drop_number",
+              "text": "On the same GPU, Method A is faster than Method B.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            },
+            {
+              "id": "F14.qualifier_loss.C_unit",
+              "canonical_id": "F14.C.drop_unit",
+              "text": "On the same GPU, Method A is 2 faster than Method B.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            },
+            {
+              "id": "F14.qualifier_loss.C_baseline",
+              "canonical_id": "F14.C.drop_baseline",
+              "text": "On the same GPU, Method A is 2 ms faster.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            },
+            {
+              "id": "F14.qualifier_loss.C_hardware",
+              "canonical_id": "F14.C.drop_hardware",
+              "text": "Method A is 2 ms faster than Method B.",
+              "span": null,
+              "roles": [
+                "qualifier_loss"
+              ]
+            }
+          ],
+          "allowed_matches": []
+        }
+      ]
+    }
+  ]
+}

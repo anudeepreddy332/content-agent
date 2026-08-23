@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://themachinist.org/schemas/claim_semantics_v1.schema.json",
+  "title": "Claim Semantics v1 fixture pack",
+  "description": "Deterministic, human-adjudicated fixtures for measuring claim completeness and atomicity. No production extraction, embeddings, or provider calls.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pack_id",
+    "schema_version",
+    "evaluator_id",
+    "description",
+    "fixtures"
+  ],
+  "properties": {
+    "pack_id": {
+      "type": "string",
+      "const": "claim_semantics_v1"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "evaluator_id": {
+      "type": "string",
+      "const": "claim_semantics_v1"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": { "$ref": "#/$defs/fixture" }
+    }
+  },
+  "$defs": {
+    "span": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "integer", "minimum": 0 }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "roles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "compound",
+          "fragment",
+          "invention",
+          "qualifier_loss",
+          "duplicate"
+        ]
+      }
+    },
+    "exclusion_reason": {
+      "type": "string",
+      "enum": [
+        "opinion",
+        "transition",
+        "rhetorical_question",
+        "instruction_advice",
+        "explicit_hypothetical",
+        "draft_own_code"
+      ]
+    },
+    "gold_atom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "canonical_id",
+        "text",
+        "span",
+        "factual",
+        "material"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "canonical_id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "span": { "$ref": "#/$defs/span" },
+        "factual": { "type": "boolean" },
+        "material": { "type": "boolean" }
+      }
+    },
+    "exclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "span", "reason"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "span": { "$ref": "#/$defs/span" },
+        "reason": { "$ref": "#/$defs/exclusion_reason" }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "canonical_id", "text", "span", "roles"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "canonical_id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "span": {
+          "anyOf": [
+            { "$ref": "#/$defs/span" },
+            { "type": "null" }
+          ]
+        },
+        "roles": { "$ref": "#/$defs/roles" }
+      }
+    },
+    "allowed_match": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_id", "gold_id"],
+      "properties": {
+        "candidate_id": { "type": "string", "minLength": 1 },
+        "gold_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "candidate_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "candidates", "allowed_matches"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "perfect",
+            "omission",
+            "duplicate",
+            "invention",
+            "compound",
+            "fragmentation",
+            "qualifier_loss",
+            "reordered",
+            "empty"
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/candidate" }
+        },
+        "allowed_matches": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/allowed_match" }
+        }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "draft_text",
+        "draft_sha256",
+        "gold_atoms",
+        "exclusions",
+        "candidate_sets"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^F(0[1-9]|1[0-4])$"
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "draft_text": { "type": "string", "minLength": 1 },
+        "draft_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "gold_atoms": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/gold_atom" }
+        },
+        "exclusions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/exclusion" }
+        },
+        "candidate_sets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/candidate_set" }
+        }
+      }
+    }
+  }
+}
