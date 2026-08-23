@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 
 import pytest
 from langgraph.graph import END
@@ -9,11 +10,13 @@ from langgraph.graph import END
 import agent.nodes as nodes
 from agent.semantic_trace import (
     canonical_json,
+    embed_semantic_trace,
     empty_trace,
     record_draft,
     record_verify,
     reread_validate_trace,
     sha256_utf8,
+    stamp_final,
     validate_trace,
 )
 from config import COST_GATE_USD, UVR_THRESHOLD
@@ -62,6 +65,41 @@ def _merge(state: dict, update: dict) -> dict:
     merged = dict(state)
     merged.update(update)
     return merged
+
+
+def _complete_trace(report: list | None = None) -> dict:
+    """Accepted one-iteration trace with all four required objects and matching UVR_v1."""
+    report = report or [_verdict(f"ok-{i}") for i in range(10)]
+    trace = empty_trace({"run_id": "complete-run", "topic": "Gradient Descent"})
+    record_draft(trace, iteration=1, draft_markdown="draft-a", revision_linkage=None)
+    record_verify(
+        trace,
+        iteration=1,
+        consumed=True,
+        draft_markdown="draft-a",
+        source_context="sources",
+        user_message="Draft to verify:\ndraft-a\nAvailable sources:\nsources",
+        verify_system_text="sys",
+        raw_response="[]",
+        parser_status="ok",
+        pre_dedup_rows=[],
+        dropped_rows=[],
+        post_dedup_rows=[],
+        post_attribution_rows=report,
+        web_sources=[{"url": "https://example.com/gd", "content": "gradient descent content"}],
+        kb_results=[{"source": "kb.md", "text": "kb text", "chunk_index": 0}],
+    )
+    stamp_final(
+        trace,
+        {
+            "verification_status": "completed",
+            "grounding_report": report,
+            "hitl_status": "approved",
+        },
+        semantic_accepted=True,
+    )
+    trace["trace_status"] = "ok"
+    return trace
 
 
 def test_sha256_identical_content_is_stable_and_changes_with_edits():
@@ -417,3 +455,312 @@ def test_hitl_feedback_is_linked_on_next_draft(base_state, monkeypatch):
     assert "unsourced number 42" in link["targeted_unverified_claims"]
     assert link["source_iteration"] == 1
     assert link["next_iteration"] == 2
+
+
+def _mut_remove_verifier_input(trace: dict) -> None:
+    del trace["iterations"][0]["verifier_input"]
+
+
+def _mut_remove_verifier_raw(trace: dict) -> None:
+    del trace["iterations"][0]["verifier_raw"]
+
+
+def _mut_remove_post_processing(trace: dict) -> None:
+    del trace["iterations"][0]["post_processing"]
+
+
+def _mut_corrupt_verifier_input_draft_sha(trace: dict) -> None:
+    trace["iterations"][0]["verifier_input"]["draft_sha256"] = "deadbeef" * 8
+
+
+def _mut_verifier_input_draft_differs(trace: dict) -> None:
+    vin = trace["iterations"][0]["verifier_input"]
+    vin["draft_markdown"] = "other-draft"
+    vin["draft_sha256"] = sha256_utf8("other-draft")
+
+
+def _mut_corrupt_source_context_sha(trace: dict) -> None:
+    trace["iterations"][0]["verifier_input"]["source_context_sha256"] = "deadbeef" * 8
+
+
+def _mut_corrupt_user_message_sha(trace: dict) -> None:
+    trace["iterations"][0]["verifier_input"]["user_message_sha256"] = "deadbeef" * 8
+
+
+def _mut_corrupt_source_set_digest(trace: dict) -> None:
+    trace["iterations"][0]["verifier_input"]["source_set"]["digest"] = "deadbeef" * 8
+
+
+def _mut_corrupt_raw_sha(trace: dict) -> None:
+    trace["iterations"][0]["verifier_raw"]["raw_sha256"] = "deadbeef" * 8
+
+
+def _mut_corrupt_post_processing_counts(trace: dict) -> None:
+    trace["iterations"][0]["post_processing"]["counts"]["post_attribution"] = 99
+
+
+def _mut_corrupt_final_uvr_numerator(trace: dict) -> None:
+    trace["final"]["uvr_numerator"] = 99
+
+
+def _mut_deciding_iteration_missing(trace: dict) -> None:
+    trace["final"]["deciding_iteration"] = 99
+
+
+_CAUSAL_MUTATIONS = [
+    (_mut_remove_verifier_input, "missing verifier_input"),
+    (_mut_remove_verifier_raw, "missing verifier_raw"),
+    (_mut_remove_post_processing, "missing post_processing"),
+    (_mut_corrupt_verifier_input_draft_sha, "verifier_input.draft_sha256 mismatch"),
+    (_mut_verifier_input_draft_differs, "verifier_input draft differs from iteration draft"),
+    (_mut_corrupt_source_context_sha, "source_context_sha256 mismatch"),
+    (_mut_corrupt_user_message_sha, "user_message_sha256 mismatch"),
+    (_mut_corrupt_source_set_digest, "source_set.digest mismatch"),
+    (_mut_corrupt_raw_sha, "raw_sha256 mismatch"),
+    (_mut_corrupt_post_processing_counts, "post_processing.counts.post_attribution mismatch"),
+    (_mut_corrupt_final_uvr_numerator, "uvr_numerator"),
+    (_mut_deciding_iteration_missing, "deciding_iteration does not resolve"),
+]
+
+
+@pytest.mark.parametrize(
+    "mutator,needle",
+    _CAUSAL_MUTATIONS,
+    ids=[
+        "remove_verifier_input",
+        "remove_verifier_raw",
+        "remove_post_processing",
+        "corrupt_verifier_input_draft_sha",
+        "verifier_input_draft_differs",
+        "corrupt_source_context_sha",
+        "corrupt_user_message_sha",
+        "corrupt_source_set_digest",
+        "corrupt_raw_sha",
+        "corrupt_post_processing_counts",
+        "corrupt_final_uvr_numerator",
+        "deciding_iteration_nonexistent",
+    ],
+)
+def test_causal_mutations_fail_complete_validation(mutator, needle):
+    good = _complete_trace()
+    assert validate_trace(good, require_complete=True) == []
+    broken = deepcopy(good)
+    mutator(broken)
+    errors = validate_trace(broken, require_complete=True)
+    assert errors, f"expected complete validation to fail for {needle}"
+    assert any(needle in e for e in errors), errors
+
+
+def test_skipped_cost_gate_complete_trace_validates_without_fake_provider_io():
+    trace = empty_trace({"run_id": "skip-run", "topic": "Gradient Descent"})
+    record_draft(trace, iteration=1, draft_markdown="draft-a", revision_linkage=None)
+    record_verify(
+        trace,
+        iteration=1,
+        consumed=False,
+        skip_reason="skipped_cost_gate",
+        draft_markdown="draft-a",
+    )
+    stamp_final(
+        trace,
+        {
+            "verification_status": "skipped_cost_gate",
+            "grounding_report": [],
+            "hitl_status": None,
+        },
+        semantic_accepted=False,
+    )
+    trace["trace_status"] = "ok"
+    assert validate_trace(trace, require_complete=True) == []
+    vin = trace["iterations"][0]["verifier_input"]
+    raw = trace["iterations"][0]["verifier_raw"]
+    assert vin["consumed"] is False
+    assert vin["reason"] == "skipped_cost_gate"
+    assert "source_context" not in vin
+    assert "source_set" not in vin
+    assert raw["raw_response"] is None
+    assert raw["raw_sha256"] is None
+
+
+def test_parse_failed_complete_trace_validates():
+    trace = empty_trace({"run_id": "parse-complete", "topic": "Gradient Descent"})
+    record_draft(trace, iteration=1, draft_markdown="draft-a", revision_linkage=None)
+    record_verify(
+        trace,
+        iteration=1,
+        consumed=True,
+        draft_markdown="draft-a",
+        source_context="sources",
+        user_message="Draft to verify:\ndraft-a\nAvailable sources:\nsources",
+        verify_system_text="sys",
+        raw_response="not-json",
+        parser_status="parse_failed",
+        parse_error="json decode failed",
+        pre_dedup_rows=[],
+        dropped_rows=[],
+        post_dedup_rows=[],
+        post_attribution_rows=[],
+        web_sources=[{"url": "https://example.com/gd", "content": "x"}],
+        kb_results=[],
+    )
+    stamp_final(
+        trace,
+        {
+            "verification_status": "parse_failed",
+            "grounding_report": [],
+            "hitl_status": None,
+        },
+        semantic_accepted=False,
+    )
+    trace["trace_status"] = "ok"
+    assert validate_trace(trace, require_complete=True) == []
+    slot = trace["iterations"][0]
+    assert slot["verifier_input"]["consumed"] is True
+    assert slot["verifier_raw"]["parser_status"] == "parse_failed"
+    assert slot["verifier_raw"]["raw_response"] == "not-json"
+    assert slot["verifier_raw"]["raw_sha256"] == sha256_utf8("not-json")
+
+
+def test_accepted_normal_trace_validates_complete():
+    trace = _complete_trace()
+    assert validate_trace(trace, require_complete=True) == []
+    slot = trace["iterations"][0]
+    assert slot["draft"]["draft_markdown"] == "draft-a"
+    assert isinstance(slot["verifier_input"], dict)
+    assert isinstance(slot["verifier_raw"], dict)
+    assert isinstance(slot["post_processing"], dict)
+    assert trace["final"]["uvr"] == 0.0
+    assert trace["final"]["uvr_numerator"] == 0
+    assert trace["final"]["uvr_denominator"] == 10
+
+
+def test_two_iteration_revision_trace_validates_complete():
+    first = [_verdict("unsourced number 42", status="unverified", source_url=None, confidence=0.2)]
+    second = [_verdict(f"ok-{i}") for i in range(10)]
+    trace = empty_trace({"run_id": "rev-run", "topic": "Gradient Descent"})
+    record_draft(trace, iteration=1, draft_markdown="draft-a", revision_linkage=None)
+    record_verify(
+        trace,
+        iteration=1,
+        consumed=True,
+        draft_markdown="draft-a",
+        source_context="sources",
+        user_message="Draft to verify:\ndraft-a\nAvailable sources:\nsources",
+        verify_system_text="sys",
+        raw_response='[{"claim":"unsourced number 42"}]',
+        parser_status="ok",
+        pre_dedup_rows=first,
+        dropped_rows=[],
+        post_dedup_rows=first,
+        post_attribution_rows=first,
+        web_sources=[{"url": "https://example.com/gd", "content": "x"}],
+        kb_results=[],
+    )
+    record_draft(
+        trace,
+        iteration=2,
+        draft_markdown="draft-b",
+        revision_linkage={
+            "source_iteration": 1,
+            "next_iteration": 2,
+            "targeted_unverified_claims": ["unsourced number 42"],
+            "grounding_feedback_block": "unsourced number 42",
+            "hitl_feedback": None,
+        },
+    )
+    record_verify(
+        trace,
+        iteration=2,
+        consumed=True,
+        draft_markdown="draft-b",
+        source_context="sources",
+        user_message="Draft to verify:\ndraft-b\nAvailable sources:\nsources",
+        verify_system_text="sys",
+        raw_response="[]",
+        parser_status="ok",
+        pre_dedup_rows=second,
+        dropped_rows=[],
+        post_dedup_rows=second,
+        post_attribution_rows=second,
+        web_sources=[{"url": "https://example.com/gd", "content": "x"}],
+        kb_results=[],
+    )
+    stamp_final(
+        trace,
+        {
+            "verification_status": "completed",
+            "grounding_report": second,
+            "hitl_status": "approved",
+        },
+        semantic_accepted=True,
+    )
+    trace["trace_status"] = "ok"
+    assert validate_trace(trace, require_complete=True) == []
+    assert [item["iteration"] for item in trace["iterations"]] == [1, 2]
+    assert trace["iterations"][0]["draft"]["draft_markdown"] == "draft-a"
+    assert trace["iterations"][1]["draft"]["draft_markdown"] == "draft-b"
+    assert trace["final"]["deciding_iteration"] == 2
+    assert trace["final"]["uvr"] == 0.0
+
+
+def test_trace_failure_does_not_alter_article_semantic_acceptance_or_routing(base_state):
+    ok_report = [_verdict(f"ok-{i}") for i in range(10)]
+    state = _merge(base_state, {
+        "iterations": 1,
+        "verification_status": "completed",
+        "grounding_report": ok_report,
+        "grounding_score": 0.80,
+        "reflection_score": 8,
+        "hitl_status": "approved",
+        "run_id": "routing-run",
+        "semantic_trace": _complete_trace(ok_report),
+    })
+    del state["semantic_trace"]["iterations"][0]["verifier_input"]
+    assert nodes.semantic_verification_accepted(state) is True
+    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_hitl(state) == "html_gen"
+    record = {"verification_status": state["verification_status"]}
+    embed_semantic_trace(record, state, semantic_accepted=True)
+    assert record["semantic_trace_status"] == "failed"
+    assert record["verification_status"] == "completed"
+    assert state["verification_status"] == "completed"
+    assert nodes.semantic_verification_accepted(state) is True
+    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_hitl(state) == "html_gen"
+
+
+def test_malformed_trace_cannot_emerge_ok_through_telemetry_write_reread(
+    base_state, tmp_path, monkeypatch,
+):
+    monkeypatch.chdir(tmp_path)
+    ok_report = [_verdict(f"ok-{i}") for i in range(10)]
+    trace = _complete_trace(ok_report)
+    del trace["iterations"][0]["verifier_input"]
+    state = _merge(base_state, {
+        "run_id": "malformed-tele-run",
+        "verification_status": "completed",
+        "grounding_report": ok_report,
+        "grounding_score": 0.9,
+        "hitl_status": "approved",
+        "semantic_trace": trace,
+    })
+    assert nodes.semantic_verification_accepted(state) is True
+    path = _write_telemetry(state)
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    assert loaded["verification_status"] == "completed"
+    assert loaded["semantic_trace_status"] != "ok"
+    assert loaded["semantic_trace_v1"]["trace_status"] != "ok"
+    assert loaded["semantic_trace_status"] == "failed"
+
+    # A file that already claims ok must also fail closed on reread.
+    tampered = json.loads(path.read_text(encoding="utf-8"))
+    tampered["semantic_trace_v1"] = _complete_trace(ok_report)
+    del tampered["semantic_trace_v1"]["iterations"][0]["verifier_input"]
+    tampered["semantic_trace_v1"]["trace_status"] = "ok"
+    tampered["semantic_trace_status"] = "ok"
+    path.write_text(json.dumps(tampered, indent=2), encoding="utf-8")
+    reread_validate_trace(path, tampered, state)
+    reread = json.loads(path.read_text(encoding="utf-8"))
+    assert reread["verification_status"] == "completed"
+    assert reread["semantic_trace_status"] != "ok"
+    assert reread["semantic_trace_v1"]["trace_status"] != "ok"

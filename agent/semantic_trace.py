@@ -253,6 +253,127 @@ def stamp_final(
     }
 
 
+def _check_draft(iteration: int, draft: dict) -> list[str]:
+    errors: list[str] = []
+    md = draft.get("draft_markdown")
+    digest = draft.get("draft_sha256")
+    if not isinstance(md, str):
+        errors.append(f"iteration {iteration} draft_markdown missing")
+    elif digest != sha256_utf8(md):
+        errors.append(f"iteration {iteration} draft_sha256 mismatch")
+    return errors
+
+
+def _check_verifier_input(iteration: int, vin: dict, draft: dict | None) -> list[str]:
+    errors: list[str] = []
+    consumed = vin.get("consumed")
+    if consumed is True:
+        md = vin.get("draft_markdown")
+        if not isinstance(md, str):
+            errors.append(f"iteration {iteration} verifier_input.draft_markdown missing")
+        elif vin.get("draft_sha256") != sha256_utf8(md):
+            errors.append(f"iteration {iteration} verifier_input.draft_sha256 mismatch")
+        if isinstance(draft, dict):
+            if md != draft.get("draft_markdown"):
+                errors.append(
+                    f"iteration {iteration} verifier_input draft differs from iteration draft"
+                )
+            if (
+                isinstance(md, str)
+                and vin.get("draft_sha256") != draft.get("draft_sha256")
+            ):
+                errors.append(
+                    f"iteration {iteration} verifier_input draft_sha256 disagrees "
+                    "with iteration draft"
+                )
+        source_context = vin.get("source_context")
+        if not isinstance(source_context, str):
+            errors.append(f"iteration {iteration} source_context missing")
+        elif vin.get("source_context_sha256") != sha256_utf8(source_context):
+            errors.append(f"iteration {iteration} source_context_sha256 mismatch")
+        user_message = vin.get("user_message")
+        if not isinstance(user_message, str):
+            errors.append(f"iteration {iteration} user_message missing")
+        elif vin.get("user_message_sha256") != sha256_utf8(user_message):
+            errors.append(f"iteration {iteration} user_message_sha256 mismatch")
+        source_set = vin.get("source_set")
+        if not isinstance(source_set, dict):
+            errors.append(f"iteration {iteration} source_set missing")
+        else:
+            payload = source_set.get("payload")
+            if payload is None:
+                errors.append(f"iteration {iteration} source_set.payload missing")
+            elif source_set.get("digest") != digest_obj(payload):
+                errors.append(f"iteration {iteration} source_set.digest mismatch")
+    elif consumed is False:
+        reason = vin.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            errors.append(f"iteration {iteration} skipped verifier_input missing reason")
+    else:
+        errors.append(f"iteration {iteration} verifier_input.consumed must be boolean")
+    return errors
+
+
+def _check_verifier_raw(iteration: int, raw: dict, consumed: bool | None) -> list[str]:
+    errors: list[str] = []
+    response = raw.get("raw_response")
+    if response is not None:
+        if not isinstance(response, str):
+            errors.append(f"iteration {iteration} raw_response must be a string")
+        elif raw.get("raw_sha256") != sha256_utf8(response):
+            errors.append(f"iteration {iteration} raw_sha256 mismatch")
+    elif consumed is True:
+        errors.append(f"iteration {iteration} consumed verifier_raw missing raw_response")
+    pre = raw.get("pre_dedup_rows")
+    if not isinstance(pre, list):
+        errors.append(f"iteration {iteration} verifier_raw.pre_dedup_rows must be a list")
+    return errors
+
+
+def _check_post_processing(iteration: int, post: dict, raw: dict | None) -> list[str]:
+    errors: list[str] = []
+    dropped = post.get("dropped_rows")
+    post_dedup = post.get("post_dedup_rows")
+    post_attr = post.get("post_attribution_rows")
+    if not isinstance(dropped, list):
+        errors.append(f"iteration {iteration} dropped_rows must be a list")
+        dropped = []
+    if not isinstance(post_dedup, list):
+        errors.append(f"iteration {iteration} post_dedup_rows must be a list")
+        post_dedup = []
+    if not isinstance(post_attr, list):
+        errors.append(f"iteration {iteration} post_attribution_rows must be a list")
+        post_attr = []
+    pre = raw.get("pre_dedup_rows") if isinstance(raw, dict) else None
+    if not isinstance(pre, list):
+        pre = []
+        if isinstance(raw, dict):
+            errors.append(
+                f"iteration {iteration} post_processing pre_dedup rows must be a list"
+            )
+    counts = post.get("counts")
+    if not isinstance(counts, dict):
+        errors.append(f"iteration {iteration} post_processing.counts missing")
+        return errors
+    expected = {
+        "pre_dedup": len(pre),
+        "dropped": len(dropped),
+        "post_dedup": len(post_dedup),
+        "post_attribution": len(post_attr),
+        "verified": sum(1 for r in post_attr if r.get("status") == "verified"),
+        "weak": sum(1 for r in post_attr if r.get("status") == "weak"),
+        "unverified": sum(1 for r in post_attr if r.get("status") == "unverified"),
+    }
+    for key, value in expected.items():
+        if counts.get(key) != value:
+            errors.append(
+                f"iteration {iteration} post_processing.counts.{key} mismatch"
+            )
+    if post.get("pre_dedup_count") not in (None, expected["pre_dedup"]):
+        errors.append(f"iteration {iteration} pre_dedup_count mismatch")
+    return errors
+
+
 def validate_trace(trace: Any, *, require_complete: bool = False) -> list[str]:
     errors: list[str] = []
     if not isinstance(trace, dict):
@@ -266,6 +387,7 @@ def validate_trace(trace: Any, *, require_complete: bool = False) -> list[str]:
         errors.append("iterations must be a list")
         return errors
     seen: set[int] = set()
+    slots: dict[int, dict] = {}
     for item in iterations:
         if not isinstance(item, dict):
             errors.append("iteration slot is not an object")
@@ -277,52 +399,71 @@ def validate_trace(trace: Any, *, require_complete: bool = False) -> list[str]:
         if iteration in seen:
             errors.append(f"duplicate iteration id {iteration}")
         seen.add(iteration)
+        slots[iteration] = item
         draft = item.get("draft")
+        vin = item.get("verifier_input")
+        raw = item.get("verifier_raw")
+        post = item.get("post_processing")
+        if require_complete:
+            if not isinstance(draft, dict):
+                errors.append(f"iteration {iteration} missing draft")
+            if not isinstance(vin, dict):
+                errors.append(f"iteration {iteration} missing verifier_input")
+            if not isinstance(raw, dict):
+                errors.append(f"iteration {iteration} missing verifier_raw")
+            if not isinstance(post, dict):
+                errors.append(f"iteration {iteration} missing post_processing")
         if isinstance(draft, dict):
-            md = draft.get("draft_markdown")
-            digest = draft.get("draft_sha256")
-            if not isinstance(md, str):
-                errors.append(f"iteration {iteration} draft_markdown missing")
-            elif digest != sha256_utf8(md):
-                errors.append(f"iteration {iteration} draft_sha256 mismatch")
+            errors.extend(_check_draft(iteration, draft))
         linkage = item.get("revision_linkage")
         if isinstance(linkage, dict):
             src = linkage.get("source_iteration")
-            if src is not None and not any(
-                other.get("iteration") == src for other in iterations
-            ):
+            if src is not None and src not in {
+                other.get("iteration") for other in iterations if isinstance(other, dict)
+            }:
                 errors.append(
                     f"iteration {iteration} revision_linkage source_iteration "
                     f"{src} is missing"
                 )
-        raw = item.get("verifier_raw")
-        if isinstance(raw, dict) and raw.get("raw_response") is not None:
-            if raw.get("raw_sha256") != sha256_utf8(raw.get("raw_response") or ""):
-                errors.append(f"iteration {iteration} raw_sha256 mismatch")
-        vin = item.get("verifier_input")
-        if isinstance(vin, dict) and vin.get("consumed") is True:
-            if vin.get("user_message") is None:
-                errors.append(f"iteration {iteration} missing consumed user_message")
-            if vin.get("source_context") is None:
-                errors.append(f"iteration {iteration} missing consumed source_context")
-            um = vin.get("user_message")
-            if isinstance(um, str) and vin.get("user_message_sha256") != sha256_utf8(um):
-                errors.append(f"iteration {iteration} user_message_sha256 mismatch")
-        if require_complete:
-            if not isinstance(draft, dict):
-                errors.append(f"iteration {iteration} missing draft")
-            if not isinstance(item.get("verifier_raw"), dict):
-                errors.append(f"iteration {iteration} missing verifier_raw")
+        consumed = vin.get("consumed") if isinstance(vin, dict) else None
+        if isinstance(vin, dict):
+            errors.extend(_check_verifier_input(iteration, vin, draft if isinstance(draft, dict) else None))
+        if isinstance(raw, dict):
+            errors.extend(_check_verifier_raw(iteration, raw, consumed if isinstance(consumed, bool) else None))
+        if isinstance(post, dict):
+            errors.extend(_check_post_processing(iteration, post, raw if isinstance(raw, dict) else None))
+    final = trace.get("final")
     if require_complete:
         if trace.get("trace_status") == "failed":
             errors.append("trace_status is failed")
-        if not isinstance(trace.get("final"), dict):
+        if not isinstance(final, dict):
             errors.append("missing final decision")
-        else:
-            deciding = trace["final"].get("deciding_iteration")
-            if deciding is not None and deciding not in seen:
+    if isinstance(final, dict):
+        deciding = final.get("deciding_iteration")
+        report = final.get("grounding_report")
+        if deciding is not None:
+            if deciding not in seen:
                 errors.append("final.deciding_iteration does not resolve")
+            elif isinstance(report, list):
+                post = (slots.get(deciding) or {}).get("post_processing")
+                rows = post.get("post_attribution_rows") if isinstance(post, dict) else None
+                if isinstance(rows, list) and canonical_json(rows) != canonical_json(report):
+                    errors.append(
+                        "final.grounding_report does not match deciding "
+                        "iteration post_attribution_rows"
+                    )
+        if isinstance(report, list):
+            expected_uvr, numerator, denominator = uvr_v1(report)
+            if final.get("uvr_numerator") != numerator:
+                errors.append("final.uvr_numerator does not match grounding_report")
+            if final.get("uvr_denominator") != denominator:
+                errors.append("final.uvr_denominator does not match grounding_report")
+            if final.get("uvr") != expected_uvr:
+                errors.append("final.uvr does not match UVR_v1(grounding_report)")
+        if require_complete:
             for item in iterations:
+                if not isinstance(item, dict):
+                    continue
                 link = item.get("revision_linkage")
                 if not isinstance(link, dict):
                     continue
@@ -384,7 +525,11 @@ def reread_validate_trace(path, record: dict, state: dict) -> None:
         path.write_text(json.dumps(record, indent=2), encoding="utf-8")
         return
     trace = loaded.get("semantic_trace_v1")
-    errors = validate_trace(trace, require_complete=False)
+    recorded = loaded.get("semantic_trace_status")
+    # A file that claims success must satisfy the full reconstructability contract.
+    # Incomplete/crash/failed artifacts must not be rewritten as ok.
+    require_complete = recorded == "ok"
+    errors = validate_trace(trace, require_complete=require_complete)
     status = trace.get("trace_status") if isinstance(trace, dict) else None
     if errors or status not in {"ok", "incomplete", "absent", "failed", "in_progress"}:
         failed = failed_envelope(
