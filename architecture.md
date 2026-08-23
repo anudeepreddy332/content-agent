@@ -12,9 +12,15 @@ _Accepted contract synchronized 2026-08-23._
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
 - **Current canonical repository state:** the HEAD of `refs/heads/main`; direct remote main is
-  exact `bc96009d39394039ca019ec0f4da6358cf14be1d`. It must contain the P0-2a integration commit,
-  the P0-2b slice-1 integration commit, and the P0-2b slice-2A integration commit below;
-  documentation-only descendants do not alter those validated runtime/product implementation blobs
+  exact `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. It must contain the P0-2a integration commit,
+  the P0-2b slice-1 integration commit, the P0-2b slice-2A integration commit, and the P0-2b
+  slice-2B integration commit below; documentation-only descendants do not alter those validated
+  runtime/product implementation blobs
+- **P0-2b slice 2B canonical integration commit:**
+  `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`, with linear ancestry exact
+  `e82672936fbb61ee7b1bde7dd3a1ced34f094fa8` →
+  `d3422e4252d6e127603109dd1cb0d6bfaa35a5c0` →
+  `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`
 - **P0-2b slice 2A canonical integration commit:**
   `bc96009d39394039ca019ec0f4da6358cf14be1d`, with linear ancestry exact
   `a659fe9303626f82b1ca83fedfb5410a436b95d0` →
@@ -47,6 +53,16 @@ exact canonical P0-2a runtime/product integration anchor
 `74523ffcfa8906573a72415f1d868dc02996b561`. Public main-push CI run `32285001516` passed its
 deterministic lint/test gates and skipped the provider-backed evaluation gate. No product-wide
 production-readiness claim is implied.
+
+P0-2b slice 2B is **VALIDATED AND INTEGRATED** at exact
+`f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. Public main-push CI run `32644879371` passed
+deterministic lint/test (`497 passed`) and skipped provider eval. This records already-accepted
+`semantic_trace_v1` persistence: exact drafts per iteration, exact verifier-consumed input, raw
+verifier response, pre/post dedup and attribution state, revision feedback/linkage, final UVR_v1
+decision evidence, deterministic hashes, reread/tamper validation, failure-state evidence, and
+secret-safety boundaries. Production semantic/routing behavior is unchanged. Overall P0-2b
+remains **OPEN**; claim completeness remains unresolved; no AFTER paid benchmark has run; no
+automatic Slice 2C. Next authorized state is `PRINCIPAL TECHNICAL + BUSINESS PROJECT AUDIT`.
 
 P0-2b slice 2A is **VALIDATED AND INTEGRATED** at exact
 `bc96009d39394039ca019ec0f4da6358cf14be1d`. Public main-push CI run `32638253105` passed
@@ -424,12 +440,17 @@ The accepted product-hardening sequence is:
 5. P0-2b slice 2A deterministic claim-semantics oracle — VALIDATED AND INTEGRATED at exact
    `bc96009d39394039ca019ec0f4da6358cf14be1d`. Evaluation infrastructure only; production
    runtime unchanged;
-6. remaining P0-2b verifier semantics — OPEN. Next authorized state:
-   `P0-2B SLICE 2B — SEMANTIC TRACE PRESERVATION`. No AFTER paid benchmark has run;
-7. P0-3 tenant/ACL isolation;
-8. durability, recovery, and publishing integrity;
-9. retrieval/chunking/embedding redesign;
-10. enterprise ingestion and later scale/cost/observability work.
+6. P0-2b slice 2B semantic_trace_v1 persistence — VALIDATED AND INTEGRATED at exact
+   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. Reconstructable evidence only; production
+   semantic/routing behavior unchanged;
+7. remaining P0-2b verifier semantics — OPEN. Next authorized state:
+   `PRINCIPAL TECHNICAL + BUSINESS PROJECT AUDIT`. Decision outcomes before further major
+   implementation: GO, NARROW, PORTFOLIO-CLOSE, PIVOT. No automatic Slice 2C. No AFTER
+   paid benchmark has run;
+8. P0-3 tenant/ACL isolation;
+9. durability, recovery, and publishing integrity;
+10. retrieval/chunking/embedding redesign;
+11. enterprise ingestion and later scale/cost/observability work.
 
 MCP and A2A are optional developer-workflow infrastructure, outside this product sequence, and must
 not block it. The frozen P0-2a contract is
@@ -440,7 +461,7 @@ missions and are not accepted by the P0-2a contract.
 
 P0-2a release qualification is main-only. The immutable BEFORE baseline is GitHub Actions run
 `32480353168`. A feature-branch, mid-run-drifted, or in-place-mutated V1 run cannot earn release
-PASS. No AFTER paid benchmark has run after P0-2b slice 2A.
+PASS. No AFTER paid benchmark has run after P0-2b slice 2B.
 
 ## 9. P0-2a validated and integrated boundary — closed
 
@@ -508,3 +529,28 @@ PASS. No AFTER paid benchmark has run after P0-2b slice 2A.
   No AFTER paid benchmark has run. Claim completeness remains unresolved. Overall P0-2b
   remains OPEN. This section records integration status only; it does not add production
   architecture.
+
+## 12. P0-2b slice 2B validated and integrated boundary
+
+- Exact integration: `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`.
+- Ancestry: `e82672936fbb61ee7b1bde7dd3a1ced34f094fa8` →
+  `d3422e4252d6e127603109dd1cb0d6bfaa35a5c0` →
+  `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`.
+- Cumulative slice-2B scope is exactly `agent/semantic_trace.py`, `agent/nodes.py`,
+  `agent/state.py`, `main.py`, and `tests/test_semantic_trace_v1.py`.
+- Integrated contract: `semantic_trace_v1` preserves exact drafts per iteration; exact
+  verifier-consumed input; raw verifier response; pre/post dedup and attribution state;
+  revision feedback/linkage; final UVR_v1 decision evidence; deterministic hashes;
+  reread/tamper validation; failure-state evidence; and secret-safety boundaries.
+  Production semantic/routing behavior did not change.
+- Public main-push CI run `32644879371` passed deterministic lint/test (`497 passed`) and
+  skipped provider eval. Provider calls/spend during integration were zero.
+- Retrieval, prompts, models, production verifier, evaluator release gate, and quality
+  thresholds are unchanged. Immutable BEFORE baseline `32480353168` is preserved unchanged.
+  No AFTER paid benchmark has run. Claim completeness remains unresolved. Overall P0-2b
+  remains OPEN. No automatic Slice 2C.
+- Recorded, not fixed, as inputs to the principal audit: runtime trace does not yet bind a
+  verified Git/code SHA; crash telemetry may lack complete mid-run evidence; verifier
+  source_context is already truncated before trace capture; claim completeness remains
+  unknown; Slice-2A claim-semantics oracle is not yet production-connected. This section
+  records integration status only; it does not add production architecture.

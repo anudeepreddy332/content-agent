@@ -1,6 +1,6 @@
 # Experiment and Evidence Ledger
 
-_Canonical compact index. Last synchronized: 2026-08-21._
+_Canonical compact index. Last synchronized: 2026-08-23._
 
 This ledger indexes meaningful experiments and release-relevant validation. It does not duplicate
 full reports. Detailed artifacts remain under `docs/archive/`, in the named commit/branch, or in the
@@ -258,4 +258,25 @@ For every applicable change:
 | Classification | `P0-2B SLICE 2A — VALIDATED AND INTEGRATED`. Overall P0-2b remains OPEN. Claim completeness remains unresolved. Not an AFTER benchmark, remaining-P0-2b close, deployment proof, or overall production readiness. |
 | Evidence | Exact SHAs above; CI run `32638253105`; BEFORE run `32480353168`; decision `D-2026-08-23-01`. |
 | Decision enabled | `P0-2B SLICE 2B — SEMANTIC TRACE PRESERVATION`. Do not start Slice 2B implementation from this closeout. |
+| Confidence | 0.99 |
+
+### VAL-2026-08-23-02 — P0-2b slice 2B canonical integration closeout
+
+| Field | Record |
+| --- | --- |
+| Question | Did exact P0-2b slice 2B become canonical main with matching main-SHA deterministic CI, without retrieval/prompt/model/threshold/benchmark change, without provider execution, and without mutating the immutable BEFORE baseline? |
+| Isolated variable | Documentation/status closeout only. No product/runtime change in this record. |
+| Canonical integration identity | Direct remote main and fetched `origin/main` resolved exact `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. Linear ancestry: `e82672936fbb61ee7b1bde7dd3a1ced34f094fa8` → `d3422e4252d6e127603109dd1cb0d6bfaa35a5c0` → `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. |
+| Cumulative slice-2B scope | Exactly `agent/semantic_trace.py`, `agent/nodes.py`, `agent/state.py`, `main.py`, and `tests/test_semantic_trace_v1.py`. |
+| Integrated contract | `semantic_trace_v1` preserves exact drafts per iteration; exact verifier-consumed input; raw verifier response; pre/post dedup and attribution state; revision feedback/linkage; final UVR_v1 decision evidence; deterministic hashes; reread/tamper validation; failure-state evidence; and secret-safety boundaries. Production semantic/routing behavior did not change. |
+| Deterministic validation | Public GitHub Actions run [`32644879371`](https://github.com/anudeepreddy332/content-agent/actions/runs/32644879371): event `push`, branch `main`, head SHA exact `f6cc5a9`, lint PASS, deterministic tests `497 passed`, provider-backed `eval-gate` skipped. |
+| Independent validation | `TRACE RECONSTRUCTABILITY: PASS`; `TRACE INTEGRITY: PASS`; `FAILURE TRACE SEMANTICS: PASS`; `REVISION TRACE CAUSALITY: PASS`; `ROUTING NON-INTERFERENCE: PASS`; `TRACE SECRET SAFETY: PASS`; `LEAN SCOPE: PASS`; status `P0-2B-SLICE2B-INTEGRATION-READY`. |
+| Known limitations recorded, not fixed | Runtime trace does not yet bind a verified Git/code SHA; crash telemetry may lack complete mid-run evidence; verifier source_context is already truncated before trace capture; claim completeness remains unknown; Slice-2A claim-semantics oracle is not yet production-connected. Inputs to the principal audit, not a design mandate. |
+| Immutable BEFORE baseline | GitHub Actions run [`32480353168`](https://github.com/anudeepreddy332/content-agent/actions/runs/32480353168) preserved unchanged: 20/20 complete and scorable; 19/20 at or below UVR 0.15; topic 10 UVR = 5/21 = 0.238095...; overall FAIL; zero benchmark retries. |
+| AFTER paid benchmark | Not run. |
+| Paid/live providers | None during integration or this closeout. Provider calls/spend: zero. |
+| Result | Slice 2B is canonical at `f6cc5a9`. Production semantic/routing behavior unchanged. Slice 2B is reconstructable trace persistence only, not a production completeness guarantee. No automatic Slice 2C. |
+| Classification | `P0-2B SLICE 2B — VALIDATED AND INTEGRATED`. Overall P0-2b remains OPEN. Claim completeness remains unresolved. Not an AFTER benchmark, remaining-P0-2b close, Slice 2C authorization, deployment proof, or overall production readiness. |
+| Evidence | Exact SHAs above; CI run `32644879371`; BEFORE run `32480353168`; decision `D-2026-08-23-02`. |
+| Decision enabled | `PRINCIPAL TECHNICAL + BUSINESS PROJECT AUDIT`. Decision outcomes before further major implementation: GO, NARROW, PORTFOLIO-CLOSE, PIVOT. Do not start Slice 2C from this closeout. |
 | Confidence | 0.99 |
