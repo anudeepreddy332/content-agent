@@ -13,6 +13,7 @@ Each node signature: (state: AgentState) -> dict
 import os
 import json
 import time
+import copy
 import hashlib
 from pathlib import Path
 from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
@@ -52,6 +53,12 @@ from config import (
 )
 from observability.logger import get_logger
 from observability.tracing import is_tracing_enabled
+from agent.semantic_trace import (
+    copy_trace,
+    record_draft,
+    record_hitl_event,
+    record_verify,
+)
 import html as html_module
 import re
 import datetime
@@ -398,6 +405,28 @@ def draft_node(state: AgentState) -> dict:
     existing_latency = state.get("latency_ms", {})
     existing_latency["draft"] = latency
 
+    iteration = state.get("iterations", 0) + 1
+    revision_linkage = None
+    if state.get("iterations", 0) >= 1:
+        targeted = [
+            (r.get("claim") or "").strip()
+            for r in (state.get("grounding_report") or [])
+            if r.get("status") == "unverified" and (r.get("claim") or "").strip()
+        ]
+        revision_linkage = {
+            "source_iteration": state.get("iterations", 0),
+            "next_iteration": iteration,
+            "targeted_unverified_claims": targeted,
+            "grounding_feedback_block": grounding_feedback_block,
+            "hitl_feedback": state.get("hitl_feedback"),
+        }
+    trace = copy_trace(state)
+    record_draft(
+        trace,
+        iteration=iteration,
+        draft_markdown=draft_markdown,
+        revision_linkage=revision_linkage,
+    )
 
     log.info(
         "draft.complete",
@@ -412,10 +441,11 @@ def draft_node(state: AgentState) -> dict:
         "draft_sections": sections,
         "draft_markdown": draft_markdown,
         "m4_feedback_claims": m4_feedback_claims,
-        "iterations": state.get("iterations", 0) + 1,
+        "iterations": iteration,
         "total_tokens": state.get("total_tokens", 0) + response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
+        "semantic_trace": trace,
     }
 
 def retrieve_node(state: AgentState) -> dict:
@@ -636,7 +666,11 @@ _ALLOWED_CODE_LANG = {
 
 
 
-def _deduplicate_grounding_report(report: list[dict], run_id: str) -> list[dict]:
+def _deduplicate_grounding_report(
+    report: list[dict],
+    run_id: str,
+    dropped_out: list | None = None,
+) -> list[dict]:
     """
     Remove near-exact duplicate claims from grounding_report.
 
@@ -664,13 +698,26 @@ def _deduplicate_grounding_report(report: list[dict], run_id: str) -> list[dict]
     for entry in report:
         claim_text = (entry.get("claim") or "").lower().strip()
         if not claim_text:
+            if dropped_out is not None:
+                dropped_out.append({
+                    "row": copy.deepcopy(entry),
+                    "reason": "empty_claim",
+                    "matched_claim": None,
+                })
             continue
-        is_duplicate = any(
-            difflib.SequenceMatcher(None, claim_text, seen_claim).ratio() >= 0.85
-            for seen_claim in seen
-        )
-        if is_duplicate:
+        matched = None
+        for seen_claim in seen:
+            if difflib.SequenceMatcher(None, claim_text, seen_claim).ratio() >= 0.85:
+                matched = seen_claim
+                break
+        if matched is not None:
             dropped += 1
+            if dropped_out is not None:
+                dropped_out.append({
+                    "row": copy.deepcopy(entry),
+                    "reason": "near_duplicate",
+                    "matched_claim": matched,
+                })
         else:
             seen.append(claim_text)
             unique.append(entry)
@@ -756,24 +803,25 @@ def verify_node(state: AgentState) -> dict:
     if state.get("total_cost_usd", 0) >= COST_GATE_USD:
         log.warning("verify.cost_gate_hit", run_id=state["run_id"],
                     cost=state["total_cost_usd"])
+        trace = copy_trace(state)
+        record_verify(
+            trace,
+            iteration=state.get("iterations", 0),
+            consumed=False,
+            skip_reason="skipped_cost_gate",
+            draft_markdown=state.get("draft_markdown") or "",
+        )
         return {"grounding_report": [], "grounding_score": 0.0,
                 "verification_status": "skipped_cost_gate",
-                "latency_ms": {**state.get("latency_ms", {}), "verify": 0}}
+                "latency_ms": {**state.get("latency_ms", {}), "verify": 0},
+                "semantic_trace": trace}
 
     client = _get_client()
     # 1. Extract claims from drafts
     # Ask llm to pull out every verifiable factual claim as a JSON list
 
     source_context = _build_source_context(state["web_sources"], state["kb_results"])
-
-    claim_response = _llm_call(
-        client,
-        model=DEEPSEEK_MODEL,
-        messages=[
-            {"role": "system", "content": VERIFY_SYSTEM},
-            {
-                "role": "user",
-                "content": f"""
+    user_message = f"""
                             Draft to verify:
                             {state["draft_markdown"]}
                             
@@ -787,6 +835,15 @@ def verify_node(state: AgentState) -> dict:
                             
                             Return ONLY the JSON array. No preamble.
                             """
+
+    claim_response = _llm_call(
+        client,
+        model=DEEPSEEK_MODEL,
+        messages=[
+            {"role": "system", "content": VERIFY_SYSTEM},
+            {
+                "role": "user",
+                "content": user_message,
             }
         ],
         temperature=0.1,
@@ -800,22 +857,53 @@ def verify_node(state: AgentState) -> dict:
     raw = claim_response.choices[0].message.content.strip()
 
     verification_status = "completed"
+    parse_error = None
     try:
         grounding_report = _parse_verifier_verdicts(raw)
+        parser_status = "ok"
     except (json.JSONDecodeError, ValueError, ValidationError) as e:
         log.error("verify.parse_failed", run_id=state["run_id"], error=str(e),
                   raw_preview=raw[:300])
         grounding_report = []
         verification_status = "parse_failed"
+        parser_status = "parse_failed"
+        parse_error = str(e)
+
+    pre_dedup_rows = copy.deepcopy(grounding_report)
 
     # Remove near-exact duplicate claims before scoring.
     # Prompt instruction handles semantic duplicates; this catches string-level dupes.
-    grounding_report = _deduplicate_grounding_report(grounding_report, run_id=state["run_id"])
+    dropped_rows: list[dict] = []
+    grounding_report = _deduplicate_grounding_report(
+        grounding_report, run_id=state["run_id"], dropped_out=dropped_rows,
+    )
+    post_dedup_rows = copy.deepcopy(grounding_report)
 
     # M5: resolve each claim's source_url against the actual retrieved set.
     # Pure post-processing — verifier prompt and source context untouched.
     grounding_report = _resolve_attributions(
         grounding_report, state.get("web_sources", []), state.get("kb_results", [])
+    )
+    post_attribution_rows = copy.deepcopy(grounding_report)
+
+    trace = copy_trace(state)
+    record_verify(
+        trace,
+        iteration=state.get("iterations", 0),
+        consumed=True,
+        draft_markdown=state.get("draft_markdown") or "",
+        source_context=source_context,
+        user_message=user_message,
+        verify_system_text=VERIFY_SYSTEM,
+        web_sources=state.get("web_sources") or [],
+        kb_results=state.get("kb_results") or [],
+        raw_response=raw,
+        parser_status=parser_status,
+        parse_error=parse_error,
+        pre_dedup_rows=pre_dedup_rows,
+        dropped_rows=dropped_rows,
+        post_dedup_rows=post_dedup_rows,
+        post_attribution_rows=post_attribution_rows,
     )
 
 
@@ -888,6 +976,7 @@ def verify_node(state: AgentState) -> dict:
         "total_tokens": state.get("total_tokens", 0) + claim_response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
+        "semantic_trace": trace,
     }
 
 
@@ -1031,8 +1120,8 @@ def hitl_node(state: AgentState) -> dict:
         if action == "feedback":
             fb = (decision.get("feedback") or "").strip()
             if fb:
-                return {"hitl_status": "feedback", "hitl_feedback": fb}
-        return {"hitl_status": "rejected", "hitl_feedback": None}
+                return _hitl_traced(state, {"hitl_status": "feedback", "hitl_feedback": fb})
+        return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None})
 
 
     from rich.console import Console
@@ -1070,11 +1159,11 @@ def hitl_node(state: AgentState) -> dict:
         if choice == 'a':
             return hitl_approve_update(state)
         elif choice == 'r':
-            return {"hitl_status": "rejected", "hitl_feedback": None}
+            return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None})
         elif choice == 'f':
             feedback = input("Feedback: ").strip()
             if feedback:
-                return {"hitl_status": "feedback", "hitl_feedback": feedback}
+                return _hitl_traced(state, {"hitl_status": "feedback", "hitl_feedback": feedback})
         else:
             print("Enter a, r, or f.")
 
@@ -1880,6 +1969,14 @@ def semantic_verification_accepted(state: AgentState) -> bool:
     return uvr <= UVR_THRESHOLD
 
 
+def _hitl_traced(state: AgentState, payload: dict) -> dict:
+    payload = dict(payload)
+    trace = copy_trace(state)
+    record_hitl_event(trace, payload.get("hitl_status"), payload.get("hitl_feedback"))
+    payload["semantic_trace"] = trace
+    return payload
+
+
 def hitl_approve_update(state: AgentState) -> dict:
     """Ordinary approve grants HTML eligibility only if semantic verification passed.
 
@@ -1887,8 +1984,10 @@ def hitl_approve_update(state: AgentState) -> dict:
     Feedback and explicit reject are unchanged.
     """
     if semantic_verification_accepted(state):
-        return {"hitl_status": "approved", "hitl_feedback": None}
-    return {"hitl_status": "rejected", "hitl_feedback": None}
+        payload = {"hitl_status": "approved", "hitl_feedback": None}
+    else:
+        payload = {"hitl_status": "rejected", "hitl_feedback": None}
+    return _hitl_traced(state, payload)
 
 
 def route_after_reflect(state: AgentState) -> str:

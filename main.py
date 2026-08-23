@@ -22,6 +22,12 @@ import uuid
 import json
 from pathlib import Path
 from agent.graph import build_graph
+from agent.nodes import semantic_verification_accepted
+from agent.semantic_trace import (
+    embed_semantic_trace,
+    empty_trace,
+    reread_validate_trace,
+)
 from config import PROMPT_VERSION, PROMPT_HASHES
 from observability.logger import get_logger
 from observability.tracing import setup_langsmith_tracing
@@ -141,7 +147,13 @@ def _write_telemetry(state: dict):
         },
     }
 
+    embed_semantic_trace(
+        record,
+        state,
+        semantic_accepted=semantic_verification_accepted(state),
+    )
     out_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+    reread_validate_trace(out_path, record, state)
     return out_path
 
 
@@ -192,6 +204,8 @@ def _build_initial_state(topic, slug, card_id, series, run_id, category="concept
         "total_cost_usd": 0.0,
         "latency_ms": {},
         "error_log": [],
+        "semantic_trace": empty_trace({"run_id": run_id, "topic": topic,
+                                       "prompt_version": PROMPT_VERSION}),
     }
 
 

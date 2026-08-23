@@ -79,3 +79,7 @@ class AgentState(TypedDict):
 
     # Error log
     error_log: list[str]
+
+    # P0-2b slice 2B: append-only reconstructable draft/verify evidence.
+    # Persistence only; not an acceptance input.
+    semantic_trace: dict
