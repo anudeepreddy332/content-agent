@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-08-21._
+_Canonical current-state snapshot. Last synchronized: 2026-08-23._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -9,9 +9,14 @@ remains preserved in `FREEZE.md`.
 ## Authoritative SHA roles
 
 - **Current canonical repository state:** the HEAD of `refs/heads/main`. Direct remote main is
-  exact `230314f7f774ed4b112c377269b190fa1279a004`. It must contain the P0-2a integration commit
-  and the P0-2b slice-1 integration commit below; documentation-only descendants do not alter
-  those validated runtime/product implementation blobs.
+  exact `bc96009d39394039ca019ec0f4da6358cf14be1d`. It must contain the P0-2a integration commit,
+  the P0-2b slice-1 integration commit, and the P0-2b slice-2A integration commit below;
+  documentation-only descendants do not alter those validated runtime/product implementation blobs.
+- **P0-2b slice 2A canonical integration commit:**
+  `bc96009d39394039ca019ec0f4da6358cf14be1d`. Linear ancestry is exact
+  `a659fe9303626f82b1ca83fedfb5410a436b95d0` →
+  `0a1363f4bd328cd94fd662531780b7e9fa920376` →
+  `bc96009d39394039ca019ec0f4da6358cf14be1d`.
 - **P0-2b slice 1 canonical integration commit:**
   `230314f7f774ed4b112c377269b190fa1279a004`. Linear ancestry is exact
   `eea98c367b0f82fcc844dcca73b3935542adeef6` →
@@ -25,7 +30,11 @@ remains preserved in `FREEZE.md`.
   developed from frozen implementation base `7a606e895fe0a4bc9092659f130881bc7b52bd28`.
   No later descendant is implicitly approved.
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`.
-- **P0-2b slice 1 — VALIDATED AND INTEGRATED:** exact canonical main
+- **P0-2b slice 2A — VALIDATED AND INTEGRATED:** exact canonical main
+  `bc96009d39394039ca019ec0f4da6358cf14be1d`. Evaluation infrastructure only; production runtime
+  unchanged. Overall P0-2b remains OPEN. No later descendant is implicitly validated for remaining
+  P0-2b semantics.
+- **P0-2b slice 1 — VALIDATED AND INTEGRATED:** exact integration commit
   `230314f7f774ed4b112c377269b190fa1279a004`. Overall P0-2b remains OPEN. No later descendant
   is implicitly validated for remaining P0-2b semantics.
 - **P0-2a — VALIDATED AND INTEGRATED — CLOSED:** exact implementation
@@ -77,7 +86,15 @@ historical evidence, not a current enterprise-release decision.
      evaluation job was skipped. No provider call or spend occurred during P0-2a integration.
      The first trusted real 20-topic BEFORE baseline was later captured as immutable GitHub
      Actions run [`32480353168`](https://github.com/anudeepreddy332/content-agent/actions/runs/32480353168)
-     and is preserved unchanged. No AFTER paid benchmark has run after P0-2b slice 1.
+     and is preserved unchanged. No AFTER paid benchmark has run after P0-2b slice 2A.
+   - **P0-2b slice 2A — VALIDATED AND INTEGRATED:** deterministic claim-semantics oracle
+     integrated at exact `bc96009d39394039ca019ec0f4da6358cf14be1d`. Fourteen frozen fixtures;
+     18 canonical gold factual atoms; material/full claim recall use independent gold
+     denominators; duplicate/compound/fragment/qualifier-loss gaming is detected
+     deterministically; JSON schema authority and executable semantic validation are enforced.
+     Production runtime behavior is unchanged. Public main-push CI run
+     [`32638253105`](https://github.com/anudeepreddy332/content-agent/actions/runs/32638253105)
+     passed deterministic lint and `467` tests; the provider-backed evaluation job was skipped.
    - **P0-2b slice 1 — VALIDATED AND INTEGRATED:** UVR-aware fail-closed routing, bounded
      revision and reverification, and the Gate-1 HTML-eligibility guard are integrated at exact
      `230314f7f774ed4b112c377269b190fa1279a004`. Ordinary HITL approve cannot grant HTML
@@ -85,7 +102,8 @@ historical evidence, not a current enterprise-release decision.
      [`32491216346`](https://github.com/anudeepreddy332/content-agent/actions/runs/32491216346)
      passed deterministic lint and tests; the provider-backed evaluation job was skipped.
    - **P0-2b overall — OPEN.** Claim completeness for a production unknown-sized extracted
-     claim set remains unresolved. Slice 1 does not close remaining P0-2b semantics.
+     claim set remains unresolved. Slice 2A is evaluation infrastructure only, not a production
+     completeness guarantee. Slice 1 and Slice 2A do not close remaining P0-2b semantics.
    - **UNKNOWN REQUIRING EXPERIMENT:** the correct production completeness contract for a
      model-extracted, unknown-sized claim set. Known-cardinality fixtures already enforce exact
      counts and must not be confused with production completeness.
@@ -108,10 +126,10 @@ historical evidence, not a current enterprise-release decision.
 
 ## Current authorized mission
 
-**P0-2B SLICE 1 — VALIDATED AND INTEGRATED** at exact canonical main
-`230314f7f774ed4b112c377269b190fa1279a004`. Next authorized state:
-`ARCHITECTURE FREEZE FOR REMAINING P0-2B SEMANTICS`. This closeout does not authorize
-remaining P0-2b implementation, an AFTER paid benchmark, threshold movement, or merge
+**P0-2B SLICE 2A — VALIDATED AND INTEGRATED** at exact canonical main
+`bc96009d39394039ca019ec0f4da6358cf14be1d`. Next authorized state:
+`P0-2B SLICE 2B — SEMANTIC TRACE PRESERVATION`. This closeout does not authorize
+Slice 2B implementation, an AFTER paid benchmark, threshold movement, or merge
 of documentation descendants.
 
 Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged). Claim
@@ -164,6 +182,28 @@ publish, deployment, or provider spend.
 - Immutable BEFORE baseline `32480353168` is preserved unchanged. No AFTER paid benchmark has
   run. Claim completeness remains unresolved. Overall P0-2b remains OPEN.
 
+## P0-2b slice 2A integrated boundary
+
+- Isolated variable: deterministic claim-semantics evaluation infrastructure only.
+- Exact integration: `bc96009d39394039ca019ec0f4da6358cf14be1d`.
+- Ancestry: `a659fe9303626f82b1ca83fedfb5410a436b95d0` →
+  `0a1363f4bd328cd94fd662531780b7e9fa920376` →
+  `bc96009d39394039ca019ec0f4da6358cf14be1d`.
+- Cumulative slice-2A scope is exactly `docs/P0_2B_CLAIM_SEMANTICS_V1.md`,
+  `evals/claim_semantics_v1.schema.json`, `evals/fixtures/claim_semantics_v1.json`,
+  `scripts/evaluate_claim_semantics.py`, and `tests/test_claim_semantics_evaluator.py`.
+- Integrated contract: deterministic claim-semantics oracle; 14 frozen fixtures; 18 canonical
+  gold factual atoms; material/full claim recall use independent gold denominators;
+  duplicate/compound/fragment/qualifier-loss gaming detected deterministically; JSON schema
+  authority (`DEFAULT_SCHEMA`) and executable semantic validation enforced on every official
+  pack load. No production module is imported or changed.
+- Public main-push CI run `32638253105` passed deterministic lint/test (`467 passed`) and
+  skipped provider eval. Provider calls/spend during integration: zero.
+- Slice 2A is evaluation infrastructure only, not a production completeness guarantee.
+  Retrieval, prompts, models, production verifier, evaluator release gate, and quality
+  thresholds are unchanged. Immutable BEFORE baseline `32480353168` is preserved unchanged.
+  No AFTER paid benchmark has run. Overall P0-2b remains OPEN.
+
 ## Parallel retrieval research
 
 - Known MiniLM truncation risk remains **OPEN / PROVEN DEFECT**; replacement architecture remains
@@ -198,6 +238,10 @@ publish, deployment, or provider spend.
 - Immutable BEFORE 20-topic release baseline GitHub Actions run `32480353168`: 20/20 complete
   and scorable; 19/20 at or below UVR 0.15; topic 10 UVR = 5/21 = 0.238095...; overall FAIL;
   zero benchmark retries. Preserved unchanged through P0-2b slice 1. No AFTER paid benchmark.
+- Exact P0-2b slice 2A integration `bc96009d39394039ca019ec0f4da6358cf14be1d`: ancestry
+  `a659fe9` → `0a1363f` → `bc96009`; public main-push CI run `32638253105` passed lint/test
+  (`467 passed, 4 warnings`) and skipped provider eval. Provider calls/spend during integration:
+  zero. Production runtime unchanged.
 - Exact P0-2b slice 1 integration `230314f7f774ed4b112c377269b190fa1279a004`: ancestry
   `eea98c3` → `aa90bfc` → `230314f`; public main-push CI run `32491216346` passed lint/test
   and skipped provider eval. Provider calls/spend during this documentation closeout: zero.
@@ -213,6 +257,8 @@ publish, deployment, or provider spend.
 - `N=0`, incomplete, stale, incoherent, or non-final-SHA evidence as a release pass.
 - P0-2a closure as proof of deployment, permanent cryptographic authenticity of exported JSON,
   remaining P0-2b correctness, or overall product production readiness.
+- P0-2b slice 2A integration as a production completeness guarantee, as closure of overall
+  P0-2b, as an AFTER paid benchmark, or as enterprise production readiness.
 - P0-2b slice 1 integration as closure of overall P0-2b, as an AFTER paid benchmark, as a
   claim-completeness contract, or as enterprise production readiness.
 - The June 2026 live-demo URL, Docker tag, or deployment state as verified current.

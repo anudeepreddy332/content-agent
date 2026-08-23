@@ -239,3 +239,23 @@ For every applicable change:
 | Evidence | Exact SHAs above; CI run `32491216346`; BEFORE run `32480353168`; decision `D-2026-08-21-03`. |
 | Decision enabled | `ARCHITECTURE FREEZE FOR REMAINING P0-2B SEMANTICS`. Do not start remaining P0-2b implementation from this closeout. |
 | Confidence | 0.99 |
+
+### VAL-2026-08-23-01 — P0-2b slice 2A canonical integration closeout
+
+| Field | Record |
+| --- | --- |
+| Question | Did exact P0-2b slice 2A become canonical main with matching main-SHA deterministic CI, without retrieval/prompt/model/production-verifier/threshold change, without provider execution, and without mutating the immutable BEFORE baseline? |
+| Isolated variable | Documentation/status closeout only. No product/runtime change in this record. |
+| Canonical integration identity | Direct remote main and fetched `origin/main` resolved exact `bc96009d39394039ca019ec0f4da6358cf14be1d`. Linear ancestry: `a659fe9303626f82b1ca83fedfb5410a436b95d0` → `0a1363f4bd328cd94fd662531780b7e9fa920376` → `bc96009d39394039ca019ec0f4da6358cf14be1d`. |
+| Cumulative slice-2A scope | Exactly `docs/P0_2B_CLAIM_SEMANTICS_V1.md`, `evals/claim_semantics_v1.schema.json`, `evals/fixtures/claim_semantics_v1.json`, `scripts/evaluate_claim_semantics.py`, and `tests/test_claim_semantics_evaluator.py`. No production module imported or changed. |
+| Integrated contract | Deterministic claim-semantics oracle; 14 frozen fixtures; 18 canonical gold factual atoms; material/full claim recall use independent gold denominators; duplicate/compound/fragment/qualifier-loss gaming detected deterministically; JSON schema authority and executable semantic validation enforced on every official pack load. |
+| Deterministic validation | Public GitHub Actions run [`32638253105`](https://github.com/anudeepreddy332/content-agent/actions/runs/32638253105): event `push`, branch `main`, head SHA exact `bc96009`, lint PASS, deterministic tests `467 passed, 4 warnings`, provider-backed `eval-gate` skipped. |
+| Metric mathematics / schema authority / test causality | `METRIC MATHEMATICS: PASS`; `SCHEMA AUTHORITY: PASS`; `TEST CAUSALITY: PASS`; status `P0-2B-SLICE2A-INTEGRATION-READY`. |
+| Immutable BEFORE baseline | GitHub Actions run [`32480353168`](https://github.com/anudeepreddy332/content-agent/actions/runs/32480353168) preserved unchanged: 20/20 complete and scorable; 19/20 at or below UVR 0.15; topic 10 UVR = 5/21 = 0.238095...; overall FAIL; zero benchmark retries. |
+| AFTER paid benchmark | Not run. |
+| Paid/live providers | None during integration or this closeout. Provider calls/spend: zero. |
+| Result | Slice 2A is canonical at `bc96009`. Production runtime behavior unchanged. Slice 2A is evaluation infrastructure only, not a production completeness guarantee. |
+| Classification | `P0-2B SLICE 2A — VALIDATED AND INTEGRATED`. Overall P0-2b remains OPEN. Claim completeness remains unresolved. Not an AFTER benchmark, remaining-P0-2b close, deployment proof, or overall production readiness. |
+| Evidence | Exact SHAs above; CI run `32638253105`; BEFORE run `32480353168`; decision `D-2026-08-23-01`. |
+| Decision enabled | `P0-2B SLICE 2B — SEMANTIC TRACE PRESERVATION`. Do not start Slice 2B implementation from this closeout. |
+| Confidence | 0.99 |

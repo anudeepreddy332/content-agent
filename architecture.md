@@ -1,6 +1,6 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-08-21._
+_Accepted contract synchronized 2026-08-23._
 
 - **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`
 - **Authorized P0-1 implementation base:** `7a606e895fe0a4bc9092659f130881bc7b52bd28`
@@ -12,9 +12,14 @@ _Accepted contract synchronized 2026-08-21._
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
 - **Current canonical repository state:** the HEAD of `refs/heads/main`; direct remote main is
-  exact `230314f7f774ed4b112c377269b190fa1279a004`. It must contain the P0-2a integration commit
-  and the P0-2b slice-1 integration commit below; documentation-only descendants do not alter
-  those validated runtime/product implementation blobs
+  exact `bc96009d39394039ca019ec0f4da6358cf14be1d`. It must contain the P0-2a integration commit,
+  the P0-2b slice-1 integration commit, and the P0-2b slice-2A integration commit below;
+  documentation-only descendants do not alter those validated runtime/product implementation blobs
+- **P0-2b slice 2A canonical integration commit:**
+  `bc96009d39394039ca019ec0f4da6358cf14be1d`, with linear ancestry exact
+  `a659fe9303626f82b1ca83fedfb5410a436b95d0` →
+  `0a1363f4bd328cd94fd662531780b7e9fa920376` →
+  `bc96009d39394039ca019ec0f4da6358cf14be1d`
 - **P0-2a canonical integration commit:** `74523ffcfa8906573a72415f1d868dc02996b561`,
   with parents exact prior closeout `174d8c924a35fc5151a4549725db9a01e96f119b` and exact validated
   implementation `0b707e4`
@@ -42,6 +47,15 @@ exact canonical P0-2a runtime/product integration anchor
 `74523ffcfa8906573a72415f1d868dc02996b561`. Public main-push CI run `32285001516` passed its
 deterministic lint/test gates and skipped the provider-backed evaluation gate. No product-wide
 production-readiness claim is implied.
+
+P0-2b slice 2A is **VALIDATED AND INTEGRATED** at exact
+`bc96009d39394039ca019ec0f4da6358cf14be1d`. Public main-push CI run `32638253105` passed
+deterministic lint/test (`467 passed`) and skipped provider eval. This records the already-accepted
+deterministic claim-semantics oracle: 14 frozen fixtures, 18 canonical gold factual atoms,
+independent material/full recall denominators, deterministic duplicate/compound/fragment/
+qualifier-loss detection, and JSON schema authority plus executable semantic validation. It is
+evaluation infrastructure only; production runtime behavior is unchanged. Overall P0-2b remains
+**OPEN**; claim completeness remains unresolved; no AFTER paid benchmark has run.
 
 P0-2b slice 1 is **VALIDATED AND INTEGRATED** at exact
 `230314f7f774ed4b112c377269b190fa1279a004`. Public main-push CI run `32491216346` passed
@@ -407,12 +421,15 @@ The accepted product-hardening sequence is:
    5/21 = 0.238095...; overall FAIL; zero benchmark retries). Preserved unchanged;
 4. P0-2b slice 1 UVR-aware fail-closed routing — VALIDATED AND INTEGRATED at exact
    `230314f7f774ed4b112c377269b190fa1279a004`;
-5. remaining P0-2b verifier semantics — OPEN. Next authorized state: ARCHITECTURE FREEZE
-   FOR REMAINING P0-2B SEMANTICS. No AFTER paid benchmark has run;
-6. P0-3 tenant/ACL isolation;
-7. durability, recovery, and publishing integrity;
-8. retrieval/chunking/embedding redesign;
-9. enterprise ingestion and later scale/cost/observability work.
+5. P0-2b slice 2A deterministic claim-semantics oracle — VALIDATED AND INTEGRATED at exact
+   `bc96009d39394039ca019ec0f4da6358cf14be1d`. Evaluation infrastructure only; production
+   runtime unchanged;
+6. remaining P0-2b verifier semantics — OPEN. Next authorized state:
+   `P0-2B SLICE 2B — SEMANTIC TRACE PRESERVATION`. No AFTER paid benchmark has run;
+7. P0-3 tenant/ACL isolation;
+8. durability, recovery, and publishing integrity;
+9. retrieval/chunking/embedding redesign;
+10. enterprise ingestion and later scale/cost/observability work.
 
 MCP and A2A are optional developer-workflow infrastructure, outside this product sequence, and must
 not block it. The frozen P0-2a contract is
@@ -423,7 +440,7 @@ missions and are not accepted by the P0-2a contract.
 
 P0-2a release qualification is main-only. The immutable BEFORE baseline is GitHub Actions run
 `32480353168`. A feature-branch, mid-run-drifted, or in-place-mutated V1 run cannot earn release
-PASS. No AFTER paid benchmark has run after P0-2b slice 1.
+PASS. No AFTER paid benchmark has run after P0-2b slice 2A.
 
 ## 9. P0-2a validated and integrated boundary — closed
 
@@ -468,3 +485,26 @@ PASS. No AFTER paid benchmark has run after P0-2b slice 1.
 - Immutable BEFORE baseline `32480353168` is preserved unchanged. No AFTER paid benchmark has
   run. Claim completeness remains unresolved. Overall P0-2b remains OPEN. This section records
   integration status only; it does not add architecture.
+
+## 11. P0-2b slice 2A validated and integrated boundary
+
+- Exact integration: `bc96009d39394039ca019ec0f4da6358cf14be1d`.
+- Ancestry: `a659fe9303626f82b1ca83fedfb5410a436b95d0` →
+  `0a1363f4bd328cd94fd662531780b7e9fa920376` →
+  `bc96009d39394039ca019ec0f4da6358cf14be1d`.
+- Cumulative slice-2A scope is exactly `docs/P0_2B_CLAIM_SEMANTICS_V1.md`,
+  `evals/claim_semantics_v1.schema.json`, `evals/fixtures/claim_semantics_v1.json`,
+  `scripts/evaluate_claim_semantics.py`, and `tests/test_claim_semantics_evaluator.py`.
+- Integrated contract: deterministic claim-semantics oracle; 14 frozen fixtures; 18 canonical
+  gold factual atoms; material/full claim recall use independent gold denominators;
+  duplicate/compound/fragment/qualifier-loss gaming detected deterministically; JSON schema
+  authority (`DEFAULT_SCHEMA`) and executable semantic validation enforced on every official
+  pack load. No production module is imported or changed.
+- Public main-push CI run `32638253105` passed deterministic lint/test (`467 passed`) and
+  skipped provider eval. Provider calls/spend during integration were zero.
+- Slice 2A is evaluation infrastructure only, not a production completeness guarantee.
+  Retrieval, prompts, models, production verifier, evaluator release gate, and quality
+  thresholds are unchanged. Immutable BEFORE baseline `32480353168` is preserved unchanged.
+  No AFTER paid benchmark has run. Claim completeness remains unresolved. Overall P0-2b
+  remains OPEN. This section records integration status only; it does not add production
+  architecture.

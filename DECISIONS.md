@@ -9,6 +9,56 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-23-01
+Date: 2026-08-23
+
+Decision: Record P0-2b slice 2A as **P0-2B SLICE 2A — VALIDATED AND INTEGRATED** at exact
+canonical main `bc96009d39394039ca019ec0f4da6358cf14be1d`. This is a status closeout of
+already-accepted slice-2A evaluation infrastructure. It does not add production architecture,
+change production runtime behavior, or close overall P0-2b.
+
+Question: Did exact slice-2A ancestry become canonical main with matching main-SHA
+deterministic CI, without retrieval/prompt/model/production-verifier/threshold change,
+without provider execution, and without mutating the immutable BEFORE baseline?
+
+Integration evidence: Direct remote `refs/heads/main` and fetched `origin/main` both
+resolved exact `bc96009d39394039ca019ec0f4da6358cf14be1d`. Linear ancestry is exact
+`a659fe9303626f82b1ca83fedfb5410a436b95d0` →
+`0a1363f4bd328cd94fd662531780b7e9fa920376` →
+`bc96009d39394039ca019ec0f4da6358cf14be1d`. Cumulative slice-2A scope is exactly
+`docs/P0_2B_CLAIM_SEMANTICS_V1.md`, `evals/claim_semantics_v1.schema.json`,
+`evals/fixtures/claim_semantics_v1.json`, `scripts/evaluate_claim_semantics.py`, and
+`tests/test_claim_semantics_evaluator.py`. No production module is imported or changed.
+
+Validation evidence: Public GitHub Actions run
+[`32638253105`](https://github.com/anudeepreddy332/content-agent/actions/runs/32638253105)
+is a successful `push` run on `main` bound to exact `bc96009`; lint PASS, deterministic
+tests `467 passed`, provider-backed `eval-gate` skipped. The integrated slice-2A contract
+is a deterministic claim-semantics oracle with 14 frozen fixtures and 18 canonical gold
+factual atoms; material/full claim recall use independent gold denominators; duplicate,
+compound, fragment, and qualifier-loss gaming is detected deterministically; JSON schema
+authority (`DEFAULT_SCHEMA`) and executable semantic validation are enforced on every
+official pack load. Production runtime behavior is unchanged.
+
+Bounded claim: Slice 2A is integrated as evaluation infrastructure only. It is not a
+production completeness guarantee for an unknown-sized model-extracted claim set. Overall
+P0-2b remains **OPEN**. Immutable BEFORE baseline GitHub Actions run `32480353168` is
+preserved unchanged. No AFTER paid benchmark has run. No provider call or spend occurred
+during integration or this closeout. No new production architectural decision is made here.
+
+Next mission: `P0-2B SLICE 2B — SEMANTIC TRACE PRESERVATION`. Do not start Slice 2B
+implementation from this closeout without separate authorization.
+
+Status: `P0-2B SLICE 2A — VALIDATED AND INTEGRATED`. Overall P0-2b remains OPEN.
+
+Confidence: 0.99
+
+Supersedes / superseded by: Supersedes only the "Next mission" clause in D-2026-08-21-03.
+Slice-1 routing contract, non-claims, and historical evidence remain preserved. Does not
+supersede P0-2a evaluation-integrity decisions, does not close remaining P0-2b completeness
+semantics, and does not authorize Slice 2B implementation.
+
+---
 Decision ID: D-2026-08-21-03
 Date: 2026-08-21
 
