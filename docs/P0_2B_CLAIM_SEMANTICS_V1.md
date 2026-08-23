@@ -178,3 +178,34 @@ Allowed files for this slice:
 No production module is imported. Overall P0-2b remains OPEN. This
 oracle does not define a production completeness contract for an
 unknown-sized model-extracted claim set.
+
+## 10. Schema authority
+
+Two artifacts define the fixture contract. They must not drift.
+
+- `evals/claim_semantics_v1.schema.json` is the **external/static
+  contract** (JSON Schema Draft 2020-12).
+- `scripts/evaluate_claim_semantics.py` is the **executable semantic
+  validator** (span-text equality, draft SHA-256, uniqueness, overlap,
+  matching eligibility, frozen F01-F14 catalog order).
+
+`DEFAULT_SCHEMA` is loaded on every official pack load. A stdlib subset
+checker applies that frozen schema to the instance before semantic
+validation. A parity check compares schema-extracted contract fields
+with the runtime validator's constants:
+
+- required and allowed keys at pack, fixture, gold, exclusion,
+  candidate, candidate-set, and allowed-match layers
+- `pack_id`, `schema_version`, `evaluator_id`
+- fixture cardinality
+- span structure/types
+- candidate roles
+- exclusion reasons
+- candidate-set IDs
+- `additionalProperties: false`
+
+Mismatch fails closed. This is not a general JSON Schema engine and
+does not use embeddings, fuzzy matching, or provider calls. Semantic
+rules that JSON Schema cannot express (hash equality, span-text
+equality, gold/exclusion overlap, material-implies-factual) remain in
+the Python validator.

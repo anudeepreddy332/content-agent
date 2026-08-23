@@ -13,13 +13,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.evaluate_claim_semantics import (
     ClaimSemanticsError,
     DEFAULT_FIXTURES,
+    DEFAULT_SCHEMA,
     FROZEN_FIXTURE_IDS,
+    assert_schema_runtime_parity,
     evaluate_candidate_set,
     evaluate_pack,
+    load_frozen_schema,
     load_pack,
     maximum_cardinality_matching,
     normalize_json,
     sha256_text,
+    validate_against_frozen_schema,
     validate_fixture,
     validate_pack,
 )
@@ -392,6 +396,91 @@ def test_evaluator_does_not_import_runtime_or_providers():
         "requests",
         "httpx",
         "socket",
+        "jsonschema",
     )
     for name in forbidden:
         assert name not in source
+
+
+def _raw_pack() -> dict:
+    return json.loads(DEFAULT_FIXTURES.read_text(encoding="utf-8"))
+
+
+def test_official_pack_satisfies_frozen_schema_and_schema_is_loaded():
+    pack = _raw_pack()
+    schema = load_frozen_schema(DEFAULT_SCHEMA)
+    assert_schema_runtime_parity(schema)
+    validate_against_frozen_schema(pack, schema)
+    loaded = load_pack(DEFAULT_FIXTURES)
+    assert loaded["pack_id"] == "claim_semantics_v1"
+    assert DEFAULT_SCHEMA.is_file()
+
+
+def test_load_pack_consumes_default_schema(monkeypatch):
+    def boom(*_args, **_kwargs):
+        raise ClaimSemanticsError("frozen schema was not loaded")
+
+    monkeypatch.setattr(
+        "scripts.evaluate_claim_semantics.load_frozen_schema",
+        boom,
+    )
+    with pytest.raises(ClaimSemanticsError, match="frozen schema was not loaded"):
+        load_pack(DEFAULT_FIXTURES)
+
+
+def test_removing_required_field_fails_schema_contract():
+    pack = _raw_pack()
+    del pack["evaluator_id"]
+    with pytest.raises(ClaimSemanticsError, match="missing keys"):
+        validate_against_frozen_schema(pack)
+
+    fixture = copy.deepcopy(_pack()["fixtures"][0])
+    del fixture["draft_sha256"]
+    with pytest.raises(ClaimSemanticsError, match="missing keys"):
+        validate_fixture(fixture)
+
+
+def test_adding_unexpected_field_fails_schema_contract():
+    pack = _raw_pack()
+    pack["extra_field"] = "nope"
+    with pytest.raises(ClaimSemanticsError, match="unexpected keys"):
+        validate_against_frozen_schema(pack)
+
+    fixture = copy.deepcopy(_pack()["fixtures"][0])
+    fixture["gold_atoms"][0]["note"] = "extra"
+    with pytest.raises(ClaimSemanticsError, match="unexpected keys"):
+        validate_fixture(fixture)
+
+
+def test_invalid_enum_and_type_fail_schema_contract():
+    pack = _raw_pack()
+    pack["schema_version"] = "1"
+    with pytest.raises(ClaimSemanticsError, match="invalid type"):
+        validate_against_frozen_schema(pack)
+
+    pack = _raw_pack()
+    pack["fixtures"][0]["candidate_sets"][0]["id"] = "not_a_real_set"
+    with pytest.raises(ClaimSemanticsError, match="invalid enum value"):
+        validate_against_frozen_schema(pack)
+
+    pack = _raw_pack()
+    pack["fixtures"][0]["gold_atoms"][0]["span"] = [0]
+    with pytest.raises(ClaimSemanticsError):
+        validate_against_frozen_schema(pack)
+
+
+def test_schema_runtime_contract_drift_is_detected():
+    drifted_pack_id = copy.deepcopy(load_frozen_schema())
+    drifted_pack_id["properties"]["pack_id"]["const"] = "drifted_pack"
+    with pytest.raises(ClaimSemanticsError, match="schema/runtime contract drift"):
+        assert_schema_runtime_parity(drifted_pack_id)
+
+    drifted_roles = copy.deepcopy(load_frozen_schema())
+    drifted_roles["$defs"]["roles"]["items"]["enum"].append("fuzzy")
+    with pytest.raises(ClaimSemanticsError, match="schema/runtime contract drift"):
+        assert_schema_runtime_parity(drifted_roles)
+
+    drifted_cardinality = copy.deepcopy(load_frozen_schema())
+    drifted_cardinality["properties"]["fixtures"]["maxItems"] = 40
+    with pytest.raises(ClaimSemanticsError):
+        assert_schema_runtime_parity(drifted_cardinality)

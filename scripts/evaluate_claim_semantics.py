@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -180,6 +181,290 @@ def _require_keys(obj: dict[str, Any], keys: tuple[str, ...], label: str) -> Non
     _require(not extra, f"{label} has unexpected keys {extra}")
 
 
+PACK_REQUIRED_KEYS = (
+    "pack_id",
+    "schema_version",
+    "evaluator_id",
+    "description",
+    "fixtures",
+)
+FIXTURE_REQUIRED_KEYS = (
+    "id",
+    "title",
+    "draft_text",
+    "draft_sha256",
+    "gold_atoms",
+    "exclusions",
+    "candidate_sets",
+)
+GOLD_REQUIRED_KEYS = ("id", "canonical_id", "text", "span", "factual", "material")
+EXCLUSION_REQUIRED_KEYS = ("id", "text", "span", "reason")
+CANDIDATE_REQUIRED_KEYS = ("id", "canonical_id", "text", "span", "roles")
+CANDIDATE_SET_REQUIRED_KEYS = ("id", "candidates", "allowed_matches")
+ALLOWED_MATCH_REQUIRED_KEYS = ("candidate_id", "gold_id")
+FIXTURE_ID_PATTERN = r"^F(0[1-9]|1[0-4])$"
+DRAFT_SHA256_PATTERN = r"^[a-f0-9]{64}$"
+
+
+def runtime_schema_contract() -> dict[str, Any]:
+    """Executable contract mirrored by the frozen JSON Schema file."""
+    return {
+        "pack_required": tuple(sorted(PACK_REQUIRED_KEYS)),
+        "pack_properties": tuple(sorted(PACK_REQUIRED_KEYS)),
+        "pack_id": PACK_ID,
+        "schema_version": SCHEMA_VERSION,
+        "evaluator_id": EVALUATOR_ID,
+        "fixture_cardinality": 14,
+        "fixture_required": tuple(sorted(FIXTURE_REQUIRED_KEYS)),
+        "fixture_properties": tuple(sorted(FIXTURE_REQUIRED_KEYS)),
+        "gold_required": tuple(sorted(GOLD_REQUIRED_KEYS)),
+        "gold_properties": tuple(sorted(GOLD_REQUIRED_KEYS)),
+        "exclusion_required": tuple(sorted(EXCLUSION_REQUIRED_KEYS)),
+        "exclusion_properties": tuple(sorted(EXCLUSION_REQUIRED_KEYS)),
+        "candidate_required": tuple(sorted(CANDIDATE_REQUIRED_KEYS)),
+        "candidate_properties": tuple(sorted(CANDIDATE_REQUIRED_KEYS)),
+        "candidate_set_required": tuple(sorted(CANDIDATE_SET_REQUIRED_KEYS)),
+        "candidate_set_properties": tuple(sorted(CANDIDATE_SET_REQUIRED_KEYS)),
+        "allowed_match_required": tuple(sorted(ALLOWED_MATCH_REQUIRED_KEYS)),
+        "allowed_match_properties": tuple(sorted(ALLOWED_MATCH_REQUIRED_KEYS)),
+        "candidate_set_ids": tuple(sorted(CANDIDATE_SET_IDS)),
+        "candidate_roles": tuple(sorted(KNOWN_ROLES)),
+        "exclusion_reasons": tuple(sorted(EXCLUSION_REASONS)),
+        "additional_properties": False,
+        "span_length": 2,
+        "span_value_type": "integer",
+        "span_minimum": 0,
+        "fixture_id_pattern": FIXTURE_ID_PATTERN,
+        "draft_sha256_pattern": DRAFT_SHA256_PATTERN,
+        "frozen_fixture_ids": FROZEN_FIXTURE_IDS,
+    }
+
+
+def load_frozen_schema(path: Path | str = DEFAULT_SCHEMA) -> dict[str, Any]:
+    schema_path = Path(path)
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ClaimSemanticsError(f"unreadable frozen schema {schema_path}: {error}") from error
+    _require(isinstance(schema, dict), "frozen schema must be an object")
+    _require(
+        schema.get("$schema") == "https://json-schema.org/draft/2020-12/schema",
+        "frozen schema must declare JSON Schema Draft 2020-12",
+    )
+    return schema
+
+
+def extract_schema_contract(schema: dict[str, Any]) -> dict[str, Any]:
+    """Static contract extracted from the frozen JSON Schema file."""
+    _require("$defs" in schema, "frozen schema missing $defs")
+    defs = schema["$defs"]
+    for name in (
+        "span",
+        "roles",
+        "exclusion_reason",
+        "gold_atom",
+        "exclusion",
+        "candidate",
+        "allowed_match",
+        "candidate_set",
+        "fixture",
+    ):
+        _require(name in defs, f"frozen schema missing $defs.{name}")
+
+    def _required(node: dict[str, Any], label: str) -> tuple[str, ...]:
+        keys = node.get("required")
+        _require(isinstance(keys, list) and keys, f"{label} required keys missing")
+        _require(all(isinstance(key, str) for key in keys), f"{label} required keys must be strings")
+        return tuple(sorted(keys))
+
+    def _properties(node: dict[str, Any], label: str) -> tuple[str, ...]:
+        properties = node.get("properties")
+        _require(isinstance(properties, dict) and properties, f"{label} properties missing")
+        return tuple(sorted(properties))
+
+    def _additional_false(node: dict[str, Any], label: str) -> None:
+        _require(node.get("additionalProperties") is False, f"{label} additionalProperties must be false")
+
+    _additional_false(schema, "pack")
+    for label, node in (
+        ("fixture", defs["fixture"]),
+        ("gold_atom", defs["gold_atom"]),
+        ("exclusion", defs["exclusion"]),
+        ("candidate", defs["candidate"]),
+        ("candidate_set", defs["candidate_set"]),
+        ("allowed_match", defs["allowed_match"]),
+    ):
+        _additional_false(node, label)
+
+    fixtures_node = schema["properties"]["fixtures"]
+    span_node = defs["span"]
+    prefix = span_node.get("prefixItems")
+    _require(isinstance(prefix, list) and len(prefix) == 2, "span prefixItems must have two entries")
+    _require(span_node.get("items") is False, "span must forbid additional items")
+    _require(span_node.get("minItems") == 2 and span_node.get("maxItems") == 2, "span length must be 2")
+    for bound in prefix:
+        _require(bound.get("type") == "integer", "span bounds must be integers")
+        _require(bound.get("minimum") == 0, "span bounds must be non-negative")
+
+    roles = defs["roles"]["items"]["enum"]
+    reasons = defs["exclusion_reason"]["enum"]
+    set_ids = defs["candidate_set"]["properties"]["id"]["enum"]
+    _require(isinstance(roles, list) and roles, "roles enum missing")
+    _require(isinstance(reasons, list) and reasons, "exclusion_reason enum missing")
+    _require(isinstance(set_ids, list) and set_ids, "candidate_set id enum missing")
+
+    fixture_id_pattern = defs["fixture"]["properties"]["id"]["pattern"]
+    frozen_ids = tuple(f"F{index:02d}" for index in range(1, 15))
+    _require(all(re.fullmatch(fixture_id_pattern, fixture_id) for fixture_id in frozen_ids), "fixture id pattern must cover F01-F14")
+    _require(re.fullmatch(fixture_id_pattern, "F00") is None, "fixture id pattern must reject F00")
+    _require(re.fullmatch(fixture_id_pattern, "F15") is None, "fixture id pattern must reject F15")
+
+    return {
+        "pack_required": _required(schema, "pack"),
+        "pack_properties": _properties(schema, "pack"),
+        "pack_id": schema["properties"]["pack_id"]["const"],
+        "schema_version": schema["properties"]["schema_version"]["const"],
+        "evaluator_id": schema["properties"]["evaluator_id"]["const"],
+        "fixture_cardinality": fixtures_node["minItems"],
+        "fixture_required": _required(defs["fixture"], "fixture"),
+        "fixture_properties": _properties(defs["fixture"], "fixture"),
+        "gold_required": _required(defs["gold_atom"], "gold_atom"),
+        "gold_properties": _properties(defs["gold_atom"], "gold_atom"),
+        "exclusion_required": _required(defs["exclusion"], "exclusion"),
+        "exclusion_properties": _properties(defs["exclusion"], "exclusion"),
+        "candidate_required": _required(defs["candidate"], "candidate"),
+        "candidate_properties": _properties(defs["candidate"], "candidate"),
+        "candidate_set_required": _required(defs["candidate_set"], "candidate_set"),
+        "candidate_set_properties": _properties(defs["candidate_set"], "candidate_set"),
+        "allowed_match_required": _required(defs["allowed_match"], "allowed_match"),
+        "allowed_match_properties": _properties(defs["allowed_match"], "allowed_match"),
+        "candidate_set_ids": tuple(sorted(set_ids)),
+        "candidate_roles": tuple(sorted(roles)),
+        "exclusion_reasons": tuple(sorted(reasons)),
+        "additional_properties": False,
+        "span_length": 2,
+        "span_value_type": "integer",
+        "span_minimum": 0,
+        "fixture_id_pattern": fixture_id_pattern,
+        "draft_sha256_pattern": defs["fixture"]["properties"]["draft_sha256"]["pattern"],
+        "frozen_fixture_ids": frozen_ids,
+    }
+
+
+def assert_schema_runtime_parity(schema: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Fail closed if the frozen JSON Schema and runtime validator diverge."""
+    schema = load_frozen_schema() if schema is None else schema
+    extracted = extract_schema_contract(schema)
+    runtime = runtime_schema_contract()
+    drifted = sorted(key for key in set(extracted) | set(runtime) if extracted.get(key) != runtime.get(key))
+    _require(not drifted, f"schema/runtime contract drift on fields {drifted}")
+    _require(extracted["fixture_cardinality"] == fixtures_node_max(schema), "fixture minItems/maxItems must match")
+    return extracted
+
+
+def fixtures_node_max(schema: dict[str, Any]) -> int:
+    fixtures_node = schema["properties"]["fixtures"]
+    _require(fixtures_node.get("minItems") == fixtures_node.get("maxItems"), "fixture minItems must equal maxItems")
+    return fixtures_node["maxItems"]
+
+
+def _schema_type_ok(instance: Any, expected: str) -> bool:
+    if expected == "object":
+        return isinstance(instance, dict)
+    if expected == "array":
+        return isinstance(instance, list)
+    if expected == "string":
+        return isinstance(instance, str)
+    if expected == "integer":
+        return type(instance) is int
+    if expected == "boolean":
+        return type(instance) is bool
+    if expected == "null":
+        return instance is None
+    return False
+
+
+def _evaluate_json_schema(instance: Any, node: dict[str, Any], root: dict[str, Any], label: str) -> None:
+    """Minimal Draft 2020-12 subset checker for the frozen claim-semantics schema."""
+    if "$ref" in node:
+        ref = node["$ref"]
+        _require(ref.startswith("#/$defs/"), f"{label} unsupported $ref {ref}")
+        name = ref.rsplit("/", 1)[-1]
+        _require(name in root.get("$defs", {}), f"{label} unknown $ref {ref}")
+        _evaluate_json_schema(instance, root["$defs"][name], root, label)
+        leftover = {key: value for key, value in node.items() if key != "$ref"}
+        if leftover:
+            _evaluate_json_schema(instance, leftover, root, label)
+        return
+
+    if "anyOf" in node:
+        for alternative in node["anyOf"]:
+            try:
+                _evaluate_json_schema(instance, alternative, root, label)
+                return
+            except ClaimSemanticsError:
+                continue
+        raise ClaimSemanticsError(f"{label} matches no anyOf alternative")
+
+    expected_type = node.get("type")
+    if expected_type is not None:
+        _require(_schema_type_ok(instance, expected_type), f"{label} has invalid type")
+
+    if expected_type == "object":
+        properties = node.get("properties", {})
+        if node.get("additionalProperties") is False:
+            extra = [key for key in instance if key not in properties]
+            _require(not extra, f"{label} has unexpected keys {extra}")
+        missing = [key for key in node.get("required", []) if key not in instance]
+        _require(not missing, f"{label} missing keys {missing}")
+        for key, child in properties.items():
+            if key in instance:
+                _evaluate_json_schema(instance[key], child, root, f"{label}.{key}")
+
+    if expected_type == "array":
+        if "minItems" in node:
+            _require(len(instance) >= node["minItems"], f"{label} has too few items")
+        if "maxItems" in node:
+            _require(len(instance) <= node["maxItems"], f"{label} has too many items")
+        if node.get("uniqueItems"):
+            serialized = [json.dumps(item, sort_keys=True) for item in instance]
+            _require(len(serialized) == len(set(serialized)), f"{label} items must be unique")
+        if "prefixItems" in node:
+            prefix = node["prefixItems"]
+            _require(len(instance) >= len(prefix), f"{label} missing prefixItems")
+            for index, child in enumerate(prefix):
+                _evaluate_json_schema(instance[index], child, root, f"{label}[{index}]")
+            if node.get("items") is False:
+                _require(len(instance) == len(prefix), f"{label} has unexpected extra items")
+        elif "items" in node and node["items"] is not False:
+            for index, item in enumerate(instance):
+                _evaluate_json_schema(item, node["items"], root, f"{label}[{index}]")
+
+    if expected_type == "string":
+        if "minLength" in node:
+            _require(len(instance) >= node["minLength"], f"{label} is too short")
+        if "pattern" in node:
+            _require(re.fullmatch(node["pattern"], instance) is not None, f"{label} does not match pattern")
+
+    if expected_type == "integer" and "minimum" in node:
+        _require(instance >= node["minimum"], f"{label} is below minimum")
+
+    if "const" in node:
+        _require(instance == node["const"], f"{label} must equal {node['const']!r}")
+    if "enum" in node:
+        _require(instance in node["enum"], f"{label} has invalid enum value {instance!r}")
+
+
+def validate_against_frozen_schema(
+    instance: Any,
+    schema: dict[str, Any] | None = None,
+    *,
+    label: str = "pack",
+) -> None:
+    schema = load_frozen_schema() if schema is None else schema
+    _evaluate_json_schema(instance, schema, schema, label)
+
+
 def _validate_span(span: Any, text: str, draft: str, label: str) -> None:
     _require(
         isinstance(span, list) and len(span) == 2,
@@ -201,11 +486,7 @@ def _validate_sha256(value: Any, label: str) -> None:
 
 def validate_fixture(fixture: dict[str, Any]) -> None:
     _require(isinstance(fixture, dict), "fixture must be an object")
-    _require_keys(
-        fixture,
-        ("id", "title", "draft_text", "draft_sha256", "gold_atoms", "exclusions", "candidate_sets"),
-        "fixture",
-    )
+    _require_keys(fixture, FIXTURE_REQUIRED_KEYS, "fixture")
     fixture_id = fixture["id"]
     _require(fixture_id in FROZEN_FIXTURE_IDS, f"unknown fixture id {fixture_id!r}")
     _require(isinstance(fixture["title"], str) and fixture["title"], f"{fixture_id} title required")
@@ -229,11 +510,7 @@ def validate_fixture(fixture: dict[str, Any]) -> None:
     gold_spans: list[tuple[int, int, str]] = []
     for gold in gold_atoms:
         _require(isinstance(gold, dict), f"{fixture_id} gold atom must be an object")
-        _require_keys(
-            gold,
-            ("id", "canonical_id", "text", "span", "factual", "material"),
-            f"{fixture_id} gold atom",
-        )
+        _require_keys(gold, GOLD_REQUIRED_KEYS, f"{fixture_id} gold atom")
         gold_id = gold["id"]
         _require(isinstance(gold_id, str) and gold_id, f"{fixture_id} gold id required")
         _require(gold_id not in gold_ids, f"{fixture_id} duplicate gold id {gold_id}")
@@ -255,7 +532,7 @@ def validate_fixture(fixture: dict[str, Any]) -> None:
     exclusion_ids: set[str] = set()
     for exclusion in exclusions:
         _require(isinstance(exclusion, dict), f"{fixture_id} exclusion must be an object")
-        _require_keys(exclusion, ("id", "text", "span", "reason"), f"{fixture_id} exclusion")
+        _require_keys(exclusion, EXCLUSION_REQUIRED_KEYS, f"{fixture_id} exclusion")
         exclusion_id = exclusion["id"]
         _require(isinstance(exclusion_id, str) and exclusion_id, f"{fixture_id} exclusion id required")
         _require(exclusion_id not in exclusion_ids, f"{fixture_id} duplicate exclusion id {exclusion_id}")
@@ -286,11 +563,7 @@ def _validate_candidate_set(
     candidate_set: dict[str, Any],
 ) -> None:
     _require(isinstance(candidate_set, dict), f"{fixture_id} candidate_set must be an object")
-    _require_keys(
-        candidate_set,
-        ("id", "candidates", "allowed_matches"),
-        f"{fixture_id} candidate_set",
-    )
+    _require_keys(candidate_set, CANDIDATE_SET_REQUIRED_KEYS, f"{fixture_id} candidate_set")
     set_id = candidate_set["id"]
     _require(set_id in CANDIDATE_SET_IDS, f"{fixture_id} unknown candidate_set id {set_id!r}")
     candidates = candidate_set["candidates"]
@@ -301,11 +574,7 @@ def _validate_candidate_set(
     candidate_ids: set[str] = set()
     for candidate in candidates:
         _require(isinstance(candidate, dict), f"{fixture_id}.{set_id} candidate must be an object")
-        _require_keys(
-            candidate,
-            ("id", "canonical_id", "text", "span", "roles"),
-            f"{fixture_id}.{set_id} candidate",
-        )
+        _require_keys(candidate, CANDIDATE_REQUIRED_KEYS, f"{fixture_id}.{set_id} candidate")
         candidate_id = candidate["id"]
         _require(isinstance(candidate_id, str) and candidate_id, f"{fixture_id}.{set_id} candidate id")
         _require(candidate_id not in candidate_ids, f"{fixture_id}.{set_id} duplicate candidate {candidate_id}")
@@ -332,7 +601,7 @@ def _validate_candidate_set(
     seen_edges: set[tuple[str, str]] = set()
     for edge in matches:
         _require(isinstance(edge, dict), f"{fixture_id}.{set_id} allowed match must be an object")
-        _require_keys(edge, ("candidate_id", "gold_id"), f"{fixture_id}.{set_id} allowed match")
+        _require_keys(edge, ALLOWED_MATCH_REQUIRED_KEYS, f"{fixture_id}.{set_id} allowed match")
         candidate_id = edge["candidate_id"]
         gold_id = edge["gold_id"]
         _require(candidate_id in candidate_ids, f"{fixture_id}.{set_id} unknown candidate_id {candidate_id}")
@@ -344,11 +613,7 @@ def _validate_candidate_set(
 
 def validate_pack(pack: dict[str, Any], *, require_frozen_catalog: bool = True) -> None:
     _require(isinstance(pack, dict), "pack must be an object")
-    _require_keys(
-        pack,
-        ("pack_id", "schema_version", "evaluator_id", "description", "fixtures"),
-        "pack",
-    )
+    _require_keys(pack, PACK_REQUIRED_KEYS, "pack")
     _require(pack["pack_id"] == PACK_ID, f"pack_id must be {PACK_ID}")
     _require(pack["schema_version"] == SCHEMA_VERSION, "schema_version must be 1")
     _require(pack["evaluator_id"] == EVALUATOR_ID, f"evaluator_id must be {EVALUATOR_ID}")
@@ -371,6 +636,9 @@ def load_pack(path: Path | str = DEFAULT_FIXTURES, *, require_frozen_catalog: bo
         pack = json.loads(pack_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise ClaimSemanticsError(f"unreadable fixture pack {pack_path}: {error}") from error
+    schema = load_frozen_schema(DEFAULT_SCHEMA)
+    assert_schema_runtime_parity(schema)
+    validate_against_frozen_schema(pack, schema)
     validate_pack(pack, require_frozen_catalog=require_frozen_catalog)
     return pack
 
