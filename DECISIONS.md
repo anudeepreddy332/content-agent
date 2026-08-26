@@ -9,6 +9,38 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-26-02
+Date: 2026-08-26
+
+Decision: Demo `PUBLISH_TARGET` validation MUST inspect each remote's fetch URLs
+**and** effective push URLs (`git remote get-url --all` and
+`git remote get-url --push --all`). GitPython `remote.urls` is fetch-only and is
+not sufficient. A clone with fetch=`themachinist-website-fork` and
+pushurl=`themachinist-website` is denied. Any remote whose fetch or push identity
+is `anudeepreddy332/themachinist-website` fails closed. The selected
+`PUBLISH_REMOTE` effective push destination(s) must all be
+`anudeepreddy332/themachinist-website-fork`; unparseable push URLs deny. Production
+confirm-gate and SHA/parent/non-force checks are unchanged.
+
+Question: Can `PUBLISH_TARGET=demo` allow a local merge or `/publish` push when
+the clone's fetch URL is the approved fork but `git push` would follow a
+production `pushurl`?
+
+Evidence: Independent validation at `e630b75` reproduced allowed=True for
+fetch=fork/pushurl=production; `git push` wrote to the pushurl repo. Correction
+uses authoritative git get-url fetch+push listing. Regression tests cover the
+split-identity hole at `evaluate_publish_target`, `git_node` (no website file),
+and `/publish` (409, no ls-remote/push).
+
+Status: Implemented on `feature/demo-publish-target-guard`. Not merged to main.
+
+Confidence: 0.93
+
+Supersedes / superseded by: Supersedes the fetch-only remote-URL inspection in
+D-2026-08-26-01. Does not change demo allowlist members, production confirm
+semantics, or retrieval/verifier/auth.
+
+---
 Decision ID: D-2026-08-26-01
 Date: 2026-08-26
 
@@ -36,9 +68,11 @@ Client demos must set `PUBLISH_TARGET=demo`. No production publish was performed
 
 Confidence: 0.95
 
-Supersedes / superseded by: Does not supersede the local-merge-no-autonomous-push
-safeguard (DECISIONS 2026-06-14/2026-06-16/2026-06-19). Adds a target-identity gate
-in front of that path. Does not change retrieval, verifier, or auth.
+Supersedes / superseded by: Fetch-only remote-URL inspection superseded in part
+by D-2026-08-26-02 (effective push URLs / pushurl must also be checked). Does not
+supersede the local-merge-no-autonomous-push safeguard
+(DECISIONS 2026-06-14/2026-06-16/2026-06-19). Adds a target-identity gate in front
+of that path. Does not change retrieval, verifier, or auth.
 
 ---
 Decision ID: D-2026-08-23-02

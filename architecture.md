@@ -319,8 +319,9 @@ approved_html_sha256
 
 Publish target is fail-closed and is orthogonal to the SHA/parent/non-force checks above.
 `PUBLISH_TARGET` unset disables local merge and remote push. `PUBLISH_TARGET=demo` is valid
-only when the configured Git remote URL is `anudeepreddy332/themachinist-website-fork` and
-`NETLIFY_BASE_URL` canonicalizes to `https://tmw-demo-site.netlify.app`. Production additionally
+only when the selected remote's fetch and effective push URLs are
+`anudeepreddy332/themachinist-website-fork` (a production fetch or pushurl on any remote
+denies) and `NETLIFY_BASE_URL` canonicalizes to `https://tmw-demo-site.netlify.app`. Production additionally
 requires `CONFIRM_PRODUCTION_PUBLISH=I_UNDERSTAND`. The same validator gates `git_node` and
 `POST /ui/runs/{id}/publish`.
 

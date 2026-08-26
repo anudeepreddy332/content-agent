@@ -27,7 +27,8 @@ SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 H = {"Authorization": "Bearer test-token"}
 
 
-def make_git_repo(path: Path, remotes: dict[str, str], *, commit: bool = False) -> Path:
+def make_git_repo(path: Path, remotes: dict[str, str], *, commit: bool = False,
+                  pushurls: dict[str, str | list[str]] | None = None) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", "init", "-b", "main"], cwd=path, check=True, capture_output=True)
     subprocess.run(["git", "config", "user.email", "t@t.test"], cwd=path, check=True,
@@ -36,6 +37,13 @@ def make_git_repo(path: Path, remotes: dict[str, str], *, commit: bool = False) 
     for name, url in remotes.items():
         subprocess.run(["git", "remote", "add", name, url], cwd=path, check=True,
                        capture_output=True)
+    for name, urls in (pushurls or {}).items():
+        first, *rest = [urls] if isinstance(urls, str) else list(urls)
+        subprocess.run(["git", "remote", "set-url", "--push", name, first], cwd=path,
+                       check=True, capture_output=True)
+        for extra in rest:
+            subprocess.run(["git", "remote", "set-url", "--add", "--push", name, extra],
+                           cwd=path, check=True, capture_output=True)
     if commit:
         (path / "README").write_text("x", encoding="utf-8")
         subprocess.run(["git", "add", "README"], cwd=path, check=True, capture_output=True)
@@ -350,6 +358,124 @@ def test_api_publish_denied_for_production_site(tmp_path, monkeypatch):
     monkeypatch.setattr(srv.subprocess, "run", fake_run)
     res = TestClient(srv.app).post(f"/ui/runs/{rid}/publish", headers=H)
     assert res.status_code == 409
+    assert pushed == []
+
+
+def test_demo_allows_fork_with_no_explicit_pushurl(tmp_path, monkeypatch):
+    repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL})
+    enable_demo_publish(monkeypatch, repo)
+    d = evaluate_publish_target()
+    assert d.allowed is True
+
+
+def test_demo_allows_explicit_fork_pushurl(tmp_path, monkeypatch):
+    repo = make_git_repo(
+        tmp_path / "fork", {"origin": DEMO_FORK_URL},
+        pushurls={"origin": DEMO_FORK_URL},
+    )
+    enable_demo_publish(monkeypatch, repo)
+    d = evaluate_publish_target()
+    assert d.allowed is True
+
+
+def test_demo_allows_multiple_pushurls_all_fork(tmp_path, monkeypatch):
+    https_fork = "https://github.com/anudeepreddy332/themachinist-website-fork.git"
+    repo = make_git_repo(
+        tmp_path / "fork", {"origin": DEMO_FORK_URL},
+        pushurls={"origin": [DEMO_FORK_URL, https_fork]},
+    )
+    enable_demo_publish(monkeypatch, repo)
+    d = evaluate_publish_target()
+    assert d.allowed is True
+
+
+def test_demo_denies_fetch_fork_pushurl_production(tmp_path, monkeypatch):
+    repo = make_git_repo(
+        tmp_path / "split", {"origin": DEMO_FORK_URL},
+        pushurls={"origin": PROD_REPO_URL},
+    )
+    enable_demo_publish(monkeypatch, repo)
+    d = evaluate_publish_target()
+    assert d.allowed is False
+    assert "production" in d.reason.lower()
+
+
+def test_demo_denies_fetch_production_pushurl_fork(tmp_path, monkeypatch):
+    repo = make_git_repo(
+        tmp_path / "split", {"origin": PROD_REPO_URL},
+        pushurls={"origin": DEMO_FORK_URL},
+    )
+    enable_demo_publish(monkeypatch, repo)
+    d = evaluate_publish_target()
+    assert d.allowed is False
+    assert "production" in d.reason.lower()
+
+
+def test_demo_denies_other_remote_production_pushurl(tmp_path, monkeypatch):
+    repo = make_git_repo(
+        tmp_path / "mixed",
+        {"origin": DEMO_FORK_URL, "extra": DEMO_FORK_URL},
+        pushurls={"extra": PROD_REPO_URL},
+    )
+    enable_demo_publish(monkeypatch, repo, remote="origin")
+    d = evaluate_publish_target()
+    assert d.allowed is False
+    assert "production" in d.reason.lower()
+
+
+def test_demo_denies_multiple_pushurls_including_production(tmp_path, monkeypatch):
+    repo = make_git_repo(
+        tmp_path / "split", {"origin": DEMO_FORK_URL},
+        pushurls={"origin": [DEMO_FORK_URL, PROD_REPO_URL]},
+    )
+    enable_demo_publish(monkeypatch, repo)
+    d = evaluate_publish_target()
+    assert d.allowed is False
+    assert "production" in d.reason.lower()
+
+
+def test_demo_denies_malformed_selected_pushurl(tmp_path, monkeypatch):
+    repo = make_git_repo(
+        tmp_path / "fork", {"origin": DEMO_FORK_URL},
+        pushurls={"origin": "not-a-git-remote"},
+    )
+    enable_demo_publish(monkeypatch, repo)
+    d = evaluate_publish_target()
+    assert d.allowed is False
+    assert "does not resolve" in d.reason
+
+
+def test_git_node_denies_fetch_fork_pushurl_production(
+        tmp_path, monkeypatch, base_state):
+    article = _trusted()
+    repo = make_git_repo(
+        tmp_path / "split", {"origin": DEMO_FORK_URL},
+        pushurls={"origin": PROD_REPO_URL}, commit=True,
+    )
+    monkeypatch.chdir(tmp_path)
+    enable_demo_publish(monkeypatch, repo)
+    out = nodes.git_node(_git_state(base_state, article))
+    assert out["git_status"] == "failed"
+    assert "publish target denied" in " ".join(out["error_log"])
+    assert not (repo / "gradient-descent-test.html").exists()
+
+
+def test_api_publish_denies_fetch_fork_pushurl_production(tmp_path, monkeypatch):
+    repo = make_git_repo(
+        tmp_path / "split", {"origin": DEMO_FORK_URL},
+        pushurls={"origin": PROD_REPO_URL},
+    )
+    srv, rid = _seed_publishable(monkeypatch, repo)
+    pushed = []
+
+    def fake_run(args, **kw):
+        pushed.append(list(args))
+        return subprocess.CompletedProcess(args, 0, stdout=f"{SHA}\trefs/heads/main\n", stderr="")
+
+    monkeypatch.setattr(srv.subprocess, "run", fake_run)
+    res = TestClient(srv.app).post(f"/ui/runs/{rid}/publish", headers=H)
+    assert res.status_code == 409
+    assert "publish target denied" in res.text
     assert pushed == []
 
 

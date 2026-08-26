@@ -4,8 +4,10 @@ Run the content-agent demo on your Mac and publish to the Netlify **fork**
 (`themachinist-website-fork` / tmw-demo-site.netlify.app). Never point a client
 rehearsal at the production website.
 
-Publication is fail-closed. `PUBLISH_TARGET=demo` is required, and the configured
-Git remote URL must actually be `anudeepreddy332/themachinist-website-fork`.
+Publication is fail-closed. `PUBLISH_TARGET=demo` is required, and the selected
+remote's fetch **and** effective push URLs must be
+`anudeepreddy332/themachinist-website-fork` (`git remote -v` must not list
+`themachinist-website.git` on fetch or push).
 
 ## 0. Prerequisites (once)
 - `.env` exists in the project root with DEEPSEEK_API_KEY, TAVILY_API_KEY, API_BEARER_TOKEN.

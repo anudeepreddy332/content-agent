@@ -1,8 +1,8 @@
 """Fail-closed publish-target policy for demo vs production.
 
 Default deny. Local merge (git_node) and remote push (/ui/runs/{id}/publish)
-must call the same validator. Inspects configured Git remote URLs, not path
-strings. Does not contact the network.
+must call the same validator. Inspects each remote's fetch URLs and effective
+push URLs (not path strings, not fetch-only). Does not contact the network.
 """
 
 from __future__ import annotations
@@ -106,14 +106,27 @@ def _git_push_enabled(value: str | None) -> bool:
     return str(raw).strip().lower() == "true"
 
 
-def _remote_urls(repo_path: str) -> dict[str, list[str]]:
+def _split_git_urls(raw: str) -> list[str]:
+    return [line.strip() for line in str(raw).splitlines() if line.strip()]
+
+
+def _remote_url_sets(repo_path: str) -> dict[str, tuple[list[str], list[str]]]:
+    """Map remote name -> (fetch URLs, effective push URLs). No network.
+
+    Uses `git remote get-url --all` and `git remote get-url --push --all` so a
+    distinct pushurl is visible. GitPython `remote.urls` is fetch-only and must
+    not be used here.
+    """
     import git
 
     repo = git.Repo(repo_path)
-    found: dict[str, list[str]] = {}
+    found: dict[str, tuple[list[str], list[str]]] = {}
     for remote in repo.remotes:
-        urls = [u for u in remote.urls if u]
-        found[remote.name] = urls
+        fetch = _split_git_urls(repo.git.remote("get-url", "--all", remote.name))
+        push = _split_git_urls(
+            repo.git.remote("get-url", "--push", "--all", remote.name)
+        )
+        found[remote.name] = (fetch, push)
     return found
 
 
@@ -190,17 +203,16 @@ def evaluate_publish_target(
         )
 
     try:
-        remotes = _remote_urls(str(path).strip())
+        remotes = _remote_url_sets(str(path).strip())
     except Exception as exc:
         return _deny(f"THEMACHINIST_REPO_PATH is not a readable git repo: {exc}", "demo")
 
     if not remotes:
         return _deny("demo fork clone has no git remotes", "demo")
 
-    for name, urls in remotes.items():
-        for url in urls:
-            ident = github_owner_repo(url)
-            if ident == PRODUCTION_GITHUB:
+    for name, (fetch_urls, push_urls) in remotes.items():
+        for url in [*fetch_urls, *push_urls]:
+            if github_owner_repo(url) == PRODUCTION_GITHUB:
                 return _deny(
                     f"remote {name!r} points at the production website repository",
                     "demo",
@@ -212,7 +224,13 @@ def evaluate_publish_target(
             f"PUBLISH_REMOTE {remote_name!r} is not configured on the demo fork clone",
             "demo",
         )
-    identities = [github_owner_repo(url) for url in chosen]
+    fetch_urls, push_urls = chosen
+    if not push_urls:
+        return _deny(
+            f"PUBLISH_REMOTE {remote_name!r} has no effective push URL",
+            "demo",
+        )
+    identities = [github_owner_repo(url) for url in [*fetch_urls, *push_urls]]
     if not identities or any(ident != DEMO_GITHUB for ident in identities):
         return _deny(
             f"PUBLISH_REMOTE {remote_name!r} does not resolve to "

@@ -155,7 +155,9 @@ In-flight, **not canonical main**, **do not merge as P0-2b**: feature branch
 `feature/demo-publish-target-guard` adds fail-closed `PUBLISH_TARGET` so a client
 demo cannot publish to production via env misconfiguration. Unset target disables
 merge and push. `PUBLISH_TARGET=demo` allowlists only
-`anudeepreddy332/themachinist-website-fork` and `https://tmw-demo-site.netlify.app`.
+`anudeepreddy332/themachinist-website-fork` (fetch **and** effective push URL on
+the selected remote; any remote fetch/pushurl of `themachinist-website` denies)
+and `https://tmw-demo-site.netlify.app`.
 
 Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged). Claim
 completeness remains unresolved and is not an acceptance condition. Overall P0-2b
