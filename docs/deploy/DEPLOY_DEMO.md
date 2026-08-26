@@ -15,7 +15,7 @@ step (`POST /ui/runs/{id}/publish`, wired to the SPA's Publish button).
 - Install Docker Engine + the compose plugin (docker.com official install script).
 
 ## 2. Clone content-agent and configure secrets
-    git clone <repo> && cd content-agent && git checkout feature/demo-ui   # or main, once merged
+    git clone <repo> && cd content-agent && git checkout main
     cp .env.example .env
     # fill in DEEPSEEK_API_KEY, TAVILY_API_KEY, API_BEARER_TOKEN (generate:
     #   python3 -c "import secrets;print(secrets.token_urlsafe(32))")
@@ -123,20 +123,22 @@ gates. After gate 2 is approved, the "Publish to live" button calls
 Run this on your laptop first — same code path, no EC2/Caddy needed, against the same fork
 used in the earlier manual rehearsal:
 
+    export PUBLISH_TARGET=demo            # required; unset disables merge and push
     export GIT_PUSH_ENABLED=true
-    export THEMACHINIST_REPO_PATH=$HOME/tmp/tmw-fork
+    export THEMACHINIST_REPO_PATH=$HOME/tmp/tmw-fork   # fork clone only, never production
     export PUBLISH_REMOTE=demo            # add a remote named "demo" pointing at the fork,
                                            # or use "origin" if that's already the fork's remote
     export NETLIFY_BASE_URL=https://tmw-demo-site.netlify.app
-    uv run python main.py serve --port 8099
+    uv run python main.py serve --host 127.0.0.1 --port 8099
 
     # in another terminal
     T=$(grep -E '^API_BEARER_TOKEN=' .env | cut -d= -f2-)
     RID=$(curl -s -X POST http://localhost:8099/ui/runs -H "Authorization: Bearer $T" \
           -H 'Content-Type: application/json' -d '{"topic":"Test topic"}' | python3 -c \
           'import sys,json;print(json.load(sys.stdin)["run_id"])')
-    # drain SSE at http://localhost:8099/ui/runs/$RID/events?token=$T, approve both gates via
-    #   curl -s -X POST http://localhost:8099/ui/runs/$RID/approve -H "Authorization: Bearer $T"
+    # drain SSE at http://127.0.0.1:8099/ui/runs/$RID/events (Authorization: Bearer header;
+    # query-string tokens are rejected), approve both gates via
+    #   curl -s -X POST http://127.0.0.1:8099/ui/runs/$RID/approve -H "Authorization: Bearer $T"
     # once git_status is merged/tagged_and_merged:
     curl -s -X POST http://localhost:8099/ui/runs/$RID/publish -H "Authorization: Bearer $T"
 
@@ -186,10 +188,10 @@ signal is already there to hook into.
 ## Security posture (demo, additive to DEPLOY.md)
 - The app container is never directly publicly reachable — Caddy is the only public port,
   reverse-proxying over the internal Docker network.
-- git_node is unchanged: GIT_PUSH_ENABLED only lets it do the LOCAL merge it always did; it
-  still has no push capability. The push is the separate `/ui/runs/{id}/publish` endpoint,
-  human-triggered from the SPA's "Publish to live" button — autonomous publish is still
-  impossible.
+- git_node is unchanged on autonomy: GIT_PUSH_ENABLED only lets it do the LOCAL merge it
+  always did; it still has no push capability. Both that merge and `/ui/runs/{id}/publish`
+  now also require `PUBLISH_TARGET=demo` with an allowlisted fork remote and demo Netlify
+  URL (or production + `CONFIRM_PRODUCTION_PUBLISH=I_UNDERSTAND`). Default is deny.
 - The fork's push credential lives only in `fork-clone/.git/config` on the VM, never in an
   image layer, env file, or compose file.
 - Same B4 registry-volatility limitation as DEPLOY.md: avoid restarting `app` mid-review.

@@ -317,6 +317,13 @@ approved_html_sha256
   push nothing.
 - After a push, verify remote main equals `git_commit_sha`.
 
+Publish target is fail-closed and is orthogonal to the SHA/parent/non-force checks above.
+`PUBLISH_TARGET` unset disables local merge and remote push. `PUBLISH_TARGET=demo` is valid
+only when the configured Git remote URL is `anudeepreddy332/themachinist-website-fork` and
+`NETLIFY_BASE_URL` canonicalizes to `https://tmw-demo-site.netlify.app`. Production additionally
+requires `CONFIRM_PRODUCTION_PUBLISH=I_UNDERSTAND`. The same validator gates `git_node` and
+`POST /ui/runs/{id}/publish`.
+
 This proves Git artifact/commit equivalence. It does not prove a hosting provider deployed that
 commit; deployment identity is a later release gate.
 

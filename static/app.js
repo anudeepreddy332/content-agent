@@ -330,7 +330,7 @@ function onError(msg){
 $("#go").addEventListener("click", async ()=>{
   const topic=$("#topic").value.trim();
   const field = $("#token");
-  TOKEN = field.value;
+  TOKEN = field.value || TOKEN;
   field.value = "";
   if(!topic||!TOKEN){ alert("Topic and token are required."); return; }
   $("#go").disabled=true; hide("#gate1"); hide("#gate2"); hide("#done");

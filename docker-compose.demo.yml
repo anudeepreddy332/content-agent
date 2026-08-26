@@ -32,6 +32,7 @@ services:
   app:
     environment:
       GIT_PUSH_ENABLED: "true"             # local merge only — git_node still never pushes
+      PUBLISH_TARGET: "demo"               # fail-closed demo allowlist; never production
       PUBLISH_REMOTE: "${PUBLISH_REMOTE:-origin}"
       NETLIFY_BASE_URL: "${NETLIFY_BASE_URL:-https://tmw-demo-site.netlify.app}"
       THEMACHINIST_REPO_PATH: /app/fork

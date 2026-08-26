@@ -77,6 +77,10 @@ def test_index_has_no_marked_or_innerhtml_source():
     assert "allow-scripts" not in html
     assert "/static/app.js" in html
     assert "/static/app.css" in html
+    assert "localStorage" not in js
+    assert "sessionStorage" not in js
+    assert "document.cookie" not in js
+    assert "API_BEARER_TOKEN=" not in js
 
 
 def test_malicious_reviewer_feedback_is_sanitized_before_persist(base_state, monkeypatch):

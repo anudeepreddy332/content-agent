@@ -148,11 +148,14 @@ historical evidence, not a current enterprise-release decision.
 ## Current authorized mission
 
 **P0-2B SLICE 2B — VALIDATED AND INTEGRATED** at exact canonical main
-`f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. Next authorized state:
-`PRINCIPAL TECHNICAL + BUSINESS PROJECT AUDIT`. Decision outcomes before further
-major implementation: GO, NARROW, PORTFOLIO-CLOSE, PIVOT. This closeout does not
-authorize Slice 2C, an AFTER paid benchmark, threshold movement, or merge of
-documentation descendants. No automatic Slice 2C.
+`f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6` (docs closeout descendant `6f70087`).
+Next authorized state: `PRINCIPAL TECHNICAL + BUSINESS PROJECT AUDIT`.
+
+In-flight, **not canonical main**, **do not merge as P0-2b**: feature branch
+`feature/demo-publish-target-guard` adds fail-closed `PUBLISH_TARGET` so a client
+demo cannot publish to production via env misconfiguration. Unset target disables
+merge and push. `PUBLISH_TARGET=demo` allowlists only
+`anudeepreddy332/themachinist-website-fork` and `https://tmw-demo-site.netlify.app`.
 
 Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged). Claim
 completeness remains unresolved and is not an acceptance condition. Overall P0-2b

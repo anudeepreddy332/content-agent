@@ -56,12 +56,16 @@ curl -s https://$NEW_DOMAIN/health   # expect {"status":"ok"} (give Caddy a minu
 
 ## 5. Run the demo (browser)
 - Open `https://<YOUR_DEMO_URL>` — the value printed in step 2.
-- Paste your API_BEARER_TOKEN at the top (saved in the browser after first use).
+- Paste your API_BEARER_TOKEN at the top. It is **memory-only** (not saved by the
+  browser). The same tab reuses it for a later Generate; a new tab requires re-pasting.
 - Type a topic → Generate → watch nodes stream live.
 - GATE 1 (content): `a` approve / `r` reject / `c` request changes.
-- GATE 2 (layout): "Open preview in new tab" to view; `a` approve / `c` layout change.
-- After gate-2 approval: press `p` (or the "🚀 Publish to live" button). The container pushes
-  the fork to GitHub; Netlify redeploys in ~1–2 min; a clickable LIVE link appears.
+- GATE 2 (layout): "Expand in-page preview" to enlarge the iframe; `a` approve /
+  `c` layout change. There is no new-tab preview.
+- After gate-2 approval: press `p` (or the "Publish to live" button). The container
+  pushes the **fork** (`PUBLISH_TARGET=demo` in docker-compose.demo.yml) to GitHub;
+  Netlify redeploys tmw-demo-site.netlify.app in ~1–2 min; a clickable LIVE link appears.
+  Production themachinist.org is never a valid demo target.
 
 ## 6. Stop the instance (halt charges)
 ```bash

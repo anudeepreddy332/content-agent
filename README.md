@@ -89,9 +89,13 @@ uv run python main.py run \
 # Benchmark mode (auto-approve, no git push)
 uv run python main.py run --topic "Gradient Descent" --auto
 
-# Interactive demo SPA + API, locally
-uv run python main.py serve   # then open http://localhost:8000/
+# Interactive demo SPA + API, locally (dry-run publish unless PUBLISH_TARGET=demo)
+uv run python main.py serve --host 127.0.0.1   # then open http://127.0.0.1:8000/
 ```
+
+A live client rehearsal that publishes an article must use `docs/CHEATSHEET_LOCAL.md`
+(`PUBLISH_TARGET=demo`, fork clone only, never themachinist.org). Unset `PUBLISH_TARGET`
+disables local merge and remote push.
 
 For copy-paste command sequences beyond the basics above — running the full interactive
 demo locally end-to-end, or deploying/operating the EC2 + Caddy + Docker Hub cloud demo — see:

@@ -465,6 +465,13 @@ def ui_publish(run_id: str):
     if not git_commit_sha or not expected_remote:
         raise HTTPException(409, "missing git_commit_sha or publish_expected_remote_sha")
 
+    from agent.publish_target import evaluate_publish_target
+    decision = evaluate_publish_target(require_push_enabled=True)
+    if not decision.allowed:
+        log.error("ui.publish_target_denied", run_id=run_id,
+                  target=decision.target, reason=decision.reason)
+        raise HTTPException(409, f"publish target denied: {decision.reason}")
+
     remote = os.environ.get("PUBLISH_REMOTE", "origin")
     netlify_base = os.environ.get("NETLIFY_BASE_URL", "https://tmw-demo-site.netlify.app").rstrip("/")
 

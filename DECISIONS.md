@@ -9,6 +9,38 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-26-01
+Date: 2026-08-26
+
+Decision: Fail-closed `PUBLISH_TARGET` policy ADOPTED for client-demo publish safety.
+Unset/unknown target disables publication. `PUBLISH_TARGET=demo` is valid only when the
+configured Git remote URL is `anudeepreddy332/themachinist-website-fork` and
+`NETLIFY_BASE_URL` canonicalizes to `https://tmw-demo-site.netlify.app`. Production
+requires `PUBLISH_TARGET=production` **and** `CONFIRM_PRODUCTION_PUBLISH=I_UNDERSTAND`.
+The same validator gates `git_node` (local merge) and `POST /ui/runs/{id}/publish`
+(remote push). Existing exact-SHA / remote-parent / non-force Git checks are unchanged.
+
+Question: Can a supervised localhost demo accidentally publish to the production
+website because `GIT_PUSH_ENABLED=true` while path/remote/site still point at
+themachinist-website / themachinist.org?
+
+Evidence: Pre-change, those four env vars were independent; `config.py` defaulted
+`THEMACHINIST_REPO_PATH` at the production clone. Post-change, `agent/publish_target.py`
+inspects actual git remote URLs (not path strings) and deny-by-default. Tests in
+`tests/test_publish_target.py` cover unset target, demo allowlist, production repo/remote/site
+mismatch, `GIT_PUSH_ENABLED=false`, production-without-confirm, SHA/parent preservation,
+git_node enforcement, API enforcement, `GET /`, and no browser token persistence.
+
+Status: Implemented on `feature/demo-publish-target-guard`. Not merged to main.
+Client demos must set `PUBLISH_TARGET=demo`. No production publish was performed.
+
+Confidence: 0.95
+
+Supersedes / superseded by: Does not supersede the local-merge-no-autonomous-push
+safeguard (DECISIONS 2026-06-14/2026-06-16/2026-06-19). Adds a target-identity gate
+in front of that path. Does not change retrieval, verifier, or auth.
+
+---
 Decision ID: D-2026-08-23-02
 Date: 2026-08-23
 

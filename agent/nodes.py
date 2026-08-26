@@ -1799,6 +1799,13 @@ def git_node(state: AgentState) -> dict:
         }
 
     repo_path = Path(THEMACHINIST_REPO_PATH).resolve()
+    from agent.publish_target import evaluate_publish_target
+    decision = evaluate_publish_target(repo_path=str(repo_path))
+    if not decision.allowed:
+        log.error("git.publish_target_denied", run_id=state["run_id"],
+                  target=decision.target, reason=decision.reason)
+        return _fail(f"publish target denied: {decision.reason}")
+
     if not repo_path.exists():
         log.error("git.repo_not_found", run_id=state["run_id"], path=str(repo_path))
         error_log.append(f"[git_node] Repo not found at {repo_path}")

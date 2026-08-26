@@ -61,24 +61,28 @@ def test_publish_409_when_run_still_in_progress(client):
     assert client.post(f"/ui/runs/{rid}/publish", headers=H).status_code == 409
 
 
-def test_publish_success_merged(client, monkeypatch):
+def test_publish_success_merged(client, tmp_path, monkeypatch):
     import api.server as srv
     import subprocess
+    from tests.test_publish_target import enable_demo_publish, make_git_repo, DEMO_FORK_URL
+    repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL})
+    enable_demo_publish(monkeypatch, repo)
     rid = _seed_run(git_status="merged", slug="my-article")
     sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     fake = subprocess.CompletedProcess(args=["git", "push"], returncode=0,
                                        stdout=f"{sha}\trefs/heads/main\n", stderr="")
     monkeypatch.setattr(srv.subprocess, "run", lambda *a, **kw: fake)
-    monkeypatch.setenv("NETLIFY_BASE_URL", "https://tmw-demo-site.netlify.app")
-    monkeypatch.setenv("PUBLISH_REMOTE", "origin")
     res = client.post(f"/ui/runs/{rid}/publish", headers=H)
     assert res.status_code == 200
     assert res.json()["live_url"] == "https://tmw-demo-site.netlify.app/my-article"
 
 
-def test_publish_success_tagged_and_merged(client, monkeypatch):
+def test_publish_success_tagged_and_merged(client, tmp_path, monkeypatch):
     import api.server as srv
     import subprocess
+    from tests.test_publish_target import enable_demo_publish, make_git_repo, DEMO_FORK_URL
+    repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL})
+    enable_demo_publish(monkeypatch, repo)
     rid = _seed_run(git_status="tagged_and_merged", slug="republished")
     fake = subprocess.CompletedProcess(args=["git", "push"], returncode=0,
                                        stdout="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\trefs/heads/main\n",
@@ -89,9 +93,12 @@ def test_publish_success_tagged_and_merged(client, monkeypatch):
     assert res.json()["live_url"].endswith("/republished")
 
 
-def test_publish_failure_returns_500_with_git_error(client, monkeypatch):
+def test_publish_failure_returns_500_with_git_error(client, tmp_path, monkeypatch):
     import api.server as srv
     import subprocess
+    from tests.test_publish_target import enable_demo_publish, make_git_repo, DEMO_FORK_URL
+    repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL})
+    enable_demo_publish(monkeypatch, repo)
     rid = _seed_run(git_status="merged", slug="fails")
     sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 

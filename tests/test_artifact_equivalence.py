@@ -42,9 +42,18 @@ def test_git_node_archive_and_repo_hash_equivalence(tmp_path, monkeypatch, base_
     (repo / "README").write_text("x", encoding="utf-8")
     subprocess.run(["git", "add", "README"], cwd=repo, check=True, capture_output=True)
     subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "remote", "add", "origin",
+         "git@github.com:anudeepreddy332/themachinist-website-fork.git"],
+        cwd=repo, check=True, capture_output=True,
+    )
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("GIT_PUSH_ENABLED", "true")
+    monkeypatch.setenv("PUBLISH_TARGET", "demo")
+    monkeypatch.setenv("PUBLISH_REMOTE", "origin")
+    monkeypatch.setenv("NETLIFY_BASE_URL", "https://tmw-demo-site.netlify.app")
+    monkeypatch.setenv("THEMACHINIST_REPO_PATH", str(repo))
     monkeypatch.setattr(nodes, "THEMACHINIST_REPO_PATH", str(repo), raising=False)
     import config
     monkeypatch.setattr(config, "THEMACHINIST_REPO_PATH", str(repo))
@@ -85,8 +94,11 @@ def test_git_node_fails_closed_without_approval(tmp_path, monkeypatch, base_stat
     assert not list((tmp_path / "outputs" / "articles").glob("*.html")) if (tmp_path / "outputs" / "articles").exists() else True
 
 
-def test_publish_binds_commit_ref_not_ambient_main(monkeypatch):
+def test_publish_binds_commit_ref_not_ambient_main(tmp_path, monkeypatch):
     import api.server as srv
+    from tests.test_publish_target import enable_demo_publish, make_git_repo, DEMO_FORK_URL
+    repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL})
+    enable_demo_publish(monkeypatch, repo)
     rid = "run-bind"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
@@ -100,8 +112,6 @@ def test_publish_binds_commit_ref_not_ambient_main(monkeypatch):
         return subprocess.CompletedProcess(args, 0, stdout=f"{SHA}\trefs/heads/main\n", stderr="")
 
     monkeypatch.setattr(srv.subprocess, "run", fake_run)
-    monkeypatch.setenv("NETLIFY_BASE_URL", "https://tmw-demo-site.netlify.app")
-    monkeypatch.setenv("PUBLISH_REMOTE", "origin")
     c = TestClient(srv.app)
     res = c.post(f"/ui/runs/{rid}/publish", headers=H)
     assert res.status_code == 200
@@ -110,8 +120,11 @@ def test_publish_binds_commit_ref_not_ambient_main(monkeypatch):
     assert push[3] != "main" or ":" in push[3]
 
 
-def test_publish_conflicts_if_remote_moved(monkeypatch):
+def test_publish_conflicts_if_remote_moved(tmp_path, monkeypatch):
     import api.server as srv
+    from tests.test_publish_target import enable_demo_publish, make_git_repo, DEMO_FORK_URL
+    repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL})
+    enable_demo_publish(monkeypatch, repo)
     rid = "run-conflict"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
