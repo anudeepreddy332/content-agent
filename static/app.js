@@ -161,10 +161,20 @@ function onGate(r){
   setRunning(false);
   $("#pipeSub").textContent = "waiting for your review";
   if(r.type==="hitl_review"){
+    const rows = r.review_claims || [];
+    const calculatedUvr = rows.length
+      ? rows.filter(row => String(row.status || "").toLowerCase()==="unverified").length / rows.length
+      : null;
+    const uvr = typeof r.unverified_rate === "number" ? r.unverified_rate : calculatedUvr;
+    const uvrText = typeof uvr === "number" ? `${(uvr * 100).toFixed(1)}%` : "not computable";
+    const provenance = r.reflection_provenance || {};
+    const reflection = provenance.origin === "judge" && provenance.parse_status === "ok"
+      ? `REAL JUDGE SCORE ${r.reflection_score}/10`
+      : `FALLBACK / UNAVAILABLE SCORE ${r.reflection_score}/10 (${provenance.reason || "unknown"})`;
     $("#g1meta").textContent =
-      `grounding ${(r.grounding_score??0).toFixed(2)} · reflection ${r.reflection_score}/10 — ${r.reflection_notes||""}`;
+      `Claim grounding ${(r.grounding_score??0).toFixed(2)} · UVR ${uvrText} of the extracted verdict set (not a completeness measure) · ${reflection} — ${r.reflection_notes||""}`;
     $("#g1frame").srcdoc = r.draft_review_html || "";
-    renderGrounding(r.review_claims || []);
+    renderGrounding(rows);
     $("#g1fb").value=""; show("#gate1"); $("#gate1").scrollIntoView({behavior:"smooth"});
   } else if(r.type==="hitl_html_review"){
     $("#g2meta").textContent = `${r.html_filename||""} · grounding ${(r.grounding_score??0).toFixed(2)}`;
@@ -185,6 +195,30 @@ function renderGrounding(report){
     root.appendChild(p);
     return;
   }
+  const counts = {total: report.length, verified: 0, weak: 0, unverified: 0};
+  for(const row of report){
+    const status = String(row.status || "").toLowerCase();
+    if(Object.prototype.hasOwnProperty.call(counts, status)) counts[status] += 1;
+  }
+  const summary = document.createElement("div");
+  summary.id = "g1claimSummary";
+  summary.className = "claim-summary";
+  for(const [label, value] of [
+    ["Total", counts.total], ["Verified", counts.verified],
+    ["Weak", counts.weak], ["Unverified", counts.unverified],
+  ]){
+    const stat = document.createElement("span");
+    stat.className = "claim-count "+label.toLowerCase();
+    stat.textContent = `${label}: ${value}`;
+    summary.appendChild(stat);
+  }
+  root.appendChild(summary);
+
+  const filters = document.createElement("div");
+  filters.className = "claim-filters";
+  filters.setAttribute("role", "group");
+  filters.setAttribute("aria-label", "Filter claims by verification status");
+  root.appendChild(filters);
   const table = document.createElement("table");
   const thead = document.createElement("thead");
   const hr = document.createElement("tr");
@@ -193,19 +227,25 @@ function renderGrounding(report){
   }
   thead.appendChild(hr); table.appendChild(thead);
   const tbody = document.createElement("tbody");
-  for(const c of report.slice(0,40)){
+  for(const c of report){
     const tr = document.createElement("tr");
+    const st = String(c.status||"").toLowerCase();
+    tr.className = "claim-row status-"+(st || "unknown");
     const claim = document.createElement("td"); claim.textContent = c.claim || "";
     const stTd = document.createElement("td");
     const tag = document.createElement("span");
-    const st = (c.status||"").toLowerCase();
     tag.className = "tag "+st; tag.textContent = st || "?";
     stTd.appendChild(tag);
     const conf = document.createElement("td"); conf.textContent = (c.confidence??0).toFixed(2);
     const src = document.createElement("td");
-    if(c.source_url){
+    let sourceUrl = null;
+    try{
+      const parsed = new URL(c.source_url || "");
+      if(parsed.protocol === "https:" && parsed.hostname) sourceUrl = parsed.href;
+    }catch(_e){ /* server already validates; browser still treats malformed data as text */ }
+    if(sourceUrl){
       const a = document.createElement("a");
-      a.href = c.source_url; a.target = "_blank"; a.rel = "noopener noreferrer nofollow";
+      a.href = sourceUrl; a.target = "_blank"; a.rel = "noopener noreferrer nofollow";
       a.textContent = c.source_label || "source";
       src.appendChild(a);
     } else {
@@ -218,6 +258,26 @@ function renderGrounding(report){
   }
   table.appendChild(tbody);
   root.appendChild(table);
+
+  const applyFilter = (filter) => {
+    for(const row of tbody.querySelectorAll("tr.claim-row")){
+      const matches = filter === "all" || row.classList.contains("status-"+filter);
+      row.classList.toggle("hidden", !matches);
+    }
+    for(const button of filters.querySelectorAll("button")){
+      button.setAttribute("aria-pressed", String(button.dataset.filter === filter));
+    }
+  };
+  for(const filter of ["all", "verified", "weak", "unverified"]){
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary claim-filter";
+    button.dataset.filter = filter;
+    button.textContent = filter.toUpperCase();
+    button.addEventListener("click", () => applyFilter(filter));
+    filters.appendChild(button);
+  }
+  applyFilter("all");
 }
 
 function setGateButtons(disabled){ document.querySelectorAll("[data-act]").forEach(b=>b.disabled=disabled); }

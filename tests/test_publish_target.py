@@ -299,7 +299,11 @@ def test_git_node_merges_when_demo_allowlist_matches(tmp_path, monkeypatch, base
     repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL}, commit=True)
     monkeypatch.chdir(tmp_path)
     enable_demo_publish(monkeypatch, repo)
-    out = nodes.git_node(_git_state(base_state, article))
+    parent = subprocess.check_output(["git", "rev-parse", "main"], cwd=repo, text=True).strip()
+    state = _git_state(base_state, article)
+    state["publish_expected_remote_sha"] = parent
+    monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: parent)
+    out = nodes.git_node(state)
     assert out["git_status"] in ("merged", "tagged_and_merged")
     assert out["git_commit_sha"]
 

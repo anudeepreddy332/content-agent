@@ -70,6 +70,9 @@ def test_git_node_archive_and_repo_hash_equivalence(tmp_path, monkeypatch, base_
         "category": "concept-exploration",
         "draft_sections": {"problem_framing": "framing"},
     }
+    parent = subprocess.check_output(["git", "rev-parse", "main"], cwd=repo, text=True).strip()
+    state["publish_expected_remote_sha"] = parent
+    monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: parent)
     out = nodes.git_node(state)
     assert out["git_status"] in ("merged", "tagged_and_merged")
     archive = (tmp_path / "outputs" / "articles" / "gradient-descent-test.html").read_bytes()
@@ -115,6 +118,10 @@ def test_publish_binds_commit_ref_not_ambient_main(tmp_path, monkeypatch):
     c = TestClient(srv.app)
     res = c.post(f"/ui/runs/{rid}/publish", headers=H)
     assert res.status_code == 200
+    outcome = srv.REGISTRY[rid]["result"]
+    assert outcome["publish_status"] == "published"
+    assert outcome["publish_observed_remote_sha"] == SHA
+    assert outcome["published_remote_sha"] == SHA
     push = [a for a in calls if a[:2] == ["git", "push"]][0]
     assert f"{SHA}:refs/heads/main" in push
     assert push[3] != "main" or ":" in push[3]
@@ -141,3 +148,6 @@ def test_publish_conflicts_if_remote_moved(tmp_path, monkeypatch):
     res = c.post(f"/ui/runs/{rid}/publish", headers=H)
     assert res.status_code == 409
     assert "remote main changed" in res.text
+    outcome = srv.REGISTRY[rid]["result"]
+    assert outcome["publish_status"] == "remote_parent_mismatch"
+    assert outcome["publish_observed_remote_sha"] == other
