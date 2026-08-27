@@ -152,6 +152,13 @@ historical evidence, not a current enterprise-release decision.
 Next authorized state: `PRINCIPAL TECHNICAL + BUSINESS PROJECT AUDIT`.
 
 In-flight, **not canonical main**, **do not merge as P0-2b**: feature branch
+`feature/client-demo-rehearsal-fixes` (parent demo-fix checkpoint `b4bcef2`,
+placeholder-policy `f992ebf`, delimiter-policy qualification child pending
+principal review). HTML policy identifier on that branch is `p0-1-v2`; historical
+`p0-1-v1` is not silently redefined. Provider-backed rehearsal remains BLOCKED
+until principal approval.
+
+Also in-flight, **not canonical main**: feature branch
 `feature/demo-publish-target-guard` adds fail-closed `PUBLISH_TARGET` so a client
 demo cannot publish to production via env misconfiguration. Unset target disables
 merge and push. `PUBLISH_TARGET=demo` allowlists only

@@ -43,7 +43,7 @@ def _gate1_review():
     return {
         "type": "hitl_review",
         "draft_review_html": render_markdown_review_html(HOSTILE_MARKDOWN),
-        "html_policy_version": "p0-1-v1",
+        "html_policy_version": "p0-1-v2",
         "grounding_score": 0.8,
         "reflection_score": 8,
         "reflection_notes": "ok",

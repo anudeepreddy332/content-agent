@@ -220,6 +220,7 @@ def test_template_delimiters_outside_code_fail_closed_with_safe_diagnostic():
 
     diagnostic = exc_info.value.diagnostic
     assert diagnostic["rule_id"] == "template_delimiter_outside_code_v1"
+    assert diagnostic["scope"] == "article_body"
     assert diagnostic["match_count"] == 1
     assert diagnostic["locations"][0]["token_class"] == "template_delimiter"
     assert diagnostic["locations"][0]["element"] == "p"

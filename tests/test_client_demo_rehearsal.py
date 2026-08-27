@@ -226,6 +226,7 @@ def test_html_generation_records_safe_placeholder_diagnostics(base_state, monkey
     assert out["policy_diagnostics"] == [{
         "stage": "html_gen",
         "rule_id": "template_delimiter_outside_code_v1",
+        "scope": "article_body",
         "match_count": 1,
         "locations": [{
             "range": out["policy_diagnostics"][0]["locations"][0]["range"],
@@ -242,6 +243,7 @@ def test_telemetry_persists_policy_diagnostics_without_raw_placeholder(tmp_path,
     state["policy_diagnostics"] = [{
         "stage": "html_gen",
         "rule_id": "template_delimiter_outside_code_v1",
+        "scope": "article_body",
         "match_count": 1,
         "locations": [{"range": [12, 14], "element": "p", "token_class": "template_delimiter"}],
     }]

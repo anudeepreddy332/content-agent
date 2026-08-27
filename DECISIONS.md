@@ -9,6 +9,37 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-27-01
+Date: 2026-08-27
+
+Decision: HTML delimiter policy versioned to `p0-1-v2`. `p0-1-v1` remains the
+historical substring policy that rejected every `{{` / `}}` occurrence, including
+literal code examples. `p0-1-v2` permits template delimiters only inside
+approved `pre`/`code` (and immutable shell `style`) and records a reconstructable
+`scope` on scanner diagnostics (`article_body` | `document` | `revised_body`).
+`html_revise_node` persists the same safe `policy_diagnostics` on scanner
+failure while still discarding the revision. Encoded braces are not a bypass:
+`nh3` canonicalizes `&#123;&#123;` to literal `{{` before the scanner runs.
+
+Question: Can the HTML-aware delimiter scanner ship under the historical
+`p0-1-v1` identifier, without coordinate-scope or html_revise diagnostics?
+
+Evidence: Principal review of `f992ebf` required a child correction. Boundary
+tests on `f992ebf` passed 16 behavioral cases and failed only version, `scope`,
+and html_revise persistence. No encoded-brace bypass. No sanitizer/CSP/URI
+allowlist change.
+
+Status: Implemented on `feature/client-demo-rehearsal-fixes` as a child of
+`f992ebf`. Not merged to main. Provider-backed rehearsal remains blocked
+pending principal review.
+
+Confidence: 0.90
+
+Supersedes / superseded by: Versions the acceptance semantics introduced in
+`f992ebf`; does not redefine historical `p0-1-v1`. Does not change sanitizer
+allowlist, CSP, or publish-target/Git race checks.
+
+---
 Decision ID: D-2026-08-26-02
 Date: 2026-08-26
 

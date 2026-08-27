@@ -1653,6 +1653,7 @@ def html_revise_node(state: AgentState) -> dict:
     original_html = state.get("html_output") or ""
     note = state.get("html_feedback") or ""
     errors = list(state.get("error_log") or [])
+    policy_diagnostics = list(state.get("policy_diagnostics") or [])
     citations_html = _build_citations(
         state.get("grounding_report", []),
         state.get("web_sources", []),
@@ -1686,6 +1687,7 @@ def html_revise_node(state: AgentState) -> dict:
         "total_tokens": state.get("total_tokens", 0) + usage.total_tokens,
         "total_cost_usd": round(state.get("total_cost_usd", 0.0) + cost, 6),
         "latency_ms": lat,
+        "policy_diagnostics": policy_diagnostics,
     }
     try:
         revised_frag = sanitize_fragment(raw_revised)
@@ -1693,9 +1695,12 @@ def html_revise_node(state: AgentState) -> dict:
         del raw_revised
         errors.append(f"html_revise: revision DISCARDED (sanitizer: {exc}); kept original")
         log.warning("html_revise.discarded", run_id=state["run_id"], reason="sanitizer")
+        if exc.diagnostic is not None:
+            policy_diagnostics.append({"stage": "html_revise", **exc.diagnostic})
         return {**base_out, "html_output": original_html, "article_body_html": original_body,
                 "html_sha256": state.get("html_sha256"),
-                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
+                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors,
+                "policy_diagnostics": policy_diagnostics}
     del raw_revised
 
     if not revised_frag.html.strip():
@@ -1720,9 +1725,12 @@ def html_revise_node(state: AgentState) -> dict:
     except PolicyError as exc:
         errors.append(f"html_revise: revision DISCARDED (reassemble: {exc}); kept original")
         log.warning("html_revise.discarded", run_id=state["run_id"], reason="reassemble")
+        if exc.diagnostic is not None:
+            policy_diagnostics.append({"stage": "html_revise", **exc.diagnostic})
         return {**base_out, "html_output": original_html, "article_body_html": original_body,
                 "html_sha256": state.get("html_sha256"),
-                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
+                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors,
+                "policy_diagnostics": policy_diagnostics}
 
     log.info("html_revise.applied", run_id=state["run_id"], cost=cost,
              html_sha256=article.sha256)

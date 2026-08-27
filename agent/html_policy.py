@@ -22,7 +22,9 @@ from urllib.parse import urlsplit, urlunsplit
 import nh3
 from markdown_it import MarkdownIt
 
-HTML_POLICY_VERSION = "p0-1-v1"
+# p0-1-v1 rejected every {{ / }} substring, including literal code examples.
+# p0-1-v2 permits delimiters only inside pre/code (and immutable shell style).
+HTML_POLICY_VERSION = "p0-1-v2"
 
 ALLOWED_TAGS = {
     "h2", "h3", "h4", "p", "ul", "ol", "li", "pre", "code", "strong", "em",
@@ -168,8 +170,12 @@ class _TemplateDelimiterScanner(HTMLParser):
         )
 
 
-def _reject_unresolved_template_delimiters(html: str) -> None:
-    """Fail closed on template delimiters except in literal/static contexts."""
+def _reject_unresolved_template_delimiters(html: str, *, scope: str) -> None:
+    """Fail closed on template delimiters except in literal/static contexts.
+
+    `scope` identifies the coordinate space of locations[].range:
+    article_body, document, or revised_body.
+    """
     scanner = _TemplateDelimiterScanner(html)
     scanner.feed(html)
     scanner.close()
@@ -178,6 +184,7 @@ def _reject_unresolved_template_delimiters(html: str) -> None:
             "unresolved template delimiters outside code examples",
             diagnostic={
                 "rule_id": "template_delimiter_outside_code_v1",
+                "scope": scope,
                 "match_count": len(scanner.matches),
                 "locations": scanner.matches,
             },
@@ -1053,7 +1060,7 @@ def assemble_trusted_article(
         f"{takeaways.html}\n"
         f"</div>\n"
     )
-    _reject_unresolved_template_delimiters(body_html)
+    _reject_unresolved_template_delimiters(body_html, scope="article_body")
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -1125,7 +1132,7 @@ def assemble_trusted_article(
 </body>
 </html>
 """
-    _reject_unresolved_template_delimiters(html)
+    _reject_unresolved_template_delimiters(html, scope="document")
     if "<script>" in html.lower().replace(" ", "") and "application/ld+json" not in html:
         raise PolicyError("executable script in trusted article")
     if "shared.js" in html or "shared.css" in html or "fonts.googleapis.com" in html:
@@ -1158,7 +1165,7 @@ def reassemble_from_body(
     # single fragment then split is lossy; instead sanitize then place as inner body.
     if not fragment.html.strip():
         raise PolicyError("revised body sanitized to empty")
-    _reject_unresolved_template_delimiters(fragment.html)
+    _reject_unresolved_template_delimiters(fragment.html, scope="revised_body")
     dummy = TrustedFragment(html="<p>.</p>")
     article = assemble_trusted_article(
         topic=topic,
@@ -1180,7 +1187,7 @@ def reassemble_from_body(
         raise PolicyError("trusted shell missing body markers")
     inner_start = start + len('<div class="sl-body">')
     rebuilt = html[:inner_start] + "\n" + fragment.html + "\n" + html[sources:]
-    _reject_unresolved_template_delimiters(rebuilt)
+    _reject_unresolved_template_delimiters(rebuilt, scope="document")
     return TrustedArticle(
         html=rebuilt,
         body_html=fragment.html,
