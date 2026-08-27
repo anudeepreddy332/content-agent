@@ -22,8 +22,10 @@ from urllib.parse import urlsplit, urlunsplit
 import nh3
 from markdown_it import MarkdownIt
 
-# p0-1-v1 rejected every {{ / }} substring, including literal code examples.
-# p0-1-v2 permits delimiters only inside pre/code (and immutable shell style).
+# p0-1-v1 used raw substring checks without structural HTML context: article body
+# rejected {{ or }}; full document and reassembly rejected {{ only. Legitimate code
+# examples could therefore false-positive. p0-1-v2 permits delimiters only inside
+# pre/code (and immutable shell style).
 HTML_POLICY_VERSION = "p0-1-v2"
 
 ALLOWED_TAGS = {

@@ -13,8 +13,9 @@ Decision ID: D-2026-08-27-01
 Date: 2026-08-27
 
 Decision: HTML delimiter policy versioned to `p0-1-v2`. `p0-1-v1` remains the
-historical substring policy that rejected every `{{` / `}}` occurrence, including
-literal code examples. `p0-1-v2` permits template delimiters only inside
+historical raw-substring policy: article body rejected `{{` or `}}`; full document
+and reassembly rejected `{{` only (no structural HTML context), so literal code
+examples could false-positive. `p0-1-v2` permits template delimiters only inside
 approved `pre`/`code` (and immutable shell `style`) and records a reconstructable
 `scope` on scanner diagnostics (`article_body` | `document` | `revised_body`).
 `html_revise_node` persists the same safe `policy_diagnostics` on scanner
