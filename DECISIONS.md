@@ -9,6 +9,55 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-08-27-02
+Date: 2026-08-27
+
+Decision: **CLIENT-DEMO-FIXES: CLOSED.** Successful human client-demo rehearsal
+validated the delimiter-policy correction (`p0-1-v2`), publish-target guards, and
+remote-parent race protection. Status: **LIVE-DEMO-REHEARSED.**
+
+Rehearsal chronology (historical; failures preserved):
+1. Run `fd0cb6a3-781f-422c-ade4-3b1e49c04ed7` — **FAILED** before Gate 2: HTML
+   delimiter false-positive on code examples (historical raw-substring policy).
+2. Run `1e68d0ee-546e-4a25-b459-1340a9f22b2a` — HTML and both gates succeeded;
+   publication correctly failed closed because local demo-fork `main` did not equal
+   the approved remote parent.
+3. Run `2c91cc9e-766d-4921-a6c2-d37253f76543` — **successful human rehearsal:**
+   - Topic: LangGraph State Machines
+   - V/W/U/total: `32 / 0 / 0 / 32`; grounding: `0.916`; reflection: `7/10`
+   - Reflection provenance: real judge; `provider_called=true`; `parse_status=ok`
+   - HTML policy: `p0-1-v2`; `policy_diagnostics=[]`
+   - Gate 1: human approved; Gate 2: human approved
+   - Artifact SHA256: `87af3a25133257918b68833058db02c2abebc55ed9e1dca01f010ef9687c63d4`
+   - Approved remote parent: `7914833b1dea16789ac82f22be1fcc18e8bb965c`
+   - Resulting demo-fork main: `7b6de76d0fdb0b78440f4211eb6c98cd8a7a6b73`
+   - Final remote-parent race check passed; publication to demo fork succeeded
+   - Demo URL `https://tmw-demo-site.netlify.app` returned HTTP 200
+   - Production repository remained untouched
+
+Non-blocking backlog (future hardening, not demo blockers): successful run telemetry
+did not stamp immutable Content Agent code identity (`code_identity.available=false`).
+Branch/SHA is strongly supported by workspace state but not independently proven from
+run telemetry. The final 32/32-verified run did not exercise Weak/Unverified UI
+filters; this does not reopen the demo.
+
+Question: Did the client-demo correction project achieve a supervised human rehearsal
+with approved artifact publication to the demo fork only, without production impact?
+
+Evidence: Principal decision `CLIENT-DEMO-FIXES: APPROVED FOR FORMAL CLOSEOUT`.
+Validated branch `feature/client-demo-rehearsal-fixes` at `66df1ee526cc2e7096f2b8c04c7221ce5068e27a`.
+Pre-merge canonical main `e4b39caa37497c1743e33843c464ea4381f166d4`.
+
+Status: **CLOSED.** Docs closeout on `feature/client-demo-rehearsal-fixes`. Next
+engineering program: Semantic P0 Metric Registry.
+
+Confidence: 0.95
+
+Supersedes / superseded by: Closes the in-flight client-demo correction tracked from
+`b4bcef2` / `f992ebf` / `a44416e` / `66df1ee`. Does not close overall P0-2b or
+enterprise production readiness.
+
+---
 Decision ID: D-2026-08-27-01
 Date: 2026-08-27
 
@@ -30,9 +79,10 @@ tests on `f992ebf` passed 16 behavioral cases and failed only version, `scope`,
 and html_revise persistence. No encoded-brace bypass. No sanitizer/CSP/URI
 allowlist change.
 
-Status: Implemented on `feature/client-demo-rehearsal-fixes` as a child of
-`f992ebf`. Not merged to main. Provider-backed rehearsal remains blocked
-pending principal review.
+Status: **VALIDATED AND INTEGRATED** as part of client-demo fixes closeout on
+`feature/client-demo-rehearsal-fixes`. Human rehearsal run
+`2c91cc9e-766d-4921-a6c2-d37253f76543` confirmed `p0-1-v2` with
+`policy_diagnostics=[]`. See D-2026-08-27-02.
 
 Confidence: 0.90
 
@@ -64,7 +114,8 @@ uses authoritative git get-url fetch+push listing. Regression tests cover the
 split-identity hole at `evaluate_publish_target`, `git_node` (no website file),
 and `/publish` (409, no ls-remote/push).
 
-Status: Implemented on `feature/demo-publish-target-guard`. Not merged to main.
+Status: **VALIDATED AND INTEGRATED** at exact canonical main
+`e4b39caa37497c1743e33843c464ea4381f166d4`.
 
 Confidence: 0.93
 
@@ -95,8 +146,9 @@ inspects actual git remote URLs (not path strings) and deny-by-default. Tests in
 mismatch, `GIT_PUSH_ENABLED=false`, production-without-confirm, SHA/parent preservation,
 git_node enforcement, API enforcement, `GET /`, and no browser token persistence.
 
-Status: Implemented on `feature/demo-publish-target-guard`. Not merged to main.
-Client demos must set `PUBLISH_TARGET=demo`. No production publish was performed.
+Status: **VALIDATED AND INTEGRATED** at exact canonical main
+`e4b39caa37497c1743e33843c464ea4381f166d4`. Client demos must set `PUBLISH_TARGET=demo`.
+No production publish was performed.
 
 Confidence: 0.95
 
