@@ -1464,6 +1464,7 @@ def html_gen_node(state: AgentState) -> dict:
     filename = f"{state['slug']}.html"
     existing_latency = dict(state.get("latency_ms") or {})
     error_log = list(state.get("error_log") or [])
+    policy_diagnostics = list(state.get("policy_diagnostics") or [])
 
     if state.get("total_cost_usd", 0) >= COST_GATE_USD:
         log.warning("html_gen.cost_gate_hit", run_id=state["run_id"])
@@ -1513,6 +1514,8 @@ def html_gen_node(state: AgentState) -> dict:
         existing_latency["html_gen"] = int((time.time() - t_start) * 1000)
         error_log.append(f"[html_gen] policy failure: {exc}")
         log.error("html_gen.policy_failed", run_id=run_id, error=str(exc))
+        if exc.diagnostic is not None:
+            policy_diagnostics.append({"stage": "html_gen", **exc.diagnostic})
         return {
             "html_output": None,
             "html_filename": None,
@@ -1524,6 +1527,7 @@ def html_gen_node(state: AgentState) -> dict:
             "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
             "latency_ms": existing_latency,
             "error_log": error_log,
+            "policy_diagnostics": policy_diagnostics,
         }
 
     latency = int((time.time() - t_start) * 1000)
@@ -1545,6 +1549,7 @@ def html_gen_node(state: AgentState) -> dict:
         "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
         "latency_ms": existing_latency,
         "error_log": error_log,
+        "policy_diagnostics": policy_diagnostics,
     }
 
 

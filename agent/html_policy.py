@@ -15,6 +15,7 @@ import ipaddress
 import json
 import re
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from typing import Any, Iterable, Mapping
 from urllib.parse import urlsplit, urlunsplit
 
@@ -82,6 +83,105 @@ _CTRL_RE = re.compile(r"[\x00-\x1f\x7f]")
 
 class PolicyError(Exception):
     """Fail-closed security/structural failure."""
+
+    def __init__(self, message: str, *, diagnostic: Mapping[str, Any] | None = None):
+        super().__init__(message)
+        # Diagnostics must describe policy structure only. In particular, never
+        # retain rejected model text or the matching placeholder payload.
+        self.diagnostic = dict(diagnostic) if diagnostic is not None else None
+
+
+class _TemplateDelimiterScanner(HTMLParser):
+    """Locate template delimiters outside literal code examples.
+
+    The input is already sanitized trusted HTML. HTMLParser gives us the
+    element context required to distinguish an accidental unresolved template
+    from a legitimate Jinja-style code sample. Positions are body/document
+    offsets only; no untrusted text is included in the resulting diagnostic.
+    """
+
+    _VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+    # style is immutable shell-owned CSS; model content cannot enter it. Its
+    # closing braces are CSS syntax, not template delimiters.
+    _LITERAL_TAGS = {"code", "pre", "style"}
+
+    def __init__(self, source: str):
+        super().__init__(convert_charrefs=False)
+        self._source = source
+        self._line_offsets = [0]
+        self._line_offsets.extend(index + 1 for index, char in enumerate(source) if char == "\n")
+        self._open_tags: list[str] = []
+        self.matches: list[dict[str, Any]] = []
+
+    def _offset(self) -> int:
+        line, column = self.getpos()
+        return self._line_offsets[line - 1] + column
+
+    def _in_literal_context(self) -> bool:
+        return any(tag in self._LITERAL_TAGS for tag in self._open_tags)
+
+    def _record_matches(self, value: str, *, offset: int, element: str) -> None:
+        # Treat a complete {{...}} expression as one occurrence while still
+        # rejecting either unmatched delimiter independently.
+        for match in re.finditer(r"\{\{.*?\}\}|\{\{|\}\}", value, re.DOTALL):
+            start = offset + match.start()
+            self.matches.append({
+                "range": [start, start + len(match.group(0))],
+                "element": element,
+                "token_class": "template_delimiter",
+            })
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        # Template syntax in attributes is always unsafe, including an
+        # attribute on a code element. The sanitizer removes unapproved
+        # attributes first, but this keeps the assembly boundary fail-closed.
+        raw_tag = self.get_starttag_text() or ""
+        self._record_matches(raw_tag, offset=self._offset(), element=tag)
+        if tag not in self._VOID_TAGS:
+            self._open_tags.append(tag)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        raw_tag = self.get_starttag_text() or ""
+        self._record_matches(raw_tag, offset=self._offset(), element=tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        for index in range(len(self._open_tags) - 1, -1, -1):
+            if self._open_tags[index] == tag:
+                del self._open_tags[index:]
+                break
+
+    def handle_data(self, data: str) -> None:
+        if not self._in_literal_context():
+            self._record_matches(
+                data,
+                offset=self._offset(),
+                element=self._open_tags[-1] if self._open_tags else "document",
+            )
+
+    def handle_comment(self, data: str) -> None:
+        # Comments are not valid article content, but if one reaches assembly,
+        # template syntax there must still fail closed.
+        self._record_matches(
+            data,
+            offset=self._offset() + len("<!--"),
+            element="comment",
+        )
+
+
+def _reject_unresolved_template_delimiters(html: str) -> None:
+    """Fail closed on template delimiters except in literal/static contexts."""
+    scanner = _TemplateDelimiterScanner(html)
+    scanner.feed(html)
+    scanner.close()
+    if scanner.matches:
+        raise PolicyError(
+            "unresolved template delimiters outside code examples",
+            diagnostic={
+                "rule_id": "template_delimiter_outside_code_v1",
+                "match_count": len(scanner.matches),
+                "locations": scanner.matches,
+            },
+        )
 
 
 @dataclass(frozen=True)
@@ -914,7 +1014,6 @@ def assemble_trusted_article(
 
     topic_e = html_module.escape(topic)
     topic_short_e = html_module.escape(topic.lower())
-    slug_e = html_module.escape(slug)
     meta_e = html_module.escape(meta_description)
     series_e = html_module.escape(series_label)
     crumb_e = html_module.escape(breadcrumb_section)
@@ -954,8 +1053,7 @@ def assemble_trusted_article(
         f"{takeaways.html}\n"
         f"</div>\n"
     )
-    if "{{" in body_html or "}}" in body_html:
-        raise PolicyError("unreplaced placeholders in article body")
+    _reject_unresolved_template_delimiters(body_html)
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -1027,8 +1125,7 @@ def assemble_trusted_article(
 </body>
 </html>
 """
-    if "{{" in html:
-        raise PolicyError("unreplaced placeholders")
+    _reject_unresolved_template_delimiters(html)
     if "<script>" in html.lower().replace(" ", "") and "application/ld+json" not in html:
         raise PolicyError("executable script in trusted article")
     if "shared.js" in html or "shared.css" in html or "fonts.googleapis.com" in html:
@@ -1061,6 +1158,7 @@ def reassemble_from_body(
     # single fragment then split is lossy; instead sanitize then place as inner body.
     if not fragment.html.strip():
         raise PolicyError("revised body sanitized to empty")
+    _reject_unresolved_template_delimiters(fragment.html)
     dummy = TrustedFragment(html="<p>.</p>")
     article = assemble_trusted_article(
         topic=topic,
@@ -1082,8 +1180,7 @@ def reassemble_from_body(
         raise PolicyError("trusted shell missing body markers")
     inner_start = start + len('<div class="sl-body">')
     rebuilt = html[:inner_start] + "\n" + fragment.html + "\n" + html[sources:]
-    if "{{" in rebuilt:
-        raise PolicyError("unreplaced placeholders after reassemble")
+    _reject_unresolved_template_delimiters(rebuilt)
     return TrustedArticle(
         html=rebuilt,
         body_html=fragment.html,

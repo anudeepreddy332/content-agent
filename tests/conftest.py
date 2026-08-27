@@ -59,6 +59,7 @@ def base_state():
         "total_cost_usd": 0.0,
         "latency_ms": {},
         "error_log": [],
+        "policy_diagnostics": [],
         "iteration_metrics": [],
         "m4_feedback_claims": 0,
     }
@@ -102,5 +103,4 @@ def openai_error(cls, status: int):
         return cls(request=req)
     resp = httpx.Response(status, request=req)
     return cls("injected", response=resp, body=None)
-
 

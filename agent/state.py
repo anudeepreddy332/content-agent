@@ -85,6 +85,8 @@ class AgentState(TypedDict):
 
     # Error log
     error_log: list[str]
+    # Safe policy decision metadata. Never contains rejected model text.
+    policy_diagnostics: list[dict]
 
     # P0-2b slice 2B: append-only reconstructable draft/verify evidence.
     # Persistence only; not an acceptance input.

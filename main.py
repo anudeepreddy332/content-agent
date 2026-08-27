@@ -94,6 +94,9 @@ def _write_telemetry(state: dict):
         "total_cost_usd": round(state.get("total_cost_usd", 0), 5),
         "latency_ms": state.get("latency_ms", {}),
         "error_log": state.get("error_log", []),
+        # Structural policy evidence only; raw rejected provider output is
+        # deliberately discarded at the HTML boundary.
+        "policy_diagnostics": state.get("policy_diagnostics", []),
         "claims_verified": sum(1 for r in state.get("grounding_report", [])
                                if r.get("status") == "verified"),
         "claims_weak": sum(1 for r in state.get("grounding_report", [])
@@ -231,6 +234,7 @@ def _build_initial_state(topic, slug, card_id, series, run_id, category="concept
         "total_cost_usd": 0.0,
         "latency_ms": {},
         "error_log": [],
+        "policy_diagnostics": [],
         "semantic_trace": empty_trace({"run_id": run_id, "topic": topic,
                                        "prompt_version": PROMPT_VERSION}),
     }
