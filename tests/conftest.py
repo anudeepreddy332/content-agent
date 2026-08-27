@@ -30,6 +30,12 @@ def base_state():
         "grounding_score": 0.0,
         "reflection_score": 0,
         "reflection_notes": "",
+        "reflection_provenance": {
+            "origin": "unavailable",
+            "reason": "not_run",
+            "provider_called": False,
+            "parse_status": "not_started",
+        },
         "iterations": 0,
         "hitl_status": "pending",
         "hitl_feedback": None,
@@ -41,6 +47,11 @@ def base_state():
         "approved_html_sha256": None,
         "git_commit_sha": None,
         "publish_expected_remote_sha": None,
+        "publish_observed_remote_sha": None,
+        "publish_status": None,
+        "publish_error": None,
+        "published_remote_sha": None,
+        "published_live_url": None,
         "branch_name": None,
         "git_status": None,
         "run_id": "b2-test-run",
@@ -48,6 +59,7 @@ def base_state():
         "total_cost_usd": 0.0,
         "latency_ms": {},
         "error_log": [],
+        "policy_diagnostics": [],
         "iteration_metrics": [],
         "m4_feedback_claims": 0,
     }
@@ -91,6 +103,4 @@ def openai_error(cls, status: int):
         return cls(request=req)
     resp = httpx.Response(status, request=req)
     return cls("injected", response=resp, body=None)
-
-
 

@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-08-23._
+_Canonical current-state snapshot. Last synchronized: 2026-08-27._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -8,11 +8,10 @@ remains preserved in `FREEZE.md`.
 
 ## Authoritative SHA roles
 
-- **Current canonical repository state:** the HEAD of `refs/heads/main`. Direct remote main is
-  exact `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. It must contain the P0-2a integration commit,
-  the P0-2b slice-1 integration commit, the P0-2b slice-2A integration commit, and the P0-2b
-  slice-2B integration commit below; documentation-only descendants do not alter those
-  validated runtime/product implementation blobs.
+- **Current canonical repository state:** the HEAD of `refs/heads/main`. Before
+  client-demo-fixes integration, exact `e4b39caa37497c1743e33843c464ea4381f166d4`
+  (demo publish-target guard). Client-demo fixes closeout merges from
+  `feature/client-demo-rehearsal-fixes`.
 - **P0-2b slice 2B canonical integration commit:**
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. Linear ancestry is exact
   `e82672936fbb61ee7b1bde7dd3a1ced34f094fa8` →
@@ -147,17 +146,17 @@ historical evidence, not a current enterprise-release decision.
 
 ## Current authorized mission
 
-**P0-2B SLICE 2B — VALIDATED AND INTEGRATED** at exact canonical main
-`f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6` (docs closeout descendant `6f70087`).
-Next authorized state: `PRINCIPAL TECHNICAL + BUSINESS PROJECT AUDIT`.
+**CLIENT-DEMO-FIXES: CLOSED — LIVE-DEMO-REHEARSED.** Validated on
+`feature/client-demo-rehearsal-fixes` (implementation chain `b4bcef2` → `f992ebf` →
+`a44416e`; docs child `66df1ee`). Successful human rehearsal run
+`2c91cc9e-766d-4921-a6c2-d37253f76543` (topic: LangGraph State Machines) published to
+demo fork `anudeepreddy332/themachinist-website-fork`; production repository remained
+untouched. See **Client-demo fixes closed boundary** below.
 
-In-flight, **not canonical main**, **do not merge as P0-2b**: feature branch
-`feature/demo-publish-target-guard` adds fail-closed `PUBLISH_TARGET` so a client
-demo cannot publish to production via env misconfiguration. Unset target disables
-merge and push. `PUBLISH_TARGET=demo` allowlists only
-`anudeepreddy332/themachinist-website-fork` (fetch **and** effective push URL on
-the selected remote; any remote fetch/pushurl of `themachinist-website` denies)
-and `https://tmw-demo-site.netlify.app`.
+**Demo publish-target guard — VALIDATED AND INTEGRATED** at exact canonical main
+`e4b39caa37497c1743e33843c464ea4381f166d4`.
+
+Next authorized engineering program: **Semantic P0 Metric Registry**.
 
 Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged). Claim
 completeness remains unresolved and is not an acceptance condition. Overall P0-2b
@@ -166,6 +165,37 @@ remains OPEN.
 MCP and A2A are optional developer-workflow infrastructure. They are out of this product mission and
 must not block the frozen sequence. This file does not itself authorize implementation, merge,
 publish, deployment, or provider spend.
+
+## Client-demo fixes closed boundary
+
+- **Status:** `CLIENT-DEMO-FIXES: CLOSED`; `LIVE-DEMO-REHEARSED`.
+- **Validated branch:** `feature/client-demo-rehearsal-fixes` at implementation HEAD
+  `a44416e46f90159f003f87a62d4c1c33987a9c9f` (docs child `66df1ee526cc2e7096f2b8c04c7221ce5068e27a`).
+- **HTML policy:** `p0-1-v2`; historical `p0-1-v1` is not silently redefined.
+- **Rehearsal chronology (historical failures preserved):**
+  1. Run `fd0cb6a3-781f-422c-ade4-3b1e49c04ed7` — **FAILED** before Gate 2: HTML delimiter
+     false-positive on code examples (historical raw-substring policy).
+  2. Run `1e68d0ee-546e-4a25-b459-1340a9f22b2a` — HTML and both gates **succeeded**;
+     publication **correctly failed closed** because local demo-fork `main` did not equal the
+     approved remote parent.
+  3. Run `2c91cc9e-766d-4921-a6c2-d37253f76543` — **successful human rehearsal:**
+     - Topic: LangGraph State Machines
+     - V/W/U/total: `32 / 0 / 0 / 32`; grounding: `0.916`; reflection: `7/10`
+     - Reflection provenance: real judge; `provider_called=true`; `parse_status=ok`
+     - HTML policy: `p0-1-v2`; `policy_diagnostics=[]`
+     - Gate 1: human approved; Gate 2: human approved
+     - Artifact SHA256: `87af3a25133257918b68833058db02c2abebc55ed9e1dca01f010ef9687c63d4`
+     - Approved remote parent: `7914833b1dea16789ac82f22be1fcc18e8bb965c`
+     - Resulting demo-fork main: `7b6de76d0fdb0b78440f4211eb6c98cd8a7a6b73`
+     - Final remote-parent race check passed; publication succeeded to approved demo fork
+     - Demo URL `https://tmw-demo-site.netlify.app` returned HTTP 200
+     - Production repository remained untouched
+- **Non-blocking backlog (future hardening, not demo blockers):**
+  - Successful run telemetry did not stamp immutable Content Agent code identity
+    (`code_identity.available=false`). Branch/SHA is strongly supported by workspace state but
+    not independently proven from run telemetry.
+  - Final 32/32-verified run did not exercise Weak/Unverified UI filters; this does not reopen
+    the demo.
 
 ## P0-2a closed implementation boundary
 

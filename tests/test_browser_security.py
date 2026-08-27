@@ -43,18 +43,40 @@ def _gate1_review():
     return {
         "type": "hitl_review",
         "draft_review_html": render_markdown_review_html(HOSTILE_MARKDOWN),
-        "html_policy_version": "p0-1-v1",
+        "html_policy_version": "p0-1-v2",
         "grounding_score": 0.8,
         "reflection_score": 8,
         "reflection_notes": "ok",
-        "review_claims": [{
-            "claim": "<script>alert(1)</script> claim",
-            "status": "verified",
-            "confidence": 0.9,
-            "source_kind": "web",
-            "source_label": "Unresolved source",
-            "source_url": None,
-        }],
+        "reflection_provenance": {
+            "origin": "judge", "reason": "json_score",
+            "provider_called": True, "parse_status": "ok",
+        },
+        "review_claims": [
+            {
+                "claim": "<script>alert(1)</script> verified claim",
+                "status": "verified",
+                "confidence": 0.9,
+                "source_kind": "web",
+                "source_label": "Unresolved source",
+                "source_url": None,
+            },
+            {
+                "claim": "weak claim",
+                "status": "weak",
+                "confidence": 0.5,
+                "source_kind": "web",
+                "source_label": "Unresolved source",
+                "source_url": None,
+            },
+            {
+                "claim": "unverified claim",
+                "status": "unverified",
+                "confidence": 0.0,
+                "source_kind": "none",
+                "source_label": "none",
+                "source_url": None,
+            },
+        ],
     }
 
 
@@ -67,7 +89,12 @@ def _gate2_review():
         breadcrumb_section="Learning Log",
         read_time="5",
         problem_framing=sanitize_fragment("<p>framing</p>"),
-        technical_dive=sanitize_fragment(HOSTILE_MODEL_HTML),
+        technical_dive=sanitize_fragment(
+            HOSTILE_MODEL_HTML
+            + "<h3>Preview heading</h3><p>Formula <code>E = mc^2</code></p>"
+            + "<table><thead><tr><th>Metric</th><th>Value</th></tr></thead>"
+            + "<tbody><tr><td>loss</td><td>0.1</td></tr></tbody></table>"
+        ),
         code_snippets=sanitize_fragment("<pre><code>print(1)</code></pre>"),
         takeaways=sanitize_fragment("<ul><li>one</li></ul>"),
         citations_html="<li>Unresolved source</li>",
@@ -174,6 +201,51 @@ def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
     assert pw_page.locator("#g2preview").count() == 0
     assert "allow-scripts" not in pw_page.content()
     assert "marked" not in pw_page.content()
+
+
+def test_reviewer_ui_exposes_claim_counts_filters_and_real_score_provenance(live_server, pw_page):
+    pw_page.goto(live_server + "/", wait_until="domcontentloaded")
+    pw_page.fill("#token", "test-token")
+    pw_page.fill("#topic", "Gradient Descent")
+    pw_page.click("#go")
+
+    pw_page.wait_for_selector("#gate1:not(.hidden)", timeout=8000)
+    summary = pw_page.locator("#g1claimSummary")
+    assert "Total: 3" in summary.inner_text()
+    assert "Verified: 1" in summary.inner_text()
+    assert "Weak: 1" in summary.inner_text()
+    assert "Unverified: 1" in summary.inner_text()
+    assert "REAL JUDGE SCORE" in pw_page.locator("#g1meta").inner_text()
+
+    pw_page.get_by_role("button", name="WEAK", exact=True).click()
+    assert pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").count() == 1
+    assert "weak claim" in pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").inner_text()
+
+    pw_page.get_by_role("button", name="UNVERIFIED", exact=True).click()
+    assert pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").count() == 1
+    assert "unverified claim" in pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").inner_text()
+
+
+def test_gate2_preview_keeps_trusted_article_styles_under_reviewer_csp(live_server, pw_page):
+    pw_page.set_viewport_size({"width": 540, "height": 820})
+    pw_page.goto(live_server + "/", wait_until="domcontentloaded")
+    pw_page.fill("#token", "test-token")
+    pw_page.fill("#topic", "Gradient Descent")
+    pw_page.click("#go")
+    pw_page.wait_for_selector("#gate1:not(.hidden)", timeout=8000)
+    pw_page.click('#gate1 button[data-act="approve"]')
+    pw_page.wait_for_selector("#gate2:not(.hidden)", timeout=8000)
+
+    frame = pw_page.frame_locator("#g2frame")
+    assert frame.locator("h2").count() >= 1
+    assert frame.locator("table").count() == 1
+    assert frame.locator("code").count() >= 1
+    assert frame.locator("footer svg").first.evaluate(
+        "el => getComputedStyle(el).width"
+    ) == "20px"
+    assert frame.locator(".sl-body").evaluate(
+        "el => getComputedStyle(el).paddingLeft"
+    ) == "16px"
 
 
 def test_article_iframe_no_script_no_attacker_request(pw_page):

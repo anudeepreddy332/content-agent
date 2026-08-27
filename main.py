@@ -73,6 +73,7 @@ def _write_telemetry(state: dict):
 
         "reflection_score": state.get("reflection_score"),
         "reflection_notes": state.get("reflection_notes", ""),
+        "reflection_provenance": state.get("reflection_provenance", {}),
         "grounding_score": state.get("grounding_score"),
         # Unknown is deliberate for historical or partial states. Benchmark code
         # must not infer a completed verification from a missing status.
@@ -80,10 +81,22 @@ def _write_telemetry(state: dict):
         "hitl_status": state.get("hitl_status"),
         "html_review_status": state.get("html_review_status"),
         "git_status": state.get("git_status"),
+        # Publish audit fields are written again after an explicit /publish
+        # attempt, so a future 409 can be reconstructed without inferring the
+        # remote's state from local refs.
+        "publish_expected_remote_sha": state.get("publish_expected_remote_sha"),
+        "publish_observed_remote_sha": state.get("publish_observed_remote_sha"),
+        "publish_status": state.get("publish_status"),
+        "publish_error": state.get("publish_error"),
+        "published_remote_sha": state.get("published_remote_sha"),
+        "published_live_url": state.get("published_live_url"),
         "total_tokens": state.get("total_tokens", 0),
         "total_cost_usd": round(state.get("total_cost_usd", 0), 5),
         "latency_ms": state.get("latency_ms", {}),
         "error_log": state.get("error_log", []),
+        # Structural policy evidence only; raw rejected provider output is
+        # deliberately discarded at the HTML boundary.
+        "policy_diagnostics": state.get("policy_diagnostics", []),
         "claims_verified": sum(1 for r in state.get("grounding_report", [])
                                if r.get("status") == "verified"),
         "claims_weak": sum(1 for r in state.get("grounding_report", [])
@@ -187,6 +200,12 @@ def _build_initial_state(topic, slug, card_id, series, run_id, category="concept
         "verification_status": "not_started",
         "reflection_score": 0,
         "reflection_notes": "",
+        "reflection_provenance": {
+            "origin": "unavailable",
+            "reason": "not_run",
+            "provider_called": False,
+            "parse_status": "not_started",
+        },
         "iterations": 0,
         "hitl_status": "pending",
         "hitl_feedback": None,
@@ -194,6 +213,17 @@ def _build_initial_state(topic, slug, card_id, series, run_id, category="concept
         "html_feedback": None,
         "html_output": None,
         "html_filename": None,
+        "article_body_html": None,
+        "html_sha256": None,
+        "html_policy_version": None,
+        "approved_html_sha256": None,
+        "git_commit_sha": None,
+        "publish_expected_remote_sha": None,
+        "publish_observed_remote_sha": None,
+        "publish_status": None,
+        "publish_error": None,
+        "published_remote_sha": None,
+        "published_live_url": None,
         "branch_name": None,
         "git_status": None,
         "iteration_metrics": [],
@@ -204,6 +234,7 @@ def _build_initial_state(topic, slug, card_id, series, run_id, category="concept
         "total_cost_usd": 0.0,
         "latency_ms": {},
         "error_log": [],
+        "policy_diagnostics": [],
         "semantic_trace": empty_trace({"run_id": run_id, "topic": topic,
                                        "prompt_version": PROMPT_VERSION}),
     }

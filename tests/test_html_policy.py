@@ -1,5 +1,4 @@
 """Deterministic html_policy unit tests. $0, no providers."""
-import json
 
 import pytest
 
@@ -213,6 +212,35 @@ def test_trusted_article_has_no_active_subresources():
 def test_fail_closed_on_empty_required_section():
     with pytest.raises(PolicyError):
         _article(problem_framing=TrustedFragment(html=""))
+
+
+def test_template_delimiters_outside_code_fail_closed_with_safe_diagnostic():
+    with pytest.raises(PolicyError, match="unresolved template delimiters") as exc_info:
+        _article(technical_dive=sanitize_fragment("<p>{{TOPIC}}</p>"))
+
+    diagnostic = exc_info.value.diagnostic
+    assert diagnostic["rule_id"] == "template_delimiter_outside_code_v1"
+    assert diagnostic["scope"] == "article_body"
+    assert diagnostic["match_count"] == 1
+    assert diagnostic["locations"][0]["token_class"] == "template_delimiter"
+    assert diagnostic["locations"][0]["element"] == "p"
+    assert "TOPIC" not in repr(diagnostic)
+
+
+def test_template_delimiters_in_code_examples_remain_representable():
+    article = _article(technical_dive=sanitize_fragment(
+        '<pre><code class="language-text">{{ user.name }}</code></pre>'
+    ))
+
+    assert "{{ user.name }}" in article.html
+
+
+def test_single_brace_math_and_state_notation_remain_representable():
+    article = _article(technical_dive=sanitize_fragment(
+        "<p>c_e: S → {True, False}; state = {&quot;messages&quot;: []}</p>"
+    ))
+
+    assert "{True, False}" in article.html
 
 
 LEGACY_LOOPBACK = [

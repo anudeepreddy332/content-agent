@@ -444,6 +444,28 @@ def _ls_remote_main_sha(repo_path: str, remote: str) -> str:
     return sha
 
 
+def _record_publish_outcome(run_id: str, **fields) -> None:
+    """Persist an explicit publish-attempt audit without changing its result."""
+    with LOCK:
+        reg = REGISTRY.get(run_id)
+        result = reg.get("result") if reg else None
+        if not isinstance(result, dict):
+            return
+        updated = dict(result)
+        updated.update(fields)
+        reg["result"] = updated
+
+    # A completed graph result carries the semantic trace needed by the normal
+    # telemetry writer. Test fixtures and legacy partial records do not, and
+    # should still receive the in-memory outcome without fabricating telemetry.
+    if "semantic_trace" not in updated:
+        return
+    try:
+        _write_telemetry(updated)
+    except Exception as exc:  # publish status must not be masked by audit I/O
+        log.error("ui.publish_audit_failed", run_id=run_id, error=str(exc))
+
+
 @app.post("/ui/runs/{run_id}/publish", dependencies=[Depends(require_auth)])
 def ui_publish(run_id: str):
     """Push the approved commit SHA to remote main. Never force-push; never push ambient main."""
@@ -463,6 +485,11 @@ def ui_publish(run_id: str):
         expected_remote = result.get("publish_expected_remote_sha")
 
     if not git_commit_sha or not expected_remote:
+        _record_publish_outcome(
+            run_id,
+            publish_status="blocked_missing_approval_parent",
+            publish_error="missing git_commit_sha or publish_expected_remote_sha",
+        )
         raise HTTPException(409, "missing git_commit_sha or publish_expected_remote_sha")
 
     from agent.publish_target import evaluate_publish_target
@@ -470,6 +497,11 @@ def ui_publish(run_id: str):
     if not decision.allowed:
         log.error("ui.publish_target_denied", run_id=run_id,
                   target=decision.target, reason=decision.reason)
+        _record_publish_outcome(
+            run_id,
+            publish_status="target_denied",
+            publish_error=decision.reason,
+        )
         raise HTTPException(409, f"publish target denied: {decision.reason}")
 
     remote = os.environ.get("PUBLISH_REMOTE", "origin")
@@ -477,13 +509,29 @@ def ui_publish(run_id: str):
 
     try:
         remote_sha = _ls_remote_main_sha(THEMACHINIST_REPO_PATH, remote)
-    except HTTPException:
+    except HTTPException as exc:
+        _record_publish_outcome(
+            run_id,
+            publish_status="remote_read_failed",
+            publish_error=str(exc.detail),
+        )
         raise
     except (subprocess.TimeoutExpired, OSError) as e:
         log.error("ui.publish_error", run_id=run_id, remote=remote, error=str(e))
+        _record_publish_outcome(
+            run_id,
+            publish_status="remote_read_failed",
+            publish_error=str(e),
+        )
         raise HTTPException(500, f"git ls-remote could not run: {e}")
 
     if remote_sha != expected_remote:
+        _record_publish_outcome(
+            run_id,
+            publish_observed_remote_sha=remote_sha,
+            publish_status="remote_parent_mismatch",
+            publish_error="remote main changed since approval; push aborted",
+        )
         raise HTTPException(409, "remote main changed since approval; push aborted")
 
     try:
@@ -493,23 +541,62 @@ def ui_publish(run_id: str):
         )
     except (subprocess.TimeoutExpired, OSError) as e:
         log.error("ui.publish_error", run_id=run_id, remote=remote, error=str(e))
+        _record_publish_outcome(
+            run_id,
+            publish_observed_remote_sha=remote_sha,
+            publish_status="push_error",
+            publish_error=str(e),
+        )
         raise HTTPException(500, f"git push could not run: {e}")
 
     if proc.returncode != 0:
         log.error("ui.publish_failed", run_id=run_id, remote=remote,
                    returncode=proc.returncode, stderr=proc.stderr)
+        _record_publish_outcome(
+            run_id,
+            publish_observed_remote_sha=remote_sha,
+            publish_status="push_failed",
+            publish_error=proc.stderr.strip() or "git push failed",
+        )
         raise HTTPException(500, proc.stderr.strip() or "git push failed")
 
     try:
         after = _ls_remote_main_sha(THEMACHINIST_REPO_PATH, remote)
-    except HTTPException:
+    except HTTPException as exc:
+        _record_publish_outcome(
+            run_id,
+            publish_observed_remote_sha=remote_sha,
+            publish_status="post_push_remote_read_failed",
+            publish_error=str(exc.detail),
+        )
         raise
     except (subprocess.TimeoutExpired, OSError) as e:
+        _record_publish_outcome(
+            run_id,
+            publish_observed_remote_sha=remote_sha,
+            publish_status="post_push_remote_read_failed",
+            publish_error=str(e),
+        )
         raise HTTPException(500, f"git ls-remote could not run after push: {e}")
     if after != git_commit_sha:
+        _record_publish_outcome(
+            run_id,
+            publish_observed_remote_sha=remote_sha,
+            publish_status="post_push_sha_mismatch",
+            publish_error="remote main does not match approved git_commit_sha",
+            published_remote_sha=after,
+        )
         raise HTTPException(500, "remote main does not match approved git_commit_sha")
 
     live_url = f"{netlify_base}/{slug}"
+    _record_publish_outcome(
+        run_id,
+        publish_observed_remote_sha=remote_sha,
+        publish_status="published",
+        publish_error=None,
+        published_remote_sha=after,
+        published_live_url=live_url,
+    )
     log.info("ui.publish", run_id=run_id, slug=slug, remote=remote,
              git_commit_sha=git_commit_sha, live_url=live_url)
     return {"live_url": live_url, "git_commit_sha": git_commit_sha}

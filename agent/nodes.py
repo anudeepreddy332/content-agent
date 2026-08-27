@@ -15,6 +15,7 @@ import json
 import time
 import copy
 import hashlib
+import subprocess
 from pathlib import Path
 from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
 from dotenv import load_dotenv
@@ -223,21 +224,13 @@ def _assemble_markdown(topic: str, sections: DraftSections) -> str:
     Combine DraftSections into a single markdown string.
     Used by verify_node and reflect_node for full-text analysis.
     """
-    return f"""# {topic}
-        
-        ## Problem Framing
-        {sections['problem_framing']}
-        
-        ## Technical Deep-Dive
-        {sections['technical_dive']}
-        
-        ## Code
-        {sections['code_snippets']}
-        
-        ## Takeaways
-        {sections['takeaways']} 
-        
-        """
+    return (
+        f"# {topic}\n\n"
+        f"## Problem Framing\n{sections['problem_framing']}\n\n"
+        f"## Technical Deep-Dive\n{sections['technical_dive']}\n\n"
+        f"## Code\n{sections['code_snippets']}\n\n"
+        f"## Takeaways\n{sections['takeaways']}\n"
+    )
 
 
 # Nodes
@@ -631,20 +624,45 @@ def _build_citations(grounding_report: list, web_sources: list, kb_results: list
 
 
 def _capture_remote_main_sha() -> str | None:
-    """Best-effort local tracking-ref snapshot. Does not contact a paid provider."""
-    try:
-        import git
-        from config import THEMACHINIST_REPO_PATH
-        repo = git.Repo(str(THEMACHINIST_REPO_PATH))
-        remote = os.environ.get("PUBLISH_REMOTE", "origin")
-        try:
-            return repo.commit(f"{remote}/main").hexsha
-        except Exception:
-            if "main" in repo.heads:
-                return repo.heads.main.commit.hexsha
-    except Exception:
+    """Read the selected remote's live main parent when remote publish is enabled.
+
+    This deliberately does not fall back to a local tracking ref or local main:
+    either the approved parent came from the selected remote or the later local
+    merge must fail closed.
+    """
+    if os.environ.get("GIT_PUSH_ENABLED", "false").lower() != "true":
         return None
-    return None
+
+    from agent.publish_target import evaluate_publish_target
+    from config import THEMACHINIST_REPO_PATH
+
+    repo_path = Path(THEMACHINIST_REPO_PATH).resolve()
+    decision = evaluate_publish_target(
+        repo_path=str(repo_path),
+        require_push_enabled=True,
+    )
+    if not decision.allowed:
+        raise RuntimeError(f"publish target denied: {decision.reason}")
+
+    remote = os.environ.get("PUBLISH_REMOTE", "origin")
+    try:
+        proc = subprocess.run(
+            ["git", "ls-remote", remote, "refs/heads/main"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(f"could not read remote main: {exc}") from exc
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or "git ls-remote failed")
+
+    line = (proc.stdout or "").splitlines()[0] if proc.stdout else ""
+    parts = line.split()
+    if len(parts) != 2 or parts[1] != "refs/heads/main" or not re.fullmatch(r"[0-9a-f]{40}", parts[0]):
+        raise RuntimeError("could not read a valid remote main SHA")
+    return parts[0]
 
 
 def _atomic_write_utf8(path: Path, text: str) -> None:
@@ -990,6 +1008,28 @@ def _format_grounding_summary(grounding_report: list) -> str:
             f"out of {len(grounding_report)} total claims.")
 
 
+def claim_review_summary(rows: list[dict]) -> dict[str, int]:
+    """Counts over the exact rows exposed to the human reviewer."""
+    counts = {"total": len(rows), "verified": 0, "weak": 0, "unverified": 0}
+    for row in rows:
+        status = str(row.get("status") or "").lower()
+        if status in ("verified", "weak", "unverified"):
+            counts[status] += 1
+    return counts
+
+
+def _reflection_provenance(
+    *, origin: str, reason: str, provider_called: bool, parse_status: str
+) -> dict[str, str | bool]:
+    """Small stable contract for distinguishing judge output from fallbacks."""
+    return {
+        "origin": origin,
+        "reason": reason,
+        "provider_called": provider_called,
+        "parse_status": parse_status,
+    }
+
+
 # NODE: reflect_node
 
 def reflect_node(state: AgentState) -> dict:
@@ -1002,6 +1042,12 @@ def reflect_node(state: AgentState) -> dict:
     if state.get("total_cost_usd", 0) >= COST_GATE_USD:
         log.warning("reflect.cost_gate_hit", run_id=state["run_id"])
         return {"reflection_score": 7, "reflection_notes": "Cost gate — skipped reflect",
+                "reflection_provenance": _reflection_provenance(
+                    origin="fallback",
+                    reason="cost_gate_skipped",
+                    provider_called=False,
+                    parse_status="not_attempted",
+                ),
                 "latency_ms": {**state.get("latency_ms", {}), "reflect": 0}}
 
     client = _get_client()
@@ -1054,12 +1100,32 @@ def reflect_node(state: AgentState) -> dict:
 
     try:
         parsed = json.loads(raw)
-        reflection_score = int(parsed.get("score", 7))
-        reflection_notes = parsed.get("notes", "")
+        if not isinstance(parsed, dict):
+            raise ValueError("judge response must be a JSON object")
+        score = parsed.get("score")
+        if isinstance(score, bool) or not isinstance(score, int) or not 1 <= score <= 10:
+            raise ValueError("judge score must be an integer from 1 to 10")
+        notes = parsed.get("notes", "")
+        if not isinstance(notes, str):
+            raise ValueError("judge notes must be a string")
+        reflection_score = score
+        reflection_notes = notes
+        reflection_provenance = _reflection_provenance(
+            origin="judge",
+            reason="json_score",
+            provider_called=True,
+            parse_status="ok",
+        )
     except (json.JSONDecodeError, ValueError) as e:
         log.error("reflect.parse_failed", run_id=state["run_id"], error=str(e))
         reflection_score = 7
         reflection_notes = f"Parse error: {e}"
+        reflection_provenance = _reflection_provenance(
+            origin="fallback",
+            reason="parse_failed",
+            provider_called=True,
+            parse_status="failed",
+        )
 
 
     existing_latency = state.get("latency_ms", {})
@@ -1074,6 +1140,7 @@ def reflect_node(state: AgentState) -> dict:
     return {
         "reflection_score": reflection_score,
         "reflection_notes": reflection_notes,
+        "reflection_provenance": reflection_provenance,
         "total_tokens": state.get("total_tokens", 0) + response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
@@ -1099,6 +1166,10 @@ def hitl_node(state: AgentState) -> dict:
 
     if os.environ.get("HITL_MODE") == "api":
         from langgraph.types import interrupt
+        review_rows = safe_grounding_rows(
+            state.get("grounding_report", []),
+            state.get("web_sources", []),
+        )
         decision = interrupt({
             "type": "hitl_review",
             "run_id": state["run_id"],
@@ -1109,10 +1180,11 @@ def hitl_node(state: AgentState) -> dict:
             "grounding_score": state.get("grounding_score", 0.0),
             "reflection_score": state.get("reflection_score", 0),
             "reflection_notes": state.get("reflection_notes", ""),
-            "review_claims": safe_grounding_rows(
-                state.get("grounding_report", []),
-                state.get("web_sources", []),
-            ),
+            "reflection_provenance": state.get("reflection_provenance", {}),
+            "review_claims": review_rows,
+            "claim_summary": claim_review_summary(review_rows),
+            "unverified_rate": unverified_rate(state.get("grounding_report", [])),
+            "claim_completeness": CLAIM_COMPLETENESS,
         }) or {}
         action = decision.get("action")
         if action == "approve":
@@ -1257,6 +1329,36 @@ Content to convert:
 
 
 
+def _approve_html_update(state: AgentState) -> dict:
+    """Record Gate 2 approval and, only when enabled, its live remote parent."""
+    html = state.get("html_output") or ""
+    sha = state.get("html_sha256") or (sha256_utf8(html) if html else None)
+    if not html or not sha or sha != sha256_utf8(html):
+        return {"html_review_status": "rejected"}
+
+    expected_remote = None
+    errors = list(state.get("error_log") or [])
+    if os.environ.get("GIT_PUSH_ENABLED", "false").lower() == "true":
+        try:
+            expected_remote = _capture_remote_main_sha()
+            if not expected_remote:
+                raise RuntimeError("remote main SHA was unavailable")
+        except Exception as exc:
+            # The human approval remains a truthful review decision, but git_node
+            # will refuse to mutate the site without this approval-time parent.
+            errors.append(f"[hitl_html] remote parent capture failed: {exc}")
+
+    payload = {
+        "html_review_status": "approved",
+        "approved_html_sha256": sha,
+        "publish_expected_remote_sha": expected_remote,
+    }
+    if errors != list(state.get("error_log") or []):
+        payload["error_log"] = errors
+    return payload
+
+
+
 def hitl_html_node(state: AgentState) -> dict:
     """
     P2 second HITL gate (post-render). The human reviews the GENERATED HTML before publish.
@@ -1271,14 +1373,7 @@ def hitl_html_node(state: AgentState) -> dict:
         return {"html_review_status": "rejected"}
 
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
-        html = state.get("html_output") or ""
-        sha = state.get("html_sha256") or (sha256_utf8(html) if html else None)
-        if not html or not sha or sha != sha256_utf8(html):
-            return {"html_review_status": "rejected"}
-        return {
-            "html_review_status": "approved",
-            "approved_html_sha256": sha,
-        }
+        return _approve_html_update(state)
 
     if os.environ.get("HITL_MODE") == "api":
         from langgraph.types import interrupt
@@ -1296,14 +1391,7 @@ def hitl_html_node(state: AgentState) -> dict:
         }) or {}
         action = decision.get("action")
         if action == "approve":
-            html = state.get("html_output") or ""
-            sha = state.get("html_sha256")
-            if not html or not sha or sha != sha256_utf8(html):
-                return {"html_review_status": "rejected"}
-            return {
-                "html_review_status": "approved",
-                "approved_html_sha256": sha,
-            }
+            return _approve_html_update(state)
         # /feedback endpoint sends action="feedback"; accept "request_changes" as an alias.
         if action in ("request_changes", "feedback"):
             note = (decision.get("feedback") or "").strip()
@@ -1327,14 +1415,7 @@ def hitl_html_node(state: AgentState) -> dict:
     while True:
         choice = input("\n[a]pprove (publish) / [c]hanges to LAYOUT (revise) / [r]eject (discard): ").strip().lower()
         if choice == "a":
-            html = state.get("html_output") or ""
-            sha = state.get("html_sha256") or (sha256_utf8(html) if html else None)
-            if not html or not sha or sha != sha256_utf8(html):
-                return {"html_review_status": "rejected"}
-            return {
-                "html_review_status": "approved",
-                "approved_html_sha256": sha,
-            }
+            return _approve_html_update(state)
         if choice == "r":
             return {"html_review_status": "rejected"}
         if choice == "c":
@@ -1383,6 +1464,7 @@ def html_gen_node(state: AgentState) -> dict:
     filename = f"{state['slug']}.html"
     existing_latency = dict(state.get("latency_ms") or {})
     error_log = list(state.get("error_log") or [])
+    policy_diagnostics = list(state.get("policy_diagnostics") or [])
 
     if state.get("total_cost_usd", 0) >= COST_GATE_USD:
         log.warning("html_gen.cost_gate_hit", run_id=state["run_id"])
@@ -1432,6 +1514,8 @@ def html_gen_node(state: AgentState) -> dict:
         existing_latency["html_gen"] = int((time.time() - t_start) * 1000)
         error_log.append(f"[html_gen] policy failure: {exc}")
         log.error("html_gen.policy_failed", run_id=run_id, error=str(exc))
+        if exc.diagnostic is not None:
+            policy_diagnostics.append({"stage": "html_gen", **exc.diagnostic})
         return {
             "html_output": None,
             "html_filename": None,
@@ -1443,6 +1527,7 @@ def html_gen_node(state: AgentState) -> dict:
             "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
             "latency_ms": existing_latency,
             "error_log": error_log,
+            "policy_diagnostics": policy_diagnostics,
         }
 
     latency = int((time.time() - t_start) * 1000)
@@ -1457,11 +1542,14 @@ def html_gen_node(state: AgentState) -> dict:
         "html_sha256": article.sha256,
         "html_policy_version": article.policy_version,
         "approved_html_sha256": None,
-        "publish_expected_remote_sha": _capture_remote_main_sha(),
+        # A local/tracking ref here can be stale by the time a human approves.
+        # Gate 2 captures the remote parent instead.
+        "publish_expected_remote_sha": None,
         "total_tokens": state.get("total_tokens", 0) + td_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
         "latency_ms": existing_latency,
         "error_log": error_log,
+        "policy_diagnostics": policy_diagnostics,
     }
 
 
@@ -1565,6 +1653,7 @@ def html_revise_node(state: AgentState) -> dict:
     original_html = state.get("html_output") or ""
     note = state.get("html_feedback") or ""
     errors = list(state.get("error_log") or [])
+    policy_diagnostics = list(state.get("policy_diagnostics") or [])
     citations_html = _build_citations(
         state.get("grounding_report", []),
         state.get("web_sources", []),
@@ -1598,6 +1687,7 @@ def html_revise_node(state: AgentState) -> dict:
         "total_tokens": state.get("total_tokens", 0) + usage.total_tokens,
         "total_cost_usd": round(state.get("total_cost_usd", 0.0) + cost, 6),
         "latency_ms": lat,
+        "policy_diagnostics": policy_diagnostics,
     }
     try:
         revised_frag = sanitize_fragment(raw_revised)
@@ -1605,9 +1695,12 @@ def html_revise_node(state: AgentState) -> dict:
         del raw_revised
         errors.append(f"html_revise: revision DISCARDED (sanitizer: {exc}); kept original")
         log.warning("html_revise.discarded", run_id=state["run_id"], reason="sanitizer")
+        if exc.diagnostic is not None:
+            policy_diagnostics.append({"stage": "html_revise", **exc.diagnostic})
         return {**base_out, "html_output": original_html, "article_body_html": original_body,
                 "html_sha256": state.get("html_sha256"),
-                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
+                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors,
+                "policy_diagnostics": policy_diagnostics}
     del raw_revised
 
     if not revised_frag.html.strip():
@@ -1632,9 +1725,12 @@ def html_revise_node(state: AgentState) -> dict:
     except PolicyError as exc:
         errors.append(f"html_revise: revision DISCARDED (reassemble: {exc}); kept original")
         log.warning("html_revise.discarded", run_id=state["run_id"], reason="reassemble")
+        if exc.diagnostic is not None:
+            policy_diagnostics.append({"stage": "html_revise", **exc.diagnostic})
         return {**base_out, "html_output": original_html, "article_body_html": original_body,
                 "html_sha256": state.get("html_sha256"),
-                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
+                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors,
+                "policy_diagnostics": policy_diagnostics}
 
     log.info("html_revise.applied", run_id=state["run_id"], cost=cost,
              html_sha256=article.sha256)
@@ -1644,7 +1740,7 @@ def html_revise_node(state: AgentState) -> dict:
         "article_body_html": article.body_html,
         "html_sha256": article.sha256,
         "html_policy_version": article.policy_version,
-        "publish_expected_remote_sha": _capture_remote_main_sha(),
+        "publish_expected_remote_sha": None,
         "error_log": errors,
     }
 
@@ -1767,6 +1863,17 @@ def git_node(state: AgentState) -> dict:
             "error_log": error_log,
         }
 
+    def _archive_approved_html() -> dict | None:
+        archive_path = Path("outputs/articles") / filename
+        try:
+            _atomic_write_utf8(archive_path, html_content)
+            archived = archive_path.read_bytes()
+            if hashlib.sha256(archived).hexdigest() != current_sha or archived != html_content.encode("utf-8"):
+                return _fail("archive bytes do not match approved HTML")
+        except Exception as exc:
+            return _fail(f"archive write failed: {exc}")
+        return None
+
     if not html_content or not filename:
         return _fail("No HTML content or filename — nothing to push")
 
@@ -1776,17 +1883,11 @@ def git_node(state: AgentState) -> dict:
     if not approved or approved != current_sha or declared != current_sha:
         return _fail("approved_html_sha256 does not match current trusted HTML")
 
-    archive_path = Path("outputs/articles") / filename
-    try:
-        _atomic_write_utf8(archive_path, html_content)
-        archived = archive_path.read_bytes()
-        if hashlib.sha256(archived).hexdigest() != current_sha or archived != html_content.encode("utf-8"):
-            return _fail("archive bytes do not match approved HTML")
-    except Exception as e:
-        return _fail(f"archive write failed: {e}")
-
     git_push_enabled = os.environ.get("GIT_PUSH_ENABLED", "false").lower() == "true"
     if not git_push_enabled:
+        archive_failure = _archive_approved_html()
+        if archive_failure:
+            return archive_failure
         log.info("git.dry_run", run_id=state["run_id"], branch=branch,
                  note="GIT_PUSH_ENABLED is not true — skipping git operations")
         existing_latency["git"] = int((time.time() - t_start) * 1000)
@@ -1825,6 +1926,29 @@ def git_node(state: AgentState) -> dict:
     try:
         repo = git.Repo(str(repo_path))
         original_branch = repo.active_branch.name
+
+        expected_remote = state.get("publish_expected_remote_sha")
+        if not isinstance(expected_remote, str) or not re.fullmatch(r"[0-9a-f]{40}", expected_remote):
+            return _fail("missing approved remote parent captured at Gate 2 approval")
+        if "main" not in repo.heads:
+            return _fail("site repository has no main branch")
+        if original_branch != "main":
+            return _fail("site repository is not checked out on main; refusing local merge")
+        if repo.is_dirty(untracked_files=True):
+            return _fail("site repository worktree is not clean; refusing local merge")
+        if repo.heads.main.commit.hexsha != expected_remote:
+            return _fail(
+                "approved remote parent does not match local main; refusing local merge"
+            )
+        observed_remote = _capture_remote_main_sha()
+        if observed_remote != expected_remote:
+            return _fail(
+                "remote main changed after Gate 2 approval; local merge aborted"
+            )
+
+        archive_failure = _archive_approved_html()
+        if archive_failure:
+            return archive_failure
 
         # 1. Write html to the website repo
         dest_path = repo_path / filename

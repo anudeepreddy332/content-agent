@@ -39,6 +39,7 @@ class AgentState(TypedDict):
     # Reflection
     reflection_score: int       # 1–10
     reflection_notes: str
+    reflection_provenance: dict # judge output vs deterministic fallback
     iterations: int             # max 2
 
     # HITL
@@ -57,6 +58,11 @@ class AgentState(TypedDict):
     approved_html_sha256: str | None
     git_commit_sha: str | None
     publish_expected_remote_sha: str | None
+    publish_observed_remote_sha: str | None
+    publish_status: str | None
+    publish_error: str | None
+    published_remote_sha: str | None
+    published_live_url: str | None
     branch_name: str | None
     git_status: Literal["not_started", "pushed", "merged", "tagged_and_merged", "failed"] | None
 
@@ -79,6 +85,8 @@ class AgentState(TypedDict):
 
     # Error log
     error_log: list[str]
+    # Safe policy decision metadata. Never contains rejected model text.
+    policy_diagnostics: list[dict]
 
     # P0-2b slice 2B: append-only reconstructable draft/verify evidence.
     # Persistence only; not an acceptance input.

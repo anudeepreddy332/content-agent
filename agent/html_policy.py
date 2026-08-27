@@ -15,19 +15,31 @@ import ipaddress
 import json
 import re
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from typing import Any, Iterable, Mapping
 from urllib.parse import urlsplit, urlunsplit
 
 import nh3
 from markdown_it import MarkdownIt
 
-HTML_POLICY_VERSION = "p0-1-v1"
+# p0-1-v1 used raw substring checks without structural HTML context: article body
+# rejected {{ or }}; full document and reassembly rejected {{ only. Legitimate code
+# examples could therefore false-positive. p0-1-v2 permits delimiters only inside
+# pre/code (and immutable shell style).
+HTML_POLICY_VERSION = "p0-1-v2"
 
 ALLOWED_TAGS = {
     "h2", "h3", "h4", "p", "ul", "ol", "li", "pre", "code", "strong", "em",
     "blockquote", "table", "thead", "tbody", "tr", "th", "td", "hr", "br",
     "div", "span", "sup", "sub",
 }
+
+# Draft Markdown is reviewed inside a sandboxed iframe, not published as an
+# article body.  Keep its affordances deliberately separate from the article
+# fragment policy above: an ordinary Markdown document needs a top-level
+# heading and safe source links, while generated article fragments must remain
+# link-free unless they are assembled through the trusted citation path.
+REVIEW_ALLOWED_TAGS = ALLOWED_TAGS | {"h1", "a"}
 
 CLASS_TAGS = {"div", "span", "pre", "code"}
 ALLOWED_CLASSES = {
@@ -58,12 +70,127 @@ NH3_ATTRIBUTES.update({
 NH3_TAG_ATTRIBUTE_VALUES = {"th": {"scope": {"row", "col"}}}
 NH3_CLEAN_CONTENT_TAGS = {"script", "style"}
 
+REVIEW_ALLOWED_CLASSES = ALLOWED_CLASSES | {"math-inline", "math-block"}
+REVIEW_NH3_ATTRIBUTES = {tag: set() for tag in REVIEW_ALLOWED_TAGS}
+REVIEW_NH3_ATTRIBUTES.update({
+    "a": {"href"},
+    "div": {"class"},
+    "span": {"class"},
+    "pre": {"class"},
+    "code": {"class"},
+    "th": {"scope"},
+})
+
 _SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _CTRL_RE = re.compile(r"[\x00-\x1f\x7f]")
 
 
 class PolicyError(Exception):
     """Fail-closed security/structural failure."""
+
+    def __init__(self, message: str, *, diagnostic: Mapping[str, Any] | None = None):
+        super().__init__(message)
+        # Diagnostics must describe policy structure only. In particular, never
+        # retain rejected model text or the matching placeholder payload.
+        self.diagnostic = dict(diagnostic) if diagnostic is not None else None
+
+
+class _TemplateDelimiterScanner(HTMLParser):
+    """Locate template delimiters outside literal code examples.
+
+    The input is already sanitized trusted HTML. HTMLParser gives us the
+    element context required to distinguish an accidental unresolved template
+    from a legitimate Jinja-style code sample. Positions are body/document
+    offsets only; no untrusted text is included in the resulting diagnostic.
+    """
+
+    _VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+    # style is immutable shell-owned CSS; model content cannot enter it. Its
+    # closing braces are CSS syntax, not template delimiters.
+    _LITERAL_TAGS = {"code", "pre", "style"}
+
+    def __init__(self, source: str):
+        super().__init__(convert_charrefs=False)
+        self._source = source
+        self._line_offsets = [0]
+        self._line_offsets.extend(index + 1 for index, char in enumerate(source) if char == "\n")
+        self._open_tags: list[str] = []
+        self.matches: list[dict[str, Any]] = []
+
+    def _offset(self) -> int:
+        line, column = self.getpos()
+        return self._line_offsets[line - 1] + column
+
+    def _in_literal_context(self) -> bool:
+        return any(tag in self._LITERAL_TAGS for tag in self._open_tags)
+
+    def _record_matches(self, value: str, *, offset: int, element: str) -> None:
+        # Treat a complete {{...}} expression as one occurrence while still
+        # rejecting either unmatched delimiter independently.
+        for match in re.finditer(r"\{\{.*?\}\}|\{\{|\}\}", value, re.DOTALL):
+            start = offset + match.start()
+            self.matches.append({
+                "range": [start, start + len(match.group(0))],
+                "element": element,
+                "token_class": "template_delimiter",
+            })
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        # Template syntax in attributes is always unsafe, including an
+        # attribute on a code element. The sanitizer removes unapproved
+        # attributes first, but this keeps the assembly boundary fail-closed.
+        raw_tag = self.get_starttag_text() or ""
+        self._record_matches(raw_tag, offset=self._offset(), element=tag)
+        if tag not in self._VOID_TAGS:
+            self._open_tags.append(tag)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        raw_tag = self.get_starttag_text() or ""
+        self._record_matches(raw_tag, offset=self._offset(), element=tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        for index in range(len(self._open_tags) - 1, -1, -1):
+            if self._open_tags[index] == tag:
+                del self._open_tags[index:]
+                break
+
+    def handle_data(self, data: str) -> None:
+        if not self._in_literal_context():
+            self._record_matches(
+                data,
+                offset=self._offset(),
+                element=self._open_tags[-1] if self._open_tags else "document",
+            )
+
+    def handle_comment(self, data: str) -> None:
+        # Comments are not valid article content, but if one reaches assembly,
+        # template syntax there must still fail closed.
+        self._record_matches(
+            data,
+            offset=self._offset() + len("<!--"),
+            element="comment",
+        )
+
+
+def _reject_unresolved_template_delimiters(html: str, *, scope: str) -> None:
+    """Fail closed on template delimiters except in literal/static contexts.
+
+    `scope` identifies the coordinate space of locations[].range:
+    article_body, document, or revised_body.
+    """
+    scanner = _TemplateDelimiterScanner(html)
+    scanner.feed(html)
+    scanner.close()
+    if scanner.matches:
+        raise PolicyError(
+            "unresolved template delimiters outside code examples",
+            diagnostic={
+                "rule_id": "template_delimiter_outside_code_v1",
+                "scope": scope,
+                "match_count": len(scanner.matches),
+                "locations": scanner.matches,
+            },
+        )
 
 
 @dataclass(frozen=True)
@@ -95,6 +222,20 @@ def _attribute_filter(tag: str, attr: str, value: str) -> str | None:
         return " ".join(kept) if kept else None
     if tag == "th" and attr == "scope" and value in {"row", "col"}:
         return value
+    return None
+
+
+def _review_attribute_filter(tag: str, attr: str, value: str) -> str | None:
+    """Allow the narrowly-expanded attributes used by trusted Markdown review."""
+    if tag in CLASS_TAGS and attr == "class":
+        kept = [css_class for css_class in value.split() if css_class in REVIEW_ALLOWED_CLASSES]
+        return " ".join(kept) if kept else None
+    if tag == "th" and attr == "scope" and value in {"row", "col"}:
+        return value
+    if tag == "a" and attr == "href":
+        # Resolve at call time: normalize_citation_url is defined with the other
+        # URL trust-boundary helpers below.
+        return normalize_citation_url(value)
     return None
 
 
@@ -136,6 +277,171 @@ def sanitize_fragment(untrusted_html: str) -> TrustedFragment:
     return TrustedFragment(html=cleaned, policy_version=HTML_POLICY_VERSION)
 
 
+def sanitize_review_fragment(untrusted_html: str) -> TrustedFragment:
+    """Sanitize rendered Markdown without widening the published-article policy."""
+    if untrusted_html is None:
+        raise PolicyError("missing review HTML fragment")
+    try:
+        cleaned = nh3.clean(
+            untrusted_html,
+            tags=set(REVIEW_ALLOWED_TAGS),
+            attributes=REVIEW_NH3_ATTRIBUTES,
+            attribute_filter=_review_attribute_filter,
+            tag_attribute_values=NH3_TAG_ATTRIBUTE_VALUES,
+            clean_content_tags=set(NH3_CLEAN_CONTENT_TAGS),
+            strip_comments=True,
+            link_rel=None,
+            url_schemes={"https"},
+            generic_attribute_prefixes=set(),
+        )
+        again = nh3.clean(
+            cleaned,
+            tags=set(REVIEW_ALLOWED_TAGS),
+            attributes=REVIEW_NH3_ATTRIBUTES,
+            attribute_filter=_review_attribute_filter,
+            tag_attribute_values=NH3_TAG_ATTRIBUTE_VALUES,
+            clean_content_tags=set(NH3_CLEAN_CONTENT_TAGS),
+            strip_comments=True,
+            link_rel=None,
+            url_schemes={"https"},
+            generic_attribute_prefixes=set(),
+        )
+    except PolicyError:
+        raise
+    except Exception as exc:
+        raise PolicyError(f"review sanitizer exception: {exc}") from exc
+    if again != cleaned:
+        raise PolicyError("review sanitizer is not idempotent")
+    return TrustedFragment(html=cleaned, policy_version=HTML_POLICY_VERSION)
+
+
+def _math_inline(state, silent: bool) -> bool:
+    """Render a conservative `$...$` span before Markdown's escape rule."""
+    start = state.pos
+    if state.src[start] != "$" or start + 1 >= state.posMax or state.src[start + 1] == "$":
+        return False
+    if start and state.src[start - 1] == "\\":
+        return False
+
+    pos = start + 1
+    while pos < state.posMax:
+        char = state.src[pos]
+        if char == "\\":
+            pos += 2
+            continue
+        if char in "\r\n":
+            return False
+        if char == "$":
+            if pos + 1 < state.posMax and state.src[pos + 1] == "$":
+                return False
+            content = state.src[start + 1:pos]
+            if not content or content[0].isspace() or content[-1].isspace():
+                return False
+            if not silent:
+                token = state.push("math_inline", "span", 0)
+                token.content = content
+                token.markup = "$"
+            state.pos = pos + 1
+            return True
+        pos += 1
+    return False
+
+
+def _math_block(state, start_line: int, end_line: int, silent: bool) -> bool:
+    """Render a conservative `$$` block without interpreting its contents as HTML."""
+    start = state.bMarks[start_line] + state.tShift[start_line]
+    maximum = state.eMarks[start_line]
+    if state.src[start:maximum].strip()[:2] != "$$":
+        return False
+    if silent:
+        return True
+
+    opening = state.src[start:maximum].strip()
+    if opening.endswith("$$") and len(opening) > 4:
+        content = opening[2:-2].strip()
+        next_line = start_line + 1
+    else:
+        lines = []
+        first = state.src[start:maximum]
+        lines.append(first[first.find("$$") + 2:])
+        next_line = start_line + 1
+        closed = False
+        while next_line < end_line:
+            pos = state.bMarks[next_line] + state.tShift[next_line]
+            line = state.src[pos:state.eMarks[next_line]]
+            if line.strip() == "$$":
+                closed = True
+                next_line += 1
+                break
+            lines.append(line)
+            next_line += 1
+        if not closed:
+            return False
+        content = "\n".join(lines).strip("\n")
+
+    token = state.push("math_block", "div", 0)
+    token.block = True
+    token.content = content
+    token.map = [start_line, next_line]
+    token.markup = "$$"
+    state.line = next_line
+    return True
+
+
+def _blocked_image(state, silent: bool) -> bool:
+    """Consume Markdown image syntax as its alt text, never as a clickable link.
+
+    MarkdownIt's disabled image rule otherwise lets the following generic link
+    rule reinterpret `![alt](url)` as `!` plus an active anchor.
+    """
+    start = state.pos
+    if state.src[start:start + 2] != "![":
+        return False
+
+    label_end = start + 2
+    while label_end < state.posMax:
+        if state.src[label_end] == "\\":
+            label_end += 2
+            continue
+        if state.src[label_end] == "]":
+            break
+        if state.src[label_end] in "\r\n":
+            return False
+        label_end += 1
+    if label_end >= state.posMax or state.src[label_end:label_end + 2] != "](":
+        return False
+
+    cursor = label_end + 2
+    depth = 1
+    while cursor < state.posMax:
+        char = state.src[cursor]
+        if char == "\\":
+            cursor += 2
+            continue
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                if not silent:
+                    token = state.push("text", "", 0)
+                    token.content = state.src[start + 2:label_end]
+                state.pos = cursor + 1
+                return True
+        elif char in "\r\n":
+            return False
+        cursor += 1
+    return False
+
+
+def _render_math_inline(_renderer, tokens, index, _options, _env) -> str:
+    return f'<span class="math-inline">{html_module.escape(tokens[index].content)}</span>'
+
+
+def _render_math_block(_renderer, tokens, index, _options, _env) -> str:
+    return f'<div class="math-block">{html_module.escape(tokens[index].content)}</div>\n'
+
+
 def _markdown_engine() -> MarkdownIt:
     md = MarkdownIt(
         "js-default",
@@ -146,6 +452,11 @@ def _markdown_engine() -> MarkdownIt:
         },
     )
     md.disable(["image", "strikethrough"])
+    md.inline.ruler.before("escape", "math_inline", _math_inline)
+    md.inline.ruler.before("link", "blocked_image", _blocked_image)
+    md.block.ruler.before("fence", "math_block", _math_block)
+    md.add_render_rule("math_inline", _render_math_inline)
+    md.add_render_rule("math_block", _render_math_block)
     return md
 
 
@@ -154,7 +465,7 @@ _MD = _markdown_engine()
 
 def render_markdown_fragment(markdown: str) -> TrustedFragment:
     raw = _MD.render(markdown or "")
-    fragment = sanitize_fragment(raw)
+    fragment = sanitize_review_fragment(raw)
     del raw
     return fragment
 
@@ -169,6 +480,8 @@ REVIEW_CSS = (
     "code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}"
     "blockquote{margin:0 0 14px;padding-left:12px;border-left:3px solid #d1d5db;color:#4b5563}"
     "table{border-collapse:collapse;width:100%}th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left}"
+    "a{color:#1d4ed8;text-decoration:underline}.math-inline{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}"
+    ".math-block{margin:0 0 14px;padding:10px 12px;background:#f3f4f6;border-radius:6px;overflow:auto;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}"
 )
 
 REVIEW_CSS_HASH = _csp_style_hash(REVIEW_CSS)
@@ -279,7 +592,7 @@ REVIEW_IFRAME_CSP = (
 REVIEWER_APP_CSP = (
     "default-src 'none'; "
     "script-src 'self'; "
-    "style-src 'self'; "
+    f"style-src 'self' 'sha256-{REVIEW_CSS_HASH}' 'sha256-{ARTICLE_CSS_HASH}'; "
     "connect-src 'self'; "
     "frame-src 'self'; "
     "img-src 'self' data:; "
@@ -710,7 +1023,6 @@ def assemble_trusted_article(
 
     topic_e = html_module.escape(topic)
     topic_short_e = html_module.escape(topic.lower())
-    slug_e = html_module.escape(slug)
     meta_e = html_module.escape(meta_description)
     series_e = html_module.escape(series_label)
     crumb_e = html_module.escape(breadcrumb_section)
@@ -750,8 +1062,7 @@ def assemble_trusted_article(
         f"{takeaways.html}\n"
         f"</div>\n"
     )
-    if "{{" in body_html or "}}" in body_html:
-        raise PolicyError("unreplaced placeholders in article body")
+    _reject_unresolved_template_delimiters(body_html, scope="article_body")
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -823,8 +1134,7 @@ def assemble_trusted_article(
 </body>
 </html>
 """
-    if "{{" in html:
-        raise PolicyError("unreplaced placeholders")
+    _reject_unresolved_template_delimiters(html, scope="document")
     if "<script>" in html.lower().replace(" ", "") and "application/ld+json" not in html:
         raise PolicyError("executable script in trusted article")
     if "shared.js" in html or "shared.css" in html or "fonts.googleapis.com" in html:
@@ -857,6 +1167,7 @@ def reassemble_from_body(
     # single fragment then split is lossy; instead sanitize then place as inner body.
     if not fragment.html.strip():
         raise PolicyError("revised body sanitized to empty")
+    _reject_unresolved_template_delimiters(fragment.html, scope="revised_body")
     dummy = TrustedFragment(html="<p>.</p>")
     article = assemble_trusted_article(
         topic=topic,
@@ -878,8 +1189,7 @@ def reassemble_from_body(
         raise PolicyError("trusted shell missing body markers")
     inner_start = start + len('<div class="sl-body">')
     rebuilt = html[:inner_start] + "\n" + fragment.html + "\n" + html[sources:]
-    if "{{" in rebuilt:
-        raise PolicyError("unreplaced placeholders after reassemble")
+    _reject_unresolved_template_delimiters(rebuilt, scope="document")
     return TrustedArticle(
         html=rebuilt,
         body_html=fragment.html,
