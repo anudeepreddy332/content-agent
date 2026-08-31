@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://themachinist.org/schemas/metric_contract_v1.schema.json",
+  "title": "P0 metric registry contract v1",
+  "description": "Machine-readable contract requiring all twenty metric registration concepts per registered identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "registry_id",
+    "schema_version",
+    "description",
+    "metrics"
+  ],
+  "properties": {
+    "registry_id": {
+      "type": "string",
+      "const": "metric_registry_v1"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/metric_entry" }
+    }
+  },
+  "$defs": {
+    "ratio_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "numerator",
+        "denominator",
+        "value",
+        "undefined",
+        "undefined_reason"
+      ],
+      "properties": {
+        "numerator": { "type": ["integer", "null"] },
+        "denominator": { "type": ["integer", "null"] },
+        "value": { "type": ["number", "null"] },
+        "undefined": { "type": "boolean" },
+        "undefined_reason": { "type": ["string", "null"] }
+      }
+    },
+    "metric_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_name",
+        "version",
+        "formula",
+        "numerator_definition",
+        "denominator_definition",
+        "eligibility_population",
+        "canonical_evaluation_unit",
+        "aggregation",
+        "missing_invalid_behavior",
+        "zero_denominator_behavior",
+        "range_unit",
+        "direction",
+        "exact_meaning",
+        "explicit_non_meaning",
+        "authority",
+        "provenance_requirements",
+        "deterministic_fixture_reference",
+        "hand_calculated_expected_result",
+        "reference_implementation_requirements",
+        "migration_versioning_rules"
+      ],
+      "properties": {
+        "canonical_name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "formula": { "type": "string", "minLength": 1 },
+        "numerator_definition": { "type": "string", "minLength": 1 },
+        "denominator_definition": { "type": "string", "minLength": 1 },
+        "eligibility_population": { "type": "string", "minLength": 1 },
+        "canonical_evaluation_unit": { "type": "string", "minLength": 1 },
+        "aggregation": { "type": "string", "minLength": 1 },
+        "missing_invalid_behavior": { "type": "string", "minLength": 1 },
+        "zero_denominator_behavior": { "type": "string", "minLength": 1 },
+        "range_unit": { "type": "string", "minLength": 1 },
+        "direction": { "type": "string", "minLength": 1 },
+        "exact_meaning": { "type": "string", "minLength": 1 },
+        "explicit_non_meaning": { "type": "string", "minLength": 1 },
+        "authority": { "type": "string", "minLength": 1 },
+        "provenance_requirements": { "type": "string", "minLength": 1 },
+        "deterministic_fixture_reference": { "type": "string", "minLength": 1 },
+        "hand_calculated_expected_result": { "$ref": "#/$defs/ratio_result" },
+        "reference_implementation_requirements": { "type": "string", "minLength": 1 },
+        "migration_versioning_rules": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

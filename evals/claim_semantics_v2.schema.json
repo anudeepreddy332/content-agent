@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://themachinist.org/schemas/claim_semantics_v2.schema.json",
+  "title": "Claim Semantics v2 integrated asset fixture pack",
+  "description": "Deterministic human-adjudicated fixtures for P0 semantic metrics. No production extraction, embeddings, or provider calls.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pack_id",
+    "schema_version",
+    "evaluator_id",
+    "description",
+    "fixtures"
+  ],
+  "properties": {
+    "pack_id": {
+      "type": "string",
+      "const": "claim_semantics_v2"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "evaluator_id": {
+      "type": "string",
+      "const": "claim_semantics_v2"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": { "$ref": "#/$defs/fixture" }
+    }
+  },
+  "$defs": {
+    "span": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "integer", "minimum": 0 }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "semantic_status": {
+      "type": "string",
+      "enum": ["verified", "weak", "unverified"]
+    },
+    "roles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "compound",
+          "fragment",
+          "invention",
+          "qualifier_loss",
+          "duplicate"
+        ]
+      }
+    },
+    "exclusion_reason": {
+      "type": "string",
+      "enum": [
+        "opinion",
+        "transition",
+        "rhetorical_question",
+        "instruction_advice",
+        "explicit_hypothetical",
+        "draft_own_code"
+      ]
+    },
+    "gold_atom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "canonical_id",
+        "text",
+        "span",
+        "factual",
+        "material",
+        "gold_semantic_status"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "canonical_id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "span": { "$ref": "#/$defs/span" },
+        "factual": { "type": "boolean" },
+        "material": { "type": "boolean" },
+        "gold_semantic_status": { "$ref": "#/$defs/semantic_status" }
+      }
+    },
+    "exclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "span", "reason"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "span": { "$ref": "#/$defs/span" },
+        "reason": { "$ref": "#/$defs/exclusion_reason" }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "canonical_id",
+        "text",
+        "span",
+        "roles",
+        "predicted_semantic_status"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "canonical_id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "span": {
+          "anyOf": [
+            { "$ref": "#/$defs/span" },
+            { "type": "null" }
+          ]
+        },
+        "roles": { "$ref": "#/$defs/roles" },
+        "predicted_semantic_status": { "$ref": "#/$defs/semantic_status" }
+      }
+    },
+    "allowed_match": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_id", "gold_id"],
+      "properties": {
+        "candidate_id": { "type": "string", "minLength": 1 },
+        "gold_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evidence_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "gold_id",
+        "candidate_id",
+        "evidence_id",
+        "valid",
+        "fully_entailed"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "gold_id": { "type": "string", "minLength": 1 },
+        "candidate_id": { "type": "string", "minLength": 1 },
+        "evidence_id": { "type": "string", "minLength": 1 },
+        "valid": { "type": "boolean" },
+        "fully_entailed": { "type": "boolean" }
+      }
+    },
+    "verifier_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/semantic_status" }
+      }
+    },
+    "automatic_route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision"],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["PASS", "FAIL"]
+        }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "draft_text",
+        "draft_sha256",
+        "gold_atoms",
+        "exclusions",
+        "candidates",
+        "allowed_matches",
+        "evidence_bindings",
+        "verifier_rows",
+        "automatic_route"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ADV0[1-9]$|^ADV[1-9][0-9]$"
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "draft_text": { "type": "string", "minLength": 1 },
+        "draft_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "gold_atoms": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/gold_atom" }
+        },
+        "exclusions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/exclusion" }
+        },
+        "candidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/candidate" }
+        },
+        "allowed_matches": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/allowed_match" }
+        },
+        "evidence_bindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidence_binding" }
+        },
+        "verifier_rows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/verifier_row" }
+        },
+        "automatic_route": { "$ref": "#/$defs/automatic_route" }
+      }
+    }
+  }
+}
