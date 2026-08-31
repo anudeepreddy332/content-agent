@@ -434,6 +434,80 @@ def test_evaluator_metric_ids_match_registry():
     assert evaluator_names == registry_names
 
 
+def _adv01_g3_material_mutated(material: object) -> dict:
+    pack = copy.deepcopy(_pack())
+    for gold in pack["fixtures"][0]["gold_atoms"]:
+        if gold["id"] == "g3":
+            gold["material"] = material
+    return pack
+
+
+def _adv01_g3_material_missing() -> dict:
+    pack = copy.deepcopy(_pack())
+    for gold in pack["fixtures"][0]["gold_atoms"]:
+        if gold["id"] == "g3":
+            del gold["material"]
+    return pack
+
+
+def _adv01_invalid_nested_field() -> dict:
+    pack = copy.deepcopy(_pack())
+    pack["fixtures"][0]["automatic_route"]["decision"] = "MAYBE"
+    return pack
+
+
+def test_f01_null_material_rejects_direct_evaluate_pack_without_metrics():
+    pack = _adv01_g3_material_mutated(None)
+    with pytest.raises(ClaimSemanticsV2Error):
+        evaluate_pack(pack)
+
+
+def test_f01_null_material_rejects_loader_and_direct_call_equivalently():
+    pack = _adv01_g3_material_mutated(None)
+    with pytest.raises(ClaimSemanticsV2Error, match="invalid type"):
+        validate_against_frozen_schema(pack)
+    with pytest.raises(ClaimSemanticsV2Error):
+        evaluate_pack(pack)
+
+
+def test_direct_call_and_loader_parity_reject_malformed_structures():
+    cases = [
+        ("material_null", _adv01_g3_material_mutated(None)),
+        ("material_string", _adv01_g3_material_mutated("true")),
+        ("material_missing", _adv01_g3_material_missing()),
+        ("invalid_nested", _adv01_invalid_nested_field()),
+    ]
+    for label, pack in cases:
+        with pytest.raises(ClaimSemanticsV2Error, match="."):
+            validate_against_frozen_schema(pack)
+        with pytest.raises(ClaimSemanticsV2Error, match="."):
+            evaluate_pack(pack)
+
+
+@pytest.mark.parametrize(
+    ("material", "valid"),
+    [
+        (None, False),
+        (0, False),
+        (1, False),
+        ("true", False),
+        ("false", False),
+        ("", False),
+        ([], False),
+        ({}, False),
+        (True, True),
+        (False, True),
+    ],
+)
+def test_strict_boolean_material_contract(material: object, valid: bool):
+    pack = _adv01_g3_material_mutated(material)
+    if valid:
+        evaluate_pack(pack)
+        return
+    with pytest.raises(ClaimSemanticsV2Error):
+        evaluate_pack(pack)
+
+
 def test_registry_hand_results_match_evaluator():
     registry = load_metric_registry()
     metrics = _metrics()

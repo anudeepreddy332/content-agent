@@ -594,6 +594,13 @@ def validate_fixture(fixture: dict[str, Any]) -> None:
 
 
 def validate_pack(pack: dict[str, Any], *, require_frozen_catalog: bool = True) -> None:
+    schema = load_frozen_schema(DEFAULT_SCHEMA)
+    assert_schema_runtime_parity(schema)
+    validate_against_frozen_schema(pack, schema)
+    _validate_pack_semantics(pack, require_frozen_catalog=require_frozen_catalog)
+
+
+def _validate_pack_semantics(pack: dict[str, Any], *, require_frozen_catalog: bool = True) -> None:
     _require(isinstance(pack, dict), "pack must be an object")
     _require_keys(pack, PACK_REQUIRED_KEYS, "pack")
     _require(pack["pack_id"] == PACK_ID, f"pack_id must be {PACK_ID}")
@@ -617,11 +624,18 @@ def load_pack(path: Path | str = DEFAULT_FIXTURES, *, require_frozen_catalog: bo
         pack = json.loads(pack_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise ClaimSemanticsV2Error(f"unreadable fixture pack {pack_path}: {error}") from error
-    schema = load_frozen_schema(DEFAULT_SCHEMA)
-    assert_schema_runtime_parity(schema)
-    validate_against_frozen_schema(pack, schema)
     validate_pack(pack, require_frozen_catalog=require_frozen_catalog)
     return pack
+
+
+def _ephemeral_pack(fixture: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "pack_id": PACK_ID,
+        "schema_version": SCHEMA_VERSION,
+        "evaluator_id": EVALUATOR_ID,
+        "description": "ephemeral fixture evaluation envelope",
+        "fixtures": [fixture],
+    }
 
 
 def _binding_for_gold(
@@ -689,8 +703,7 @@ def compute_uvr_v1(verifier_rows: list[dict[str, Any]]) -> dict[str, Any]:
     return ratio(unverified, denominator, "zero post-dedup emitted verifier rows")
 
 
-def evaluate_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
-    validate_fixture(fixture)
+def _compute_fixture_metrics(fixture: dict[str, Any]) -> dict[str, Any]:
     material_golds = [gold for gold in fixture["gold_atoms"] if gold["material"]]
     material_gold_ids = {gold["id"] for gold in material_golds}
 
@@ -772,6 +785,11 @@ def evaluate_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def evaluate_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
+    validate_pack(_ephemeral_pack(fixture), require_frozen_catalog=False)
+    return _compute_fixture_metrics(fixture)
+
+
 def evaluate_pack(
     pack: dict[str, Any],
     *,
@@ -786,7 +804,7 @@ def evaluate_pack(
     for fixture in pack["fixtures"]:
         if fixture_id is not None and fixture["id"] != fixture_id:
             continue
-        result = evaluate_fixture(fixture)
+        result = _compute_fixture_metrics(fixture)
         results.append(result)
         if not result["oracle"]["semantic_pass"]:
             oracle_failing_assets += 1
