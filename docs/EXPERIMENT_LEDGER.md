@@ -1,6 +1,6 @@
 # Experiment and Evidence Ledger
 
-_Canonical compact index. Last synchronized: 2026-08-23._
+_Canonical compact index. Last synchronized: 2026-09-04._
 
 This ledger indexes meaningful experiments and release-relevant validation. It does not duplicate
 full reports. Detailed artifacts remain under `docs/archive/`, in the named commit/branch, or in the
@@ -280,3 +280,20 @@ For every applicable change:
 | Evidence | Exact SHAs above; CI run `32644879371`; BEFORE run `32480353168`; decision `D-2026-08-23-02`. |
 | Decision enabled | `PRINCIPAL TECHNICAL + BUSINESS PROJECT AUDIT`. Decision outcomes before further major implementation: GO, NARROW, PORTFOLIO-CLOSE, PIVOT. Do not start Slice 2C from this closeout. |
 | Confidence | 0.99 |
+
+### VAL-2026-09-04-01 — Semantic P0 Slice 1 final qualification
+
+| Field | Record |
+| --- | --- |
+| Question | Can the corrected deterministic semantic evaluator reliably detect material omissions and unsafe final-content claims without denominator/identity gaming? |
+| Exact validated SHA | `c866de29ecc11156d28dffddd069a97b3008ca28` |
+| Important prior checkpoints | Initial v2 checkpoint `b9c5b1da7022d76af227d4d9de74d1d41bbcd9ce`; F-01 correction `8530b078837b1a8669433777c1f8d9a1add25a8a`; F-02 implementation `650e52f5ecd4554c1c435a5cc99920bf42276ad8`; manifest-boundary correction `c866de29ecc11156d28dffddd069a97b3008ca28`. |
+| Final gates | F-01 malformed-materiality rejection PASS; F-02 unsupported-new claim detection PASS; omission G/F independence PASS; supported-new control PASS; material-weak failure PASS; zero-denominator behavior PASS; fixed classifier population PASS; manifest identity enforcement PASS; competing observations PASS; false-pass aggregation PASS; determinism PASS; historical preservation PASS. |
+| Deterministic validation | Focused v2 `73 passed`; combined v1/v2 `107 passed`; Ruff PASS; diff check PASS. |
+| Paid/live providers | None during qualification. Provider/network calls: zero. |
+| Production/runtime | Production semantic routing unchanged. Not production completeness. |
+| Result | Bounded final qualification found no remaining P0/P1 defect. |
+| Classification | `VALIDATED — PENDING INTEGRATION`. Not integrated, not production-wired, not paid benchmark authorization. |
+| Evidence | Exact SHA above; decision `D-2026-09-04-03`; branch `feature/semantic-p0-metric-registry-v2`. |
+| Decision enabled | Semantic P0 Slice 1 may proceed to PR/CI/integration. Stop additional semantic auditing unless new P0/P1 evidence appears. Do not claim production completeness. |
+| Confidence | 0.97 |

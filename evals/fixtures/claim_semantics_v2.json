@@ -1,0 +1,154 @@
+{
+  "pack_id": "claim_semantics_v2",
+  "schema_version": 2,
+  "evaluator_id": "claim_semantics_v2",
+  "description": "P0 semantic metric fixtures. Core adversarial mixed-materiality asset with historical UVR sidecar.",
+  "fixtures": [
+    {
+      "id": "ADV01",
+      "title": "Core adversarial mixed-materiality semantic fixture",
+      "draft_text": "ResNet-50 contains 25.6 million parameters. Batch normalization uses running mean and variance during inference. Dropout always improves generalization on every dataset. Adam converges in O(1) gradient steps. The overall approach is interesting.",
+      "draft_sha256": "99912bd849a2b33602a08cac20057fa9935f6ebf9a26ac24bf4b897bc59eef3f",
+      "gold_atoms": [
+        {
+          "id": "g1",
+          "canonical_id": "ADV01.ATOM.resnet_params",
+          "text": "ResNet-50 contains 25.6 million parameters.",
+          "span": [0, 43],
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "verified"
+        },
+        {
+          "id": "g2",
+          "canonical_id": "ADV01.ATOM.batchnorm_infer",
+          "text": "Batch normalization uses running mean and variance during inference.",
+          "span": [44, 112],
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "verified"
+        },
+        {
+          "id": "g3",
+          "canonical_id": "ADV01.ATOM.dropout_generalization",
+          "text": "Dropout always improves generalization on every dataset.",
+          "span": [113, 169],
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "weak"
+        },
+        {
+          "id": "g4",
+          "canonical_id": "ADV01.ATOM.adam_convergence",
+          "text": "Adam converges in O(1) gradient steps.",
+          "span": [170, 208],
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "unverified"
+        },
+        {
+          "id": "g5",
+          "canonical_id": "ADV01.ATOM.interesting",
+          "text": "The overall approach is interesting.",
+          "span": [209, 245],
+          "factual": true,
+          "material": false,
+          "gold_semantic_status": "weak"
+        }
+      ],
+      "exclusions": [],
+      "candidates": [
+        {
+          "id": "c1",
+          "canonical_id": "ADV01.C.resnet_params",
+          "text": "ResNet-50 contains 25.6 million parameters.",
+          "span": [0, 43],
+          "roles": [],
+          "predicted_semantic_status": "verified"
+        },
+        {
+          "id": "c3",
+          "canonical_id": "ADV01.C.dropout_generalization",
+          "text": "Dropout always improves generalization on every dataset.",
+          "span": [113, 169],
+          "roles": [],
+          "predicted_semantic_status": "verified"
+        },
+        {
+          "id": "c4",
+          "canonical_id": "ADV01.C.adam_convergence",
+          "text": "Adam converges in O(1) gradient steps.",
+          "span": [170, 208],
+          "roles": [],
+          "predicted_semantic_status": "weak"
+        },
+        {
+          "id": "c5",
+          "canonical_id": "ADV01.C.interesting",
+          "text": "The overall approach is interesting.",
+          "span": [209, 245],
+          "roles": [],
+          "predicted_semantic_status": "weak"
+        },
+        {
+          "id": "cx",
+          "canonical_id": "ADV01.C.invented_optimum",
+          "text": "SGD guarantees a global optimum.",
+          "span": null,
+          "roles": ["invention"],
+          "predicted_semantic_status": "verified"
+        }
+      ],
+      "allowed_matches": [
+        { "candidate_id": "c1", "gold_id": "g1" },
+        { "candidate_id": "c3", "gold_id": "g3" },
+        { "candidate_id": "c4", "gold_id": "g4" },
+        { "candidate_id": "c5", "gold_id": "g5" }
+      ],
+      "evidence_bindings": [
+        {
+          "id": "ADV01.BIND.g1",
+          "gold_id": "g1",
+          "candidate_id": "c1",
+          "evidence_id": "ADV01.EV.resnet_params_spec",
+          "valid": true,
+          "fully_entailed": true
+        },
+        {
+          "id": "ADV01.BIND.g3",
+          "gold_id": "g3",
+          "candidate_id": "c3",
+          "evidence_id": "ADV01.EV.dropout_survey",
+          "valid": true,
+          "fully_entailed": false
+        },
+        {
+          "id": "ADV01.BIND.g4",
+          "gold_id": "g4",
+          "candidate_id": "c4",
+          "evidence_id": "ADV01.EV.adam_blog",
+          "valid": true,
+          "fully_entailed": false
+        },
+        {
+          "id": "ADV01.BIND.g5",
+          "gold_id": "g5",
+          "candidate_id": "c5",
+          "evidence_id": "ADV01.EV.opinion_none",
+          "valid": true,
+          "fully_entailed": false
+        }
+      ],
+      "verifier_rows": [
+        { "id": "ADV01.VR.c1", "status": "verified" },
+        { "id": "ADV01.VR.c3", "status": "verified" },
+        { "id": "ADV01.VR.c4", "status": "weak" },
+        { "id": "ADV01.VR.c5", "status": "weak" },
+        { "id": "ADV01.VR.cx", "status": "verified" }
+      ],
+      "automatic_route": {
+        "decision": "PASS"
+      }
+    }
+  ]
+}

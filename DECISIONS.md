@@ -9,6 +9,143 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-04-03
+Date: 2026-09-04
+
+Decision: **Semantic P0 Slice 1 accepted for integration at exact validated SHA
+`c866de29ecc11156d28dffddd069a97b3008ca28`.**
+
+Reason: The final independent qualification found no remaining P0/P1 defect
+across omission, final-content commission safety, supported-new claims,
+material weak handling, zero denominators, fixed classifier population, approved
+manifest integrity, duplicate/conflicting observations, false-pass aggregation,
+determinism, and historical preservation.
+
+Important boundary: Accepted for integration does **NOT** mean production
+semantic routing is qualified or wired. No paid benchmark is authorized.
+Canonical main does not contain this slice until PR merge and verification.
+
+Next product mission after integration: bounded evidence-exposure/provider
+qualification, followed by retrieval redesign (D-2026-09-04-01 priority 3).
+
+Evidence: Final independent qualification at exact
+`c866de29ecc11156d28dffddd069a97b3008ca28`; focused v2 `73 passed`; combined
+v1/v2 `107 passed`; Ruff PASS; diff check PASS; no provider/network calls.
+
+Status: **ACCEPTED FOR INTEGRATION — PENDING PR MERGE**. Does not authorize
+paid benchmark, production semantic wiring, or enterprise production readiness.
+
+Confidence: 0.97
+
+Supersedes / superseded by: Supersedes the F-02 "not adversarially closed"
+clauses in D-2026-09-04-01 and corresponding PROJECT_STATUS mission text.
+Does not close overall P0-2b, claim completeness, or enterprise production
+readiness.
+
+---
+Decision ID: D-2026-09-04-01
+Date: 2026-09-04
+
+Decision: Adopt impact-driven post-Semantic-P0 priority sequence:
+semantic closure → minimal exposure/provider qualification → retrieval redesign →
+revision safety → runtime semantic wiring → enterprise infrastructure/cloud.
+
+Reason: A trustworthy semantic ruler is required before comparing systems, but
+after that minimum foundation, retrieval is the largest remaining product-quality
+risk due to known embedding truncation/exposure issues. Revision/runtime/cloud
+work must not delay retrieval without new P0/P1 evidence.
+
+Priority order (impact-driven; P2/P3 deferred unless prerequisite):
+
+1. Finish Semantic P0 Slice 1 adversarial qualification; integrate only if clean.
+2. Minimal exact evidence-exposure completion + small real provider 2C/2D
+   qualification using the corrected semantic ruler.
+3. Retrieval redesign (MiniLM truncation, chunking/embedding, exact evidence
+   recall/exposure, fusion/ranking; query transformation only if causally
+   improves verifier-visible evidence).
+4. Revision safety qualification (bad claims resolved; verified material retained;
+   no new unresolved material claims).
+5. Wire qualified semantic policy into production runtime routing.
+6. Enterprise capabilities (identity/ACL/tenancy; durability/recovery/observability;
+   production/cloud hardening).
+
+Also recorded:
+
+- Existing historical metrics (V/W/U, UVR_v1, grounding, semantic trace, revision
+  telemetry, prior provider runs) remain valid diagnostics; not discarded.
+- No large re-evaluation is authorized.
+- No paid benchmark is authorized.
+- Low-impact P2/P3 work is deferred unless it becomes a prerequisite for P0/P1.
+- AWS/cloud work is not the current priority.
+- F-02 checkpoint `650e52f5ecd4554c1c435a5cc99920bf42276ad8` is implemented but
+  **NOT** adversarially closed; do not claim F-02 closed until adversarial
+  validation is complete.
+
+Question: What is the authorized engineering priority order after the Semantic P0
+metric-registry / claim-semantics v2 program establishes a trustworthy semantic
+ruler?
+
+Evidence: Principal Review of F-02 checkpoint `650e52f5` on
+`feature/semantic-p0-metric-registry-v2`; F-01 closed at `8530b078`; client-demo
+CLOSED/LIVE-DEMO-REHEARSED; overall P0-2b OPEN; paid 20-topic benchmark BLOCKED;
+known MiniLM truncation OPEN; semantic trace provides verifier-consumed context but
+exact draft-visible exposure remains unqualified.
+
+Status: **ACCEPTED** as current roadmap priority sequence. Does not authorize merge,
+paid benchmark, large re-evaluation, or production semantic wiring.
+
+Confidence: 0.93
+
+Supersedes / superseded by: Supersedes only the "Next authorized engineering
+program" and active-priority clauses in D-2026-08-27-02 and the corresponding
+PROJECT_STATUS mission text. Historical P0-1/P0-2a/P0-2b slice decisions,
+evidence, and non-claims remain preserved. Does not close F-02, overall P0-2b,
+or enterprise production readiness.
+
+---
+Decision ID: D-2026-09-04-02
+Date: 2026-09-04
+
+Decision: **Current fixed-prefix source-context truncation is NOT accepted as
+enterprise-qualified evidence exposure. Preserve current runtime behavior until
+a bounded causal experiment is run; do not change limits by intuition alone.**
+
+Reason/evidence:
+
+- `_build_source_context()` in `agent/nodes.py` caps web sources at 1500 chars
+  and KB results at 2000 chars.
+- Existing code comments identify these as Phase-1 experimental limits.
+- The same builder feeds grounding context to draft/verification paths.
+- Successfully retrieving a source therefore does not guarantee that the model
+  received the decisive evidence within it.
+- This risk is separate from the known MiniLM embedding truncation issue.
+
+Frozen hypothesis (not yet tested):
+
+> Fixed prefix truncation materially reduces claim-level evidence sufficiency
+> and/or causes false weak, false unverified, or false verified decisions
+> compared with a claim-aware evidence-exposure strategy.
+
+Non-decision:
+
+- Do NOT preselect "send every full document" as the solution.
+- Candidate alternatives (claim-aware spans, surrounding context, batching,
+  larger complete exposure where context permits) must be compared causally.
+- No runtime changes are authorized by this decision.
+
+Priority: High-impact product-quality item, scheduled after Semantic P0 closure
+and the minimum evidence/provider qualification foundation (D-2026-09-04-01
+priority 2), as part of the retrieval/evidence redesign program (priority 3).
+
+Status: **OPEN — EXPERIMENT REQUIRED**
+
+Confidence: 0.92
+
+Supersedes / superseded by: Complements D-2026-09-04-01; does not supersede
+MiniLM truncation decisions (D-2026-08-13-03) or any historical retrieval
+evidence. Does not authorize runtime limit changes, merge, or paid benchmark.
+
+---
 Decision ID: D-2026-08-27-02
 Date: 2026-08-27
 
