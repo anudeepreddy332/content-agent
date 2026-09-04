@@ -95,9 +95,47 @@ Deterministic evidence records include:
 
 This harness is separate from production `semantic_trace_v1` and does not alter it.
 
-## Stage 2D (NOT authorized by this contract)
+## Stage 2D (NOT authorized for provider execution until independent preflight review)
 
-Stage 2D is bounded real-provider qualification using the corrected semantic ruler. It is **not** implemented or authorized until Stage 2C deterministic qualification is independently reviewed and closed.
+Stage 2D is bounded real-provider qualification using the corrected Semantic P0
+ruler. It tests whether changing **only** evidence exposure changes verifier
+verified / weak / unverified decisions in a materially correct direction.
+
+### Frozen pre-provider contract (D-2026-09-04-06)
+
+- Pack: `evals/fixtures/evidence_exposure_2d.json`
+- Preflight harness: `scripts/evidence_exposure_2d_preflight.py`
+- Price schedule evidence: `evals/evidence_exposure_2d_price_schedule.json`
+- Assets: **P1–P7** (seven fixed drafts; no drafting node, retrieval, HITL, HTML, or publish path)
+- Provider cells: **exactly ten** — `P1-PREFIX`, `P1-COMPLETE`, `P2-COMPLETE`,
+  `P3-COMPLETE`, `P4-COMPLETE`, `P5-COMPLETE`, `P6-PREFIX`, `P6-COMPLETE`,
+  `P7-PREFIX`, `P7-COMPLETE`
+- Causal isolation: paired P1/P6/P7 differ only in exposure arm (`prefix` vs `complete`)
+- One attempt per cell; provider SDK retries disabled; timeout/transport failure ⇒ INVALID
+- Hard spend ceiling: **$0.08 USD** (preflight must refuse above ceiling)
+- Provider execution default: **disabled** (`EVIDENCE_EXPOSURE_2D_EXECUTE=1` required)
+- Shadow current-runtime UVR acceptance computed alongside corrected oracle; production routing unchanged
+
+### Asset catalog
+
+| Asset | Scenario | Cells | 2C source reuse |
+| --- | --- | --- | --- |
+| P1 | Late supported material claim | PREFIX, COMPLETE | E2C-W02 |
+| P2 | Unsupported material claim | COMPLETE | new |
+| P3 | Partial / weak material claim | COMPLETE | new |
+| P4 | Supported-new material claim | COMPLETE | new |
+| P5 | Required material omission | COMPLETE | new |
+| P6 | Late contradiction | PREFIX, COMPLETE | E2C-W03 |
+| P7 | Late qualifier | PREFIX, COMPLETE | E2C-K03 |
+
+### Zero-tolerance future gates
+
+- `material_false_verification_rate.v2` numerator = 0
+- `automatic_semantic_false_pass_rate.v2` numerator = 0
+- Expected FAIL: P2, P3, P5, P6-complete, P7-complete; P6-prefix / P7-prefix are exposure-sensitive high-risk cells
+- Expected PASS: P1-complete (verified + binding), P4 (both material claims resolve)
+
+Stage 2D results are **not** recorded until provider execution completes.
 
 ## Explicit exclusions
 

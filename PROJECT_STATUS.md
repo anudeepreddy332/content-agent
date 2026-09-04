@@ -92,25 +92,32 @@ remain preserved below as evidence; they are not reopened here.
 
 1. **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED** at exact canonical
    integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
-2. **Stage 2C deterministic evidence-exposure qualification — IN PROGRESS** on
-   `experiment/evidence-exposure-2c`. Frozen arms: current prefix (A), complete
-   source (B), gold relevant context (C). Provider Stage 2D **NOT** authorized.
-3. **Minimal exact evidence-exposure completion + small real provider 2C/2D
-   qualification using the corrected semantic ruler** — follows Stage 2C
-   independent review/closeout.
-4. **Retrieval redesign — major product-quality program:**
+2. **Stage 2C deterministic evidence-exposure qualification — PASS (deterministic
+   only)** on `experiment/evidence-exposure-2c` at SHA
+   `bdbd4c3abc3a6b33529b11203b7393b899805739`. Independent qualification:
+   `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`. Current prefix exposure lost
+   required evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval.
+   Provider consequence remains **UNKNOWN**.
+3. **Stage 2D pre-provider implementation / independent review — CURRENT
+   MISSION.** Seven fixed-draft assets, ten frozen provider cells, budget
+   preflight, shadow routing, Semantic P0 oracle integration. Provider
+   execution **NOT YET AUTHORIZED**.
+4. **Minimal exact evidence-exposure completion + small real provider 2D
+   qualification using the corrected semantic ruler** — follows Stage 2D
+   independent preflight review and explicit authorization.
+5. **Retrieval redesign — major product-quality program:**
    - resolve MiniLM truncation / embedding-input mismatch;
    - production-shaped chunking/embedding strategy;
    - exact evidence recall/exposure;
    - deterministic fusion/ranking;
    - evaluate real query transformation only if it causally improves final
      verifier-visible evidence.
-5. **Revision safety qualification:**
+6. **Revision safety qualification:**
    - targeted bad claims resolved;
    - previously verified material claims retained;
    - no new unresolved material claims introduced.
-6. **Wire qualified semantic policy into production runtime routing.**
-7. **Enterprise capabilities:**
+7. **Wire qualified semantic policy into production runtime routing.**
+8. **Enterprise capabilities:**
    - identity / ACL / tenancy;
    - durability / recovery / observability;
    - production/cloud deployment hardening.
@@ -205,9 +212,15 @@ priority.
 - **Overall P0-2b:** OPEN.
 - **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED:** exact canonical
   integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
-- **Stage 2C evidence-exposure qualification — ACTIVE (deterministic only):**
-  branch `experiment/evidence-exposure-2c`; design frozen at D-2026-09-04-05;
-  Stage 2D provider execution **NOT** authorized.
+- **Stage 2C evidence-exposure qualification — PASS (deterministic):**
+  branch `experiment/evidence-exposure-2c`; SHA
+  `bdbd4c3abc3a6b33529b11203b7393b899805739`; independent qualification
+  `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`; prefix exposure lost required
+  evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval; provider
+  consequence **UNKNOWN**.
+- **Stage 2D pre-provider implementation — ACTIVE:** seven assets / ten cells
+  frozen; budget preflight; shadow routing; Semantic P0 oracle integration;
+  provider execution **NOT YET AUTHORIZED**.
 - **F-01 callable validation-boundary defect:** CLOSED at
   `8530b078837b1a8669433777c1f8d9a1add25a8a`.
 - **F-02 required-vs-final semantic contract:** validated; approved qualification
@@ -221,16 +234,19 @@ priority.
 
 ## Current authorized mission
 
-**Stage 2C deterministic evidence-exposure qualification** is the current
-authorized engineering mission on `experiment/evidence-exposure-2c`. Eight
-frozen rank-1 fixtures and three diagnostic arms test whether current prefix
-exposure hides retrieved evidence. Provider Stage 2D and production exposure
-changes are **NOT** authorized until Stage 2C is independently reviewed and
-closed.
+**Stage 2D pre-provider implementation and independent review** is the current
+authorized engineering mission on `experiment/evidence-exposure-2c`. Stage 2C
+deterministic qualification **PASS** is recorded: current prefix exposure
+mechanically removed required truth-relevant evidence in five of eight frozen
+cases despite rank-1 retrieval. Provider consequence remains **UNKNOWN**.
+Stage 2D freezes seven fixed-draft assets and ten provider cells to test
+whether exposure-only changes move verifier decisions in a materially correct
+direction. Provider execution is **NOT YET AUTHORIZED** until independent
+preflight review passes and `EVIDENCE_EXPOSURE_2D_EXECUTE=1` is deliberately set.
 
-**Next after Stage 2C closeout:** minimal exact evidence-exposure completion +
-small real provider 2C/2D qualification. Retrieval redesign remains the next
-major engineering program (frozen roadmap priority 4).
+**Next after Stage 2D authorization:** bounded real-provider Stage 2D
+qualification (one attempt per cell, $0.08 hard ceiling). Retrieval redesign
+remains the next major engineering program (frozen roadmap priority 5).
 
 Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged).
 Claim completeness remains unresolved and is not an acceptance condition.

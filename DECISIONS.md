@@ -9,6 +9,47 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-04-06
+Date: 2026-09-04
+
+Decision: **Stage 2C deterministic qualification PASS is accepted. Stage 2D
+exact 7-asset / 10-cell provider preflight contract is frozen. Provider
+execution requires independent preflight review and explicit authorization.**
+
+Reason: Stage 2C proved mechanical prefix truncation removes required
+truth-relevant evidence in 5/8 frozen cases despite 8/8 rank-1 retrieval.
+Provider consequence remains unknown until bounded Stage 2D qualification.
+
+Frozen Stage 2D contract:
+
+- assets: P1–P7 (seven fixed drafts; no drafting node)
+- provider cells: exactly ten (`P1-PREFIX`, `P1-COMPLETE`, `P2-COMPLETE`,
+  `P3-COMPLETE`, `P4-COMPLETE`, `P5-COMPLETE`, `P6-PREFIX`, `P6-COMPLETE`,
+  `P7-PREFIX`, `P7-COMPLETE`)
+- causal isolation: paired P1/P6/P7 differ **only** in exposure arm
+- one accepted attempt per cell; provider SDK retries disabled; no
+  retry-until-green
+- hard spend ceiling: **$0.08 USD** (preflight budget calculator must refuse
+  above ceiling)
+- production verifier prompt/model/settings unchanged
+- shadow current-runtime acceptance computed alongside corrected Semantic P0
+  oracle; production routing unchanged
+- duplicate Stage 2D cell/asset/semantic identities reject before execution
+- telemetry contract frozen in `scripts/evidence_exposure_2d_preflight.py`
+
+Status: **STAGE 2D PRE-PROVIDER IMPLEMENTATION — PROVIDER EXECUTION NOT
+AUTHORIZED**.
+
+Does NOT authorize: production exposure changes, retrieval redesign, paid
+20-topic benchmark, verifier prompt/model changes, or automatic semantic routing
+wiring.
+
+Confidence: 0.96
+
+Supersedes / superseded by: Accepts Stage 2C closeout under D-2026-09-04-05;
+does not supersede production prefix limits.
+
+---
 Decision ID: D-2026-09-04-05
 Date: 2026-09-04
 
