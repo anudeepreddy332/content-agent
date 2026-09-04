@@ -860,6 +860,27 @@ def _validate_pack_semantics(pack: dict[str, Any], *, require_frozen_catalog: bo
                 tuple(fixture["id"] for fixture in fixtures) == FROZEN_FIXTURE_IDS,
                 "official pack IDs must match frozen catalog",
             )
+    _enforce_f02_manifest_if_required(pack)
+
+
+def _is_official_f02_qualification_pack(pack: dict[str, Any]) -> bool:
+    if pack.get("pack_id") != F02_PACK_ID:
+        return False
+    if pack.get("schema_development_revision") != SCHEMA_DEVELOPMENT_REVISION_F02:
+        return False
+    fixtures = pack.get("fixtures")
+    if not isinstance(fixtures, list) or len(fixtures) != len(F02_FIXTURE_IDS):
+        return False
+    return tuple(fixture["id"] for fixture in fixtures) == F02_FIXTURE_IDS
+
+
+def _enforce_f02_manifest_if_required(
+    pack: dict[str, Any],
+    *,
+    pack_path: Path | str = DEFAULT_F02_FIXTURES,
+) -> None:
+    if _is_official_f02_qualification_pack(pack):
+        verify_f02_manifest(pack, pack_path=pack_path)
 
 
 def load_pack(path: Path | str = DEFAULT_FIXTURES, *, require_frozen_catalog: bool = True) -> dict[str, Any]:
@@ -869,8 +890,6 @@ def load_pack(path: Path | str = DEFAULT_FIXTURES, *, require_frozen_catalog: bo
     except (OSError, json.JSONDecodeError) as error:
         raise ClaimSemanticsV2Error(f"unreadable fixture pack {pack_path}: {error}") from error
     validate_pack(pack, require_frozen_catalog=require_frozen_catalog)
-    if require_frozen_catalog and pack.get("pack_id") == F02_PACK_ID:
-        verify_f02_manifest(pack, pack_path=pack_path)
     return pack
 
 

@@ -769,6 +769,83 @@ def test_f02_deleting_or_relabeling_unsafe_atom_breaks_approved_identity():
     assert fixture_identity_sha256(deleted) != approved
 
 
+def _tampered_f02_pack() -> dict:
+    return copy.deepcopy(_f02_pack())
+
+
+def _fc_index(pack: dict) -> int:
+    return next(index for index, fixture in enumerate(pack["fixtures"]) if fixture["id"] == "F-C")
+
+
+def test_f02_direct_evaluate_pack_rejects_deleted_unsafe_fc_atom():
+    pack = _tampered_f02_pack()
+    fixture = pack["fixtures"][_fc_index(pack)]
+    fixture["final_atoms"] = [atom for atom in fixture["final_atoms"] if atom["id"] != "f2"]
+    with pytest.raises(ClaimSemanticsV2Error, match="F-02 fixture F-C identity"):
+        evaluate_pack(pack)
+
+
+def test_f02_direct_evaluate_pack_rejects_fc_materiality_flip():
+    pack = _tampered_f02_pack()
+    fixture = pack["fixtures"][_fc_index(pack)]
+    for atom in fixture["final_atoms"]:
+        if atom["id"] == "f2":
+            atom["material"] = False
+    with pytest.raises(ClaimSemanticsV2Error, match="F-02 fixture F-C identity"):
+        evaluate_pack(pack)
+
+
+def test_f02_direct_evaluate_pack_rejects_fc_semantic_label_change():
+    pack = _tampered_f02_pack()
+    fixture = pack["fixtures"][_fc_index(pack)]
+    for atom in fixture["final_atoms"]:
+        if atom["id"] == "f2":
+            atom["independent_semantic_label"] = "verified"
+    with pytest.raises(ClaimSemanticsV2Error, match="F-02 fixture F-C identity"):
+        evaluate_pack(pack)
+
+
+def test_f02_direct_evaluate_pack_rejects_fc_binding_relationship_change():
+    pack = _tampered_f02_pack()
+    fixture = pack["fixtures"][_fc_index(pack)]
+    for atom in fixture["final_atoms"]:
+        if atom["id"] == "f2":
+            atom["reference_relationship"] = "required-equivalent"
+            atom["required_gold_id"] = "g1"
+    with pytest.raises(ClaimSemanticsV2Error, match="F-02 fixture F-C identity"):
+        evaluate_pack(pack)
+
+
+def test_f02_manifest_boundary_loader_and_evaluate_pack_parity(tmp_path):
+    pack = _tampered_f02_pack()
+    fixture = pack["fixtures"][_fc_index(pack)]
+    fixture["final_atoms"] = [atom for atom in fixture["final_atoms"] if atom["id"] != "f2"]
+
+    with pytest.raises(ClaimSemanticsV2Error, match="F-02 fixture F-C identity"):
+        evaluate_pack(pack)
+
+    tampered_path = tmp_path / "claim_semantics_v2_f02_tampered.json"
+    tampered_path.write_text(json.dumps(pack), encoding="utf-8")
+    with pytest.raises(ClaimSemanticsV2Error):
+        load_pack(tampered_path, require_frozen_catalog=True)
+
+
+def test_f02_require_frozen_catalog_false_does_not_bypass_official_manifest():
+    pack = _tampered_f02_pack()
+    fixture = pack["fixtures"][_fc_index(pack)]
+    fixture["final_atoms"] = [atom for atom in fixture["final_atoms"] if atom["id"] != "f2"]
+    with pytest.raises(ClaimSemanticsV2Error, match="F-02 fixture F-C identity"):
+        evaluate_pack(pack, require_frozen_catalog=False)
+
+
+def test_f02_evaluate_fixture_does_not_claim_official_qualification_pack():
+    """Single-fixture evaluate_fixture uses a one-fixture envelope, not the approved six-fixture catalog."""
+    fixture = _f02_fixture("F-C")
+    fixture["final_atoms"] = [atom for atom in fixture["final_atoms"] if atom["id"] != "f2"]
+    result = evaluate_fixture(fixture)
+    assert result["oracle"]["semantic_pass"] is True
+
+
 def test_f02_final_atom_malformed_materiality_fails_closed():
     for material in (None, 0, 1, "true", [], {}):
         fixture = _f02_fixture("F-C")
