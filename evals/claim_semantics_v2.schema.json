@@ -15,11 +15,15 @@
   "properties": {
     "pack_id": {
       "type": "string",
-      "const": "claim_semantics_v2"
+      "enum": ["claim_semantics_v2", "claim_semantics_v2_f02"]
     },
     "schema_version": {
       "type": "integer",
       "const": 2
+    },
+    "schema_development_revision": {
+      "type": "string",
+      "enum": ["f02-r1"]
     },
     "evaluator_id": {
       "type": "string",
@@ -32,7 +36,7 @@
     "fixtures": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 1,
+      "maxItems": 6,
       "items": { "$ref": "#/$defs/fixture" }
     }
   },
@@ -50,6 +54,104 @@
     "semantic_status": {
       "type": "string",
       "enum": ["verified", "weak", "unverified"]
+    },
+    "reference_relationship": {
+      "type": "string",
+      "enum": ["required-equivalent", "unmatched"]
+    },
+    "classification_source": {
+      "type": "string",
+      "enum": ["required", "final", "unmatched-final"]
+    },
+    "fixed_classification_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "material",
+        "independent_semantic_label",
+        "predicted_semantic_status",
+        "prediction_id",
+        "required_gold_id",
+        "final_atom_id"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "source": { "$ref": "#/$defs/classification_source" },
+        "material": { "type": "boolean" },
+        "independent_semantic_label": { "$ref": "#/$defs/semantic_status" },
+        "predicted_semantic_status": { "$ref": "#/$defs/semantic_status" },
+        "prediction_id": { "type": "string", "minLength": 1 },
+        "required_gold_id": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "final_atom_id": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "final_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "target_final_claim_id",
+        "evidence_id",
+        "valid",
+        "fully_entailed"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "target_final_claim_id": { "type": "string", "minLength": 1 },
+        "evidence_id": { "type": "string", "minLength": 1 },
+        "valid": { "type": "boolean" },
+        "fully_entailed": { "type": "boolean" }
+      }
+    },
+    "final_atom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "text",
+        "span",
+        "material",
+        "reference_relationship",
+        "required_gold_id",
+        "independent_semantic_label",
+        "prediction_id",
+        "predicted_semantic_status",
+        "binding"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "span": { "$ref": "#/$defs/span" },
+        "material": { "type": "boolean" },
+        "reference_relationship": { "$ref": "#/$defs/reference_relationship" },
+        "required_gold_id": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "independent_semantic_label": { "$ref": "#/$defs/semantic_status" },
+        "prediction_id": { "type": "string", "minLength": 1 },
+        "predicted_semantic_status": { "$ref": "#/$defs/semantic_status" },
+        "binding": {
+          "anyOf": [
+            { "$ref": "#/$defs/final_binding" },
+            { "type": "null" }
+          ]
+        }
+      }
     },
     "roles": {
       "type": "array",
@@ -92,7 +194,12 @@
         "id": { "type": "string", "minLength": 1 },
         "canonical_id": { "type": "string", "minLength": 1 },
         "text": { "type": "string", "minLength": 1 },
-        "span": { "$ref": "#/$defs/span" },
+        "span": {
+          "anyOf": [
+            { "$ref": "#/$defs/span" },
+            { "type": "null" }
+          ]
+        },
         "factual": { "type": "boolean" },
         "material": { "type": "boolean" },
         "gold_semantic_status": { "$ref": "#/$defs/semantic_status" }
@@ -202,7 +309,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^ADV0[1-9]$|^ADV[1-9][0-9]$"
+          "pattern": "^ADV0[1-9]$|^ADV[1-9][0-9]$|^F-[A-F]$"
         },
         "title": { "type": "string", "minLength": 1 },
         "draft_text": { "type": "string", "minLength": 1 },
@@ -234,7 +341,15 @@
           "type": "array",
           "items": { "$ref": "#/$defs/verifier_row" }
         },
-        "automatic_route": { "$ref": "#/$defs/automatic_route" }
+        "automatic_route": { "$ref": "#/$defs/automatic_route" },
+        "final_atoms": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/final_atom" }
+        },
+        "fixed_classification_cases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fixed_classification_case" }
+        }
       }
     }
   }

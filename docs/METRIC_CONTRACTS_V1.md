@@ -6,14 +6,15 @@ change prompts/models/retrieval, or run the paid benchmark.
 
 ## 1. Purpose
 
-Register five official metric identities — four new P0 semantic metrics plus
-one immutable historical diagnostic — and implement the corrected
+Register official P0 semantic metric identities and implement the
 `claim_semantics_v2` oracle that computes them deterministically from frozen
 human-adjudicated fixtures.
 
 Historical `claim_semantics_v1` remains immutable. V2 fixes match-credit
 eligibility by treating `qualifier_loss` and `invention` as match-ineligible
-alongside `compound` and `fragment`.
+alongside `compound` and `fragment`. F-02 (`f02-r1`) adds a second
+population — independently adjudicated final content claims — without
+changing required-gold recall, required unresolved rate, or historical UVR.
 
 ## 2. Registered identities
 
@@ -22,7 +23,10 @@ alongside `compound` and `fragment`.
 | `material_claim_recall.v2` | v2 | higher is better |
 | `material_claim_unresolved_rate.v1` | v1 | lower is better |
 | `material_false_verification_rate.v1` | v1 | lower is better |
+| `material_false_verification_rate.v2` | v2 | lower is better |
 | `automatic_semantic_false_pass_rate.v1` | v1 | lower is better |
+| `automatic_semantic_false_pass_rate.v2` | v2 | lower is better |
+| `final_material_claim_unresolved_rate.v1` | v1 | lower is better |
 | `unverified_verifier_row_rate.UVR_v1` | UVR_v1 | lower is better (historical) |
 
 Machine-readable registration: `evals/metric_registry_v1.json` validated by
@@ -70,7 +74,9 @@ Measures extraction coverage only.
 \frac{|\{g \in G_{\mathrm{mat}} : g \text{ unresolved}\}|}{|G_{\mathrm{mat}}|}
 \]
 
-Required target for automatic semantic PASS: **0 unresolved material atoms**.
+Required target for automatic semantic PASS on **required gold only**: **0
+unresolved required material atoms**. F-02 automatic PASS additionally
+requires 0 unresolved final material atoms.
 
 ### material_false_verification_rate.v1
 
@@ -87,7 +93,38 @@ Safety authority: numerator must be zero for qualification.
 \frac{|\{a : \mathrm{oracle}(a) = \mathrm{FAIL} \land \mathrm{route}(a) = \mathrm{PASS}\}|}{|\{a : \mathrm{oracle}(a) = \mathrm{FAIL}\}|}
 \]
 
-Safety authority: numerator must be zero.
+Safety authority: numerator must be zero. G-only oracle. Preserved
+historically; F-02 does not reinterpret this identity.
+
+### material_false_verification_rate.v2
+
+\[
+\frac{|\{c \in C_{\mathrm{mat}}^{-} : \hat{y}(c) = \mathrm{verified}\}|}{|C_{\mathrm{mat}}^{-}|}
+\]
+
+where \(C_{\mathrm{mat}}^{-}\) is the independently frozen FIXED
+CLASSIFICATION CASE catalog restricted to material rows with independent
+label weak or unverified. The catalog includes required, final-content, and
+unmatched-final cases. Selection does not depend on extraction success,
+`final_atoms` membership, or required-gold matching.
+
+### automatic_semantic_false_pass_rate.v2
+
+\[
+\frac{|\{a : \mathrm{oracle}_{G+F}(a) = \mathrm{FAIL} \land \mathrm{route}(a) = \mathrm{PASS}\}|}{|\{a : \mathrm{oracle}_{G+F}(a) = \mathrm{FAIL}\}|}
+\]
+
+Uses the corrected required+final oracle. v1 remains historically registered.
+
+### final_material_claim_unresolved_rate.v1
+
+\[
+\frac{|\{f \in F_{\mathrm{mat}} : f \text{ unresolved}\}|}{|F_{\mathrm{mat}}|}
+\]
+
+Automatic PASS requires raw unresolved numerator = 0. Zero final material
+claims yield N/A for this *rate* with an explicit reason. A zero F
+denominator does not by itself make the asset-level semantic predicate FAIL.
 
 ### unverified_verifier_row_rate.UVR_v1 (historical)
 
@@ -115,6 +152,9 @@ oracle.
 | material_claim_unresolved_rate.v1 | 3 | 4 | 0.75 |
 | material_false_verification_rate.v1 | 1 | 2 | 0.5 |
 | automatic_semantic_false_pass_rate.v1 | 1 | 1 | 1.0 |
+| material_false_verification_rate.v2 | 0 | 0 | N/A (no final inventory) |
+| automatic_semantic_false_pass_rate.v2 | 0 | 0 | N/A (no final inventory) |
+| final_material_claim_unresolved_rate.v1 | 0 | 0 | N/A (no final inventory) |
 | unverified_verifier_row_rate.UVR_v1 | 0 | 5 | 0.0 |
 
 Historical UVR coexists with semantic failure: all five verifier rows are
@@ -129,6 +169,8 @@ Allowed files for this slice:
 - `evals/metric_registry_v1.json`
 - `evals/claim_semantics_v2.schema.json`
 - `evals/fixtures/claim_semantics_v2.json`
+- `evals/fixtures/claim_semantics_v2_f02.json`
+- `evals/claim_semantics_v2_f02.manifest.json`
 - `scripts/evaluate_claim_semantics_v2.py`
 - `tests/test_claim_semantics_v2_evaluator.py`
 
@@ -151,5 +193,40 @@ in the Python validator.
 
 Normalized output is `json.dumps(..., sort_keys=True, indent=2,
 ensure_ascii=True)` plus a trailing newline. Repeated evaluation of the same
-pack must be byte-identical. Input, edge, and candidate ordering must not
-change results.
+pack must be byte-identical. Input, edge, candidate, and final-atom
+ordering must not change results.
+
+## 11. F-02 required vs final populations (`f02-r1`)
+
+Two independent inventories:
+
+- **G — required gold claims.** Existing `material_claim_recall.v2` and
+  `material_claim_unresolved_rate.v1` remain G-only. New/unmatched final
+  claims are never added to those denominators.
+- **F — final content claims.** Every independently adjudicated factual claim
+  asserted in the exact final draft, including required-equivalent,
+  supported-new, weak-new, and unsupported-new claims. Unmatched is not
+  automatically unsafe. A supported new claim may PASS. An unsupported
+  material new claim must FAIL. Materiality is independently frozen input.
+  A required claim omitted from the final article remains in G and must not
+  be inserted into F.
+
+Corrected automatic oracle for structurally valid F-02 inputs:
+
+`semantic_pass = (U_G == 0 AND U_F == 0)`
+
+`U_G` and `U_F` are unresolved *counts*. They are 0 when a population is
+empty. Metric *rates* may be N/A when a denominator is zero. N/A is not
+coerced into PASS or FAIL. Qualification adequacy of an empty pack is
+separate from asset-level semantic disposition.
+
+Invalid inputs are INVALID with `semantic_pass = null` (fail closed).
+
+A final material claim is resolved only when independent semantic label =
+verified, a qualifying automated prediction exists and equals verified,
+binding targets that final claim, binding is valid and fully entailing, and
+required identities are structurally valid.
+
+Historical revisionless ADV01 bytes are not reinterpreted. F-02 lives in a
+separate fixture pack with an approved manifest digest so deleting an unsafe
+final atom or changing materiality is detected.

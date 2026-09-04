@@ -1,0 +1,699 @@
+{
+  "pack_id": "claim_semantics_v2_f02",
+  "schema_version": 2,
+  "schema_development_revision": "f02-r1",
+  "evaluator_id": "claim_semantics_v2",
+  "description": "F-02 required-vs-final semantic oracle fixtures. Separate from historical revisionless ADV01 bytes.",
+  "fixtures": [
+    {
+      "id": "F-A",
+      "title": "Safe required claim correctly verified",
+      "draft_text": "There are 10 items.",
+      "draft_sha256": "87c6305d75a689d09af6439507dbd903a59260cf872fd451af6a350288986e99",
+      "gold_atoms": [
+        {
+          "id": "g1",
+          "canonical_id": "FA.ATOM.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "verified"
+        }
+      ],
+      "exclusions": [],
+      "candidates": [
+        {
+          "id": "c1",
+          "canonical_id": "FA.C.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "roles": [],
+          "predicted_semantic_status": "verified"
+        }
+      ],
+      "allowed_matches": [
+        {
+          "candidate_id": "c1",
+          "gold_id": "g1"
+        }
+      ],
+      "evidence_bindings": [
+        {
+          "id": "FA.BIND.g1",
+          "gold_id": "g1",
+          "candidate_id": "c1",
+          "evidence_id": "FA.EV.inventory",
+          "valid": true,
+          "fully_entailed": true
+        }
+      ],
+      "final_atoms": [
+        {
+          "id": "f1",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "material": true,
+          "reference_relationship": "required-equivalent",
+          "required_gold_id": "g1",
+          "independent_semantic_label": "verified",
+          "prediction_id": "c1",
+          "predicted_semantic_status": "verified",
+          "binding": {
+            "id": "FA.FBIND.f1",
+            "target_final_claim_id": "f1",
+            "evidence_id": "FA.EV.inventory",
+            "valid": true,
+            "fully_entailed": true
+          }
+        }
+      ],
+      "verifier_rows": [
+        {
+          "id": "FA.VR.c1",
+          "status": "verified"
+        }
+      ],
+      "automatic_route": {
+        "decision": "PASS"
+      },
+      "fixed_classification_cases": [
+        {
+          "id": "FA.CLASS.g1",
+          "source": "required",
+          "material": true,
+          "independent_semantic_label": "verified",
+          "predicted_semantic_status": "verified",
+          "prediction_id": "c1",
+          "required_gold_id": "g1",
+          "final_atom_id": "f1"
+        },
+        {
+          "id": "FA.CLASS.f1",
+          "source": "final",
+          "material": true,
+          "independent_semantic_label": "verified",
+          "predicted_semantic_status": "verified",
+          "prediction_id": "c1",
+          "required_gold_id": "g1",
+          "final_atom_id": "f1"
+        }
+      ]
+    },
+    {
+      "id": "F-B",
+      "title": "Required material claim omitted from final content",
+      "draft_text": "No inventory count is stated.",
+      "draft_sha256": "08b4a1b799ef9563c08a40df457e5fa0816fa06e8c3905ebf7b7a28436bf8240",
+      "gold_atoms": [
+        {
+          "id": "g1",
+          "canonical_id": "FB.ATOM.ten_items",
+          "text": "There are 10 items.",
+          "span": null,
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "verified"
+        }
+      ],
+      "exclusions": [],
+      "candidates": [],
+      "allowed_matches": [],
+      "evidence_bindings": [],
+      "final_atoms": [],
+      "verifier_rows": [],
+      "automatic_route": {
+        "decision": "FAIL"
+      },
+      "fixed_classification_cases": [
+        {
+          "id": "FB.CLASS.g1",
+          "source": "required",
+          "material": true,
+          "independent_semantic_label": "verified",
+          "predicted_semantic_status": "unverified",
+          "prediction_id": "p-absent",
+          "required_gold_id": "g1",
+          "final_atom_id": null
+        }
+      ]
+    },
+    {
+      "id": "F-C",
+      "title": "Unsafe unmatched material claim predicted verified",
+      "draft_text": "There are 10 items. There are 100 items.",
+      "draft_sha256": "1d982d6cf1cab1b0f2080e066e9b1b78652018846aeff38c51008744096d597a",
+      "gold_atoms": [
+        {
+          "id": "g1",
+          "canonical_id": "FC.ATOM.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "verified"
+        }
+      ],
+      "exclusions": [],
+      "candidates": [
+        {
+          "id": "c1",
+          "canonical_id": "FC.C.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "roles": [],
+          "predicted_semantic_status": "verified"
+        },
+        {
+          "id": "c100",
+          "canonical_id": "FC.C.hundred_items",
+          "text": "There are 100 items.",
+          "span": [
+            20,
+            40
+          ],
+          "roles": [],
+          "predicted_semantic_status": "verified"
+        }
+      ],
+      "allowed_matches": [
+        {
+          "candidate_id": "c1",
+          "gold_id": "g1"
+        }
+      ],
+      "evidence_bindings": [
+        {
+          "id": "FC.BIND.g1",
+          "gold_id": "g1",
+          "candidate_id": "c1",
+          "evidence_id": "FC.EV.inventory",
+          "valid": true,
+          "fully_entailed": true
+        }
+      ],
+      "final_atoms": [
+        {
+          "id": "f1",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "material": true,
+          "reference_relationship": "required-equivalent",
+          "required_gold_id": "g1",
+          "independent_semantic_label": "verified",
+          "prediction_id": "c1",
+          "predicted_semantic_status": "verified",
+          "binding": {
+            "id": "FC.FBIND.f1",
+            "target_final_claim_id": "f1",
+            "evidence_id": "FC.EV.inventory",
+            "valid": true,
+            "fully_entailed": true
+          }
+        },
+        {
+          "id": "f2",
+          "text": "There are 100 items.",
+          "span": [
+            20,
+            40
+          ],
+          "material": true,
+          "reference_relationship": "unmatched",
+          "required_gold_id": null,
+          "independent_semantic_label": "unverified",
+          "prediction_id": "c100",
+          "predicted_semantic_status": "verified",
+          "binding": null
+        }
+      ],
+      "verifier_rows": [
+        {
+          "id": "FC.VR.c1",
+          "status": "verified"
+        },
+        {
+          "id": "FC.VR.c100",
+          "status": "verified"
+        }
+      ],
+      "automatic_route": {
+        "decision": "PASS"
+      },
+      "fixed_classification_cases": [
+        {
+          "id": "FC.CLASS.g1",
+          "source": "required",
+          "material": true,
+          "independent_semantic_label": "verified",
+          "predicted_semantic_status": "verified",
+          "prediction_id": "c1",
+          "required_gold_id": "g1",
+          "final_atom_id": "f1"
+        },
+        {
+          "id": "FC.CLASS.f2",
+          "source": "unmatched-final",
+          "material": true,
+          "independent_semantic_label": "unverified",
+          "predicted_semantic_status": "verified",
+          "prediction_id": "c100",
+          "required_gold_id": null,
+          "final_atom_id": "f2"
+        }
+      ]
+    },
+    {
+      "id": "F-D",
+      "title": "Supported unmatched new material claim",
+      "draft_text": "There are 10 items. There are 7 extra items.",
+      "draft_sha256": "31090943456642d720d1d3e92311dc4177e6e1c6f01e4162d99628fbfa7823c7",
+      "gold_atoms": [
+        {
+          "id": "g1",
+          "canonical_id": "FD.ATOM.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "verified"
+        }
+      ],
+      "exclusions": [],
+      "candidates": [
+        {
+          "id": "c1",
+          "canonical_id": "FD.C.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "roles": [],
+          "predicted_semantic_status": "verified"
+        },
+        {
+          "id": "c7",
+          "canonical_id": "FD.C.seven_extra",
+          "text": "There are 7 extra items.",
+          "span": [
+            20,
+            44
+          ],
+          "roles": [],
+          "predicted_semantic_status": "verified"
+        }
+      ],
+      "allowed_matches": [
+        {
+          "candidate_id": "c1",
+          "gold_id": "g1"
+        }
+      ],
+      "evidence_bindings": [
+        {
+          "id": "FD.BIND.g1",
+          "gold_id": "g1",
+          "candidate_id": "c1",
+          "evidence_id": "FD.EV.inventory",
+          "valid": true,
+          "fully_entailed": true
+        }
+      ],
+      "final_atoms": [
+        {
+          "id": "f1",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "material": true,
+          "reference_relationship": "required-equivalent",
+          "required_gold_id": "g1",
+          "independent_semantic_label": "verified",
+          "prediction_id": "c1",
+          "predicted_semantic_status": "verified",
+          "binding": {
+            "id": "FD.FBIND.f1",
+            "target_final_claim_id": "f1",
+            "evidence_id": "FD.EV.inventory",
+            "valid": true,
+            "fully_entailed": true
+          }
+        },
+        {
+          "id": "f2",
+          "text": "There are 7 extra items.",
+          "span": [
+            20,
+            44
+          ],
+          "material": true,
+          "reference_relationship": "unmatched",
+          "required_gold_id": null,
+          "independent_semantic_label": "verified",
+          "prediction_id": "c7",
+          "predicted_semantic_status": "verified",
+          "binding": {
+            "id": "FD.FBIND.f2",
+            "target_final_claim_id": "f2",
+            "evidence_id": "FD.EV.supported_extra",
+            "valid": true,
+            "fully_entailed": true
+          }
+        }
+      ],
+      "verifier_rows": [
+        {
+          "id": "FD.VR.c1",
+          "status": "verified"
+        },
+        {
+          "id": "FD.VR.c7",
+          "status": "verified"
+        }
+      ],
+      "automatic_route": {
+        "decision": "PASS"
+      },
+      "fixed_classification_cases": [
+        {
+          "id": "FD.CLASS.g1",
+          "source": "required",
+          "material": true,
+          "independent_semantic_label": "verified",
+          "predicted_semantic_status": "verified",
+          "prediction_id": "c1",
+          "required_gold_id": "g1",
+          "final_atom_id": "f1"
+        },
+        {
+          "id": "FD.CLASS.f2",
+          "source": "unmatched-final",
+          "material": true,
+          "independent_semantic_label": "verified",
+          "predicted_semantic_status": "verified",
+          "prediction_id": "c7",
+          "required_gold_id": null,
+          "final_atom_id": "f2"
+        }
+      ]
+    },
+    {
+      "id": "F-E",
+      "title": "Unmatched material weak claim remains unresolved",
+      "draft_text": "There are 10 items. There are 3 extra items.",
+      "draft_sha256": "bbf98d7579878f6d07ca3d94951e4b2090de51e08332516c806f57f87481e3a9",
+      "gold_atoms": [
+        {
+          "id": "g1",
+          "canonical_id": "FE.ATOM.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "verified"
+        }
+      ],
+      "exclusions": [],
+      "candidates": [
+        {
+          "id": "c1",
+          "canonical_id": "FE.C.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "roles": [],
+          "predicted_semantic_status": "verified"
+        },
+        {
+          "id": "c3",
+          "canonical_id": "FE.C.three_extra",
+          "text": "There are 3 extra items.",
+          "span": [
+            20,
+            44
+          ],
+          "roles": [],
+          "predicted_semantic_status": "weak"
+        }
+      ],
+      "allowed_matches": [
+        {
+          "candidate_id": "c1",
+          "gold_id": "g1"
+        }
+      ],
+      "evidence_bindings": [
+        {
+          "id": "FE.BIND.g1",
+          "gold_id": "g1",
+          "candidate_id": "c1",
+          "evidence_id": "FE.EV.inventory",
+          "valid": true,
+          "fully_entailed": true
+        }
+      ],
+      "final_atoms": [
+        {
+          "id": "f1",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "material": true,
+          "reference_relationship": "required-equivalent",
+          "required_gold_id": "g1",
+          "independent_semantic_label": "verified",
+          "prediction_id": "c1",
+          "predicted_semantic_status": "verified",
+          "binding": {
+            "id": "FE.FBIND.f1",
+            "target_final_claim_id": "f1",
+            "evidence_id": "FE.EV.inventory",
+            "valid": true,
+            "fully_entailed": true
+          }
+        },
+        {
+          "id": "f2",
+          "text": "There are 3 extra items.",
+          "span": [
+            20,
+            44
+          ],
+          "material": true,
+          "reference_relationship": "unmatched",
+          "required_gold_id": null,
+          "independent_semantic_label": "weak",
+          "prediction_id": "c3",
+          "predicted_semantic_status": "weak",
+          "binding": {
+            "id": "FE.FBIND.f2",
+            "target_final_claim_id": "f2",
+            "evidence_id": "FE.EV.partial",
+            "valid": true,
+            "fully_entailed": false
+          }
+        }
+      ],
+      "verifier_rows": [
+        {
+          "id": "FE.VR.c1",
+          "status": "verified"
+        },
+        {
+          "id": "FE.VR.c3",
+          "status": "weak"
+        }
+      ],
+      "automatic_route": {
+        "decision": "FAIL"
+      },
+      "fixed_classification_cases": [
+        {
+          "id": "FE.CLASS.g1",
+          "source": "required",
+          "material": true,
+          "independent_semantic_label": "verified",
+          "predicted_semantic_status": "verified",
+          "prediction_id": "c1",
+          "required_gold_id": "g1",
+          "final_atom_id": "f1"
+        },
+        {
+          "id": "FE.CLASS.f2",
+          "source": "unmatched-final",
+          "material": true,
+          "independent_semantic_label": "weak",
+          "predicted_semantic_status": "weak",
+          "prediction_id": "c3",
+          "required_gold_id": null,
+          "final_atom_id": "f2"
+        }
+      ]
+    },
+    {
+      "id": "F-F",
+      "title": "Nonmaterial weak final claim does not fail material oracle",
+      "draft_text": "There are 10 items. The catalog looks tidy.",
+      "draft_sha256": "b714b966a6188e2323182889c768b35c7683f075b43660e4e3701b529d8fd309",
+      "gold_atoms": [
+        {
+          "id": "g1",
+          "canonical_id": "FF.ATOM.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "factual": true,
+          "material": true,
+          "gold_semantic_status": "verified"
+        }
+      ],
+      "exclusions": [],
+      "candidates": [
+        {
+          "id": "c1",
+          "canonical_id": "FF.C.ten_items",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "roles": [],
+          "predicted_semantic_status": "verified"
+        },
+        {
+          "id": "c_style",
+          "canonical_id": "FF.C.catalog_tidy",
+          "text": "The catalog looks tidy.",
+          "span": [
+            20,
+            43
+          ],
+          "roles": [],
+          "predicted_semantic_status": "weak"
+        }
+      ],
+      "allowed_matches": [
+        {
+          "candidate_id": "c1",
+          "gold_id": "g1"
+        }
+      ],
+      "evidence_bindings": [
+        {
+          "id": "FF.BIND.g1",
+          "gold_id": "g1",
+          "candidate_id": "c1",
+          "evidence_id": "FF.EV.inventory",
+          "valid": true,
+          "fully_entailed": true
+        }
+      ],
+      "final_atoms": [
+        {
+          "id": "f1",
+          "text": "There are 10 items.",
+          "span": [
+            0,
+            19
+          ],
+          "material": true,
+          "reference_relationship": "required-equivalent",
+          "required_gold_id": "g1",
+          "independent_semantic_label": "verified",
+          "prediction_id": "c1",
+          "predicted_semantic_status": "verified",
+          "binding": {
+            "id": "FF.FBIND.f1",
+            "target_final_claim_id": "f1",
+            "evidence_id": "FF.EV.inventory",
+            "valid": true,
+            "fully_entailed": true
+          }
+        },
+        {
+          "id": "f2",
+          "text": "The catalog looks tidy.",
+          "span": [
+            20,
+            43
+          ],
+          "material": false,
+          "reference_relationship": "unmatched",
+          "required_gold_id": null,
+          "independent_semantic_label": "weak",
+          "prediction_id": "c_style",
+          "predicted_semantic_status": "weak",
+          "binding": null
+        }
+      ],
+      "verifier_rows": [
+        {
+          "id": "FF.VR.c1",
+          "status": "verified"
+        },
+        {
+          "id": "FF.VR.c_style",
+          "status": "weak"
+        }
+      ],
+      "automatic_route": {
+        "decision": "PASS"
+      },
+      "fixed_classification_cases": [
+        {
+          "id": "FF.CLASS.g1",
+          "source": "required",
+          "material": true,
+          "independent_semantic_label": "verified",
+          "predicted_semantic_status": "verified",
+          "prediction_id": "c1",
+          "required_gold_id": "g1",
+          "final_atom_id": "f1"
+        },
+        {
+          "id": "FF.CLASS.f2",
+          "source": "final",
+          "material": false,
+          "independent_semantic_label": "weak",
+          "predicted_semantic_status": "weak",
+          "prediction_id": "c_style",
+          "required_gold_id": null,
+          "final_atom_id": "f2"
+        }
+      ]
+    }
+  ]
+}

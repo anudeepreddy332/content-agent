@@ -13,12 +13,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.evaluate_claim_semantics_v2 import (
     ClaimSemanticsV2Error,
     DEFAULT_FIXTURES,
+    DEFAULT_F02_FIXTURES,
+    DEFAULT_F02_MANIFEST,
     DEFAULT_REGISTRY,
     DEFAULT_SCHEMA,
     MATCH_INELIGIBLE_ROLES,
+    REGISTERED_METRIC_NAMES,
+    assert_fixture_matches_approved_identity,
     assert_schema_runtime_parity,
     evaluate_fixture,
     evaluate_pack,
+    fixture_identity_sha256,
     load_frozen_schema,
     load_metric_registry,
     load_pack,
@@ -65,16 +70,11 @@ def test_v1_evaluator_artifacts_remain_unmodified():
     assert "qualifier_loss" not in v1_eval.split("MATCH_INELIGIBLE_ROLES")[1].split("\n")[0]
 
 
-def test_registry_has_exactly_five_identities():
+def test_registry_has_exactly_eight_identities():
     registry = load_metric_registry()
     names = {metric["canonical_name"] for metric in registry["metrics"]}
-    assert names == {
-        "material_claim_recall.v2",
-        "material_claim_unresolved_rate.v1",
-        "material_false_verification_rate.v1",
-        "automatic_semantic_false_pass_rate.v1",
-        "unverified_verifier_row_rate.UVR_v1",
-    }
+    assert names == REGISTERED_METRIC_NAMES
+    assert len(registry["metrics"]) == 8
     for metric in registry["metrics"]:
         required = {
             "canonical_name",
@@ -415,7 +415,7 @@ def test_official_pack_satisfies_frozen_schema_and_parity():
 
 def test_schema_runtime_contract_drift_is_detected():
     drifted = copy.deepcopy(load_frozen_schema())
-    drifted["properties"]["pack_id"]["const"] = "drifted"
+    drifted["properties"]["pack_id"]["enum"] = ["drifted"]
     with pytest.raises(ClaimSemanticsV2Error, match="schema/runtime contract drift"):
         assert_schema_runtime_parity(drifted)
 
@@ -512,12 +512,17 @@ def test_registry_hand_results_match_evaluator():
     registry = load_metric_registry()
     metrics = _metrics()
     report = evaluate_pack(_pack())
+    f02 = load_pack(DEFAULT_F02_FIXTURES)
+    fc = evaluate_pack(f02, fixture_id="F-C")
     mapping = {
         "material_claim_recall.v2": metrics["material_claim_recall.v2"],
         "material_claim_unresolved_rate.v1": metrics["material_claim_unresolved_rate.v1"],
         "material_false_verification_rate.v1": metrics["material_false_verification_rate.v1"],
         "automatic_semantic_false_pass_rate.v1": report["metrics"]["automatic_semantic_false_pass_rate.v1"],
         "unverified_verifier_row_rate.UVR_v1": metrics["unverified_verifier_row_rate.UVR_v1"],
+        "material_false_verification_rate.v2": fc["results"][0]["metrics"]["material_false_verification_rate.v2"],
+        "final_material_claim_unresolved_rate.v1": fc["results"][0]["metrics"]["final_material_claim_unresolved_rate.v1"],
+        "automatic_semantic_false_pass_rate.v2": fc["metrics"]["automatic_semantic_false_pass_rate.v2"],
     }
     for entry in registry["metrics"]:
         expected = entry["hand_calculated_expected_result"]
@@ -526,3 +531,293 @@ def test_registry_hand_results_match_evaluator():
         assert actual["denominator"] == expected["denominator"]
         assert actual["value"] == expected["value"]
         assert actual["undefined"] == expected["undefined"]
+
+
+def _f02_pack() -> dict:
+    return load_pack(DEFAULT_F02_FIXTURES)
+
+
+def _f02_fixture(fixture_id: str, pack: dict | None = None) -> dict:
+    pack = pack or _f02_pack()
+    return copy.deepcopy(next(item for item in pack["fixtures"] if item["id"] == fixture_id))
+
+
+def _approved_fc_digest() -> str:
+    manifest = json.loads(DEFAULT_F02_MANIFEST.read_text(encoding="utf-8"))
+    return manifest["fixture_identities"]["F-C"]
+
+
+def test_f02_fa_through_ff_oracle_table():
+    expected = {
+        "F-A": True,
+        "F-B": False,
+        "F-C": False,
+        "F-D": True,
+        "F-E": False,
+        "F-F": True,
+    }
+    pack = _f02_pack()
+    report = evaluate_pack(pack)
+    by_id = {item["fixture_id"]: item for item in report["results"]}
+    for fixture_id, semantic_pass in expected.items():
+        assert by_id[fixture_id]["oracle"]["semantic_pass"] is semantic_pass
+
+
+def test_f02_fc_fails_while_required_recall_remains_complete():
+    result = evaluate_fixture(_f02_fixture("F-C"))
+    _ratio(result["metrics"]["material_claim_recall.v2"], 1, 1)
+    _ratio(result["metrics"]["material_claim_unresolved_rate.v1"], 0, 1)
+    _ratio(result["metrics"]["final_material_claim_unresolved_rate.v1"], 1, 2)
+    _ratio(result["metrics"]["material_false_verification_rate.v2"], 1, 1)
+    assert result["oracle"]["semantic_pass"] is False
+    assert result["oracle"]["required_semantic_pass"] is True
+    pack = {
+        "pack_id": "claim_semantics_v2_f02",
+        "schema_version": 2,
+        "schema_development_revision": "f02-r1",
+        "evaluator_id": "claim_semantics_v2",
+        "description": "F-C unit",
+        "fixtures": [_f02_fixture("F-C")],
+    }
+    report = evaluate_pack(pack, require_frozen_catalog=False)
+    _ratio(report["metrics"]["automatic_semantic_false_pass_rate.v2"], 1, 1)
+
+
+def test_f02_fd_passes_with_supported_unmatched_claim():
+    result = evaluate_fixture(_f02_fixture("F-D"))
+    assert result["oracle"]["semantic_pass"] is True
+    unmatched = [atom for atom in result["final_claims"] if atom["reference_relationship"] == "unmatched"]
+    assert len(unmatched) == 1
+    assert unmatched[0]["resolved"] is True
+    _ratio(result["metrics"]["final_material_claim_unresolved_rate.v1"], 0, 2)
+
+
+def test_f02_fe_fails_without_false_verification():
+    result = evaluate_fixture(_f02_fixture("F-E"))
+    assert result["oracle"]["semantic_pass"] is False
+    _ratio(result["metrics"]["material_claim_recall.v2"], 1, 1)
+    _ratio(result["metrics"]["material_false_verification_rate.v2"], 0, 1)
+    _ratio(result["metrics"]["final_material_claim_unresolved_rate.v1"], 1, 2)
+
+
+def test_f02_ff_passes_and_keeps_nonmaterial_weak_visible():
+    result = evaluate_fixture(_f02_fixture("F-F"))
+    assert result["oracle"]["semantic_pass"] is True
+    visible = [atom for atom in result["final_claims"] if atom["id"] == "f2"]
+    assert visible == [
+        {
+            "id": "f2",
+            "text": "The catalog looks tidy.",
+            "material": False,
+            "reference_relationship": "unmatched",
+            "independent_semantic_label": "weak",
+            "predicted_semantic_status": "weak",
+            "resolved": None,
+        }
+    ]
+
+
+def test_f02_removing_fc_candidate_still_fails():
+    fixture = _f02_fixture("F-C")
+    fixture["candidates"] = [candidate for candidate in fixture["candidates"] if candidate["id"] != "c100"]
+    result = evaluate_fixture(fixture)
+    assert result["oracle"]["semantic_pass"] is False
+    _ratio(result["metrics"]["final_material_claim_unresolved_rate.v1"], 1, 2)
+
+
+def test_f02_changing_or_removing_fc_role_still_fails():
+    fixture = _f02_fixture("F-C")
+    for candidate in fixture["candidates"]:
+        if candidate["id"] == "c100":
+            candidate["roles"] = ["invention"]
+    result = evaluate_fixture(fixture)
+    assert result["oracle"]["semantic_pass"] is False
+
+    removed = _f02_fixture("F-C")
+    for candidate in removed["candidates"]:
+        if candidate["id"] == "c100":
+            candidate["roles"] = []
+    result = evaluate_fixture(removed)
+    assert result["oracle"]["semantic_pass"] is False
+
+
+def test_f02_verified_final_claim_invalid_binding_fails():
+    fixture = _f02_fixture("F-A")
+    fixture["final_atoms"][0]["binding"]["valid"] = False
+    result = evaluate_fixture(fixture)
+    assert result["oracle"]["semantic_pass"] is False
+    _ratio(result["metrics"]["final_material_claim_unresolved_rate.v1"], 1, 1)
+
+
+def test_f02_fb_omitted_required_claim_is_absent_from_f():
+    fixture = _f02_fixture("F-B")
+    assert fixture["gold_atoms"][0]["text"] == "There are 10 items."
+    assert "There are 10 items." not in fixture["draft_text"]
+    assert fixture["final_atoms"] == []
+    result = evaluate_fixture(fixture)
+    _ratio(result["metrics"]["material_claim_recall.v2"], 0, 1)
+    _ratio(result["metrics"]["material_claim_unresolved_rate.v1"], 1, 1)
+    _undefined(
+        result["metrics"]["final_material_claim_unresolved_rate.v1"],
+        "zero independently adjudicated final material claims",
+    )
+    assert result["oracle"]["unresolved_material_atoms"] == 1
+    assert result["oracle"]["unresolved_final_material_atoms"] == 0
+    assert result["oracle"]["final_material_atoms"] == 0
+    assert result["oracle"]["semantic_pass"] is False
+    assert result["final_claims"] == []
+    required_cases = [case for case in result["classification_cases"] if case["source"] == "required"]
+    assert required_cases
+    assert required_cases[0]["required_gold_id"] == "g1"
+    assert required_cases[0]["final_atom_id"] is None
+
+
+def test_f02_semantic_pass_does_not_require_positive_denominators():
+    fixture = _f02_fixture("F-A")
+    fixture["gold_atoms"] = []
+    fixture["candidates"] = []
+    fixture["allowed_matches"] = []
+    fixture["evidence_bindings"] = []
+    fixture["final_atoms"] = []
+    fixture["fixed_classification_cases"] = []
+    fixture["verifier_rows"] = []
+    result = evaluate_fixture(fixture)
+    assert result["oracle"]["semantic_pass"] is True
+    assert result["oracle"]["unresolved_material_atoms"] == 0
+    assert result["oracle"]["unresolved_final_material_atoms"] == 0
+    _undefined(result["metrics"]["material_claim_recall.v2"], "zero material gold atoms")
+    _undefined(result["metrics"]["material_claim_unresolved_rate.v1"], "zero material gold atoms")
+    _undefined(
+        result["metrics"]["final_material_claim_unresolved_rate.v1"],
+        "zero independently adjudicated final material claims",
+    )
+    _undefined(
+        result["metrics"]["material_false_verification_rate.v2"],
+        "zero independently frozen material weak-or-unverified classification cases",
+    )
+
+
+def test_f02_fv_v2_uses_fixed_catalog_not_final_atoms():
+    fixture = _f02_fixture("F-A")
+    fixture["final_atoms"][0]["independent_semantic_label"] = "unverified"
+    result = evaluate_fixture(fixture)
+    assert result["oracle"]["semantic_pass"] is False
+    _undefined(
+        result["metrics"]["material_false_verification_rate.v2"],
+        "zero independently frozen material weak-or-unverified classification cases",
+    )
+
+    catalog = _f02_fixture("F-A")
+    catalog["fixed_classification_cases"][0]["independent_semantic_label"] = "unverified"
+    catalog["fixed_classification_cases"][0]["predicted_semantic_status"] = "verified"
+    result = evaluate_fixture(catalog)
+    _ratio(result["metrics"]["material_false_verification_rate.v2"], 1, 1)
+
+
+def test_f02_omitted_required_classifier_case_does_not_depend_on_f():
+    fixture = _f02_fixture("F-B")
+    assert fixture["final_atoms"] == []
+    case = fixture["fixed_classification_cases"][0]
+    assert case["source"] == "required"
+    assert case["required_gold_id"] == "g1"
+    assert case["final_atom_id"] is None
+    case["independent_semantic_label"] = "unverified"
+    case["predicted_semantic_status"] = "verified"
+    result = evaluate_fixture(fixture)
+    assert result["oracle"]["semantic_pass"] is False
+    assert result["oracle"]["unresolved_final_material_atoms"] == 0
+    _ratio(result["metrics"]["material_false_verification_rate.v2"], 1, 1)
+    assert any(
+        item["id"] == "FB.CLASS.g1" and item["final_atom_id"] is None
+        for item in result["classification_cases"]
+    )
+
+
+def test_f02_unsafe_final_claim_with_no_required_gold_fails():
+    fixture = _f02_fixture("F-C")
+    fixture["gold_atoms"] = []
+    fixture["allowed_matches"] = []
+    fixture["evidence_bindings"] = []
+    fixture["final_atoms"] = [
+        atom for atom in fixture["final_atoms"] if atom["id"] == "f2"
+    ]
+    fixture["fixed_classification_cases"] = [
+        case for case in fixture["fixed_classification_cases"] if case["source"] == "unmatched-final"
+    ]
+    result = evaluate_fixture(fixture)
+    assert result["oracle"]["semantic_pass"] is False
+    _undefined(result["metrics"]["material_claim_recall.v2"], "zero material gold atoms")
+    _ratio(result["metrics"]["final_material_claim_unresolved_rate.v1"], 1, 1)
+
+
+def test_f02_deleting_or_relabeling_unsafe_atom_breaks_approved_identity():
+    approved = _approved_fc_digest()
+    original = _f02_fixture("F-C")
+    assert_fixture_matches_approved_identity(original, approved)
+
+    deleted = _f02_fixture("F-C")
+    deleted["final_atoms"] = [atom for atom in deleted["final_atoms"] if atom["id"] != "f2"]
+    with pytest.raises(ClaimSemanticsV2Error, match="approved qualification digest"):
+        assert_fixture_matches_approved_identity(deleted, approved)
+
+    relabeled = _f02_fixture("F-C")
+    for atom in relabeled["final_atoms"]:
+        if atom["id"] == "f2":
+            atom["material"] = False
+    with pytest.raises(ClaimSemanticsV2Error, match="approved qualification digest"):
+        assert_fixture_matches_approved_identity(relabeled, approved)
+    assert fixture_identity_sha256(deleted) != approved
+
+
+def test_f02_final_atom_malformed_materiality_fails_closed():
+    for material in (None, 0, 1, "true", [], {}):
+        fixture = _f02_fixture("F-C")
+        fixture["final_atoms"][1]["material"] = material
+        with pytest.raises(ClaimSemanticsV2Error):
+            evaluate_fixture(fixture)
+
+
+def test_f02_candidate_and_final_atom_ordering_does_not_change_results():
+    baseline = evaluate_fixture(_f02_fixture("F-C"))
+    shuffled = _f02_fixture("F-C")
+    shuffled["candidates"] = list(reversed(shuffled["candidates"]))
+    shuffled["final_atoms"] = list(reversed(shuffled["final_atoms"]))
+    shuffled["fixed_classification_cases"] = list(reversed(shuffled["fixed_classification_cases"]))
+    shuffled["allowed_matches"] = list(reversed(shuffled["allowed_matches"]))
+    shuffled["gold_atoms"] = list(reversed(shuffled["gold_atoms"]))
+    shuffled["evidence_bindings"] = list(reversed(shuffled["evidence_bindings"]))
+    shuffled["verifier_rows"] = list(reversed(shuffled["verifier_rows"]))
+    shuffled_result = evaluate_fixture(shuffled)
+    assert shuffled_result["metrics"] == baseline["metrics"]
+    assert shuffled_result["oracle"]["semantic_pass"] is baseline["oracle"]["semantic_pass"]
+
+
+def test_historical_v1_and_uvr_remain_unchanged():
+    metrics = _metrics()
+    _ratio(metrics["material_claim_recall.v2"], 3, 4)
+    _ratio(metrics["material_claim_unresolved_rate.v1"], 3, 4)
+    _ratio(metrics["material_false_verification_rate.v1"], 1, 2)
+    _ratio(metrics["unverified_verifier_row_rate.UVR_v1"], 0, 5)
+    report = evaluate_pack(_pack())
+    _ratio(report["metrics"]["automatic_semantic_false_pass_rate.v1"], 1, 1)
+    _undefined(
+        metrics["final_material_claim_unresolved_rate.v1"],
+        "historical revisionless fixture has no final-claim inventory",
+    )
+    _undefined(
+        metrics["material_false_verification_rate.v2"],
+        "historical revisionless fixture has no final-claim inventory",
+    )
+    _undefined(
+        report["metrics"]["automatic_semantic_false_pass_rate.v2"],
+        "historical revisionless fixture has no final-claim inventory",
+    )
+
+
+def test_historical_fixture_bytes_are_not_reinterpreted():
+    historical = Path("evals/fixtures/claim_semantics_v2.json").read_bytes()
+    assert b"final_atoms" not in historical
+    assert b"schema_development_revision" not in historical
+    pack = json.loads(historical)
+    assert pack["pack_id"] == "claim_semantics_v2"
+    assert "schema_development_revision" not in pack

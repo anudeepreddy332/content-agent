@@ -1,0 +1,16 @@
+{
+  "manifest_id": "claim_semantics_v2_f02",
+  "schema_development_revision": "f02-r1",
+  "pack_id": "claim_semantics_v2_f02",
+  "pack_path": "evals/fixtures/claim_semantics_v2_f02.json",
+  "pack_sha256": "6d5ee689cd7da5bddc5447c6eb2814ddf42a1174c6e6b17b73a2e0324676809c",
+  "fixture_identities": {
+    "F-A": "ad056cdd36b8d96024d0df2d4e9c09a87fedd78756d4ed51237551d509690c79",
+    "F-B": "2901c3618aa1c24ba7ef06356a0602a56fc1543a56486ebe3439ad7710f35828",
+    "F-C": "b00c9799a82400339079b0698ef25eb1fe1064355d7baaafa4191bac1a318e2a",
+    "F-D": "3074814e3442afa431e5262885e14cd2deeacb78e9895443d6533b9221f3b15b",
+    "F-E": "27ae12ba6b58943c4b1f223f124b013a87e706df6890636a0fc20cd5e7a5bcc4",
+    "F-F": "ab2d3b646a5e1b34971ed7e05715bfe3251dca17cf8c4652a9760fdce89a625e"
+  },
+  "manifest_sha256": "9894ab115d461c157263347e024ce0274612a051f5899b48f32c3482f3cf5482"
+}

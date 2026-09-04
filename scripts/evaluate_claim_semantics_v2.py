@@ -12,15 +12,31 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_FIXTURES = REPO_ROOT / "evals" / "fixtures" / "claim_semantics_v2.json"
+DEFAULT_F02_FIXTURES = REPO_ROOT / "evals" / "fixtures" / "claim_semantics_v2_f02.json"
+DEFAULT_F02_MANIFEST = REPO_ROOT / "evals" / "claim_semantics_v2_f02.manifest.json"
 DEFAULT_SCHEMA = REPO_ROOT / "evals" / "claim_semantics_v2.schema.json"
 DEFAULT_REGISTRY = REPO_ROOT / "evals" / "metric_registry_v1.json"
 
 EVALUATOR_ID = "claim_semantics_v2"
 PACK_ID = "claim_semantics_v2"
+F02_PACK_ID = "claim_semantics_v2_f02"
 SCHEMA_VERSION = 2
+SCHEMA_DEVELOPMENT_REVISION_F02 = "f02-r1"
 FROZEN_FIXTURE_IDS = ("ADV01",)
+F02_FIXTURE_IDS = ("F-A", "F-B", "F-C", "F-D", "F-E", "F-F")
 SEMANTIC_STATUSES = frozenset({"verified", "weak", "unverified"})
+REFERENCE_RELATIONSHIPS = frozenset({"required-equivalent", "unmatched"})
 ROUTE_DECISIONS = frozenset({"PASS", "FAIL"})
+REGISTERED_METRIC_NAMES = {
+    "material_claim_recall.v2",
+    "material_claim_unresolved_rate.v1",
+    "material_false_verification_rate.v1",
+    "material_false_verification_rate.v2",
+    "automatic_semantic_false_pass_rate.v1",
+    "automatic_semantic_false_pass_rate.v2",
+    "final_material_claim_unresolved_rate.v1",
+    "unverified_verifier_row_rate.UVR_v1",
+}
 KNOWN_ROLES = frozenset({
     "compound",
     "fragment",
@@ -124,6 +140,7 @@ PACK_REQUIRED_KEYS = (
     "description",
     "fixtures",
 )
+F02_PACK_REQUIRED_KEYS = PACK_REQUIRED_KEYS + ("schema_development_revision",)
 FIXTURE_REQUIRED_KEYS = (
     "id",
     "title",
@@ -137,6 +154,39 @@ FIXTURE_REQUIRED_KEYS = (
     "verifier_rows",
     "automatic_route",
 )
+F02_FIXTURE_REQUIRED_KEYS = FIXTURE_REQUIRED_KEYS + ("final_atoms", "fixed_classification_cases")
+FINAL_ATOM_REQUIRED_KEYS = (
+    "id",
+    "text",
+    "span",
+    "material",
+    "reference_relationship",
+    "required_gold_id",
+    "independent_semantic_label",
+    "prediction_id",
+    "predicted_semantic_status",
+    "binding",
+)
+FINAL_BINDING_REQUIRED_KEYS = (
+    "id",
+    "target_final_claim_id",
+    "evidence_id",
+    "valid",
+    "fully_entailed",
+)
+FIXED_CASE_REQUIRED_KEYS = (
+    "id",
+    "source",
+    "material",
+    "independent_semantic_label",
+    "predicted_semantic_status",
+    "prediction_id",
+    "required_gold_id",
+    "final_atom_id",
+)
+CLASSIFICATION_SOURCES = frozenset({"required", "final", "unmatched-final"})
+PACK_PROPERTY_KEYS = F02_PACK_REQUIRED_KEYS
+FIXTURE_PROPERTY_KEYS = F02_FIXTURE_REQUIRED_KEYS
 GOLD_REQUIRED_KEYS = (
     "id",
     "canonical_id",
@@ -166,20 +216,22 @@ EVIDENCE_BINDING_REQUIRED_KEYS = (
 )
 VERIFIER_ROW_REQUIRED_KEYS = ("id", "status")
 AUTOMATIC_ROUTE_REQUIRED_KEYS = ("decision",)
-FIXTURE_ID_PATTERN = r"^ADV0[1-9]$|^ADV[1-9][0-9]$"
+FIXTURE_ID_PATTERN = r"^ADV0[1-9]$|^ADV[1-9][0-9]$|^F-[A-F]$"
 DRAFT_SHA256_PATTERN = r"^[a-f0-9]{64}$"
 
 
 def runtime_schema_contract() -> dict[str, Any]:
     return {
         "pack_required": tuple(sorted(PACK_REQUIRED_KEYS)),
-        "pack_properties": tuple(sorted(PACK_REQUIRED_KEYS)),
-        "pack_id": PACK_ID,
+        "pack_properties": tuple(sorted(PACK_PROPERTY_KEYS)),
+        "pack_id": tuple(sorted({PACK_ID, F02_PACK_ID})),
         "schema_version": SCHEMA_VERSION,
+        "schema_development_revisions": (SCHEMA_DEVELOPMENT_REVISION_F02,),
         "evaluator_id": EVALUATOR_ID,
-        "fixture_cardinality": 1,
+        "fixture_min_items": 1,
+        "fixture_max_items": 6,
         "fixture_required": tuple(sorted(FIXTURE_REQUIRED_KEYS)),
-        "fixture_properties": tuple(sorted(FIXTURE_REQUIRED_KEYS)),
+        "fixture_properties": tuple(sorted(FIXTURE_PROPERTY_KEYS)),
         "gold_required": tuple(sorted(GOLD_REQUIRED_KEYS)),
         "gold_properties": tuple(sorted(GOLD_REQUIRED_KEYS)),
         "exclusion_required": tuple(sorted(EXCLUSION_REQUIRED_KEYS)),
@@ -194,8 +246,16 @@ def runtime_schema_contract() -> dict[str, Any]:
         "verifier_row_properties": tuple(sorted(VERIFIER_ROW_REQUIRED_KEYS)),
         "automatic_route_required": tuple(sorted(AUTOMATIC_ROUTE_REQUIRED_KEYS)),
         "automatic_route_properties": tuple(sorted(AUTOMATIC_ROUTE_REQUIRED_KEYS)),
+        "final_atom_required": tuple(sorted(FINAL_ATOM_REQUIRED_KEYS)),
+        "final_atom_properties": tuple(sorted(FINAL_ATOM_REQUIRED_KEYS)),
+        "final_binding_required": tuple(sorted(FINAL_BINDING_REQUIRED_KEYS)),
+        "final_binding_properties": tuple(sorted(FINAL_BINDING_REQUIRED_KEYS)),
+        "fixed_case_required": tuple(sorted(FIXED_CASE_REQUIRED_KEYS)),
+        "fixed_case_properties": tuple(sorted(FIXED_CASE_REQUIRED_KEYS)),
+        "classification_sources": tuple(sorted(CLASSIFICATION_SOURCES)),
         "candidate_roles": tuple(sorted(KNOWN_ROLES)),
         "semantic_statuses": tuple(sorted(SEMANTIC_STATUSES)),
+        "reference_relationships": tuple(sorted(REFERENCE_RELATIONSHIPS)),
         "route_decisions": tuple(sorted(ROUTE_DECISIONS)),
         "exclusion_reasons": tuple(sorted(EXCLUSION_REASONS)),
         "additional_properties": False,
@@ -249,6 +309,9 @@ def extract_schema_contract(schema: dict[str, Any]) -> dict[str, Any]:
         ("evidence_binding", defs["evidence_binding"]),
         ("verifier_row", defs["verifier_row"]),
         ("automatic_route", defs["automatic_route"]),
+        ("final_atom", defs["final_atom"]),
+        ("final_binding", defs["final_binding"]),
+        ("fixed_classification_case", defs["fixed_classification_case"]),
     ):
         _additional_false(node, label)
 
@@ -257,14 +320,21 @@ def extract_schema_contract(schema: dict[str, Any]) -> dict[str, Any]:
     decisions = defs["automatic_route"]["properties"]["decision"]["enum"]
     reasons = defs["exclusion_reason"]["enum"]
     fixture_id_pattern = defs["fixture"]["properties"]["id"]["pattern"]
+    pack_id_node = schema["properties"]["pack_id"]
+    pack_ids = pack_id_node.get("enum")
+    _require(isinstance(pack_ids, list) and pack_ids, "pack_id enum missing")
 
     return {
         "pack_required": _required(schema, "pack"),
         "pack_properties": _properties(schema, "pack"),
-        "pack_id": schema["properties"]["pack_id"]["const"],
+        "pack_id": tuple(sorted(pack_ids)),
         "schema_version": schema["properties"]["schema_version"]["const"],
+        "schema_development_revisions": tuple(
+            sorted(schema["properties"]["schema_development_revision"]["enum"])
+        ),
         "evaluator_id": schema["properties"]["evaluator_id"]["const"],
-        "fixture_cardinality": schema["properties"]["fixtures"]["minItems"],
+        "fixture_min_items": schema["properties"]["fixtures"]["minItems"],
+        "fixture_max_items": schema["properties"]["fixtures"]["maxItems"],
         "fixture_required": _required(defs["fixture"], "fixture"),
         "fixture_properties": _properties(defs["fixture"], "fixture"),
         "gold_required": _required(defs["gold_atom"], "gold_atom"),
@@ -281,8 +351,16 @@ def extract_schema_contract(schema: dict[str, Any]) -> dict[str, Any]:
         "verifier_row_properties": _properties(defs["verifier_row"], "verifier_row"),
         "automatic_route_required": _required(defs["automatic_route"], "automatic_route"),
         "automatic_route_properties": _properties(defs["automatic_route"], "automatic_route"),
+        "final_atom_required": _required(defs["final_atom"], "final_atom"),
+        "final_atom_properties": _properties(defs["final_atom"], "final_atom"),
+        "final_binding_required": _required(defs["final_binding"], "final_binding"),
+        "final_binding_properties": _properties(defs["final_binding"], "final_binding"),
+        "fixed_case_required": _required(defs["fixed_classification_case"], "fixed_classification_case"),
+        "fixed_case_properties": _properties(defs["fixed_classification_case"], "fixed_classification_case"),
+        "classification_sources": tuple(sorted(defs["classification_source"]["enum"])),
         "candidate_roles": tuple(sorted(roles)),
         "semantic_statuses": tuple(sorted(statuses)),
+        "reference_relationships": tuple(sorted(defs["reference_relationship"]["enum"])),
         "route_decisions": tuple(sorted(decisions)),
         "exclusion_reasons": tuple(sorted(reasons)),
         "additional_properties": False,
@@ -302,7 +380,8 @@ def assert_schema_runtime_parity(schema: dict[str, Any] | None = None) -> dict[s
     drifted = sorted(key for key in set(extracted) | set(runtime) if extracted.get(key) != runtime.get(key))
     _require(not drifted, f"schema/runtime contract drift on fields {drifted}")
     fixtures_node = schema["properties"]["fixtures"]
-    _require(fixtures_node.get("minItems") == fixtures_node.get("maxItems"), "fixture minItems must equal maxItems")
+    _require(fixtures_node.get("minItems") == 1, "fixture minItems must be 1")
+    _require(fixtures_node.get("maxItems") == 6, "fixture maxItems must be 6")
     return extracted
 
 
@@ -521,11 +600,135 @@ def _validate_verifier_rows(fixture_id: str, rows: list[dict[str, Any]]) -> None
         _require(row["status"] in SEMANTIC_STATUSES, f"{row_id} invalid verifier status")
 
 
+def _is_f02_fixture(fixture: dict[str, Any]) -> bool:
+    return "final_atoms" in fixture
+
+
+def _validate_final_binding(atom_id: str, binding: Any) -> None:
+    if binding is None:
+        return
+    _require(isinstance(binding, dict), f"{atom_id} binding must be an object or null")
+    _require_keys(binding, FINAL_BINDING_REQUIRED_KEYS, f"{atom_id} binding")
+    _require(isinstance(binding["id"], str) and binding["id"], f"{atom_id} binding id required")
+    _require(
+        isinstance(binding["target_final_claim_id"], str) and binding["target_final_claim_id"],
+        f"{atom_id} target_final_claim_id required",
+    )
+    _require(binding["target_final_claim_id"] == atom_id, f"{atom_id} binding does not target this final claim")
+    _require(isinstance(binding["evidence_id"], str) and binding["evidence_id"], f"{atom_id} evidence_id required")
+    _require(type(binding["valid"]) is bool, f"{atom_id} binding valid must be bool")
+    _require(type(binding["fully_entailed"]) is bool, f"{atom_id} binding fully_entailed must be bool")
+
+
+def _validate_final_atoms(
+    fixture_id: str,
+    draft: str,
+    gold_ids: set[str],
+    final_atoms: list[dict[str, Any]],
+) -> None:
+    _require(isinstance(final_atoms, list), f"{fixture_id} final_atoms must be a list")
+    seen: set[str] = set()
+    for atom in final_atoms:
+        _require(isinstance(atom, dict), f"{fixture_id} final atom must be an object")
+        _require_keys(atom, FINAL_ATOM_REQUIRED_KEYS, f"{fixture_id} final atom")
+        atom_id = atom["id"]
+        _require(isinstance(atom_id, str) and atom_id, f"{fixture_id} final atom id required")
+        _require(atom_id not in seen, f"{fixture_id} duplicate final atom {atom_id}")
+        seen.add(atom_id)
+        _require(isinstance(atom["text"], str) and atom["text"], f"{atom_id} text required")
+        _validate_span(atom["span"], atom["text"], draft, atom_id)
+        _require(type(atom["material"]) is bool, f"{atom_id} material must be bool")
+        relationship = atom["reference_relationship"]
+        _require(relationship in REFERENCE_RELATIONSHIPS, f"{atom_id} invalid reference_relationship")
+        required_gold_id = atom["required_gold_id"]
+        if relationship == "required-equivalent":
+            _require(
+                isinstance(required_gold_id, str) and required_gold_id,
+                f"{atom_id} required-equivalent requires required_gold_id",
+            )
+            _require(required_gold_id in gold_ids, f"{atom_id} required_gold_id {required_gold_id} is unknown")
+        else:
+            _require(required_gold_id is None, f"{atom_id} unmatched required_gold_id must be null")
+        _require(
+            atom["independent_semantic_label"] in SEMANTIC_STATUSES,
+            f"{atom_id} invalid independent semantic label",
+        )
+        _require(isinstance(atom["prediction_id"], str) and atom["prediction_id"], f"{atom_id} prediction_id required")
+        _require(
+            atom["predicted_semantic_status"] in SEMANTIC_STATUSES,
+            f"{atom_id} invalid predicted semantic status",
+        )
+        _validate_final_binding(atom_id, atom["binding"])
+
+
+def _validate_fixed_classification_cases(
+    fixture_id: str,
+    gold_ids: set[str],
+    cases: list[dict[str, Any]],
+) -> None:
+    _require(isinstance(cases, list), f"{fixture_id} fixed_classification_cases must be a list")
+    seen: set[str] = set()
+    for case in cases:
+        _require(isinstance(case, dict), f"{fixture_id} fixed classification case must be an object")
+        _require_keys(case, FIXED_CASE_REQUIRED_KEYS, f"{fixture_id} fixed classification case")
+        case_id = case["id"]
+        _require(isinstance(case_id, str) and case_id, f"{fixture_id} classification case id required")
+        _require(case_id not in seen, f"{fixture_id} duplicate classification case {case_id}")
+        seen.add(case_id)
+        source = case["source"]
+        _require(source in CLASSIFICATION_SOURCES, f"{case_id} invalid classification source")
+        _require(type(case["material"]) is bool, f"{case_id} material must be bool")
+        _require(
+            case["independent_semantic_label"] in SEMANTIC_STATUSES,
+            f"{case_id} invalid independent semantic label",
+        )
+        _require(
+            isinstance(case["prediction_id"], str) and case["prediction_id"],
+            f"{case_id} prediction_id required",
+        )
+        _require(
+            case["predicted_semantic_status"] in SEMANTIC_STATUSES,
+            f"{case_id} invalid predicted semantic status",
+        )
+        required_gold_id = case["required_gold_id"]
+        final_atom_id = case["final_atom_id"]
+        if source == "required":
+            _require(
+                isinstance(required_gold_id, str) and required_gold_id,
+                f"{case_id} required source requires required_gold_id",
+            )
+            _require(required_gold_id in gold_ids, f"{case_id} required_gold_id {required_gold_id} is unknown")
+        elif source == "unmatched-final":
+            _require(required_gold_id is None, f"{case_id} unmatched-final required_gold_id must be null")
+            _require(
+                isinstance(final_atom_id, str) and final_atom_id,
+                f"{case_id} unmatched-final requires final_atom_id identity",
+            )
+        else:
+            _require(
+                isinstance(final_atom_id, str) and final_atom_id,
+                f"{case_id} final source requires final_atom_id identity",
+            )
+            if required_gold_id is not None:
+                _require(
+                    isinstance(required_gold_id, str) and required_gold_id in gold_ids,
+                    f"{case_id} required_gold_id {required_gold_id} is unknown",
+                )
+
+
 def validate_fixture(fixture: dict[str, Any]) -> None:
     _require(isinstance(fixture, dict), "fixture must be an object")
-    _require_keys(fixture, FIXTURE_REQUIRED_KEYS, "fixture")
+    f02 = _is_f02_fixture(fixture)
+    _require_keys(fixture, F02_FIXTURE_REQUIRED_KEYS if f02 else FIXTURE_REQUIRED_KEYS, "fixture")
     fixture_id = fixture["id"]
-    _require(fixture_id in FROZEN_FIXTURE_IDS, f"unknown fixture id {fixture_id!r}")
+    _require(
+        fixture_id in FROZEN_FIXTURE_IDS or fixture_id in F02_FIXTURE_IDS,
+        f"unknown fixture id {fixture_id!r}",
+    )
+    if f02:
+        _require(fixture_id in F02_FIXTURE_IDS, f"unknown F-02 fixture id {fixture_id!r}")
+    else:
+        _require(fixture_id in FROZEN_FIXTURE_IDS, f"unknown fixture id {fixture_id!r}")
     draft = fixture["draft_text"]
     _require(isinstance(draft, str) and draft, f"{fixture_id} draft_text required")
     _validate_sha256(fixture["draft_sha256"], f"{fixture_id} draft_sha256")
@@ -546,15 +749,25 @@ def validate_fixture(fixture: dict[str, Any]) -> None:
         _require(gold_id not in gold_ids, f"{fixture_id} duplicate gold id {gold_id}")
         gold_ids.add(gold_id)
         _require(gold["gold_semantic_status"] in SEMANTIC_STATUSES, f"{gold_id} invalid gold semantic status")
+        _require(type(gold["factual"]) is bool, f"{gold_id} factual must be bool")
+        _require(type(gold["material"]) is bool, f"{gold_id} material must be bool")
         _require(not gold["material"] or gold["factual"], f"{gold_id} material atom must be factual")
-        _validate_span(gold["span"], gold["text"], draft, gold_id)
+        span = gold["span"]
+        if span is None:
+            _require(f02, f"{gold_id} null gold span is only valid on F-02 omitted required claims")
+            _require(
+                gold["text"] not in draft,
+                f"{gold_id} omitted required claim must be absent from the final draft",
+            )
+        else:
+            _validate_span(span, gold["text"], draft, gold_id)
+            gold_spans.append((span[0], span[1], gold_id))
         flags = (gold["factual"], gold["material"], gold["gold_semantic_status"])
         previous = canonical_flags.get(gold["canonical_id"])
         if previous is None:
             canonical_flags[gold["canonical_id"]] = flags
         else:
             _require(previous == flags, f"{gold_id} canonical flags disagree with sibling rows")
-        gold_spans.append((gold["span"][0], gold["span"][1], gold_id))
 
     exclusion_ids: set[str] = set()
     for exclusion in exclusions:
@@ -592,6 +805,14 @@ def validate_fixture(fixture: dict[str, Any]) -> None:
     _require_keys(automatic_route, AUTOMATIC_ROUTE_REQUIRED_KEYS, f"{fixture_id} automatic_route")
     _require(automatic_route["decision"] in ROUTE_DECISIONS, f"{fixture_id} invalid automatic route decision")
 
+    if f02:
+        _validate_final_atoms(fixture_id, draft, gold_ids, fixture["final_atoms"])
+        _validate_fixed_classification_cases(
+            fixture_id,
+            gold_ids,
+            fixture["fixed_classification_cases"],
+        )
+
 
 def validate_pack(pack: dict[str, Any], *, require_frozen_catalog: bool = True) -> None:
     schema = load_frozen_schema(DEFAULT_SCHEMA)
@@ -602,20 +823,43 @@ def validate_pack(pack: dict[str, Any], *, require_frozen_catalog: bool = True) 
 
 def _validate_pack_semantics(pack: dict[str, Any], *, require_frozen_catalog: bool = True) -> None:
     _require(isinstance(pack, dict), "pack must be an object")
-    _require_keys(pack, PACK_REQUIRED_KEYS, "pack")
-    _require(pack["pack_id"] == PACK_ID, f"pack_id must be {PACK_ID}")
+    f02 = pack.get("pack_id") == F02_PACK_ID or pack.get("schema_development_revision") == SCHEMA_DEVELOPMENT_REVISION_F02
+    _require_keys(pack, F02_PACK_REQUIRED_KEYS if f02 else PACK_REQUIRED_KEYS, "pack")
+    if f02:
+        _require(pack["pack_id"] == F02_PACK_ID, f"pack_id must be {F02_PACK_ID}")
+        _require(
+            pack["schema_development_revision"] == SCHEMA_DEVELOPMENT_REVISION_F02,
+            f"schema_development_revision must be {SCHEMA_DEVELOPMENT_REVISION_F02}",
+        )
+    else:
+        _require(pack["pack_id"] == PACK_ID, f"pack_id must be {PACK_ID}")
+        _require("schema_development_revision" not in pack, "historical pack must not set schema_development_revision")
     _require(pack["schema_version"] == SCHEMA_VERSION, "schema_version must be 2")
     _require(pack["evaluator_id"] == EVALUATOR_ID, f"evaluator_id must be {EVALUATOR_ID}")
     fixtures = pack["fixtures"]
     _require(isinstance(fixtures, list), "fixtures must be a list")
     seen: set[str] = set()
     for fixture in fixtures:
+        if f02:
+            _require(_is_f02_fixture(fixture), f"{fixture.get('id')} missing final_atoms")
+        else:
+            _require(not _is_f02_fixture(fixture), "historical fixture must not include final_atoms")
         validate_fixture(fixture)
         _require(fixture["id"] not in seen, f"duplicate fixture id {fixture['id']}")
         seen.add(fixture["id"])
     if require_frozen_catalog:
-        _require(len(fixtures) == 1, f"official pack must contain 1 fixture, got {len(fixtures)}")
-        _require(tuple(fixture["id"] for fixture in fixtures) == FROZEN_FIXTURE_IDS, "official pack IDs must match frozen catalog")
+        if f02:
+            _require(len(fixtures) == 6, f"official F-02 pack must contain 6 fixtures, got {len(fixtures)}")
+            _require(
+                tuple(fixture["id"] for fixture in fixtures) == F02_FIXTURE_IDS,
+                "official F-02 pack IDs must match frozen catalog",
+            )
+        else:
+            _require(len(fixtures) == 1, f"official pack must contain 1 fixture, got {len(fixtures)}")
+            _require(
+                tuple(fixture["id"] for fixture in fixtures) == FROZEN_FIXTURE_IDS,
+                "official pack IDs must match frozen catalog",
+            )
 
 
 def load_pack(path: Path | str = DEFAULT_FIXTURES, *, require_frozen_catalog: bool = True) -> dict[str, Any]:
@@ -625,10 +869,21 @@ def load_pack(path: Path | str = DEFAULT_FIXTURES, *, require_frozen_catalog: bo
     except (OSError, json.JSONDecodeError) as error:
         raise ClaimSemanticsV2Error(f"unreadable fixture pack {pack_path}: {error}") from error
     validate_pack(pack, require_frozen_catalog=require_frozen_catalog)
+    if require_frozen_catalog and pack.get("pack_id") == F02_PACK_ID:
+        verify_f02_manifest(pack, pack_path=pack_path)
     return pack
 
 
 def _ephemeral_pack(fixture: dict[str, Any]) -> dict[str, Any]:
+    if _is_f02_fixture(fixture):
+        return {
+            "pack_id": F02_PACK_ID,
+            "schema_version": SCHEMA_VERSION,
+            "schema_development_revision": SCHEMA_DEVELOPMENT_REVISION_F02,
+            "evaluator_id": EVALUATOR_ID,
+            "description": "ephemeral F-02 fixture evaluation envelope",
+            "fixtures": [fixture],
+        }
     return {
         "pack_id": PACK_ID,
         "schema_version": SCHEMA_VERSION,
@@ -636,6 +891,129 @@ def _ephemeral_pack(fixture: dict[str, Any]) -> dict[str, Any]:
         "description": "ephemeral fixture evaluation envelope",
         "fixtures": [fixture],
     }
+
+
+def canonical_f02_fixture_identity(fixture: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": fixture["id"],
+        "draft_text": fixture["draft_text"],
+        "draft_sha256": fixture["draft_sha256"],
+        "gold_atoms": fixture["gold_atoms"],
+        "final_atoms": fixture["final_atoms"],
+        "fixed_classification_cases": fixture["fixed_classification_cases"],
+    }
+
+
+def fixture_identity_sha256(fixture: dict[str, Any]) -> str:
+    payload = json.dumps(
+        canonical_f02_fixture_identity(fixture),
+        sort_keys=True,
+        ensure_ascii=True,
+        separators=(",", ":"),
+    )
+    return sha256_text(payload)
+
+
+def sha256_file_bytes(path: Path | str) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def build_f02_manifest(pack: dict[str, Any], pack_path: Path | str) -> dict[str, Any]:
+    identities = {fixture["id"]: fixture_identity_sha256(fixture) for fixture in pack["fixtures"]}
+    body = {
+        "manifest_id": "claim_semantics_v2_f02",
+        "schema_development_revision": SCHEMA_DEVELOPMENT_REVISION_F02,
+        "pack_id": F02_PACK_ID,
+        "pack_path": "evals/fixtures/claim_semantics_v2_f02.json",
+        "pack_sha256": sha256_file_bytes(pack_path),
+        "fixture_identities": identities,
+    }
+    body["manifest_sha256"] = sha256_text(
+        json.dumps(
+            {key: value for key, value in body.items() if key != "manifest_sha256"},
+            sort_keys=True,
+            ensure_ascii=True,
+            separators=(",", ":"),
+        )
+    )
+    return body
+
+
+def verify_f02_manifest(
+    pack: dict[str, Any],
+    *,
+    pack_path: Path | str = DEFAULT_F02_FIXTURES,
+    manifest_path: Path | str = DEFAULT_F02_MANIFEST,
+) -> dict[str, Any]:
+    manifest_file = Path(manifest_path)
+    try:
+        approved = json.loads(manifest_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ClaimSemanticsV2Error(f"unreadable F-02 manifest {manifest_file}: {error}") from error
+    _require(isinstance(approved, dict), "F-02 manifest must be an object")
+    expected = build_f02_manifest(pack, pack_path)
+    _require(
+        approved.get("schema_development_revision") == SCHEMA_DEVELOPMENT_REVISION_F02,
+        "F-02 manifest revision mismatch",
+    )
+    _require(approved.get("pack_sha256") == expected["pack_sha256"], "F-02 pack bytes do not match approved manifest")
+    approved_ids = approved.get("fixture_identities")
+    _require(isinstance(approved_ids, dict), "F-02 manifest fixture_identities must be an object")
+    _require(
+        set(approved_ids) == set(expected["fixture_identities"]),
+        "F-02 manifest fixture identity catalog mismatch",
+    )
+    for fixture_id, digest in expected["fixture_identities"].items():
+        _require(
+            approved_ids.get(fixture_id) == digest,
+            f"F-02 fixture {fixture_id} identity does not match approved manifest",
+        )
+    recomputed = sha256_text(
+        json.dumps(
+            {key: value for key, value in approved.items() if key != "manifest_sha256"},
+            sort_keys=True,
+            ensure_ascii=True,
+            separators=(",", ":"),
+        )
+    )
+    _require(approved.get("manifest_sha256") == recomputed, "F-02 manifest digest is stale or tampered")
+    return approved
+
+
+def assert_fixture_matches_approved_identity(fixture: dict[str, Any], approved_digest: str) -> None:
+    actual = fixture_identity_sha256(fixture)
+    _require(actual == approved_digest, "fixture identity does not match approved qualification digest")
+
+
+def _final_material_is_unresolved(atom: dict[str, Any]) -> bool:
+    if not atom["material"]:
+        return False
+    if atom["independent_semantic_label"] != "verified":
+        return True
+    if not atom["prediction_id"]:
+        return True
+    if atom["predicted_semantic_status"] != "verified":
+        return True
+    binding = atom["binding"]
+    if binding is None:
+        return True
+    if binding["target_final_claim_id"] != atom["id"]:
+        return True
+    if not binding["valid"]:
+        return True
+    if not binding["fully_entailed"]:
+        return True
+    if not binding["evidence_id"]:
+        return True
+    return False
+
+
+def _is_fixed_false_verification(case: dict[str, Any]) -> bool:
+    if not case["material"]:
+        return False
+    if case["independent_semantic_label"] not in {"weak", "unverified"}:
+        return False
+    return case["predicted_semantic_status"] == "verified"
 
 
 def _binding_for_gold(
@@ -760,7 +1138,67 @@ def _compute_fixture_metrics(fixture: dict[str, Any]) -> dict[str, Any]:
     )
 
     oracle_semantic_pass = unresolved_material == 0
+    required_semantic_pass = unresolved_material == 0
     automatic_route = fixture["automatic_route"]["decision"]
+
+    historical_na_reason = "historical revisionless fixture has no final-claim inventory"
+    if _is_f02_fixture(fixture):
+        final_atoms = fixture["final_atoms"]
+        material_finals = [atom for atom in final_atoms if atom["material"]]
+        unresolved_final = sum(1 for atom in material_finals if _final_material_is_unresolved(atom))
+        final_unresolved_rate = ratio(
+            unresolved_final,
+            len(material_finals),
+            "zero independently adjudicated final material claims",
+        )
+        classifier_cases = fixture["fixed_classification_cases"]
+        classifier_negatives = [
+            case
+            for case in classifier_cases
+            if case["material"] and case["independent_semantic_label"] in {"weak", "unverified"}
+        ]
+        false_verifications_v2 = sum(1 for case in classifier_negatives if _is_fixed_false_verification(case))
+        false_verification_rate_v2 = ratio(
+            false_verifications_v2,
+            len(classifier_negatives),
+            "zero independently frozen material weak-or-unverified classification cases",
+        )
+        oracle_semantic_pass = unresolved_material == 0 and unresolved_final == 0
+        final_claims = [
+            {
+                "id": atom["id"],
+                "text": atom["text"],
+                "material": atom["material"],
+                "reference_relationship": atom["reference_relationship"],
+                "independent_semantic_label": atom["independent_semantic_label"],
+                "predicted_semantic_status": atom["predicted_semantic_status"],
+                "resolved": (
+                    None
+                    if not atom["material"]
+                    else not _final_material_is_unresolved(atom)
+                ),
+            }
+            for atom in final_atoms
+        ]
+        classification_cases = [
+            {
+                "id": case["id"],
+                "source": case["source"],
+                "material": case["material"],
+                "independent_semantic_label": case["independent_semantic_label"],
+                "predicted_semantic_status": case["predicted_semantic_status"],
+                "required_gold_id": case["required_gold_id"],
+                "final_atom_id": case["final_atom_id"],
+            }
+            for case in classifier_cases
+        ]
+    else:
+        material_finals = []
+        unresolved_final = 0
+        final_unresolved_rate = ratio(0, 0, historical_na_reason)
+        false_verification_rate_v2 = ratio(0, 0, historical_na_reason)
+        final_claims = []
+        classification_cases = []
 
     return {
         "fixture_id": fixture["id"],
@@ -768,12 +1206,17 @@ def _compute_fixture_metrics(fixture: dict[str, Any]) -> dict[str, Any]:
             "material_claim_recall.v2": material_recall,
             "material_claim_unresolved_rate.v1": material_unresolved_rate,
             "material_false_verification_rate.v1": false_verification_rate,
+            "material_false_verification_rate.v2": false_verification_rate_v2,
+            "final_material_claim_unresolved_rate.v1": final_unresolved_rate,
             "unverified_verifier_row_rate.UVR_v1": compute_uvr_v1(fixture["verifier_rows"]),
         },
         "oracle": {
             "semantic_pass": oracle_semantic_pass,
+            "required_semantic_pass": required_semantic_pass,
             "unresolved_material_atoms": unresolved_material,
             "material_gold_atoms": len(material_golds),
+            "unresolved_final_material_atoms": unresolved_final,
+            "final_material_atoms": len(material_finals),
         },
         "automatic_route": {
             "decision": automatic_route,
@@ -782,6 +1225,8 @@ def _compute_fixture_metrics(fixture: dict[str, Any]) -> dict[str, Any]:
             "pairs": [list(pair) for pair in pairs],
             "matched_material_gold_ids": sorted(matched_material_gold_ids),
         },
+        "final_claims": final_claims,
+        "classification_cases": classification_cases,
     }
 
 
@@ -798,39 +1243,61 @@ def evaluate_pack(
 ) -> dict[str, Any]:
     validate_pack(pack, require_frozen_catalog=require_frozen_catalog)
     results: list[dict[str, Any]] = []
-    oracle_failing_assets = 0
-    false_pass_assets = 0
+    v1_failing_assets = 0
+    v1_false_pass_assets = 0
+    v2_failing_assets = 0
+    v2_false_pass_assets = 0
+    f02_pack = pack.get("pack_id") == F02_PACK_ID
 
     for fixture in pack["fixtures"]:
         if fixture_id is not None and fixture["id"] != fixture_id:
             continue
         result = _compute_fixture_metrics(fixture)
         results.append(result)
-        if not result["oracle"]["semantic_pass"]:
-            oracle_failing_assets += 1
+        if not result["oracle"]["required_semantic_pass"]:
+            v1_failing_assets += 1
             if result["automatic_route"]["decision"] == "PASS":
-                false_pass_assets += 1
+                v1_false_pass_assets += 1
+        if f02_pack and not result["oracle"]["semantic_pass"]:
+            v2_failing_assets += 1
+            if result["automatic_route"]["decision"] == "PASS":
+                v2_false_pass_assets += 1
 
     if fixture_id is not None and not any(fixture["id"] == fixture_id for fixture in pack["fixtures"]):
         raise ClaimSemanticsV2Error(f"unknown fixture id {fixture_id}")
 
     results.sort(key=lambda item: item["fixture_id"])
-    false_pass_rate = ratio(
-        false_pass_assets,
-        oracle_failing_assets,
+    false_pass_rate_v1 = ratio(
+        v1_false_pass_assets,
+        v1_failing_assets,
         "zero oracle-failing assets",
     )
+    if f02_pack:
+        false_pass_rate_v2 = ratio(
+            v2_false_pass_assets,
+            v2_failing_assets,
+            "zero corrected-oracle FAIL assets",
+        )
+    else:
+        false_pass_rate_v2 = ratio(
+            0,
+            0,
+            "historical revisionless fixture has no final-claim inventory",
+        )
 
     for result in results:
-        result["metrics"]["automatic_semantic_false_pass_rate.v1"] = false_pass_rate
+        result["metrics"]["automatic_semantic_false_pass_rate.v1"] = false_pass_rate_v1
+        result["metrics"]["automatic_semantic_false_pass_rate.v2"] = false_pass_rate_v2
 
     return {
         "evaluator_id": EVALUATOR_ID,
         "schema_version": SCHEMA_VERSION,
-        "pack_id": PACK_ID,
+        "pack_id": pack["pack_id"],
+        "schema_development_revision": pack.get("schema_development_revision"),
         "fixture_count": len(pack["fixtures"]),
         "metrics": {
-            "automatic_semantic_false_pass_rate.v1": false_pass_rate,
+            "automatic_semantic_false_pass_rate.v1": false_pass_rate_v1,
+            "automatic_semantic_false_pass_rate.v2": false_pass_rate_v2,
         },
         "results": results,
     }
@@ -849,16 +1316,12 @@ def load_metric_registry(path: Path | str = DEFAULT_REGISTRY) -> dict[str, Any]:
     _require(isinstance(registry, dict), "metric registry must be an object")
     _require(registry.get("registry_id") == "metric_registry_v1", "registry_id must be metric_registry_v1")
     metrics = registry.get("metrics")
-    _require(isinstance(metrics, list) and len(metrics) == 5, "registry must contain exactly five metrics")
+    _require(isinstance(metrics, list) and len(metrics) == 8, "registry must contain exactly eight metrics")
     names = {metric["canonical_name"] for metric in metrics}
-    expected = {
-        "material_claim_recall.v2",
-        "material_claim_unresolved_rate.v1",
-        "material_false_verification_rate.v1",
-        "automatic_semantic_false_pass_rate.v1",
-        "unverified_verifier_row_rate.UVR_v1",
-    }
-    _require(names == expected, f"registry metric identities must be {sorted(expected)}, got {sorted(names)}")
+    _require(
+        names == REGISTERED_METRIC_NAMES,
+        f"registry metric identities must be {sorted(REGISTERED_METRIC_NAMES)}, got {sorted(names)}",
+    )
     return registry
 
 

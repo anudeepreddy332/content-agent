@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://themachinist.org/schemas/metric_contract_v1.schema.json",
   "title": "P0 metric registry contract v1",
-  "description": "Machine-readable contract requiring all twenty metric registration concepts per registered identity.",
+  "description": "Machine-readable contract requiring all twenty metric registration concepts per registered identity. F-02 adds three identities; v1 identities remain historically registered.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -26,8 +26,8 @@
     },
     "metrics": {
       "type": "array",
-      "minItems": 5,
-      "maxItems": 5,
+      "minItems": 8,
+      "maxItems": 8,
       "items": { "$ref": "#/$defs/metric_entry" }
     }
   },

@@ -1,7 +1,7 @@
 {
   "registry_id": "metric_registry_v1",
   "schema_version": 1,
-  "description": "Official P0 semantic metric identities for claim_semantics_v2 evaluation-only slice.",
+  "description": "Official P0 semantic metric identities for claim_semantics_v2 evaluation-only slice. F-02 adds required-vs-final oracle identities; v1 identities remain historically registered.",
   "metrics": [
     {
       "canonical_name": "material_claim_recall.v2",
@@ -85,7 +85,35 @@
         "undefined_reason": null
       },
       "reference_implementation_requirements": "scripts/evaluate_claim_semantics_v2.py; count only material gold with gold label weak or unverified.",
-      "migration_versioning_rules": "New P0 safety metric introduced with claim_semantics_v2."
+      "migration_versioning_rules": "Historical required-gold population only. v2 is a distinct identity covering independently frozen material weak/unverified final claims, including unmatched claims."
+    },
+    {
+      "canonical_name": "material_false_verification_rate.v2",
+      "version": "v2",
+      "formula": "count(independently frozen material weak-or-unverified classification cases predicted verified) / count(independently frozen material weak-or-unverified classification cases)",
+      "numerator_definition": "Independently frozen FIXED CLASSIFICATION CASE catalog rows whose independent semantic label is weak or unverified and whose automated prediction is verified. The catalog may include required claim/evidence cases, final-content cases, and unmatched final cases. Selection does not depend on successful extraction, final_atoms membership, required-gold matching, or candidate survival.",
+      "denominator_definition": "All independently frozen material classification cases with independent semantic label weak or unverified, including required cases omitted from final content when the fixture specifies them.",
+      "eligibility_population": "F-02 assets with an independently frozen fixed-classification catalog.",
+      "canonical_evaluation_unit": "asset",
+      "aggregation": "none; mandatory per evaluated asset/fixture in this slice",
+      "missing_invalid_behavior": "INVALID when required final-claim, materiality, or prediction identity is missing; evaluation fails closed.",
+      "zero_denominator_behavior": "N/A / undefined when zero independently frozen material weak-or-unverified final claims.",
+      "range_unit": "[0,1] ratio; raw integer numerator and denominator always persisted",
+      "direction": "lower_is_better",
+      "exact_meaning": "Unsafe promotion of independently weak/unverified material classification cases into verified, including unmatched new claims and omitted required cases when specified in the catalog.",
+      "explicit_non_meaning": "Does not replace v1; is not derived from final_atoms alone; does not use required-gold matching or extraction success to select classifier cases; does not treat unmatched as unverified automatically.",
+      "authority": "P0 semantic safety qualification F-02; a weak/unverified material final claim predicted verified must count",
+      "provenance_requirements": "Frozen independent_semantic_label, predicted_semantic_status, material boolean, and fixture identity digest; no model-generated materiality.",
+      "deterministic_fixture_reference": "evals/fixtures/claim_semantics_v2_f02.json#F-C",
+      "hand_calculated_expected_result": {
+        "numerator": 1,
+        "denominator": 1,
+        "value": 1.0,
+        "undefined": false,
+        "undefined_reason": null
+      },
+      "reference_implementation_requirements": "scripts/evaluate_claim_semantics_v2.py; iterate fixture fixed_classification_cases only; a required case omitted from F remains in the denominator when the catalog specifies it.",
+      "migration_versioning_rules": "Versions forward from material_false_verification_rate.v1; v1 remains historically registered and required-gold-only."
     },
     {
       "canonical_name": "automatic_semantic_false_pass_rate.v1",
@@ -113,7 +141,63 @@
         "undefined_reason": null
       },
       "reference_implementation_requirements": "scripts/evaluate_claim_semantics_v2.py; oracle semantic_pass iff zero unresolved material atoms.",
-      "migration_versioning_rules": "New P0 safety metric introduced with claim_semantics_v2."
+      "migration_versioning_rules": "Historical G-only oracle. v2 is a distinct identity using the corrected required+final oracle. v1 remains historically registered."
+    },
+    {
+      "canonical_name": "automatic_semantic_false_pass_rate.v2",
+      "version": "v2",
+      "formula": "count(corrected-oracle FAIL assets recorded as automatic PASS) / count(corrected-oracle FAIL assets)",
+      "numerator_definition": "Integrated assets whose corrected required+final semantic oracle requires FAIL (unresolved required material claims != 0 or unresolved final material claims != 0) but whose recorded automatic_route.decision is PASS.",
+      "denominator_definition": "All eligible integrated assets whose corrected required+final semantic oracle says the asset must fail.",
+      "eligibility_population": "F-02 assets with valid automatic route evidence, required gold inventory, and final factual inventory.",
+      "canonical_evaluation_unit": "asset",
+      "aggregation": "pack-level in this slice; duplicated on per-fixture results for traceability; F-C evaluated as a unit yields 1/1",
+      "missing_invalid_behavior": "INVALID when route or oracle evidence is missing; evaluation fails closed. INVALID and N/A are never coerced into PASS.",
+      "zero_denominator_behavior": "N/A / undefined when zero corrected-oracle FAIL assets, or when a historical revisionless fixture has no final-claim inventory.",
+      "range_unit": "[0,1] ratio; raw integer numerator and denominator always persisted",
+      "direction": "lower_is_better",
+      "exact_meaning": "Direct integrated false-green frequency under the corrected required+final oracle.",
+      "explicit_non_meaning": "Does not reinterpret v1; does not measure prose quality, human utility, or publication approval.",
+      "authority": "P0 semantic safety qualification F-02; numerator must be zero",
+      "provenance_requirements": "Frozen automatic_route.decision and corrected oracle semantic_pass derived from required unresolved = 0 AND final unresolved = 0.",
+      "deterministic_fixture_reference": "evals/fixtures/claim_semantics_v2_f02.json#F-C",
+      "hand_calculated_expected_result": {
+        "numerator": 1,
+        "denominator": 1,
+        "value": 1.0,
+        "undefined": false,
+        "undefined_reason": null
+      },
+      "reference_implementation_requirements": "scripts/evaluate_claim_semantics_v2.py; PASS iff unresolved required material count U_G = 0 AND unresolved final material count U_F = 0. Zero-denominator rates are N/A and are not coerced into FAIL or PASS.",
+      "migration_versioning_rules": "Versions forward from automatic_semantic_false_pass_rate.v1; v1 remains historically registered and G-only."
+    },
+    {
+      "canonical_name": "final_material_claim_unresolved_rate.v1",
+      "version": "v1",
+      "formula": "count(unresolved independently adjudicated final material claims) / count(all independently adjudicated final material claims)",
+      "numerator_definition": "Independently adjudicated final material claims that fail the F-02 resolution rule: independent label verified, qualifying prediction exists and is verified, binding targets that final claim, binding is valid and fully entailing, and required identities are structurally valid.",
+      "denominator_definition": "Count of independently adjudicated final material claims in the frozen final factual inventory. Being unmatched to required gold does not by itself place a claim in the numerator.",
+      "eligibility_population": "F-02 assets with a frozen final factual inventory and independent material booleans.",
+      "canonical_evaluation_unit": "asset",
+      "aggregation": "none; mandatory per evaluated asset/fixture in this slice",
+      "missing_invalid_behavior": "INVALID when required final-claim identity, span, materiality, or binding structure is missing or inconsistent; evaluation fails closed.",
+      "zero_denominator_behavior": "N/A / undefined with explicit undefined_reason when zero independently adjudicated final material claims; never silently 0 or 1; N/A is never coerced into PASS.",
+      "range_unit": "[0,1] ratio; raw integer numerator and denominator always persisted",
+      "direction": "lower_is_better",
+      "exact_meaning": "Fraction of independently identified final material claims the system failed to defensibly resolve, including supported-new, weak-new, and unsupported-new claims.",
+      "explicit_non_meaning": "Does not change required-gold recall or required unresolved rate; does not treat unmatched as automatically unsafe; automatic PASS requires raw unresolved numerator = 0.",
+      "authority": "P0 semantic qualification F-02; automatic PASS requires unresolved final material numerator = 0",
+      "provenance_requirements": "Frozen final_atoms with independent material boolean, independent_semantic_label, prediction identity/status, reference_relationship, and binding assessment; approved fixture/manifest digest.",
+      "deterministic_fixture_reference": "evals/fixtures/claim_semantics_v2_f02.json#F-C",
+      "hand_calculated_expected_result": {
+        "numerator": 1,
+        "denominator": 2,
+        "value": 0.5,
+        "undefined": false,
+        "undefined_reason": null
+      },
+      "reference_implementation_requirements": "scripts/evaluate_claim_semantics_v2.py; gold weak+predicted weak unresolved; gold weak/unverified+predicted verified unresolved and false-verification; gold verified+invalid binding unresolved; supported-new verified with valid binding resolved.",
+      "migration_versioning_rules": "New F-02 identity. Does not alter material_claim_unresolved_rate.v1, which remains required-gold-only."
     },
     {
       "canonical_name": "unverified_verifier_row_rate.UVR_v1",
