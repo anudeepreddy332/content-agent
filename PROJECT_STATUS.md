@@ -38,12 +38,15 @@ remains preserved in `FREEZE.md`.
 - **Semantic P0 F-01 callable validation boundary — CLOSED:** exact
   `8530b078837b1a8669433777c1f8d9a1add25a8a`. Strict schema enforcement at every
   callable boundary; malformed materiality fails closed.
-- **Semantic P0 F-02 required-vs-final claim safety checkpoint:**
-  `650e52f5ecd4554c1c435a5cc99920bf42276ad8` on
-  `feature/semantic-p0-metric-registry-v2`. Parent exact
-  `8530b078837b1a8669433777c1f8d9a1add25a8a`. F-02 is implemented but **NOT**
-  adversarially closed, merged, or production-wired. Production runtime semantic
-  behavior remains unchanged.
+- **Semantic P0 F-02 required-vs-final claim safety — VALIDATED, PENDING INTEGRATION:**
+  exact validated implementation HEAD `c866de29ecc11156d28dffddd069a97b3008ca28` on
+  `feature/semantic-p0-metric-registry-v2`. Linear ancestry includes F-01 correction
+  `8530b078837b1a8669433777c1f8d9a1add25a8a`, F-02 implementation
+  `650e52f5ecd4554c1c435a5cc99920bf42276ad8`, and manifest-boundary correction
+  `c866de29ecc11156d28dffddd069a97b3008ca28`. Final independent qualification found
+  no remaining P0/P1 defect in the bounded final qualification. **Canonical main
+  does not contain this slice until PR merge.** Production runtime semantic behavior
+  remains unchanged.
 - **P0-2b slice 2B — VALIDATED AND INTEGRATED:** exact canonical main
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. Reconstructable semantic-trace persistence only;
   production semantic/routing behavior unchanged. Overall P0-2b remains OPEN. No later
@@ -84,12 +87,12 @@ remain preserved below as evidence; they are not reopened here.
 
 ### High-impact engineering priority order
 
-1. **Finish Semantic P0 Slice 1 adversarial qualification and integrate only if clean.**
-   Active program: claim-semantics v2 metric registry and required-vs-final
-   oracle. F-01 closed at `8530b078`; F-02 checkpoint at `650e52f5` is
-   implemented but not adversarially closed or merged.
+1. **Semantic P0 Slice 1 — VALIDATED, PENDING INTEGRATION** at exact
+   `c866de29ecc11156d28dffddd069a97b3008ca28`. PR/CI/integration is authorized;
+   canonical main does not contain this slice until merge.
 2. **Minimal exact evidence-exposure completion + small real provider 2C/2D
-   qualification using the corrected semantic ruler.**
+   qualification using the corrected semantic ruler** — next authorized product step
+   **after** Semantic P0 Slice 1 integration.
 3. **Retrieval redesign — major product-quality program:**
    - resolve MiniLM truncation / embedding-input mismatch;
    - production-shaped chunking/embedding strategy;
@@ -195,20 +198,31 @@ priority.
 
 - **Client-demo hardening:** CLOSED / LIVE-DEMO-REHEARSED.
 - **Overall P0-2b:** OPEN.
-- **Semantic P0 Metric Registry / claim-semantics v2:** CURRENT ACTIVE PROGRAM.
+- **Semantic P0 Slice 1 — VALIDATED, PENDING INTEGRATION:** exact validated
+  implementation HEAD `c866de29ecc11156d28dffddd069a97b3008ca28` on
+  `feature/semantic-p0-metric-registry-v2`.
 - **F-01 callable validation-boundary defect:** CLOSED at
   `8530b078837b1a8669433777c1f8d9a1add25a8a`.
-- **F-02 required-vs-final claim safety implementation checkpoint:**
-  `650e52f5ecd4554c1c435a5cc99920bf42276ad8` on
-  `feature/semantic-p0-metric-registry-v2`. Implemented; **NOT** adversarially
-  closed, merged, or production-wired.
+- **F-02 required-vs-final semantic contract:** validated at
+  `c866de29ecc11156d28dffddd069a97b3008ca28`; final manifest/callable-boundary
+  correction validated; no remaining P0/P1 finding in the bounded final
+  qualification.
+- **Canonical main:** does **not** contain Semantic P0 Slice 1 until PR merge.
 - **Paid 20-topic benchmark:** BLOCKED.
 - **Production runtime semantic behavior:** unchanged.
 
 ## Current authorized mission
 
-**Semantic P0 Metric Registry / claim-semantics v2** is the current active
-engineering program on `feature/semantic-p0-metric-registry-v2`.
+**Semantic P0 Slice 1 — VALIDATED, PENDING INTEGRATION.** The validated
+implementation at exact `c866de29ecc11156d28dffddd069a97b3008ca28` on
+`feature/semantic-p0-metric-registry-v2` may proceed to PR/CI/integration.
+Do not describe the slice as integrated until PR merge and canonical main
+verification.
+
+**Next authorized product step after integration:** minimal exact
+evidence-exposure completion + small real provider 2C/2D qualification using
+the corrected semantic ruler. Then retrieval redesign (frozen six-step roadmap
+priority 3).
 
 Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged).
 Claim completeness remains unresolved and is not an acceptance condition.

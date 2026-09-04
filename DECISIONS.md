@@ -9,6 +9,40 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-04-03
+Date: 2026-09-04
+
+Decision: **Semantic P0 Slice 1 accepted for integration at exact validated SHA
+`c866de29ecc11156d28dffddd069a97b3008ca28`.**
+
+Reason: The final independent qualification found no remaining P0/P1 defect
+across omission, final-content commission safety, supported-new claims,
+material weak handling, zero denominators, fixed classifier population, approved
+manifest integrity, duplicate/conflicting observations, false-pass aggregation,
+determinism, and historical preservation.
+
+Important boundary: Accepted for integration does **NOT** mean production
+semantic routing is qualified or wired. No paid benchmark is authorized.
+Canonical main does not contain this slice until PR merge and verification.
+
+Next product mission after integration: bounded evidence-exposure/provider
+qualification, followed by retrieval redesign (D-2026-09-04-01 priority 3).
+
+Evidence: Final independent qualification at exact
+`c866de29ecc11156d28dffddd069a97b3008ca28`; focused v2 `73 passed`; combined
+v1/v2 `107 passed`; Ruff PASS; diff check PASS; no provider/network calls.
+
+Status: **ACCEPTED FOR INTEGRATION — PENDING PR MERGE**. Does not authorize
+paid benchmark, production semantic wiring, or enterprise production readiness.
+
+Confidence: 0.97
+
+Supersedes / superseded by: Supersedes the F-02 "not adversarially closed"
+clauses in D-2026-09-04-01 and corresponding PROJECT_STATUS mission text.
+Does not close overall P0-2b, claim completeness, or enterprise production
+readiness.
+
+---
 Decision ID: D-2026-09-04-01
 Date: 2026-09-04
 
