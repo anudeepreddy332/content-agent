@@ -9,6 +9,39 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-04-05
+Date: 2026-09-04
+
+Decision: **Stage 2C deterministic evidence-exposure qualification design is frozen.
+Implementation/qualification only on branch `experiment/evidence-exposure-2c`.
+Provider execution (Stage 2D) is NOT authorized.**
+
+Reason: Canonical main mission after Semantic P0 Slice 1 integration is bounded
+evidence-exposure qualification. Stage 2C isolates the causal chain
+`retrieved source → model-visible evidence → verifier-visible evidence` with
+retrieval frozen at rank 1 and three deterministic arms (current prefix,
+complete source, gold relevant context).
+
+Frozen scope:
+
+- fixtures: `evals/fixtures/evidence_exposure_2c.json` (eight ASCII cases)
+- evaluator: `scripts/evaluate_evidence_exposure_2c.py`
+- contract: `docs/EVIDENCE_EXPOSURE_2C2D_CONTRACT.md`
+- metrics: six Stage 2C metrics with raw numerators/denominators
+- production `_build_source_context()` limits unchanged (web 1500, KB 2000)
+
+Status: **DESIGN FROZEN — STAGE 2C IMPLEMENTATION/QUALIFICATION ONLY — PROVIDER
+EXECUTION NOT AUTHORIZED**.
+
+Does NOT authorize: Stage 2D provider calls, production exposure changes,
+retrieval redesign, paid 20-topic benchmark, or runtime semantic wiring.
+
+Confidence: 0.96
+
+Supersedes / superseded by: Complements D-2026-09-04-02 and D-2026-09-04-04.
+Does not close overall P0-2b or enterprise production readiness.
+
+---
 Decision ID: D-2026-09-04-04
 Date: 2026-09-04
 

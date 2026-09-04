@@ -92,22 +92,25 @@ remain preserved below as evidence; they are not reopened here.
 
 1. **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED** at exact canonical
    integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
-2. **Minimal exact evidence-exposure completion + small real provider 2C/2D
-   qualification using the corrected semantic ruler** — **current authorized
-   engineering mission.**
-3. **Retrieval redesign — major product-quality program:**
+2. **Stage 2C deterministic evidence-exposure qualification — IN PROGRESS** on
+   `experiment/evidence-exposure-2c`. Frozen arms: current prefix (A), complete
+   source (B), gold relevant context (C). Provider Stage 2D **NOT** authorized.
+3. **Minimal exact evidence-exposure completion + small real provider 2C/2D
+   qualification using the corrected semantic ruler** — follows Stage 2C
+   independent review/closeout.
+4. **Retrieval redesign — major product-quality program:**
    - resolve MiniLM truncation / embedding-input mismatch;
    - production-shaped chunking/embedding strategy;
    - exact evidence recall/exposure;
    - deterministic fusion/ranking;
    - evaluate real query transformation only if it causally improves final
      verifier-visible evidence.
-4. **Revision safety qualification:**
+5. **Revision safety qualification:**
    - targeted bad claims resolved;
    - previously verified material claims retained;
    - no new unresolved material claims introduced.
-5. **Wire qualified semantic policy into production runtime routing.**
-6. **Enterprise capabilities:**
+6. **Wire qualified semantic policy into production runtime routing.**
+7. **Enterprise capabilities:**
    - identity / ACL / tenancy;
    - durability / recovery / observability;
    - production/cloud deployment hardening.
@@ -202,6 +205,9 @@ priority.
 - **Overall P0-2b:** OPEN.
 - **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED:** exact canonical
   integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
+- **Stage 2C evidence-exposure qualification — ACTIVE (deterministic only):**
+  branch `experiment/evidence-exposure-2c`; design frozen at D-2026-09-04-05;
+  Stage 2D provider execution **NOT** authorized.
 - **F-01 callable validation-boundary defect:** CLOSED at
   `8530b078837b1a8669433777c1f8d9a1add25a8a`.
 - **F-02 required-vs-final semantic contract:** validated; approved qualification
@@ -215,10 +221,16 @@ priority.
 
 ## Current authorized mission
 
-**Minimal exact evidence-exposure completion + small real provider 2C/2D
-qualification using the corrected semantic ruler** is the current authorized
-engineering mission. Retrieval redesign remains the next major engineering program
-(frozen six-step roadmap priority 3).
+**Stage 2C deterministic evidence-exposure qualification** is the current
+authorized engineering mission on `experiment/evidence-exposure-2c`. Eight
+frozen rank-1 fixtures and three diagnostic arms test whether current prefix
+exposure hides retrieved evidence. Provider Stage 2D and production exposure
+changes are **NOT** authorized until Stage 2C is independently reviewed and
+closed.
+
+**Next after Stage 2C closeout:** minimal exact evidence-exposure completion +
+small real provider 2C/2D qualification. Retrieval redesign remains the next
+major engineering program (frozen roadmap priority 4).
 
 Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged).
 Claim completeness remains unresolved and is not an acceptance condition.
