@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-08-27._
+_Canonical current-state snapshot. Last synchronized: 2026-09-04._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -35,6 +35,15 @@ remains preserved in `FREEZE.md`.
   developed from frozen implementation base `7a606e895fe0a4bc9092659f130881bc7b52bd28`.
   No later descendant is implicitly approved.
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`.
+- **Semantic P0 F-01 callable validation boundary — CLOSED:** exact
+  `8530b078837b1a8669433777c1f8d9a1add25a8a`. Strict schema enforcement at every
+  callable boundary; malformed materiality fails closed.
+- **Semantic P0 F-02 required-vs-final claim safety checkpoint:**
+  `650e52f5ecd4554c1c435a5cc99920bf42276ad8` on
+  `feature/semantic-p0-metric-registry-v2`. Parent exact
+  `8530b078837b1a8669433777c1f8d9a1add25a8a`. F-02 is implemented but **NOT**
+  adversarially closed, merged, or production-wired. Production runtime semantic
+  behavior remains unchanged.
 - **P0-2b slice 2B — VALIDATED AND INTEGRATED:** exact canonical main
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. Reconstructable semantic-trace persistence only;
   production semantic/routing behavior unchanged. Overall P0-2b remains OPEN. No later
@@ -68,6 +77,44 @@ The prior `docs/PRODUCTION_READINESS.md` conclusion was scoped to a June 2026 su
 historical evidence, not a current enterprise-release decision.
 
 ## Accepted priority order
+
+The sequence below supersedes the earlier P0-1/P0-2/P0-3 milestone ordering for
+**current engineering work**. Historical P0-1/P0-2a/P0-2b slice boundaries
+remain preserved below as evidence; they are not reopened here.
+
+### High-impact engineering priority order
+
+1. **Finish Semantic P0 Slice 1 adversarial qualification and integrate only if clean.**
+   Active program: claim-semantics v2 metric registry and required-vs-final
+   oracle. F-01 closed at `8530b078`; F-02 checkpoint at `650e52f5` is
+   implemented but not adversarially closed or merged.
+2. **Minimal exact evidence-exposure completion + small real provider 2C/2D
+   qualification using the corrected semantic ruler.**
+3. **Retrieval redesign — major product-quality program:**
+   - resolve MiniLM truncation / embedding-input mismatch;
+   - production-shaped chunking/embedding strategy;
+   - exact evidence recall/exposure;
+   - deterministic fusion/ranking;
+   - evaluate real query transformation only if it causally improves final
+     verifier-visible evidence.
+4. **Revision safety qualification:**
+   - targeted bad claims resolved;
+   - previously verified material claims retained;
+   - no new unresolved material claims introduced.
+5. **Wire qualified semantic policy into production runtime routing.**
+6. **Enterprise capabilities:**
+   - identity / ACL / tenancy;
+   - durability / recovery / observability;
+   - production/cloud deployment hardening.
+
+Retrieval is intentionally prioritized ahead of revision/runtime/enterprise
+infrastructure **after** the minimum semantic/provider measurement foundation
+is trustworthy. This ordering is impact-driven and intended to avoid
+over-engineering. P2/P3/non-blocking improvements are deferred unless they
+become prerequisites for a P0/P1 item. AWS/cloud work is not the current
+priority.
+
+### Historical milestone record (preserved)
 
 1. **P0-1 — Active-content execution and credential exposure boundary: VALIDATED AND INTEGRATED**
    - Closed at exact canonical main `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`.
@@ -144,27 +191,98 @@ historical evidence, not a current enterprise-release decision.
    - P0-1 exact artifact/commit/push binding is closed and must not be reopened as this later
      deployment-identity work.
 
+## Current status
+
+- **Client-demo hardening:** CLOSED / LIVE-DEMO-REHEARSED.
+- **Overall P0-2b:** OPEN.
+- **Semantic P0 Metric Registry / claim-semantics v2:** CURRENT ACTIVE PROGRAM.
+- **F-01 callable validation-boundary defect:** CLOSED at
+  `8530b078837b1a8669433777c1f8d9a1add25a8a`.
+- **F-02 required-vs-final claim safety implementation checkpoint:**
+  `650e52f5ecd4554c1c435a5cc99920bf42276ad8` on
+  `feature/semantic-p0-metric-registry-v2`. Implemented; **NOT** adversarially
+  closed, merged, or production-wired.
+- **Paid 20-topic benchmark:** BLOCKED.
+- **Production runtime semantic behavior:** unchanged.
+
 ## Current authorized mission
 
-**CLIENT-DEMO-FIXES: CLOSED — LIVE-DEMO-REHEARSED.** Validated on
-`feature/client-demo-rehearsal-fixes` (implementation chain `b4bcef2` → `f992ebf` →
-`a44416e`; docs child `66df1ee`). Successful human rehearsal run
-`2c91cc9e-766d-4921-a6c2-d37253f76543` (topic: LangGraph State Machines) published to
-demo fork `anudeepreddy332/themachinist-website-fork`; production repository remained
-untouched. See **Client-demo fixes closed boundary** below.
+**Semantic P0 Metric Registry / claim-semantics v2** is the current active
+engineering program on `feature/semantic-p0-metric-registry-v2`.
 
-**Demo publish-target guard — VALIDATED AND INTEGRATED** at exact canonical main
-`e4b39caa37497c1743e33843c464ea4381f166d4`.
+Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged).
+Claim completeness remains unresolved and is not an acceptance condition.
+Overall P0-2b remains OPEN. No paid AFTER benchmark is authorized. No large
+re-evaluation is authorized.
 
-Next authorized engineering program: **Semantic P0 Metric Registry**.
+MCP and A2A are optional developer-workflow infrastructure. They are out of this
+product mission and must not block the frozen sequence. This file does not itself
+authorize implementation, merge, publish, deployment, or provider spend.
 
-Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged). Claim
-completeness remains unresolved and is not an acceptance condition. Overall P0-2b
-remains OPEN.
+## Historical metrics remain valid diagnostics
 
-MCP and A2A are optional developer-workflow infrastructure. They are out of this product mission and
-must not block the frozen sequence. This file does not itself authorize implementation, merge,
-publish, deployment, or provider spend.
+Existing V/W/U counts, UVR_v1, grounding scores, semantic trace, revision
+telemetry, and previous provider runs remain legitimate historical diagnostics.
+They are **not** discarded and prior evaluation work is **not** implied invalid.
+
+The current semantic program exists because those historical metrics do not
+independently detect all of:
+
+- omitted material claims;
+- material weak claims that old UVR can false-green;
+- unsupported material claims introduced into final content.
+
+## Evidence exposure distinction
+
+- LangGraph state / retrieval state is **not** identical to exact model-visible
+  prompt context.
+- Semantic trace currently provides strong verifier-consumed-context evidence.
+- Exact draft-visible evidence/exposure remains part of the next bounded
+  qualification (priority 2 above).
+- MiniLM embedding truncation and downstream prompt/source-context truncation
+  are separate failure modes.
+
+## Evidence-exposure truncation — OPEN / REQUIRES CAUSAL VALIDATION
+
+Current runtime source-context construction deliberately truncates retrieved
+source text before draft/verifier exposure:
+
+- Tavily/web content: first **1500** characters per source
+- KB content: first **2000** characters per result
+
+This is distinct from MiniLM embedding-input truncation. `_build_source_context()`
+in `agent/nodes.py` applies these Phase-1 experimental limits and feeds the
+same builder to draft/verification grounding paths.
+
+**Known architectural risk:** A relevant source may be successfully retrieved
+while decisive supporting, qualifying, or contradicting evidence lies outside the
+exposed prefix. In that case the draft/verifier can make an incorrect grounding
+judgment despite retrieval having succeeded.
+
+**Frozen hypothesis to test later:**
+
+> Fixed prefix truncation materially reduces claim-level evidence sufficiency
+> and/or causes false weak, false unverified, or false verified decisions
+> compared with a claim-aware evidence-exposure strategy.
+
+Important constraints:
+
+- Removing all truncation is **not** already the accepted solution.
+- Sending every entire document to the verifier is **not** preselected.
+- The future experiment must compare alternatives causally.
+- Candidate solutions may include claim-aware evidence spans, surrounding
+  context, batching, or larger complete exposure where context permits.
+- Silent prefix truncation must **not** be considered enterprise-qualified until
+  tested.
+
+LangGraph state containing a source does **not** prove the draft/verifier
+actually saw the relevant part of that source. Semantic trace gives strong
+evidence of verifier-consumed context, but the captured context may already
+contain upstream truncation.
+
+**Status:** OPEN — scheduled after Semantic P0 closure and the minimum
+evidence/provider qualification foundation, as part of the retrieval/evidence
+redesign program (priority 3). No runtime change authorized by this record.
 
 ## Client-demo fixes closed boundary
 
