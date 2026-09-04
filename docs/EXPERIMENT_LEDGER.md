@@ -289,11 +289,12 @@ For every applicable change:
 | Exact validated SHA | `c866de29ecc11156d28dffddd069a97b3008ca28` |
 | Important prior checkpoints | Initial v2 checkpoint `b9c5b1da7022d76af227d4d9de74d1d41bbcd9ce`; F-01 correction `8530b078837b1a8669433777c1f8d9a1add25a8a`; F-02 implementation `650e52f5ecd4554c1c435a5cc99920bf42276ad8`; manifest-boundary correction `c866de29ecc11156d28dffddd069a97b3008ca28`. |
 | Final gates | F-01 malformed-materiality rejection PASS; F-02 unsupported-new claim detection PASS; omission G/F independence PASS; supported-new control PASS; material-weak failure PASS; zero-denominator behavior PASS; fixed classifier population PASS; manifest identity enforcement PASS; competing observations PASS; false-pass aggregation PASS; determinism PASS; historical preservation PASS. |
-| Deterministic validation | Focused v2 `73 passed`; combined v1/v2 `107 passed`; Ruff PASS; diff check PASS. |
-| Paid/live providers | None during qualification. Provider/network calls: zero. |
+| Deterministic validation | Focused v2 `73 passed`; combined v1/v2 `107 passed`; Ruff PASS; diff check PASS. Merged-main smoke: focused v2 `73 passed`; combined v1/v2 `107 passed`; Ruff PASS. |
+| Integration | PR #7 merged normally; canonical merge SHA `5f4163f2aa53155216342d20e627abd88fb60a1e`; merged PR head `51d88091da354bedb612f19147adc88b72525541`. |
+| Paid/live providers | None during qualification or merged-main smoke validation. Provider/network calls: zero. No paid 20-topic benchmark. |
 | Production/runtime | Production semantic routing unchanged. Not production completeness. |
-| Result | Bounded final qualification found no remaining P0/P1 defect. |
-| Classification | `VALIDATED — PENDING INTEGRATION`. Not integrated, not production-wired, not paid benchmark authorization. |
-| Evidence | Exact SHA above; decision `D-2026-09-04-03`; branch `feature/semantic-p0-metric-registry-v2`. |
-| Decision enabled | Semantic P0 Slice 1 may proceed to PR/CI/integration. Stop additional semantic auditing unless new P0/P1 evidence appears. Do not claim production completeness. |
+| Result | Bounded final qualification found no remaining P0/P1 defect; canonical main integration verified. |
+| Classification | `VALIDATED AND INTEGRATED`. Not production-wired, not paid benchmark authorization. |
+| Evidence | Exact validated SHA above; canonical merge SHA `5f4163f2aa53155216342d20e627abd88fb60a1e`; PR #7; decisions `D-2026-09-04-03`, `D-2026-09-04-04`. |
+| Decision enabled | Semantic P0 Slice 1 is closed on canonical main. Current authorized mission is bounded evidence-exposure + small provider 2C/2D qualification. Do not reopen without new material P0/P1 evidence. |
 | Confidence | 0.97 |

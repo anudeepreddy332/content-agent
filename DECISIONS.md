@@ -9,6 +9,41 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-04-04
+Date: 2026-09-04
+
+Decision: **Semantic P0 Slice 1 is validated and integrated on canonical main at
+merge SHA `5f4163f2aa53155216342d20e627abd88fb60a1e`.**
+
+Evidence:
+
+- PR #7 merged normally without admin override.
+- Merged PR head `51d88091da354bedb612f19147adc88b72525541`.
+- Validated implementation `c866de29ecc11156d28dffddd069a97b3008ca28` is an
+  ancestor of canonical main.
+- Focused merged-main semantic tests: `73 passed`.
+- Combined v1/v2: `107 passed`.
+- Ruff PASS.
+- No paid 20-topic benchmark.
+- Production semantic runtime behavior unchanged.
+
+Status: **CLOSED — VALIDATED AND INTEGRATED**.
+
+Important boundary: This supersedes only the pending-integration status in
+D-2026-09-04-03. It does **NOT** close overall P0-2b, production claim
+completeness, evidence-exposure qualification, retrieval redesign, runtime
+semantic-policy wiring, or enterprise production readiness.
+
+Next authorized mission: **bounded evidence-exposure + small provider 2C/2D
+qualification.**
+
+Confidence: 0.98
+
+Supersedes / superseded by: Supersedes the pending-integration status in
+D-2026-09-04-03 and corresponding PROJECT_STATUS mission text. Historical
+decisions and evidence remain preserved.
+
+---
 Decision ID: D-2026-09-04-03
 Date: 2026-09-04
 
