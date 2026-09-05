@@ -4,13 +4,18 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
+from openai import APITimeoutError, RateLimitError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.verifier_semantic_contract_3cell_preflight import (
     ASSET_IDS,
+    CANDIDATE_PROMPT_SHA256,
     CANDIDATE_STATUS_BLOCK,
     CELL_IDS,
     CELL_SOURCE_MAP,
@@ -21,10 +26,19 @@ from scripts.verifier_semantic_contract_3cell_preflight import (
     MAX_PROVIDER_REQUESTS,
     ORIGINAL_STATUS_PARAGRAPH,
     ExecutionAuthorizationError,
+    RunExecutionState,
+    VerifierSemanticContractError,
+    build_3cell_client,
+    build_3cell_http_client,
     build_all_requests,
     build_approved_execution_config_hash,
+    build_cell_request,
     build_frozen_pack,
     build_provider_client_config,
+    execute_cell_once,
+    execute_verifier_semantic_contract_run,
+    issue_execution_authorization,
+    load_candidate_verify_system,
     load_pack,
     preflight_budget,
     provider_execution_authorized,
@@ -32,6 +46,7 @@ from scripts.verifier_semantic_contract_3cell_preflight import (
     score_mocked_provider_output,
     score_run_results,
     sha256_text,
+    validate_cell_request_artifact,
     validate_prompt_diff_only_status,
     validate_stage2d_frozen_identity,
     validate_run_cell_catalog,
@@ -261,3 +276,305 @@ def test_build_frozen_pack_matches_committed_fixtures():
     assert [a["cell_id"] for a in built["assets"]] == [a["cell_id"] for a in committed["assets"]]
     assert built["prompt_identity"]["original_prompt_sha256"] == committed["prompt_identity"]["original_prompt_sha256"]
     assert built["prompt_identity"]["candidate_prompt_sha256"] == committed["prompt_identity"]["candidate_prompt_sha256"]
+
+
+def _mock_response(raw: str, *, model: str = "deepseek-v4-flash", response_id: str = "resp-1"):
+    return SimpleNamespace(
+        id=response_id,
+        model=model,
+        choices=[SimpleNamespace(message=SimpleNamespace(content=raw), finish_reason="stop")],
+        usage=SimpleNamespace(prompt_tokens=100, completion_tokens=50, total_tokens=150),
+    )
+
+
+def _issue_auth(pack: dict, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("VERIFIER_SEMANTIC_CONTRACT_EXECUTE", "1")
+    return issue_execution_authorization(pack)
+
+
+def _authorized_request(pack: dict, cell_id: str, auth) -> dict:
+    request = build_cell_request(pack, cell_id)
+    request["approved_execution_config_hash"] = auth.approved_execution_config_hash
+    return request
+
+
+def test_candidate_prompt_hash_enforced():
+    assert sha256_text(load_candidate_verify_system()) == CANDIDATE_PROMPT_SHA256
+
+
+def test_build_cell_request_uses_candidate_not_production_prompt():
+    pack = load_pack()
+    request = build_cell_request(pack, "C1")
+    candidate = load_candidate_verify_system()
+    assert request["messages"][0]["content"] == candidate
+    assert request["verify_system_sha256"] == CANDIDATE_PROMPT_SHA256
+    assert ORIGINAL_STATUS_PARAGRAPH not in request["messages"][0]["content"]
+
+
+def test_execute_cell_once_blocks_without_execution_authorization():
+    pack = load_pack()
+    request = build_cell_request(pack, "C1")
+    call_hook = MagicMock()
+    with pytest.raises(ExecutionAuthorizationError, match="execution authorization"):
+        execute_cell_once(pack, request, call_hook=call_hook)
+    call_hook.assert_not_called()
+
+
+def test_execute_cell_once_never_uses_production_llm_call(monkeypatch: pytest.MonkeyPatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "C3", auth)
+    asset = next(item for item in pack["assets"] if item["cell_id"] == "C3")
+    raw = json.dumps([_verdict(asset["semantic_fixture"]["candidates"][0]["text"], "verified")])
+    call_hook = MagicMock(return_value=_mock_response(raw))
+    with patch("agent.nodes._llm_call") as mock_llm_call:
+        result = execute_cell_once(
+            pack,
+            request,
+            call_hook=call_hook,
+            execution_auth=auth,
+        )
+    mock_llm_call.assert_not_called()
+    assert call_hook.call_count == 1
+    assert call_hook.call_args.kwargs["messages"][0]["content"] == load_candidate_verify_system()
+    assert result["disposition"] == "PASS"
+
+
+def test_timeout_marks_cell_invalid_without_second_call(monkeypatch: pytest.MonkeyPatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "C1", auth)
+    call_hook = MagicMock(side_effect=APITimeoutError("timeout"))
+    result = execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_timeout"
+    assert call_hook.call_count == 1
+
+
+def test_transport_failure_marks_cell_invalid_without_second_call(monkeypatch: pytest.MonkeyPatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "C1", auth)
+    call_hook = MagicMock(side_effect=RateLimitError("rate limited", response=MagicMock(), body=None))
+    result = execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_api_error"
+    assert call_hook.call_count == 1
+
+
+def test_malformed_provider_json_marks_cell_invalid(monkeypatch: pytest.MonkeyPatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "C1", auth)
+    call_hook = MagicMock(return_value=_mock_response("not json"))
+    result = execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_parse_error"
+    assert call_hook.call_count == 1
+
+
+def test_returned_model_identity_drift_marks_cell_invalid(monkeypatch: pytest.MonkeyPatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "C3", auth)
+    asset = next(item for item in pack["assets"] if item["cell_id"] == "C3")
+    raw = json.dumps([_verdict(asset["semantic_fixture"]["candidates"][0]["text"], "verified")])
+    state = RunExecutionState()
+    state.frozen_returned_model_identity = "deepseek-v4-flash"
+    call_hook = MagicMock(return_value=_mock_response(raw, model="deepseek-chat-v2"))
+    result = execute_cell_once(
+        pack,
+        request,
+        call_hook=call_hook,
+        run_state=state,
+        execution_auth=auth,
+    )
+    assert result["disposition"] == "INVALID"
+    assert "model identity drift" in result["invalid_reason"]
+
+
+def test_mutated_request_config_blocks_transport(monkeypatch: pytest.MonkeyPatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "C1", auth)
+    request["model_config"] = dict(request["model_config"], max_tokens=3999)
+    call_hook = MagicMock()
+    with pytest.raises((ExecutionAuthorizationError, VerifierSemanticContractError)):
+        execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    call_hook.assert_not_called()
+
+
+def test_stale_exposed_context_hash_rejects(monkeypatch: pytest.MonkeyPatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "C1", auth)
+    request["exposed_context_sha256"] = "0" * 64
+    call_hook = MagicMock()
+    with pytest.raises(VerifierSemanticContractError, match="stale or mismatched exposed-context hash"):
+        validate_cell_request_artifact(pack, request)
+    with pytest.raises((ExecutionAuthorizationError, VerifierSemanticContractError)):
+        execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    call_hook.assert_not_called()
+
+
+def test_3cell_client_uses_zero_retries():
+    with patch("scripts.evidence_exposure_2d_preflight.OpenAI") as mock_openai:
+        build_3cell_client(api_key="test-key")
+        kwargs = mock_openai.call_args.kwargs
+        assert kwargs["max_retries"] == 0
+        assert kwargs["http_client"].follow_redirects is False
+
+
+def test_3cell_http_client_disables_redirects():
+    client = build_3cell_http_client()
+    try:
+        assert client.follow_redirects is False
+    finally:
+        client.close()
+
+
+def _transport_counting_client(handler):
+    transport = httpx.MockTransport(handler)
+    return build_3cell_client(api_key="test-key", transport=transport)
+
+
+def test_redirect_produces_one_transport_request_and_invalid(monkeypatch: pytest.MonkeyPatch):
+    transport_call_count = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        transport_call_count["n"] += 1
+        return httpx.Response(302, headers={"Location": "https://redirect.example/"}, request=request)
+
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "C1", auth)
+    client = _transport_counting_client(handler)
+    result = execute_cell_once(pack, request, client=client, execution_auth=auth)
+    assert transport_call_count["n"] == 1
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_redirect_error"
+
+
+def test_success_uses_one_transport_request(monkeypatch: pytest.MonkeyPatch):
+    transport_call_count = {"n": 0}
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["cell_id"] == "C3")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        transport_call_count["n"] += 1
+        body = json.loads(request.content.decode())
+        assert body["messages"][0]["content"] == load_candidate_verify_system()
+        payload = {
+            "id": "resp-redirect-test",
+            "object": "chat.completion",
+            "created": 1,
+            "model": "deepseek-v4-flash",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": json.dumps(
+                            [_verdict(asset["semantic_fixture"]["candidates"][0]["text"], "verified")]
+                        ),
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        }
+        return httpx.Response(200, json=payload, request=request)
+
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "C3", auth)
+    client = _transport_counting_client(handler)
+    result = execute_cell_once(pack, request, client=client, execution_auth=auth)
+    assert transport_call_count["n"] == 1
+    assert result["disposition"] == "PASS"
+
+
+def test_three_cell_run_uses_exactly_three_transport_requests(monkeypatch: pytest.MonkeyPatch):
+    transport_call_count = {"n": 0}
+    pack = load_pack()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        transport_call_count["n"] += 1
+        user = json.loads(request.content.decode())["messages"][1]["content"]
+        for asset in pack["assets"]:
+            if asset["draft_text"] in user:
+                status = EXPECTED_PROVIDER_CLASSIFICATION[asset["cell_id"]]
+                claims = [
+                    _verdict(candidate["text"], status)
+                    for candidate in asset["semantic_fixture"]["candidates"]
+                ]
+                content = json.dumps(claims)
+                break
+        else:
+            content = "[]"
+        payload = {
+            "id": f"resp-{transport_call_count['n']}",
+            "object": "chat.completion",
+            "created": 1,
+            "model": "deepseek-v4-flash",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": content},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        }
+        return httpx.Response(200, json=payload, request=request)
+
+    monkeypatch.setenv("VERIFIER_SEMANTIC_CONTRACT_EXECUTE", "1")
+    client = _transport_counting_client(handler)
+    report = execute_verifier_semantic_contract_run(pack, client=client)
+    assert transport_call_count["n"] == 3
+    assert report["network_calls"] == 3
+    assert report["overall_disposition"] == "PASS"
+    assert report["frozen_returned_model_identity"] == "deepseek-v4-flash"
+
+
+def test_three_cell_run_stops_after_invalid_without_hidden_calls(monkeypatch: pytest.MonkeyPatch):
+    pack = load_pack()
+    asset_c1 = next(item for item in pack["assets"] if item["cell_id"] == "C1")
+    claim = asset_c1["semantic_fixture"]["candidates"][0]["text"]
+    call_hook = MagicMock(
+        side_effect=[
+            _mock_response(json.dumps([_verdict(claim, "weak")])),
+            APITimeoutError("timeout"),
+        ]
+    )
+    monkeypatch.setenv("VERIFIER_SEMANTIC_CONTRACT_EXECUTE", "1")
+    report = execute_verifier_semantic_contract_run(pack, call_hook=call_hook)
+    assert call_hook.call_count == 2
+    assert report["network_calls"] == 2
+    assert report["overall_disposition"] == "INVALID"
+    assert report["unattempted_cells"] == ["C3"]
+
+
+def test_incomplete_run_catalog_invalid(monkeypatch: pytest.MonkeyPatch):
+    pack = load_pack()
+    partial = [_scored_cell(pack, "C1", status="weak")]
+    report = score_run_results(pack, partial)
+    assert report["overall_disposition"] == "INVALID"
+    assert report["catalog"]["missing_cells"] == ["C2", "C3"]
+
+
+def test_duplicate_cell_catalog_invalid():
+    pack = load_pack()
+    dup = [
+        _scored_cell(pack, "C1", status="weak"),
+        _scored_cell(pack, "C1", status="weak"),
+        _scored_cell(pack, "C2", status="weak"),
+    ]
+    catalog = validate_run_cell_catalog(dup)
+    assert catalog["catalog_valid"] is False
+    assert catalog["duplicate_cells"] == ["C1"]
+
+
+def test_execute_run_blocked_without_env(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("VERIFIER_SEMANTIC_CONTRACT_EXECUTE", raising=False)
+    with pytest.raises(VerifierSemanticContractError, match="provider execution disabled"):
+        execute_verifier_semantic_contract_run(load_pack())

@@ -7,11 +7,15 @@ import json
 import os
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
+import httpx
 import tiktoken
+from openai import APIConnectionError, APITimeoutError, OpenAI
+from openai import APIStatusError, AuthenticationError, BadRequestError, RateLimitError
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -80,6 +84,9 @@ Evaluate each claim exactly as asserted against all verifier-visible evidence co
 
 Reconcile all relevant evidence before assigning the status. Do not use verified merely because one passage supports part of the claim."""
 
+CANDIDATE_PROMPT_SHA256 = "adc0200c5e600cc7de98a42c0241dd13df0c049c48a00148dbc0fffa7b741b57"
+ORIGINAL_PRODUCTION_PROMPT_SHA256 = "e7ac8744409d63a879d4df85b7e4240b1d447a36d91506731f6c7ba00217809a"
+
 
 class VerifierSemanticContractError(ValueError):
     """3-cell prompt-contract pack or preflight asset is not evaluable."""
@@ -91,6 +98,14 @@ class PromptDiffError(VerifierSemanticContractError):
 
 class ExecutionAuthorizationError(VerifierSemanticContractError):
     """3-cell execution authorization missing or invalid at the transport boundary."""
+
+
+class SemanticMappingError(VerifierSemanticContractError):
+    """Live provider output could not be mapped into semantic fixture inputs."""
+
+
+class SemanticValidationError(VerifierSemanticContractError):
+    """Constructed semantic fixture failed validation before metric computation."""
 
 
 @dataclass(frozen=True)
@@ -149,7 +164,18 @@ def load_original_verify_system() -> str:
 
 
 def load_candidate_verify_system() -> str:
-    return CANDIDATE_VERIFY_SYSTEM_PATH.read_text(encoding="utf-8")
+    text = CANDIDATE_VERIFY_SYSTEM_PATH.read_text(encoding="utf-8")
+    _require(sha256_text(text) == CANDIDATE_PROMPT_SHA256, "candidate prompt hash drift")
+    return text
+
+
+def validate_candidate_prompt_hash() -> None:
+    candidate = CANDIDATE_VERIFY_SYSTEM_PATH.read_text(encoding="utf-8")
+    _require(sha256_text(candidate) == CANDIDATE_PROMPT_SHA256, "candidate prompt hash mismatch")
+    _require(
+        sha256_text(load_original_verify_system()) == ORIGINAL_PRODUCTION_PROMPT_SHA256,
+        "production prompt hash drift",
+    )
 
 
 def build_candidate_verify_system_from_original(original: str | None = None) -> str:
@@ -527,6 +553,7 @@ def preflight_budget(
 
 def build_approved_execution_config_hash(pack: dict[str, Any]) -> str:
     validate_frozen_model_config(pack)
+    validate_candidate_prompt_hash()
     requests = build_all_requests(pack)
     for request in requests:
         _require(
@@ -575,6 +602,7 @@ def issue_execution_authorization(
     validate_pack(pack)
     validate_stage2d_semantic_fixtures(pack)
     validate_prompt_diff_only_status()
+    validate_candidate_prompt_hash()
     frozen = validate_stage2d_frozen_identity(pack)
     if not frozen["all_frozen_identity_ok"]:
         raise ExecutionAuthorizationError("Stage 2D frozen identity check failed")
@@ -605,6 +633,338 @@ def build_provider_client_config() -> dict[str, Any]:
     config = build_stage2d_client_config()
     config["provider_path"] = PROVIDER_PATH
     return config
+
+
+def build_3cell_http_client(*, transport: httpx.BaseTransport | None = None) -> httpx.Client:
+    from scripts.evidence_exposure_2d_preflight import build_stage2d_http_client
+
+    return build_stage2d_http_client(transport=transport)
+
+
+def build_3cell_client(
+    *,
+    api_key: str | None = None,
+    transport: httpx.BaseTransport | None = None,
+) -> OpenAI:
+    """Construct a dedicated retry-free OpenAI-compatible client for 3-cell runs."""
+    from scripts.evidence_exposure_2d_preflight import build_stage2d_client
+
+    return build_stage2d_client(api_key=api_key, transport=transport)
+
+
+def validate_cell_request_artifact(pack: dict[str, Any], request: dict[str, Any]) -> None:
+    rebuilt = build_cell_request(pack, request["cell_id"])
+    _require(
+        rebuilt["exposed_context_sha256"] == request["exposed_context_sha256"],
+        "stale or mismatched exposed-context hash",
+    )
+    _require(rebuilt["draft_sha256"] == request["draft_sha256"], "stale or mismatched draft hash")
+    _require(rebuilt["source_sha256"] == request["source_sha256"], "stale or mismatched source hash")
+    _require(rebuilt["model_config"] == request["model_config"], "stale or mismatched model config")
+    _require(
+        request["model_config"]["max_tokens"] == MAX_OUTPUT_TOKENS,
+        "executed max_tokens differs from approved budget configuration",
+    )
+    _require(
+        request["verify_system_sha256"] == CANDIDATE_PROMPT_SHA256,
+        "candidate prompt hash mismatch on request",
+    )
+    _require(
+        request["messages"][0]["content"] == load_candidate_verify_system(),
+        "system message must be candidate verifier prompt",
+    )
+    _require(
+        request["messages"][0]["content"] != load_original_verify_system(),
+        "production verifier prompt must not be sent",
+    )
+    _require(
+        rebuilt["messages"][1]["content"] == request["messages"][1]["content"],
+        "user message drift from frozen Stage 2D COMPLETE context",
+    )
+
+
+def _assert_transport_authorized(
+    pack: dict[str, Any],
+    request: dict[str, Any],
+    execution_auth: ExecutionAuthorization | None,
+) -> None:
+    if execution_auth is None:
+        raise ExecutionAuthorizationError("missing 3-cell execution authorization")
+    if not execution_auth.provider_execution_authorized:
+        raise ExecutionAuthorizationError("provider execution not authorized")
+    if not execution_auth.budget_authorized:
+        raise ExecutionAuthorizationError("budget not authorized")
+    approved_hash = request.get("approved_execution_config_hash")
+    if approved_hash != execution_auth.approved_execution_config_hash:
+        raise ExecutionAuthorizationError("request execution config hash mismatch")
+    validate_cell_request_artifact(pack, request)
+    _require(
+        request["model_config"]["max_tokens"] == MAX_OUTPUT_TOKENS,
+        "executed max_tokens differs from approved budget configuration",
+    )
+    rebuilt_hash = build_approved_execution_config_hash(pack)
+    if rebuilt_hash != execution_auth.approved_execution_config_hash:
+        raise ExecutionAuthorizationError("execution config drift from approved preflight hash")
+    if request["cell_id"] not in CELL_IDS:
+        raise ExecutionAuthorizationError(f"cell {request['cell_id']!r} not in frozen catalog")
+
+
+def _provider_failure_reason(exc: Exception) -> str:
+    if isinstance(exc, ExecutionAuthorizationError):
+        return "execution_authorization_error"
+    if isinstance(exc, SemanticValidationError):
+        return "semantic_validation_error"
+    if isinstance(exc, SemanticMappingError):
+        return "semantic_mapping_error"
+    from scripts.evidence_exposure_2d_preflight import SemanticMapping2DError, SemanticValidation2DError
+
+    if isinstance(exc, SemanticValidation2DError):
+        return "semantic_validation_error"
+    if isinstance(exc, SemanticMapping2DError):
+        return "semantic_mapping_error"
+    if isinstance(exc, APITimeoutError):
+        return "provider_timeout"
+    if isinstance(exc, APIConnectionError):
+        return "provider_connection_error"
+    if isinstance(exc, APIStatusError) and getattr(exc, "status_code", None) in {301, 302, 303, 307, 308}:
+        return "provider_redirect_error"
+    if isinstance(exc, (APIStatusError, RateLimitError, AuthenticationError, BadRequestError)):
+        return "provider_api_error"
+    if isinstance(exc, VerifierSemanticContractError):
+        return "semantic_mapping_error"
+    if isinstance(exc, (ValueError, json.JSONDecodeError)):
+        return "provider_parse_error"
+    return "provider_execution_error"
+
+
+def _invoke_3cell_provider_create(
+    create: Callable[..., Any],
+    *,
+    request: dict[str, Any],
+) -> Any:
+    return create(
+        model=request["model_config"]["model_alias"],
+        messages=request["messages"],
+        temperature=request["model_config"]["temperature"],
+        max_tokens=request["model_config"]["max_tokens"],
+    )
+
+
+def build_clean_state_attestation(pack: dict[str, Any]) -> str:
+    payload = {
+        "pack_id": pack["pack_id"],
+        "evaluator_id": pack["evaluator_id"],
+        "schema_version": pack["schema_version"],
+        "cell_ids": list(CELL_IDS),
+        "candidate_prompt_sha256": CANDIDATE_PROMPT_SHA256,
+    }
+    return sha256_text(json.dumps(payload, sort_keys=True, ensure_ascii=True))
+
+
+def enrich_cell_artifact(
+    request: dict[str, Any],
+    artifact: dict[str, Any],
+    schedule: dict[str, Any],
+    *,
+    git_sha: str,
+    clean_attestation: str,
+) -> dict[str, Any]:
+    enriched = dict(artifact)
+    enriched["execution_git_sha"] = git_sha
+    enriched["clean_state_attestation"] = clean_attestation
+    enriched["source_sha256"] = request["source_sha256"]
+    enriched["complete_source_text"] = request["complete_source_text"]
+    enriched["exposed_verifier_context"] = request["exposed_verifier_context"]
+    enriched["exposed_context_sha256"] = request["exposed_context_sha256"]
+    enriched["draft_sha256"] = request["draft_sha256"]
+    enriched["verify_system_message"] = request["messages"][0]["content"]
+    enriched["verify_user_message"] = request["messages"][1]["content"]
+    enriched["prompt_hashes"] = {
+        "verify_system_sha256": request["verify_system_sha256"],
+        "exposed_context_sha256": request["exposed_context_sha256"],
+        "draft_sha256": request["draft_sha256"],
+    }
+    enriched["price_schedule_id"] = schedule["schedule_id"]
+    input_tokens = enriched.get("input_tokens") or 0
+    output_tokens = enriched.get("output_tokens") or schedule["max_output_tokens_per_cell"]
+    enriched["calculated_cost_usd"] = round(
+        input_tokens * schedule["input_cost_per_million_tokens_usd"] / 1_000_000
+        + output_tokens * schedule["output_cost_per_million_tokens_usd"] / 1_000_000,
+        6,
+    )
+    enriched["timestamps"] = {"completed_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    payload = {key: value for key, value in enriched.items() if key != "artifact_sha256"}
+    enriched["artifact_sha256"] = sha256_text(
+        json.dumps(payload, sort_keys=True, ensure_ascii=True, default=str)
+    )
+    return enriched
+
+
+def execute_cell_once(
+    pack: dict[str, Any],
+    request: dict[str, Any],
+    *,
+    client: OpenAI | None = None,
+    run_state: RunExecutionState | None = None,
+    call_hook: Callable[..., Any] | None = None,
+    execution_auth: ExecutionAuthorization | None = None,
+) -> dict[str, Any]:
+    """Execute exactly one provider attempt for a 3-cell catalog cell. Never retries."""
+    _assert_transport_authorized(pack, request, execution_auth)
+    asset = find_asset_by_cell(pack, request["cell_id"])
+    started = time.time()
+    state = run_state or RunExecutionState()
+    requested_alias = request["model_config"]["model_alias"]
+    artifact: dict[str, Any] = {
+        "cell_id": request["cell_id"],
+        "asset_id": request["asset_id"],
+        "source_cell_id": request["source_cell_id"],
+        "requested_model_alias": requested_alias,
+        "provider_path": PROVIDER_PATH,
+        "max_attempts": MAX_ATTEMPTS_PER_CELL,
+        "provider_retries_disabled": PROVIDER_RETRIES_DISABLED,
+        "approved_execution_config_hash": request.get("approved_execution_config_hash"),
+        "executed_max_tokens": request["model_config"]["max_tokens"],
+        "candidate_prompt_sha256": request["verify_system_sha256"],
+        "disposition": "INVALID",
+    }
+
+    try:
+        active_client = client or build_3cell_client()
+        create = call_hook or active_client.chat.completions.create
+        response = _invoke_3cell_provider_create(create, request=request)
+        raw = response.choices[0].message.content or ""
+        finish_reason = response.choices[0].finish_reason
+        returned_model = response.model
+        model_error = state.check_returned_model_identity(returned_model)
+        if model_error:
+            artifact.update(
+                {
+                    "invalid_reason": model_error,
+                    "returned_model_identity": returned_model,
+                    "finish_reason": finish_reason,
+                    "raw_provider_response": raw,
+                }
+            )
+            state.cell_artifacts.append(artifact)
+            return artifact
+
+        grounding_report = parse_verifier_output(raw)
+        semantic_fixture = map_provider_to_semantic_fixture(asset, grounding_report)
+        semantic_result = evaluate_semantic_oracle(
+            semantic_fixture,
+            template_fixture=asset["semantic_fixture"],
+        )
+        shadow = shadow_runtime_acceptance(grounding_report)
+        scored = score_cell_result(
+            cell_id=request["cell_id"],
+            asset=asset,
+            grounding_report=grounding_report,
+            semantic_result=semantic_result,
+            shadow=shadow,
+        )
+        usage = getattr(response, "usage", None)
+        artifact.update(
+            {
+                "disposition": scored["disposition"],
+                "invalid_reason": scored.get("invalid_reason"),
+                "qualification_fail_reasons": scored.get("qualification_fail_reasons", []),
+                "raw_provider_response": raw,
+                "provider_response_id": getattr(response, "id", None),
+                "returned_model_identity": returned_model,
+                "finish_reason": finish_reason,
+                "parsed_claims": grounding_report,
+                "parsed_statuses": [row.get("status") for row in grounding_report],
+                "semantic_oracle_inputs_outputs": semantic_result,
+                "shadow_runtime_decision": shadow,
+                "input_tokens": getattr(usage, "prompt_tokens", None) if usage else None,
+                "output_tokens": getattr(usage, "completion_tokens", None) if usage else None,
+                "latency_ms": round((time.time() - started) * 1000, 3),
+                "expected_corrected_semantic_pass": asset["expected_corrected_semantic_pass"],
+                "provider_status": scored.get("provider_status"),
+                "expected_provider_status": scored.get("expected_provider_status"),
+                "automatic_false_pass": scored.get("automatic_false_pass"),
+                "automatic_false_pass_diagnostic_only": True,
+            }
+        )
+    except Exception as exc:
+        artifact.update(
+            {
+                "invalid_reason": _provider_failure_reason(exc),
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+                "latency_ms": round((time.time() - started) * 1000, 3),
+            }
+        )
+
+    state.cell_artifacts.append(artifact)
+    return artifact
+
+
+def execute_verifier_semantic_contract_run(
+    pack: dict[str, Any],
+    *,
+    client: OpenAI | None = None,
+    call_hook: Callable[..., Any] | None = None,
+    schedule_path: Path | str = DEFAULT_PRICE_SCHEDULE,
+) -> dict[str, Any]:
+    """Execute exactly one 3-cell qualification run over the frozen catalog."""
+    if not provider_execution_authorized():
+        raise VerifierSemanticContractError(
+            "provider execution disabled; set VERIFIER_SEMANTIC_CONTRACT_EXECUTE=1 "
+            "after independent provider-authorization review"
+        )
+    execution_auth = issue_execution_authorization(pack, schedule_path=schedule_path)
+    schedule = load_price_schedule(schedule_path)
+    validate_price_schedule(schedule)
+    git_sha = get_execution_git_sha()
+    clean_attestation = build_clean_state_attestation(pack)
+    run_state = RunExecutionState()
+    cell_results: list[dict[str, Any]] = []
+    attempted_cells: list[str] = []
+
+    for cell_id in CELL_IDS:
+        if run_state.should_stop_run():
+            break
+        request = build_cell_request(pack, cell_id)
+        request["approved_execution_config_hash"] = execution_auth.approved_execution_config_hash
+        artifact = execute_cell_once(
+            pack,
+            request,
+            client=client,
+            run_state=run_state,
+            call_hook=call_hook,
+            execution_auth=execution_auth,
+        )
+        artifact = enrich_cell_artifact(
+            request,
+            artifact,
+            schedule,
+            git_sha=git_sha,
+            clean_attestation=clean_attestation,
+        )
+        cell_results.append(artifact)
+        attempted_cells.append(cell_id)
+        if artifact.get("disposition") == "INVALID" or artifact.get("invalid_reason"):
+            run_state.run_aborted = True
+            run_state.abort_reason = artifact.get("invalid_reason") or "cell_invalid"
+            break
+        if run_state.model_identity_invalid:
+            break
+
+    unattempted_cells = [cell_id for cell_id in CELL_IDS if cell_id not in attempted_cells]
+    report = score_run_results(
+        pack,
+        cell_results,
+        run_state=run_state,
+    )
+    report["network_calls"] = len(attempted_cells)
+    report["frozen_returned_model_identity"] = run_state.frozen_returned_model_identity
+    report["attempted_cells"] = attempted_cells
+    report["unattempted_cells"] = unattempted_cells
+    report["execution_authorization_token"] = execution_auth.authorization_token
+    report["approved_execution_config_hash"] = execution_auth.approved_execution_config_hash
+    return report
 
 
 def validate_run_cell_catalog(cell_results: list[dict[str, Any]]) -> dict[str, Any]:
@@ -827,6 +1187,12 @@ def run_preflight(pack: dict[str, Any]) -> dict[str, Any]:
         "diagnostic_gates": pack.get("diagnostic_gates"),
         "provider_execution_default_disabled": not provider_execution_authorized(),
         "provider_client_config": build_provider_client_config(),
+        "transport_runner": "execute_verifier_semantic_contract_run",
+        "transport_ready": (
+            budget["budget_authorized"]
+            and frozen_identity["all_frozen_identity_ok"]
+            and prompt_identity["valid"]
+        ),
         "preflight_ready": (
             budget["budget_authorized"]
             and frozen_identity["all_frozen_identity_ok"]

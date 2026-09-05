@@ -231,10 +231,11 @@ priority.
 - **Verifier semantic-contract 3-cell preflight — ACTIVE:** candidate strict
   full-entailment status paragraph in
   `prompts/verify_system_semantic_contract_candidate.md`; harness
-  `scripts/verifier_semantic_contract_3cell_preflight.py`; fixtures
-  `evals/fixtures/verifier_semantic_contract_3cell.json`; $0.02 hard ceiling;
-  provider execution **NOT YET AUTHORIZED** (`VERIFIER_SEMANTIC_CONTRACT_EXECUTE=1`
-  required after independent review).
+  `scripts/verifier_semantic_contract_3cell_preflight.py`; transport runner
+  `execute_verifier_semantic_contract_run()` with Stage 2D retry-free client;
+  fixtures `evals/fixtures/verifier_semantic_contract_3cell.json`; $0.02 hard
+  ceiling; provider execution **NOT YET AUTHORIZED** pending independent
+  transport review (`VERIFIER_SEMANTIC_CONTRACT_EXECUTE=1` required after review).
 - **F-01 callable validation-boundary defect:** CLOSED at
   `8530b078837b1a8669433777c1f8d9a1add25a8a`.
 - **F-02 required-vs-final semantic contract:** validated; approved qualification
@@ -248,17 +249,20 @@ priority.
 
 ## Current authorized mission
 
-**Verifier semantic-contract 3-cell prompt-only experiment preflight** is the
-current authorized engineering mission on `experiment/verifier-semantic-contract`.
-Stage 2D bounded provider qualification **EXECUTED / FAIL**: exposure-only changes
-proved P1 consequence but P6/P7 COMPLETE still false-verified; forensic diagnosis
-points to the permissive verifier semantic-status paragraph in
-`prompts/verify_system.md`. The 3-cell experiment changes **only** that paragraph
-(candidate in `prompts/verify_system_semantic_contract_candidate.md`) against
-frozen COMPLETE P6/P7/P1 cells reused from Stage 2D. Qualification gates material
-false-verification numerator = 0; automatic shadow false-pass is **diagnostic only**
-(routing unchanged). Provider execution is **NOT YET AUTHORIZED** until independent
-preflight review passes and `VERIFIER_SEMANTIC_CONTRACT_EXECUTE=1` is deliberately
+**Verifier semantic-contract 3-cell prompt-only experiment preflight and
+transport implementation** is the current authorized engineering mission on
+`experiment/verifier-semantic-contract`. Stage 2D bounded provider qualification
+**EXECUTED / FAIL**: exposure-only changes proved P1 consequence but P6/P7
+COMPLETE still false-verified; forensic diagnosis points to the permissive
+verifier semantic-status paragraph in `prompts/verify_system.md`. The 3-cell
+experiment changes **only** that paragraph (candidate in
+`prompts/verify_system_semantic_contract_candidate.md`) against frozen COMPLETE
+P6/P7/P1 cells reused from Stage 2D. Transport runner
+`execute_verifier_semantic_contract_run()` sends the candidate prompt with
+Stage 2D retry-free safeguards. Qualification gates material false-verification
+numerator = 0; automatic shadow false-pass is **diagnostic only** (routing
+unchanged). Provider execution is **NOT YET AUTHORIZED** until independent
+transport review passes and `VERIFIER_SEMANTIC_CONTRACT_EXECUTE=1` is deliberately
 set (exactly three requests, $0.02 hard ceiling).
 
 **Next after 3-cell authorization:** bounded real-provider 3-cell qualification.
