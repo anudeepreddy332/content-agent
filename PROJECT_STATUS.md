@@ -220,7 +220,9 @@ priority.
   consequence **UNKNOWN**.
 - **Stage 2D pre-provider correction — ACTIVE:** retry-free execution wiring, live
   provider→Semantic P0 adapter, char-bound budget gate, paired-isolation hard gate,
-  executable run scorer; provider execution **NOT YET AUTHORIZED**.
+  exact ten-cell run orchestrator with completeness gate, Stage-2D semantic
+  validation boundary before metric computation, executable run scorer; provider
+  execution **NOT YET AUTHORIZED**.
 - **F-01 callable validation-boundary defect:** CLOSED at
   `8530b078837b1a8669433777c1f8d9a1add25a8a`.
 - **F-02 required-vs-final semantic contract:** validated; approved qualification

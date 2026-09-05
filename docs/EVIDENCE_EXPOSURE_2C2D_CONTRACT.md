@@ -115,6 +115,8 @@ verified / weak / unverified decisions in a materially correct direction.
 - Hard spend ceiling: **$0.08 USD** (preflight must refuse above ceiling; authorization requires both cl100k estimate and 1-token-per-character char-bound upper bound)
 - Provider execution default: **disabled** (`EVIDENCE_EXPOSURE_2D_EXECUTE=1` required)
 - Execution wiring: dedicated retry-free OpenAI client (`max_retries=0`); no production `_llm_call`/tenacity path; timeout/transport/API/parse failure ⇒ cell/run `INVALID`
+- Ten-cell orchestrator: `execute_stage2d_run()` iterates the frozen catalog only; one shared `RunExecutionState`; max **10** network calls; no retries; incomplete/duplicate/extra/missing cell sets ⇒ overall `INVALID` (never PASS/FAIL)
+- Semantic validation boundary: live mapped fixtures pass `validate_stage2d_semantic_fixture()` (v2 structural validators + frozen template contract) before `_compute_fixture_metrics()`; malformed/empty required gold ⇒ `INVALID`
 - Shadow current-runtime UVR acceptance computed alongside corrected oracle; production routing unchanged
 
 ### Asset catalog

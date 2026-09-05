@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
@@ -57,6 +58,14 @@ class EvidenceExposure2DError(ValueError):
     """Stage 2D pack or preflight asset is not evaluable."""
 
 
+class SemanticMapping2DError(EvidenceExposure2DError):
+    """Live provider output could not be mapped into Stage 2D semantic fixture inputs."""
+
+
+class SemanticValidation2DError(EvidenceExposure2DError):
+    """Constructed Stage 2D semantic fixture failed validation before metric computation."""
+
+
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -80,19 +89,29 @@ class RunExecutionState:
 
     frozen_returned_model_identity: str | None = None
     cell_artifacts: list[dict[str, Any]] = field(default_factory=list)
+    run_aborted: bool = False
+    abort_reason: str | None = None
+    model_identity_invalid: bool = False
 
     def check_returned_model_identity(self, returned_model: str | None) -> str | None:
         if not returned_model:
+            self.run_aborted = True
+            self.model_identity_invalid = True
             return "missing returned model identity"
         if self.frozen_returned_model_identity is None:
             self.frozen_returned_model_identity = returned_model
             return None
         if returned_model != self.frozen_returned_model_identity:
+            self.run_aborted = True
+            self.model_identity_invalid = True
             return (
                 f"model identity drift: {returned_model!r} != "
                 f"{self.frozen_returned_model_identity!r}"
             )
         return None
+
+    def should_stop_run(self) -> bool:
+        return self.run_aborted or self.model_identity_invalid
 
 
 def load_2c_case(case_id: str) -> dict[str, Any]:
@@ -164,10 +183,217 @@ def shadow_runtime_acceptance(
     }
 
 
-def evaluate_semantic_oracle(semantic_fixture: dict[str, Any]) -> dict[str, Any]:
+def evaluate_semantic_oracle(
+    semantic_fixture: dict[str, Any],
+    *,
+    template_fixture: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     from scripts.evaluate_claim_semantics_v2 import _compute_fixture_metrics
 
-    return _compute_fixture_metrics(canonicalize_semantic_fixture(semantic_fixture))
+    fixture = canonicalize_semantic_fixture(semantic_fixture)
+    template = canonicalize_semantic_fixture(template_fixture or semantic_fixture)
+    try:
+        validate_stage2d_semantic_fixture(fixture, template)
+    except SemanticValidation2DError:
+        raise
+    except EvidenceExposure2DError as exc:
+        raise SemanticValidation2DError(str(exc)) from exc
+    return _compute_fixture_metrics(fixture)
+
+
+def validate_stage2d_semantic_fixture(
+    live_fixture: dict[str, Any],
+    template_fixture: dict[str, Any],
+) -> None:
+    """Validate a Stage 2D semantic fixture before metric computation.
+
+    Official ``evaluate_fixture()`` rejects Stage 2D fixture IDs (ADV02-ADV08).
+    This applies the same structural validators from ``evaluate_claim_semantics_v2``
+    without catalog-ID gating, then enforces the frozen per-asset template contract.
+    """
+    from scripts.evaluate_claim_semantics_v2 import (
+        AUTOMATIC_ROUTE_REQUIRED_KEYS,
+        EXCLUSION_REASONS,
+        EXCLUSION_REQUIRED_KEYS,
+        F02_FIXTURE_REQUIRED_KEYS,
+        GOLD_REQUIRED_KEYS,
+        ROUTE_DECISIONS,
+        SEMANTIC_STATUSES,
+        ClaimSemanticsV2Error,
+        _is_f02_fixture,
+        _require_keys,
+        _validate_candidates_and_matches,
+        _validate_evidence_bindings,
+        _validate_final_atoms,
+        _validate_fixed_classification_cases,
+        _validate_sha256,
+        _validate_span,
+        _validate_verifier_rows,
+    )
+
+    try:
+        _validate_stage2d_semantic_fixture_body(
+            live_fixture,
+            template_fixture,
+            AUTOMATIC_ROUTE_REQUIRED_KEYS=AUTOMATIC_ROUTE_REQUIRED_KEYS,
+            EXCLUSION_REASONS=EXCLUSION_REASONS,
+            EXCLUSION_REQUIRED_KEYS=EXCLUSION_REQUIRED_KEYS,
+            F02_FIXTURE_REQUIRED_KEYS=F02_FIXTURE_REQUIRED_KEYS,
+            GOLD_REQUIRED_KEYS=GOLD_REQUIRED_KEYS,
+            ROUTE_DECISIONS=ROUTE_DECISIONS,
+            SEMANTIC_STATUSES=SEMANTIC_STATUSES,
+            _is_f02_fixture=_is_f02_fixture,
+            _require_keys=_require_keys,
+            _validate_candidates_and_matches=_validate_candidates_and_matches,
+            _validate_evidence_bindings=_validate_evidence_bindings,
+            _validate_final_atoms=_validate_final_atoms,
+            _validate_fixed_classification_cases=_validate_fixed_classification_cases,
+            _validate_sha256=_validate_sha256,
+            _validate_span=_validate_span,
+            _validate_verifier_rows=_validate_verifier_rows,
+        )
+    except ClaimSemanticsV2Error as exc:
+        raise SemanticValidation2DError(str(exc)) from exc
+
+
+def _validate_stage2d_semantic_fixture_body(
+    live_fixture: dict[str, Any],
+    template_fixture: dict[str, Any],
+    **validators: Any,
+) -> None:
+    AUTOMATIC_ROUTE_REQUIRED_KEYS = validators["AUTOMATIC_ROUTE_REQUIRED_KEYS"]
+    EXCLUSION_REASONS = validators["EXCLUSION_REASONS"]
+    EXCLUSION_REQUIRED_KEYS = validators["EXCLUSION_REQUIRED_KEYS"]
+    F02_FIXTURE_REQUIRED_KEYS = validators["F02_FIXTURE_REQUIRED_KEYS"]
+    GOLD_REQUIRED_KEYS = validators["GOLD_REQUIRED_KEYS"]
+    ROUTE_DECISIONS = validators["ROUTE_DECISIONS"]
+    SEMANTIC_STATUSES = validators["SEMANTIC_STATUSES"]
+    _is_f02_fixture = validators["_is_f02_fixture"]
+    _require_keys = validators["_require_keys"]
+    _validate_candidates_and_matches = validators["_validate_candidates_and_matches"]
+    _validate_evidence_bindings = validators["_validate_evidence_bindings"]
+    _validate_final_atoms = validators["_validate_final_atoms"]
+    _validate_fixed_classification_cases = validators["_validate_fixed_classification_cases"]
+    _validate_sha256 = validators["_validate_sha256"]
+    _validate_span = validators["_validate_span"]
+    _validate_verifier_rows = validators["_validate_verifier_rows"]
+    live = canonicalize_semantic_fixture(live_fixture)
+    template = canonicalize_semantic_fixture(template_fixture)
+    fixture_id = live["id"]
+    _require(_is_f02_fixture(live), "Stage 2D semantic fixture must include final_atoms")
+    _require_keys(live, F02_FIXTURE_REQUIRED_KEYS, "fixture")
+    _require(live["id"] == template["id"], "fixture id drift from template")
+    _require(live["draft_text"] == template["draft_text"], "draft text drift from template")
+    _require(live["draft_sha256"] == template["draft_sha256"], "draft hash drift from template")
+
+    template_material_gold = [gold for gold in template["gold_atoms"] if gold["material"]]
+    _require(
+        len(live["gold_atoms"]) > 0 or not template_material_gold,
+        "empty gold_atoms invalid when template requires material gold",
+    )
+    if template_material_gold:
+        _require(
+            any(gold.get("material") for gold in live["gold_atoms"]),
+            "required material gold population missing",
+        )
+
+    template_gold_ids = {gold["id"] for gold in template["gold_atoms"]}
+    live_gold_ids = {gold["id"] for gold in live["gold_atoms"]}
+    _require(live_gold_ids == template_gold_ids, "gold atom identity set drift from template")
+
+    template_candidate_ids = {candidate["id"] for candidate in template["candidates"]}
+    live_candidate_ids = {candidate["id"] for candidate in live["candidates"]}
+    _require(
+        live_candidate_ids == template_candidate_ids,
+        "candidate identity set drift from template",
+    )
+
+    template_final_ids = {atom["id"] for atom in template["final_atoms"]}
+    live_final_ids = {atom["id"] for atom in live["final_atoms"]}
+    _require(live_final_ids == template_final_ids, "final atom identity set drift from template")
+
+    draft = live["draft_text"]
+    _validate_sha256(live["draft_sha256"], f"{fixture_id} draft_sha256")
+    _require(live["draft_sha256"] == sha256_text(draft), f"{fixture_id} draft_sha256 is stale or invalid")
+
+    gold_atoms = live["gold_atoms"]
+    exclusions = live["exclusions"]
+    _require(isinstance(gold_atoms, list), f"{fixture_id} gold_atoms must be a list")
+    _require(isinstance(exclusions, list), f"{fixture_id} exclusions must be a list")
+
+    gold_ids: set[str] = set()
+    canonical_flags: dict[str, tuple[bool, bool, str]] = {}
+    gold_spans: list[tuple[int, int, str]] = []
+    for gold in gold_atoms:
+        _require(isinstance(gold, dict), f"{fixture_id} gold atom must be an object")
+        _require_keys(gold, GOLD_REQUIRED_KEYS, f"{fixture_id} gold atom")
+        gold_id = gold["id"]
+        _require(gold_id not in gold_ids, f"{fixture_id} duplicate gold id {gold_id}")
+        gold_ids.add(gold_id)
+        _require(gold["gold_semantic_status"] in SEMANTIC_STATUSES, f"{gold_id} invalid gold semantic status")
+        _require(type(gold["factual"]) is bool, f"{gold_id} factual must be bool")
+        _require(type(gold["material"]) is bool, f"{gold_id} material must be bool")
+        _require(not gold["material"] or gold["factual"], f"{gold_id} material atom must be factual")
+        span = gold["span"]
+        if span is None:
+            _require(
+                gold["text"] not in draft,
+                f"{gold_id} omitted required claim must be absent from the final draft",
+            )
+        elif gold["text"] not in draft:
+            # Frozen omission assets may keep advisory spans for absent required claims.
+            pass
+        else:
+            _validate_span(span, gold["text"], draft, gold_id)
+            gold_spans.append((span[0], span[1], gold_id))
+        flags = (gold["factual"], gold["material"], gold["gold_semantic_status"])
+        previous = canonical_flags.get(gold["canonical_id"])
+        if previous is None:
+            canonical_flags[gold["canonical_id"]] = flags
+        else:
+            _require(previous == flags, f"{gold_id} canonical flags disagree with sibling rows")
+
+    exclusion_ids: set[str] = set()
+    for exclusion in exclusions:
+        _require(isinstance(exclusion, dict), f"{fixture_id} exclusion must be an object")
+        _require_keys(exclusion, EXCLUSION_REQUIRED_KEYS, f"{fixture_id} exclusion")
+        exclusion_id = exclusion["id"]
+        _require(exclusion_id not in exclusion_ids, f"{fixture_id} duplicate exclusion id {exclusion_id}")
+        _require(exclusion_id not in gold_ids, f"{exclusion_id} cannot also be a gold id")
+        exclusion_ids.add(exclusion_id)
+        _require(exclusion["reason"] in EXCLUSION_REASONS, f"{exclusion_id} unknown exclusion reason")
+        _validate_span(exclusion["span"], exclusion["text"], draft, exclusion_id)
+        start, end = exclusion["span"]
+        for gold_start, gold_end, overlap_gold_id in gold_spans:
+            _require(
+                end <= gold_start or start >= gold_end,
+                f"{exclusion_id} overlaps gold {overlap_gold_id}",
+            )
+
+    candidates = live["candidates"]
+    matches = live["allowed_matches"]
+    _require(isinstance(candidates, list), f"{fixture_id} candidates must be a list")
+    _require(isinstance(matches, list), f"{fixture_id} allowed_matches must be a list")
+    candidate_by_id = _validate_candidates_and_matches(fixture_id, gold_ids, draft, candidates, matches)
+
+    bindings = live["evidence_bindings"]
+    _require(isinstance(bindings, list), f"{fixture_id} evidence_bindings must be a list")
+    _validate_evidence_bindings(fixture_id, gold_ids, set(candidate_by_id), bindings)
+
+    verifier_rows = live["verifier_rows"]
+    _require(isinstance(verifier_rows, list), f"{fixture_id} verifier_rows must be a list")
+    _validate_verifier_rows(fixture_id, verifier_rows)
+
+    automatic_route = live["automatic_route"]
+    _require(isinstance(automatic_route, dict), f"{fixture_id} automatic_route must be an object")
+    _require_keys(automatic_route, AUTOMATIC_ROUTE_REQUIRED_KEYS, f"{fixture_id} automatic_route")
+    _require(
+        automatic_route["decision"] in ROUTE_DECISIONS,
+        f"{fixture_id} invalid automatic route decision",
+    )
+
+    _validate_final_atoms(fixture_id, draft, gold_ids, live["final_atoms"])
+    _validate_fixed_classification_cases(fixture_id, gold_ids, live["fixed_classification_cases"])
 
 
 def canonicalize_semantic_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
@@ -961,7 +1187,7 @@ def _match_provider_row(candidate_text: str, grounding_report: list[dict[str, An
     matches = [row for row in grounding_report if (row.get("claim") or "").strip() == target]
     if len(matches) == 1:
         return matches[0]
-    raise EvidenceExposure2DError(f"cannot map candidate claim {target!r} to provider output")
+    raise SemanticMapping2DError(f"cannot map candidate claim {target!r} to provider output")
 
 
 def map_provider_to_semantic_fixture(
@@ -971,14 +1197,14 @@ def map_provider_to_semantic_fixture(
     """Map live verifier output into validated Semantic P0 fixture inputs."""
     fixture = canonicalize_semantic_fixture(json.loads(json.dumps(asset["semantic_fixture"])))
     if not grounding_report:
-        raise EvidenceExposure2DError("empty grounding report cannot be mapped")
+        raise SemanticMapping2DError("empty grounding report cannot be mapped")
 
     candidate_by_id = {candidate["id"]: candidate for candidate in fixture["candidates"]}
     for candidate in fixture["candidates"]:
         row = _match_provider_row(candidate["text"], grounding_report)
         status = row.get("status")
         if status not in {"verified", "weak", "unverified"}:
-            raise EvidenceExposure2DError(f"invalid provider status {status!r}")
+            raise SemanticMapping2DError(f"invalid provider status {status!r}")
         candidate["predicted_semantic_status"] = status
 
     for index, verifier_row in enumerate(fixture["verifier_rows"]):
@@ -1268,17 +1494,82 @@ def validate_execution_preflight(pack: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def get_execution_git_sha() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT,
+            text=True,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+
+
+def build_clean_state_attestation(pack: dict[str, Any]) -> str:
+    payload = {
+        "pack_id": pack["pack_id"],
+        "evaluator_id": pack["evaluator_id"],
+        "schema_version": pack["schema_version"],
+        "cell_ids": list(CELL_IDS),
+        "verify_system_sha256": sha256_text(load_verify_system()),
+    }
+    return sha256_text(json.dumps(payload, sort_keys=True, ensure_ascii=True))
+
+
+def enrich_cell_artifact(
+    request: dict[str, Any],
+    artifact: dict[str, Any],
+    schedule: dict[str, Any],
+    *,
+    git_sha: str,
+    clean_attestation: str,
+) -> dict[str, Any]:
+    enriched = dict(artifact)
+    enriched["execution_git_sha"] = git_sha
+    enriched["clean_state_attestation"] = clean_attestation
+    enriched["source_sha256"] = request["source_sha256"]
+    enriched["complete_source_text"] = request["complete_source_text"]
+    enriched["exposed_verifier_context"] = request["exposed_verifier_context"]
+    enriched["exposed_context_sha256"] = request["exposed_context_sha256"]
+    enriched["draft_sha256"] = request["draft_sha256"]
+    enriched["verify_system_message"] = request["messages"][0]["content"]
+    enriched["verify_user_message"] = request["messages"][1]["content"]
+    enriched["prompt_hashes"] = {
+        "verify_system_sha256": request["verify_system_sha256"],
+        "exposed_context_sha256": request["exposed_context_sha256"],
+        "draft_sha256": request["draft_sha256"],
+    }
+    enriched["price_schedule_id"] = schedule["schedule_id"]
+    input_tokens = enriched.get("input_tokens") or 0
+    output_tokens = enriched.get("output_tokens") or schedule["max_output_tokens_per_cell"]
+    enriched["calculated_cost_usd"] = round(
+        input_tokens * schedule["input_cost_per_million_tokens_usd"] / 1_000_000
+        + output_tokens * schedule["output_cost_per_million_tokens_usd"] / 1_000_000,
+        6,
+    )
+    enriched["timestamps"] = {"completed_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    payload = {key: value for key, value in enriched.items() if key != "artifact_sha256"}
+    enriched["artifact_sha256"] = sha256_text(
+        json.dumps(payload, sort_keys=True, ensure_ascii=True, default=str)
+    )
+    return enriched
+
+
 def _provider_failure_reason(exc: Exception) -> str:
+    if isinstance(exc, SemanticValidation2DError):
+        return "semantic_validation_error"
+    if isinstance(exc, SemanticMapping2DError):
+        return "semantic_mapping_error"
     if isinstance(exc, APITimeoutError):
         return "provider_timeout"
     if isinstance(exc, APIConnectionError):
         return "provider_connection_error"
     if isinstance(exc, (APIStatusError, RateLimitError, AuthenticationError, BadRequestError)):
         return "provider_api_error"
+    if isinstance(exc, EvidenceExposure2DError):
+        return "semantic_mapping_error"
     if isinstance(exc, (ValueError, json.JSONDecodeError)):
         return "provider_parse_error"
-    if isinstance(exc, EvidenceExposure2DError):
-        return "provider_mapping_error"
     return "provider_execution_error"
 
 
@@ -1333,7 +1624,10 @@ def execute_cell_once(
 
         grounding_report = parse_verifier_output(raw)
         semantic_fixture = map_provider_to_semantic_fixture(asset, grounding_report)
-        semantic_result = evaluate_semantic_oracle(semantic_fixture)
+        semantic_result = evaluate_semantic_oracle(
+            semantic_fixture,
+            template_fixture=asset["semantic_fixture"],
+        )
         shadow = shadow_runtime_acceptance(grounding_report)
         scored = score_cell_result(
             cell_id=request["cell_id"],
@@ -1420,7 +1714,59 @@ def score_cell_result(
     }
 
 
-def score_run_results(pack: dict[str, Any], cell_results: list[dict[str, Any]]) -> dict[str, Any]:
+def validate_run_cell_catalog(cell_results: list[dict[str, Any]]) -> dict[str, Any]:
+    cell_ids = [result["cell_id"] for result in cell_results]
+    seen: set[str] = set()
+    duplicate_cells: list[str] = []
+    for cell_id in cell_ids:
+        if cell_id in seen and cell_id not in duplicate_cells:
+            duplicate_cells.append(cell_id)
+        seen.add(cell_id)
+    required = set(CELL_IDS)
+    present = set(cell_ids)
+    missing_cells = [cell_id for cell_id in CELL_IDS if cell_id not in present]
+    extra_cells = sorted(present - required)
+    catalog_valid = (
+        len(cell_results) == 10
+        and len(cell_ids) == 10
+        and not duplicate_cells
+        and not missing_cells
+        and not extra_cells
+    )
+    return {
+        "catalog_valid": catalog_valid,
+        "cell_count": len(cell_results),
+        "duplicate_cells": duplicate_cells,
+        "missing_cells": missing_cells,
+        "extra_cells": extra_cells,
+        "attempted_cells": cell_ids,
+    }
+
+
+def score_run_results(
+    pack: dict[str, Any],
+    cell_results: list[dict[str, Any]],
+    *,
+    run_state: RunExecutionState | None = None,
+    attempted_cells: list[str] | None = None,
+    unattempted_cells: list[str] | None = None,
+) -> dict[str, Any]:
+    catalog = validate_run_cell_catalog(cell_results)
+    invalid_reasons: list[str] = []
+    if run_state and run_state.model_identity_invalid:
+        invalid_reasons.append("model_identity_invalid")
+    if run_state and run_state.run_aborted and run_state.abort_reason:
+        invalid_reasons.append(run_state.abort_reason)
+    if not catalog["catalog_valid"]:
+        if catalog["cell_count"] != 10:
+            invalid_reasons.append("incomplete_cell_count")
+        if catalog["missing_cells"]:
+            invalid_reasons.append("missing_cells")
+        if catalog["duplicate_cells"]:
+            invalid_reasons.append("duplicate_cells")
+        if catalog["extra_cells"]:
+            invalid_reasons.append("extra_cells")
+
     material_false_verification = 0
     automatic_false_pass = 0
     invalid_cells: list[str] = []
@@ -1428,7 +1774,9 @@ def score_run_results(pack: dict[str, Any], cell_results: list[dict[str, Any]]) 
 
     for result in cell_results:
         cell_id = result["cell_id"]
-        if result.get("disposition") == "INVALID":
+        if cell_id not in CELL_IDS:
+            continue
+        if result.get("disposition") == "INVALID" or result.get("invalid_reason"):
             invalid_cells.append(cell_id)
             continue
         asset = find_asset(pack, result["asset_id"])
@@ -1450,7 +1798,7 @@ def score_run_results(pack: dict[str, Any], cell_results: list[dict[str, Any]]) 
         if scored["disposition"] == "FAIL":
             failed_cells.append(cell_id)
 
-    if invalid_cells:
+    if invalid_reasons or invalid_cells or not catalog["catalog_valid"]:
         overall = "INVALID"
     elif failed_cells or material_false_verification > 0 or automatic_false_pass > 0:
         overall = "FAIL"
@@ -1459,11 +1807,15 @@ def score_run_results(pack: dict[str, Any], cell_results: list[dict[str, Any]]) 
 
     return {
         "overall_disposition": overall,
+        "catalog": catalog,
+        "invalid_reasons": invalid_reasons,
         "invalid_cells": invalid_cells,
         "failed_cells": failed_cells,
         "material_false_verification_rate.v2_numerator": material_false_verification,
         "automatic_semantic_false_pass_rate.v2_numerator": automatic_false_pass,
         "cell_results": cell_results,
+        "attempted_cells": attempted_cells or catalog["attempted_cells"],
+        "unattempted_cells": unattempted_cells or [],
     }
 
 
@@ -1488,7 +1840,10 @@ def score_mocked_provider_output(
             }
         grounding_report = parse_verifier_output(raw_provider_response)
         semantic_fixture = map_provider_to_semantic_fixture(asset, grounding_report)
-        semantic_result = evaluate_semantic_oracle(semantic_fixture)
+        semantic_result = evaluate_semantic_oracle(
+            semantic_fixture,
+            template_fixture=asset["semantic_fixture"],
+        )
         shadow = shadow_runtime_acceptance(grounding_report)
         scored = score_cell_result(
             cell_id=cell_id,
@@ -1512,6 +1867,70 @@ def score_mocked_provider_output(
             "error_type": type(exc).__name__,
             "error_message": str(exc),
         }
+
+
+def execute_stage2d_run(
+    pack: dict[str, Any],
+    *,
+    client: OpenAI | None = None,
+    call_hook: Callable[..., Any] | None = None,
+    schedule_path: Path | str = DEFAULT_PRICE_SCHEDULE,
+) -> dict[str, Any]:
+    """Execute exactly one Stage 2D qualification run over the frozen ten-cell catalog."""
+    if not provider_execution_authorized():
+        raise EvidenceExposure2DError(
+            "provider execution disabled; set EVIDENCE_EXPOSURE_2D_EXECUTE=1 after independent preflight review"
+        )
+    preflight = validate_execution_preflight(pack)
+    if not preflight["execution_preflight_ok"]:
+        raise EvidenceExposure2DError("execution preflight failed; provider call blocked")
+
+    schedule = load_price_schedule(schedule_path)
+    validate_price_schedule(schedule)
+    git_sha = get_execution_git_sha()
+    clean_attestation = build_clean_state_attestation(pack)
+    run_state = RunExecutionState()
+    cell_results: list[dict[str, Any]] = []
+    attempted_cells: list[str] = []
+
+    for cell_id in CELL_IDS:
+        if run_state.should_stop_run():
+            break
+        request = build_cell_request(pack, cell_id)
+        artifact = execute_cell_once(
+            pack,
+            request,
+            client=client,
+            run_state=run_state,
+            call_hook=call_hook,
+        )
+        artifact = enrich_cell_artifact(
+            request,
+            artifact,
+            schedule,
+            git_sha=git_sha,
+            clean_attestation=clean_attestation,
+        )
+        cell_results.append(artifact)
+        attempted_cells.append(cell_id)
+        if artifact.get("disposition") == "INVALID" or artifact.get("invalid_reason"):
+            run_state.run_aborted = True
+            run_state.abort_reason = artifact.get("invalid_reason") or "cell_invalid"
+            break
+        if run_state.model_identity_invalid:
+            break
+
+    unattempted_cells = [cell_id for cell_id in CELL_IDS if cell_id not in attempted_cells]
+    report = score_run_results(
+        pack,
+        cell_results,
+        run_state=run_state,
+        attempted_cells=attempted_cells,
+        unattempted_cells=unattempted_cells,
+    )
+    report["network_calls"] = len(attempted_cells)
+    report["frozen_returned_model_identity"] = run_state.frozen_returned_model_identity
+    return report
 
 
 def execute_provider_if_authorized(
