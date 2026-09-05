@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 from openai import APITimeoutError, RateLimitError
 
@@ -19,16 +20,20 @@ from scripts.evidence_exposure_2d_preflight import (
     HARD_SPEND_CEILING_USD,
     PAIRED_ASSETS,
     EvidenceExposure2DError,
+    ExecutionAuthorization2DError,
     RunExecutionState,
     SemanticMapping2DError,
     SemanticValidation2DError,
     build_all_requests,
+    build_approved_execution_config_hash,
     build_cell_request,
     build_frozen_pack,
     build_stage2d_client,
     build_stage2d_client_config,
+    build_stage2d_http_client,
     evaluate_semantic_oracle,
     execute_cell_once,
+    issue_stage2d_execution_authorization,
     execute_provider_if_authorized,
     execute_stage2d_run,
     enrich_cell_artifact,
@@ -44,9 +49,12 @@ from scripts.evidence_exposure_2d_preflight import (
     shadow_runtime_acceptance,
     sha256_text,
     validate_cell_request_artifact,
+    validate_execution_preflight,
+    validate_frozen_prediction_references,
     validate_pack,
     validate_run_cell_catalog,
     verify_paired_isolation,
+    MAX_OUTPUT_TOKENS,
 )
 
 
@@ -87,6 +95,17 @@ def _scored_cell(pack: dict, cell_id: str, *, status: str = "unverified") -> dic
 
 def _full_ten_cell_results(pack: dict, *, status: str = "unverified") -> list[dict]:
     return [_scored_cell(pack, cell_id, status=status) for cell_id in CELL_IDS]
+
+
+def _issue_auth(pack: dict, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    return issue_stage2d_execution_authorization(pack)
+
+
+def _authorized_request(pack: dict, cell_id: str, auth) -> dict:
+    request = build_cell_request(pack, cell_id)
+    request["approved_execution_config_hash"] = auth.approved_execution_config_hash
+    return request
 
 
 def test_exact_seven_assets_and_ten_cells():
@@ -279,6 +298,7 @@ def test_authorization_flag_false_blocks_execution(monkeypatch):
 def test_stage2d_client_config_retries_disabled():
     config = build_stage2d_client_config()
     assert config["max_retries"] == 0
+    assert config["follow_redirects"] is False
     assert config["uses_production_llm_call"] is False
     assert config["uses_tenacity_retry_wrapper"] is False
 
@@ -288,60 +308,94 @@ def test_stage2d_client_uses_zero_retries():
         build_stage2d_client(api_key="test-key")
         kwargs = mock_openai.call_args.kwargs
         assert kwargs["max_retries"] == 0
+        assert kwargs["http_client"].follow_redirects is False
 
 
-def test_execute_cell_once_never_uses_production_llm_call():
+def test_stage2d_http_client_disables_redirects():
+    client = build_stage2d_http_client()
+    try:
+        assert client.follow_redirects is False
+    finally:
+        client.close()
+
+
+def test_execute_cell_once_blocks_without_execution_authorization():
     pack = load_pack()
     request = build_cell_request(pack, "P1-COMPLETE")
+    call_hook = MagicMock()
+    with pytest.raises(ExecutionAuthorization2DError, match="execution authorization"):
+        execute_cell_once(pack, request, call_hook=call_hook)
+    call_hook.assert_not_called()
+
+
+def test_execute_cell_once_never_uses_production_llm_call(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
     asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
     raw = json.dumps([_verdict(asset["draft_text"], "verified")])
     call_hook = MagicMock(return_value=_mock_response(raw))
     with patch("agent.nodes._llm_call") as mock_llm_call:
-        result = execute_cell_once(pack, request, call_hook=call_hook)
+        result = execute_cell_once(
+            pack,
+            request,
+            call_hook=call_hook,
+            execution_auth=auth,
+        )
     mock_llm_call.assert_not_called()
     assert call_hook.call_count == 1
     assert result["disposition"] == "PASS"
 
 
-def test_timeout_marks_cell_invalid_without_second_call():
+def test_timeout_marks_cell_invalid_without_second_call(monkeypatch):
     pack = load_pack()
-    request = build_cell_request(pack, "P1-COMPLETE")
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
     call_hook = MagicMock(side_effect=APITimeoutError("timeout"))
-    result = execute_cell_once(pack, request, call_hook=call_hook)
+    result = execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
     assert result["disposition"] == "INVALID"
     assert result["invalid_reason"] == "provider_timeout"
     assert call_hook.call_count == 1
 
 
-def test_transport_failure_marks_cell_invalid_without_second_call():
+def test_transport_failure_marks_cell_invalid_without_second_call(monkeypatch):
     pack = load_pack()
-    request = build_cell_request(pack, "P1-COMPLETE")
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
     call_hook = MagicMock(side_effect=RateLimitError("rate limited", response=MagicMock(), body=None))
-    result = execute_cell_once(pack, request, call_hook=call_hook)
+    result = execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
     assert result["disposition"] == "INVALID"
     assert result["invalid_reason"] == "provider_api_error"
     assert call_hook.call_count == 1
 
 
-def test_malformed_provider_json_marks_cell_invalid():
+def test_malformed_provider_json_marks_cell_invalid(monkeypatch):
     pack = load_pack()
-    request = build_cell_request(pack, "P1-COMPLETE")
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
     call_hook = MagicMock(return_value=_mock_response("not json"))
-    result = execute_cell_once(pack, request, call_hook=call_hook)
+    result = execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
     assert result["disposition"] == "INVALID"
     assert result["invalid_reason"] == "provider_parse_error"
     assert call_hook.call_count == 1
 
 
-def test_returned_model_identity_drift_marks_cell_invalid():
+def test_returned_model_identity_drift_marks_cell_invalid(monkeypatch):
     pack = load_pack()
-    request = build_cell_request(pack, "P1-COMPLETE")
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
     asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
     raw = json.dumps([_verdict(asset["draft_text"], "verified")])
     state = RunExecutionState()
     state.frozen_returned_model_identity = "deepseek-chat"
     call_hook = MagicMock(return_value=_mock_response(raw, model="deepseek-chat-v2"))
-    result = execute_cell_once(pack, request, call_hook=call_hook, run_state=state)
+    result = execute_cell_once(
+        pack,
+        request,
+        call_hook=call_hook,
+        run_state=state,
+        execution_auth=auth,
+    )
     assert result["disposition"] == "INVALID"
     assert "model identity drift" in result["invalid_reason"]
 
@@ -683,3 +737,208 @@ def test_validate_run_cell_catalog_exact_ten():
     catalog = validate_run_cell_catalog(_full_ten_cell_results(pack))
     assert catalog["catalog_valid"] is True
     assert catalog["cell_count"] == 10
+
+
+def test_astra_p4_nonexistent_prediction_reference_invalid():
+    pack = load_pack()
+    asset = copy.deepcopy(next(item for item in pack["assets"] if item["asset_id"] == "P4"))
+    asset["semantic_fixture"]["final_atoms"][1]["prediction_id"] = "NONEXISTENT"
+    with pytest.raises(EvidenceExposure2DError, match="invalid final_atom prediction_id"):
+        validate_frozen_prediction_references(asset["semantic_fixture"])
+
+
+def test_astra_p4_broken_prediction_reference_no_stale_verified_pass():
+    pack = load_pack()
+    asset = copy.deepcopy(next(item for item in pack["assets"] if item["asset_id"] == "P4"))
+    asset["semantic_fixture"]["final_atoms"][1]["prediction_id"] = "NONEXISTENT"
+    claims = [
+        _verdict(candidate["text"], "verified")
+        for candidate in asset["semantic_fixture"]["candidates"]
+    ]
+    grounding = json.loads(json.dumps(claims))
+    with pytest.raises(SemanticMapping2DError, match="unresolved final_atom prediction_id"):
+        map_provider_to_semantic_fixture(asset, grounding)
+
+
+def test_unknown_prediction_reference_invalid():
+    pack = load_pack()
+    asset = copy.deepcopy(next(item for item in pack["assets"] if item["asset_id"] == "P1"))
+    asset["semantic_fixture"]["fixed_classification_cases"][0]["prediction_id"] = "UNKNOWN"
+    with pytest.raises(EvidenceExposure2DError, match="invalid classification prediction_id"):
+        validate_frozen_prediction_references(asset["semantic_fixture"])
+
+
+def test_live_mapping_missing_required_candidate_invalid():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P4")
+    grounding = [_verdict("There are 10 items in partition A.", "verified")]
+    with pytest.raises(SemanticMapping2DError):
+        map_provider_to_semantic_fixture(asset, grounding)
+
+
+def test_frozen_template_semantic_identity_mutation_invalid():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P4")
+    live = copy.deepcopy(asset["semantic_fixture"])
+    live["final_atoms"][1]["required_gold_id"] = "g9"
+    with pytest.raises(SemanticValidation2DError):
+        evaluate_semantic_oracle(live, template_fixture=asset["semantic_fixture"])
+
+
+def test_malformed_empty_gold_blocks_execution_preflight():
+    pack = copy.deepcopy(load_pack())
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    asset["semantic_fixture"]["gold_atoms"] = []
+    with pytest.raises(SemanticValidation2DError):
+        validate_execution_preflight(pack)
+
+
+def test_mutated_max_tokens_rejected_before_provider(monkeypatch):
+    pack = copy.deepcopy(load_pack())
+    pack["model_config"]["max_tokens"] = 40000
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    with pytest.raises(EvidenceExposure2DError, match="max_tokens must be 4000"):
+        issue_stage2d_execution_authorization(pack)
+
+
+def test_approved_max_tokens_is_4000():
+    pack = load_pack()
+    assert pack["model_config"]["max_tokens"] == MAX_OUTPUT_TOKENS == 4000
+    preflight = validate_execution_preflight(pack)
+    assert preflight["execution_preflight_ok"] is True
+
+
+def test_mutated_request_after_preflight_rejected(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    request["model_config"] = dict(request["model_config"], max_tokens=40000)
+    call_hook = MagicMock()
+    with pytest.raises((ExecutionAuthorization2DError, EvidenceExposure2DError)):
+        execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    call_hook.assert_not_called()
+
+
+def test_preflight_execution_config_hash_binds_execution(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    preflight = validate_execution_preflight(pack)
+    assert preflight["approved_execution_config_hash"] == auth.approved_execution_config_hash
+    assert preflight["approved_execution_config_hash"] == build_approved_execution_config_hash(pack)
+
+
+def test_transport_not_reached_when_authorization_false(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "0")
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    call_hook = MagicMock()
+    with pytest.raises(ExecutionAuthorization2DError):
+        execute_cell_once(pack, request, call_hook=call_hook)
+    call_hook.assert_not_called()
+
+
+def test_transport_not_reached_for_invalid_prediction_reference_before_execution(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    pack = copy.deepcopy(load_pack())
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P4")
+    asset["semantic_fixture"]["final_atoms"][1]["prediction_id"] = "NONEXISTENT"
+    call_hook = MagicMock()
+    with pytest.raises(EvidenceExposure2DError):
+        issue_stage2d_execution_authorization(pack)
+    call_hook.assert_not_called()
+
+
+def _transport_counting_client(handler):
+    transport = httpx.MockTransport(handler)
+    return build_stage2d_client(api_key="test-key", transport=transport)
+
+
+def test_redirect_produces_one_transport_request_and_invalid(monkeypatch):
+    transport_call_count = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        transport_call_count["n"] += 1
+        return httpx.Response(302, headers={"Location": "https://redirect.example/"}, request=request)
+
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    client = _transport_counting_client(handler)
+    result = execute_cell_once(pack, request, client=client, execution_auth=auth)
+    assert transport_call_count["n"] == 1
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_redirect_error"
+
+
+def test_success_uses_one_transport_request(monkeypatch):
+    transport_call_count = {"n": 0}
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        transport_call_count["n"] += 1
+        payload = {
+            "id": "resp-redirect-test",
+            "object": "chat.completion",
+            "created": 1,
+            "model": "deepseek-chat",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": json.dumps([_verdict(asset["draft_text"], "verified")]),
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        }
+        return httpx.Response(200, json=payload, request=request)
+
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    client = _transport_counting_client(handler)
+    result = execute_cell_once(pack, request, client=client, execution_auth=auth)
+    assert transport_call_count["n"] == 1
+    assert result["disposition"] == "PASS"
+
+
+def test_ten_cell_run_uses_at_most_ten_transport_requests(monkeypatch):
+    transport_call_count = {"n": 0}
+    pack = load_pack()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        transport_call_count["n"] += 1
+        user = json.loads(request.content.decode())["messages"][1]["content"]
+        for asset in pack["assets"]:
+            if asset["draft_text"] in user:
+                claims = [
+                    _verdict(candidate["text"], "unverified")
+                    for candidate in asset["semantic_fixture"]["candidates"]
+                ]
+                content = json.dumps(claims)
+                break
+        else:
+            content = "[]"
+        payload = {
+            "id": f"resp-{transport_call_count['n']}",
+            "object": "chat.completion",
+            "created": 1,
+            "model": "deepseek-chat",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": content},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        }
+        return httpx.Response(200, json=payload, request=request)
+
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    client = _transport_counting_client(handler)
+    report = execute_stage2d_run(pack, client=client)
+    assert transport_call_count["n"] == 10
+    assert report["network_calls"] == 10

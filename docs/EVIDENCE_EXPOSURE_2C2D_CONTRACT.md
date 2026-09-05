@@ -117,6 +117,9 @@ verified / weak / unverified decisions in a materially correct direction.
 - Execution wiring: dedicated retry-free OpenAI client (`max_retries=0`); no production `_llm_call`/tenacity path; timeout/transport/API/parse failure ⇒ cell/run `INVALID`
 - Ten-cell orchestrator: `execute_stage2d_run()` iterates the frozen catalog only; one shared `RunExecutionState`; max **10** network calls; no retries; incomplete/duplicate/extra/missing cell sets ⇒ overall `INVALID` (never PASS/FAIL)
 - Semantic validation boundary: live mapped fixtures pass `validate_stage2d_semantic_fixture()` (v2 structural validators + frozen template contract) before `_compute_fixture_metrics()`; malformed/empty required gold ⇒ `INVALID`
+- Execution authorization: `issue_stage2d_execution_authorization()` produces a validated token required at the transport boundary; malformed semantic fixtures, budget/config drift, or missing authorization block before HTTP invocation
+- Budget binding: approved `max_tokens=4000` per cell is hashed into `approved_execution_config_hash`; executed request must match preflight-approved configuration
+- HTTP transport: dedicated Stage 2D client disables redirect following (`follow_redirects=False`); one logical cell ⇒ at most one outbound HTTP request
 - Shadow current-runtime UVR acceptance computed alongside corrected oracle; production routing unchanged
 
 ### Asset catalog

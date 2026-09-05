@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 import tiktoken
+import httpx
 from openai import APIConnectionError, APITimeoutError, OpenAI
 from openai import APIStatusError, AuthenticationError, BadRequestError, RateLimitError
 
@@ -64,6 +65,22 @@ class SemanticMapping2DError(EvidenceExposure2DError):
 
 class SemanticValidation2DError(EvidenceExposure2DError):
     """Constructed Stage 2D semantic fixture failed validation before metric computation."""
+
+
+class ExecutionAuthorization2DError(EvidenceExposure2DError):
+    """Stage 2D execution authorization missing or invalid at the transport boundary."""
+
+
+@dataclass(frozen=True)
+class Stage2DExecutionAuthorization:
+    """Validated execution authorization produced only after full preflight checks."""
+
+    authorization_token: str
+    approved_execution_config_hash: str
+    execution_git_sha: str
+    budget_authorized: bool
+    paired_isolation_ok: bool
+    provider_execution_authorized: bool
 
 
 def sha256_text(text: str) -> str:
@@ -394,6 +411,173 @@ def _validate_stage2d_semantic_fixture_body(
 
     _validate_final_atoms(fixture_id, draft, gold_ids, live["final_atoms"])
     _validate_fixed_classification_cases(fixture_id, gold_ids, live["fixed_classification_cases"])
+    _validate_stage2d_template_semantic_contract(live, template)
+
+
+def _validate_stage2d_template_semantic_contract(
+    live: dict[str, Any],
+    template: dict[str, Any],
+) -> None:
+    """Ensure immutable Stage 2D semantic identities remain bound to the frozen template."""
+    template_final_by_id = {atom["id"]: atom for atom in template["final_atoms"]}
+    for live_atom in live["final_atoms"]:
+        template_atom = template_final_by_id[live_atom["id"]]
+        for contract_field in (
+            "prediction_id",
+            "required_gold_id",
+            "reference_relationship",
+            "independent_semantic_label",
+            "material",
+            "text",
+        ):
+            _require(
+                live_atom.get(contract_field) == template_atom.get(contract_field),
+                f"{live_atom['id']} {contract_field} drift from frozen template",
+            )
+
+    template_cases = {case["id"]: case for case in template.get("fixed_classification_cases", [])}
+    for live_case in live.get("fixed_classification_cases", []):
+        template_case = template_cases[live_case["id"]]
+        for contract_field in (
+            "prediction_id",
+            "required_gold_id",
+            "final_atom_id",
+            "source",
+            "material",
+            "independent_semantic_label",
+        ):
+            _require(
+                live_case.get(contract_field) == template_case.get(contract_field),
+                f"{live_case['id']} {contract_field} drift from frozen template",
+            )
+
+
+def validate_frozen_prediction_references(fixture: dict[str, Any]) -> None:
+    """Reject frozen templates with unresolved prediction references."""
+    canonical = canonicalize_semantic_fixture(fixture)
+    candidate_ids = {candidate["id"] for candidate in canonical["candidates"]}
+    for final_atom in canonical["final_atoms"]:
+        prediction_id = final_atom.get("prediction_id")
+        if prediction_id is not None:
+            _require(
+                prediction_id in candidate_ids,
+                f"invalid final_atom prediction_id {prediction_id!r}",
+            )
+    for case in canonical.get("fixed_classification_cases", []):
+        prediction_id = case.get("prediction_id")
+        if prediction_id is not None:
+            _require(
+                prediction_id in candidate_ids,
+                f"invalid classification prediction_id {prediction_id!r}",
+            )
+
+
+def validate_stage2d_semantic_fixtures(pack: dict[str, Any]) -> None:
+    """Validate semantic fixture contents for every frozen asset."""
+    for asset in pack["assets"]:
+        _require("semantic_fixture" in asset, f"missing semantic mapping contract for {asset['asset_id']}")
+        fixture = asset["semantic_fixture"]
+        validate_frozen_prediction_references(fixture)
+        evaluate_semantic_oracle(fixture)
+
+
+def validate_frozen_model_config(pack: dict[str, Any]) -> None:
+    model_config = pack["model_config"]
+    _require(model_config["max_tokens"] == MAX_OUTPUT_TOKENS, "model_config max_tokens must be 4000")
+    _require(model_config["temperature"] == VERIFY_TEMPERATURE, "model_config temperature mismatch")
+    _require(model_config["model_alias"] == "deepseek-chat", "model_config model_alias mismatch")
+
+
+def build_approved_execution_config_hash(pack: dict[str, Any]) -> str:
+    validate_frozen_model_config(pack)
+    requests = build_all_requests(pack)
+    for request in requests:
+        _require(
+            request["model_config"]["max_tokens"] == MAX_OUTPUT_TOKENS,
+            "cell request max_tokens must match approved budget bound",
+        )
+    payload = {
+        "model_config": pack["model_config"],
+        "cell_configs": [
+            {
+                "cell_id": request["cell_id"],
+                "model_config": request["model_config"],
+                "exposed_context_sha256": request["exposed_context_sha256"],
+                "draft_sha256": request["draft_sha256"],
+                "source_sha256": request["source_sha256"],
+                "verify_system_sha256": request["verify_system_sha256"],
+                "max_attempts": request["max_attempts"],
+            }
+            for request in requests
+        ],
+    }
+    return sha256_text(json.dumps(payload, sort_keys=True, ensure_ascii=True))
+
+
+def issue_stage2d_execution_authorization(
+    pack: dict[str, Any],
+    *,
+    schedule_path: Path | str = DEFAULT_PRICE_SCHEDULE,
+) -> Stage2DExecutionAuthorization:
+    """Issue validated execution authorization after all preflight gates pass."""
+    if not provider_execution_authorized():
+        raise ExecutionAuthorization2DError(
+            "provider execution disabled; set EVIDENCE_EXPOSURE_2D_EXECUTE=1 after independent preflight review"
+        )
+    validate_pack(pack)
+    validate_frozen_model_config(pack)
+    validate_stage2d_semantic_fixtures(pack)
+    budget = preflight_budget(pack, schedule_path=schedule_path)
+    if not budget["budget_authorized"]:
+        raise ExecutionAuthorization2DError("budget not authorized")
+    paired = verify_paired_isolation(pack)
+    paired_ok = all(item["isolated"] for item in paired.values())
+    if not paired_ok:
+        raise ExecutionAuthorization2DError("paired isolation failed")
+    git_sha = get_execution_git_sha()
+    approved_hash = build_approved_execution_config_hash(pack)
+    token_payload = {
+        "approved_execution_config_hash": approved_hash,
+        "execution_git_sha": git_sha,
+        "budget_authorized": budget["budget_authorized"],
+        "paired_isolation_ok": paired_ok,
+        "provider_execution_authorized": True,
+        "cell_ids": list(CELL_IDS),
+    }
+    return Stage2DExecutionAuthorization(
+        authorization_token=sha256_text(json.dumps(token_payload, sort_keys=True, ensure_ascii=True)),
+        approved_execution_config_hash=approved_hash,
+        execution_git_sha=git_sha,
+        budget_authorized=budget["budget_authorized"],
+        paired_isolation_ok=paired_ok,
+        provider_execution_authorized=True,
+    )
+
+
+def _assert_transport_authorized(
+    pack: dict[str, Any],
+    request: dict[str, Any],
+    execution_auth: Stage2DExecutionAuthorization | None,
+) -> None:
+    if execution_auth is None:
+        raise ExecutionAuthorization2DError("missing Stage 2D execution authorization")
+    if not execution_auth.provider_execution_authorized:
+        raise ExecutionAuthorization2DError("provider execution not authorized")
+    if not execution_auth.budget_authorized:
+        raise ExecutionAuthorization2DError("budget not authorized")
+    if not execution_auth.paired_isolation_ok:
+        raise ExecutionAuthorization2DError("paired isolation not authorized")
+    approved_hash = request.get("approved_execution_config_hash")
+    if approved_hash != execution_auth.approved_execution_config_hash:
+        raise ExecutionAuthorization2DError("request execution config hash mismatch")
+    validate_cell_request_artifact(pack, request)
+    _require(
+        request["model_config"]["max_tokens"] == MAX_OUTPUT_TOKENS,
+        "executed max_tokens differs from approved budget configuration",
+    )
+    rebuilt_hash = build_approved_execution_config_hash(pack)
+    if rebuilt_hash != execution_auth.approved_execution_config_hash:
+        raise ExecutionAuthorization2DError("execution config drift from approved preflight hash")
 
 
 def canonicalize_semantic_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
@@ -1158,12 +1342,27 @@ def build_stage2d_client_config() -> dict[str, Any]:
         "base_url": DEEPSEEK_BASE_URL,
         "timeout_s": LLM_TIMEOUT_S,
         "max_retries": 0,
+        "follow_redirects": False,
         "uses_production_llm_call": False,
         "uses_tenacity_retry_wrapper": False,
     }
 
 
-def build_stage2d_client(*, api_key: str | None = None) -> OpenAI:
+def build_stage2d_http_client(*, transport: httpx.BaseTransport | None = None) -> httpx.Client:
+    from config import LLM_TIMEOUT_S
+
+    return httpx.Client(
+        transport=transport,
+        timeout=LLM_TIMEOUT_S,
+        follow_redirects=False,
+    )
+
+
+def build_stage2d_client(
+    *,
+    api_key: str | None = None,
+    transport: httpx.BaseTransport | None = None,
+) -> OpenAI:
     """Construct a dedicated retry-free OpenAI-compatible client for Stage 2D."""
     from config import DEEPSEEK_BASE_URL, LLM_TIMEOUT_S
 
@@ -1172,6 +1371,7 @@ def build_stage2d_client(*, api_key: str | None = None) -> OpenAI:
         base_url=DEEPSEEK_BASE_URL,
         timeout=LLM_TIMEOUT_S,
         max_retries=0,
+        http_client=build_stage2d_http_client(transport=transport),
     )
 
 
@@ -1188,6 +1388,37 @@ def _match_provider_row(candidate_text: str, grounding_report: list[dict[str, An
     if len(matches) == 1:
         return matches[0]
     raise SemanticMapping2DError(f"cannot map candidate claim {target!r} to provider output")
+
+
+def _apply_live_prediction_statuses(
+    fixture: dict[str, Any],
+    candidate_by_id: dict[str, dict[str, Any]],
+) -> None:
+    for final_atom in fixture["final_atoms"]:
+        final_atom.pop("predicted_semantic_status", None)
+        prediction_id = final_atom.get("prediction_id")
+        if prediction_id is None:
+            continue
+        if prediction_id not in candidate_by_id:
+            raise SemanticMapping2DError(
+                f"unresolved final_atom prediction_id {prediction_id!r}"
+            )
+        final_atom["predicted_semantic_status"] = candidate_by_id[prediction_id][
+            "predicted_semantic_status"
+        ]
+
+    for case in fixture.get("fixed_classification_cases", []):
+        case.pop("predicted_semantic_status", None)
+        prediction_id = case.get("prediction_id")
+        if prediction_id is None:
+            continue
+        if prediction_id not in candidate_by_id:
+            raise SemanticMapping2DError(
+                f"unresolved classification prediction_id {prediction_id!r}"
+            )
+        case["predicted_semantic_status"] = candidate_by_id[prediction_id][
+            "predicted_semantic_status"
+        ]
 
 
 def map_provider_to_semantic_fixture(
@@ -1210,19 +1441,7 @@ def map_provider_to_semantic_fixture(
     for index, verifier_row in enumerate(fixture["verifier_rows"]):
         verifier_row["status"] = fixture["candidates"][index]["predicted_semantic_status"]
 
-    for final_atom in fixture["final_atoms"]:
-        prediction_id = final_atom.get("prediction_id")
-        if prediction_id and prediction_id in candidate_by_id:
-            final_atom["predicted_semantic_status"] = candidate_by_id[prediction_id][
-                "predicted_semantic_status"
-            ]
-
-    for case in fixture.get("fixed_classification_cases", []):
-        prediction_id = case.get("prediction_id")
-        if prediction_id and prediction_id in candidate_by_id:
-            case["predicted_semantic_status"] = candidate_by_id[prediction_id][
-                "predicted_semantic_status"
-            ]
+    _apply_live_prediction_statuses(fixture, candidate_by_id)
 
     shadow = shadow_runtime_acceptance(grounding_report)
     fixture["automatic_route"] = {"decision": "PASS" if shadow["accepted"] else "FAIL"}
@@ -1250,6 +1469,11 @@ def validate_cell_request_artifact(pack: dict[str, Any], request: dict[str, Any]
     )
     _require(rebuilt["draft_sha256"] == request["draft_sha256"], "stale or mismatched draft hash")
     _require(rebuilt["source_sha256"] == request["source_sha256"], "stale or mismatched source hash")
+    _require(rebuilt["model_config"] == request["model_config"], "stale or mismatched model config")
+    _require(
+        request["model_config"]["max_tokens"] == MAX_OUTPUT_TOKENS,
+        "executed max_tokens differs from approved budget configuration",
+    )
 
 
 def _user_messages_differ_only_by_context(prefix_req: dict[str, Any], complete_req: dict[str, Any]) -> bool:
@@ -1269,6 +1493,7 @@ def validate_pack(pack: dict[str, Any]) -> None:
     _require(pack["evaluator_id"] == EVALUATOR_ID, "evaluator_id mismatch")
     _require(pack["schema_version"] == SCHEMA_VERSION, "schema_version mismatch")
     _require(pack.get("stage") == STAGE, "stage must be 2d")
+    validate_frozen_model_config(pack)
     assets = pack["assets"]
     _require(len(assets) == len(ASSET_IDS), "asset count mismatch")
     asset_ids: set[str] = set()
@@ -1481,15 +1706,16 @@ def verify_paired_isolation(pack: dict[str, Any]) -> dict[str, Any]:
 
 def validate_execution_preflight(pack: dict[str, Any]) -> dict[str, Any]:
     validate_pack(pack)
+    validate_stage2d_semantic_fixtures(pack)
     budget = preflight_budget(pack)
     paired = verify_paired_isolation(pack)
     paired_ok = all(item["isolated"] for item in paired.values())
-    for asset in pack["assets"]:
-        _require("semantic_fixture" in asset, f"missing semantic mapping contract for {asset['asset_id']}")
+    approved_execution_config_hash = build_approved_execution_config_hash(pack)
     return {
         "budget": budget,
         "paired_isolation": paired,
         "paired_isolation_ok": paired_ok,
+        "approved_execution_config_hash": approved_execution_config_hash,
         "execution_preflight_ok": paired_ok and budget["budget_authorized"],
     }
 
@@ -1556,6 +1782,8 @@ def enrich_cell_artifact(
 
 
 def _provider_failure_reason(exc: Exception) -> str:
+    if isinstance(exc, ExecutionAuthorization2DError):
+        return "execution_authorization_error"
     if isinstance(exc, SemanticValidation2DError):
         return "semantic_validation_error"
     if isinstance(exc, SemanticMapping2DError):
@@ -1564,6 +1792,8 @@ def _provider_failure_reason(exc: Exception) -> str:
         return "provider_timeout"
     if isinstance(exc, APIConnectionError):
         return "provider_connection_error"
+    if isinstance(exc, APIStatusError) and getattr(exc, "status_code", None) in {301, 302, 303, 307, 308}:
+        return "provider_redirect_error"
     if isinstance(exc, (APIStatusError, RateLimitError, AuthenticationError, BadRequestError)):
         return "provider_api_error"
     if isinstance(exc, EvidenceExposure2DError):
@@ -1573,6 +1803,19 @@ def _provider_failure_reason(exc: Exception) -> str:
     return "provider_execution_error"
 
 
+def _invoke_stage2d_provider_create(
+    create: Callable[..., Any],
+    *,
+    request: dict[str, Any],
+) -> Any:
+    return create(
+        model=request["model_config"]["model_alias"],
+        messages=request["messages"],
+        temperature=request["model_config"]["temperature"],
+        max_tokens=request["model_config"]["max_tokens"],
+    )
+
+
 def execute_cell_once(
     pack: dict[str, Any],
     request: dict[str, Any],
@@ -1580,9 +1823,10 @@ def execute_cell_once(
     client: OpenAI | None = None,
     run_state: RunExecutionState | None = None,
     call_hook: Callable[..., Any] | None = None,
+    execution_auth: Stage2DExecutionAuthorization | None = None,
 ) -> dict[str, Any]:
     """Execute exactly one provider attempt for a Stage 2D cell. Never retries."""
-    validate_cell_request_artifact(pack, request)
+    _assert_transport_authorized(pack, request, execution_auth)
     asset = find_asset(pack, request["asset_id"])
     started = time.time()
     state = run_state or RunExecutionState()
@@ -1594,18 +1838,15 @@ def execute_cell_once(
         "provider_path": STAGE2D_PROVIDER_PATH,
         "max_attempts": MAX_ATTEMPTS_PER_CELL,
         "provider_retries_disabled": PROVIDER_RETRIES_DISABLED,
+        "approved_execution_config_hash": request.get("approved_execution_config_hash"),
+        "executed_max_tokens": request["model_config"]["max_tokens"],
         "disposition": "INVALID",
     }
 
     try:
         active_client = client or build_stage2d_client()
         create = call_hook or active_client.chat.completions.create
-        response = create(
-            model=requested_alias,
-            messages=request["messages"],
-            temperature=request["model_config"]["temperature"],
-            max_tokens=request["model_config"]["max_tokens"],
-        )
+        response = _invoke_stage2d_provider_create(create, request=request)
         raw = response.choices[0].message.content or ""
         finish_reason = response.choices[0].finish_reason
         returned_model = response.model
@@ -1881,10 +2122,7 @@ def execute_stage2d_run(
         raise EvidenceExposure2DError(
             "provider execution disabled; set EVIDENCE_EXPOSURE_2D_EXECUTE=1 after independent preflight review"
         )
-    preflight = validate_execution_preflight(pack)
-    if not preflight["execution_preflight_ok"]:
-        raise EvidenceExposure2DError("execution preflight failed; provider call blocked")
-
+    execution_auth = issue_stage2d_execution_authorization(pack, schedule_path=schedule_path)
     schedule = load_price_schedule(schedule_path)
     validate_price_schedule(schedule)
     git_sha = get_execution_git_sha()
@@ -1897,12 +2135,14 @@ def execute_stage2d_run(
         if run_state.should_stop_run():
             break
         request = build_cell_request(pack, cell_id)
+        request["approved_execution_config_hash"] = execution_auth.approved_execution_config_hash
         artifact = execute_cell_once(
             pack,
             request,
             client=client,
             run_state=run_state,
             call_hook=call_hook,
+            execution_auth=execution_auth,
         )
         artifact = enrich_cell_artifact(
             request,
@@ -1945,16 +2185,16 @@ def execute_provider_if_authorized(
         raise EvidenceExposure2DError(
             "provider execution disabled; set EVIDENCE_EXPOSURE_2D_EXECUTE=1 after independent preflight review"
         )
-    preflight = validate_execution_preflight(pack)
-    if not preflight["execution_preflight_ok"]:
-        raise EvidenceExposure2DError("execution preflight failed; provider call blocked")
+    execution_auth = issue_stage2d_execution_authorization(pack)
     request = build_cell_request(pack, cell_id)
+    request["approved_execution_config_hash"] = execution_auth.approved_execution_config_hash
     return execute_cell_once(
         pack,
         request,
         client=client,
         run_state=run_state,
         call_hook=call_hook,
+        execution_auth=execution_auth,
     )
 
 
