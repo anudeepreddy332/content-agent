@@ -9,6 +9,50 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-05-01
+Date: 2026-09-05
+
+Decision: **Verifier semantic-contract 3-cell prompt-only experiment design is
+frozen. Provider execution requires independent preflight review and explicit
+authorization. Automatic shadow false-pass is diagnostic only for this
+experiment.**
+
+Reason: Stage 2D bounded provider qualification **FAILED** with FV=4 on P6/P7
+cells despite COMPLETE exposure making contradiction/qualifier visible. P1 proved
+exposure consequence (PREFIX unverified → COMPLETE verified). Forensic diagnosis
+points to the permissive semantic-status paragraph in `prompts/verify_system.md`
+("verified if any source supports"). Next causal test isolates prompt-contract
+change only.
+
+Frozen 3-cell contract:
+
+- cells: exactly three COMPLETE arms — C1=P6-COMPLETE, C2=P7-COMPLETE,
+  C3=P1-COMPLETE (positive control)
+- causal variable: **only** the verifier semantic-status paragraph replaced with
+  strict full-entailment contract in
+  `prompts/verify_system_semantic_contract_candidate.md`
+- frozen from Stage 2D: draft/source/context hashes, model config, parser,
+  mapper, Semantic P0 evaluator, evidence bindings, gold labels, no-retry,
+  redirect-disabled transport, price schedule
+- expected provider classifications: C1=weak, C2=weak, C3=verified
+- qualification gate: material false-verification numerator = 0
+- **NOT** a qualification gate: automatic_semantic_false_pass (shadow UVR may
+  still ACCEPT all-weak reports; routing unchanged and evaluated separately)
+- one accepted attempt per cell; max **3** HTTP requests; hard ceiling **$0.02 USD**
+- production routing, UVR logic, retrieval, exposure limits unchanged
+
+Status: **3-CELL PRE-PROVIDER IMPLEMENTATION — PROVIDER EXECUTION NOT
+AUTHORIZED**.
+
+Does NOT authorize: production prompt swap, routing changes, retrieval redesign,
+paid 20-topic benchmark, or EXPERIMENT_LEDGER entry until the experiment runs.
+
+Confidence: 0.95
+
+Supersedes / superseded by: Accepts Stage 2D execution-fail forensics; does not
+supersede Stage 2D exposure contract or production verifier prompt.
+
+---
 Decision ID: D-2026-09-04-06
 Date: 2026-09-04
 

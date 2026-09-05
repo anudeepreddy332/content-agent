@@ -98,13 +98,17 @@ remain preserved below as evidence; they are not reopened here.
    `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`. Current prefix exposure lost
    required evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval.
    Provider consequence remains **UNKNOWN**.
-3. **Stage 2D pre-provider implementation / independent review — CURRENT
-   MISSION.** Seven fixed-draft assets, ten frozen provider cells, budget
-   preflight, shadow routing, Semantic P0 oracle integration. Provider
+3. **Verifier semantic-contract 3-cell prompt-only experiment — CURRENT
+   MISSION** on `experiment/verifier-semantic-contract`. Three COMPLETE cells
+   (P6/P7/P1) test whether replacing only the verifier semantic-status
+   paragraph fixes contradiction/qualifier false verifications. Provider
    execution **NOT YET AUTHORIZED**.
-4. **Minimal exact evidence-exposure completion + small real provider 2D
-   qualification using the corrected semantic ruler** — follows Stage 2D
-   independent preflight review and explicit authorization.
+4. **Stage 2D bounded provider qualification — EXECUTED / FAIL (diagnostic).**
+   Artifact `outputs/evidence_exposure_2d/stage2d_run_20260905T074337Z.json`
+   (SHA-256 `7243f2075a06aba3d48c69085e085b7b7b57bf59c7b926b6eafb29991e914ea0`).
+   P1 proved exposure consequence (PREFIX unverified → COMPLETE verified); P6/P7
+   COMPLETE still false-verified despite visible contradiction/qualifier;
+   forensic diagnosis points to permissive verifier semantic-status contract.
 5. **Retrieval redesign — major product-quality program:**
    - resolve MiniLM truncation / embedding-input mismatch;
    - production-shaped chunking/embedding strategy;
@@ -218,13 +222,19 @@ priority.
   `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`; prefix exposure lost required
   evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval; provider
   consequence **UNKNOWN**.
-- **Stage 2D pre-provider correction — ACTIVE:** retry-free execution wiring, live
-  provider→Semantic P0 adapter, char-bound budget gate, paired-isolation hard gate,
-  exact ten-cell run orchestrator with completeness gate, Stage-2D semantic
-  validation boundary before metric computation, transport-boundary execution
-  authorization, budget-config binding, redirect-disabled HTTP client; Astra final
-  audit found four P1 execution-boundary defects — corrections implemented;
-  provider execution **NOT YET AUTHORIZED** pending independent correction review.
+- **Stage 2D bounded provider qualification — EXECUTED / FAIL:** ten cells,
+  ten HTTP requests, $0.003355 spend; FV=4 (P6-PREFIX, P6-COMPLETE, P7-PREFIX,
+  P7-COMPLETE); AFP=5 (+ P5); P1 exposure consequence proven; P6/P7 COMPLETE
+  false-verified with contradiction/qualifier visible; tag
+  `EVIDENCE-EXPOSURE-2D-EXECUTION-FAILED`; forensics tag
+  `STAGE-2D-FAILURE-FORENSICS-COMPLETE`.
+- **Verifier semantic-contract 3-cell preflight — ACTIVE:** candidate strict
+  full-entailment status paragraph in
+  `prompts/verify_system_semantic_contract_candidate.md`; harness
+  `scripts/verifier_semantic_contract_3cell_preflight.py`; fixtures
+  `evals/fixtures/verifier_semantic_contract_3cell.json`; $0.02 hard ceiling;
+  provider execution **NOT YET AUTHORIZED** (`VERIFIER_SEMANTIC_CONTRACT_EXECUTE=1`
+  required after independent review).
 - **F-01 callable validation-boundary defect:** CLOSED at
   `8530b078837b1a8669433777c1f8d9a1add25a8a`.
 - **F-02 required-vs-final semantic contract:** validated; approved qualification
@@ -238,19 +248,22 @@ priority.
 
 ## Current authorized mission
 
-**Stage 2D pre-provider implementation and independent review** is the current
-authorized engineering mission on `experiment/evidence-exposure-2c`. Stage 2C
-deterministic qualification **PASS** is recorded: current prefix exposure
-mechanically removed required truth-relevant evidence in five of eight frozen
-cases despite rank-1 retrieval. Provider consequence remains **UNKNOWN**.
-Stage 2D freezes seven fixed-draft assets and ten provider cells to test
-whether exposure-only changes move verifier decisions in a materially correct
-direction. Provider execution is **NOT YET AUTHORIZED** until independent
-preflight review passes and `EVIDENCE_EXPOSURE_2D_EXECUTE=1` is deliberately set.
+**Verifier semantic-contract 3-cell prompt-only experiment preflight** is the
+current authorized engineering mission on `experiment/verifier-semantic-contract`.
+Stage 2D bounded provider qualification **EXECUTED / FAIL**: exposure-only changes
+proved P1 consequence but P6/P7 COMPLETE still false-verified; forensic diagnosis
+points to the permissive verifier semantic-status paragraph in
+`prompts/verify_system.md`. The 3-cell experiment changes **only** that paragraph
+(candidate in `prompts/verify_system_semantic_contract_candidate.md`) against
+frozen COMPLETE P6/P7/P1 cells reused from Stage 2D. Qualification gates material
+false-verification numerator = 0; automatic shadow false-pass is **diagnostic only**
+(routing unchanged). Provider execution is **NOT YET AUTHORIZED** until independent
+preflight review passes and `VERIFIER_SEMANTIC_CONTRACT_EXECUTE=1` is deliberately
+set (exactly three requests, $0.02 hard ceiling).
 
-**Next after Stage 2D authorization:** bounded real-provider Stage 2D
-qualification (one attempt per cell, $0.08 hard ceiling). Retrieval redesign
-remains the next major engineering program (frozen roadmap priority 5).
+**Next after 3-cell authorization:** bounded real-provider 3-cell qualification.
+Retrieval redesign remains the next major engineering program (frozen roadmap
+priority 5).
 
 Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged).
 Claim completeness remains unresolved and is not an acceptance condition.
