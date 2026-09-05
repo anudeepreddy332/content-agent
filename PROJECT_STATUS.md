@@ -98,30 +98,37 @@ remain preserved below as evidence; they are not reopened here.
    `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`. Current prefix exposure lost
    required evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval.
    Provider consequence remains **UNKNOWN**.
-3. **Verifier semantic-contract 3-cell prompt-only experiment — CURRENT
-   MISSION** on `experiment/verifier-semantic-contract`. Three COMPLETE cells
-   (P6/P7/P1) test whether replacing only the verifier semantic-status
-   paragraph fixes contradiction/qualifier false verifications. Provider
-   execution **NOT YET AUTHORIZED**.
-4. **Stage 2D bounded provider qualification — EXECUTED / FAIL (diagnostic).**
-   Artifact `outputs/evidence_exposure_2d/stage2d_run_20260905T074337Z.json`
-   (SHA-256 `7243f2075a06aba3d48c69085e085b7b7b57bf59c7b926b6eafb29991e914ea0`).
-   P1 proved exposure consequence (PREFIX unverified → COMPLETE verified); P6/P7
-   COMPLETE still false-verified despite visible contradiction/qualifier;
-   forensic diagnosis points to permissive verifier semantic-status contract.
-5. **Retrieval redesign — major product-quality program:**
+3. **Hybrid verifier status engine — CURRENT MISSION** on
+   `experiment/hybrid-verifier-status-engine`. Offline deterministic qualification
+   of a Python-owned status engine fed by structured semantic observations (no
+   model-generated final status). Provider observation qualification **BLOCKED**
+   pending independent offline review. Materiality, UVR, routing, retrieval, and
+   production runtime **unchanged**.
+4. **Verifier semantic-contract 3-cell prompt-only experiment — EXECUTED / FAIL
+   (valid):** run 2 artifact
+   `outputs/verifier_semantic_contract_3cell/verifier_semantic_contract_run_20260905T130342Z.json`
+   (SHA-256 `85f9d576c5b424523bc2e5ecd14070bfe80a16b697c032c70b09d5402d608975`);
+   pattern `verified / weak / verified`; P7 qualifier fixed, P1 control preserved,
+   P6 contradiction still false-verified; run 1 remains immutable **INVALID**
+   (sandbox network block). Prompt-only contract change alone is insufficient for
+   P6; motivates hybrid observation + Python status architecture.
+5. **Stage 2D bounded provider qualification — EXECUTED / FAIL:** ten cells,
+   ten HTTP requests, $0.003355 spend; FV=4 on P6/P7 cells; P1 exposure
+   consequence proven; forensic diagnosis points to permissive verifier
+   semantic-status contract.
+6. **Retrieval redesign — major product-quality program:**
    - resolve MiniLM truncation / embedding-input mismatch;
    - production-shaped chunking/embedding strategy;
    - exact evidence recall/exposure;
    - deterministic fusion/ranking;
    - evaluate real query transformation only if it causally improves final
      verifier-visible evidence.
-6. **Revision safety qualification:**
+7. **Revision safety qualification:**
    - targeted bad claims resolved;
    - previously verified material claims retained;
    - no new unresolved material claims introduced.
-7. **Wire qualified semantic policy into production runtime routing.**
-8. **Enterprise capabilities:**
+8. **Wire qualified semantic policy into production runtime routing.**
+9. **Enterprise capabilities:**
    - identity / ACL / tenancy;
    - durability / recovery / observability;
    - production/cloud deployment hardening.
@@ -228,14 +235,14 @@ priority.
   false-verified with contradiction/qualifier visible; tag
   `EVIDENCE-EXPOSURE-2D-EXECUTION-FAILED`; forensics tag
   `STAGE-2D-FAILURE-FORENSICS-COMPLETE`.
-- **Verifier semantic-contract 3-cell preflight — ACTIVE:** candidate strict
-  full-entailment status paragraph in
-  `prompts/verify_system_semantic_contract_candidate.md`; harness
-  `scripts/verifier_semantic_contract_3cell_preflight.py`; transport runner
-  `execute_verifier_semantic_contract_run()` with Stage 2D retry-free client;
-  fixtures `evals/fixtures/verifier_semantic_contract_3cell.json`; $0.02 hard
-  ceiling; provider execution **NOT YET AUTHORIZED** pending independent
-  transport review (`VERIFIER_SEMANTIC_CONTRACT_EXECUTE=1` required after review).
+- **Verifier semantic-contract 3-cell — EXECUTED / FAIL (valid):** run 2 at
+  `b4074fd`; P7 fixed (`weak`), P1 preserved (`verified`), P6 still
+  false-verified (`verified`); immutable run 1 INVALID retained.
+- **Hybrid verifier status engine — ACTIVE (offline only):**
+  `scripts/hybrid_verifier_status_engine.py`; fixtures
+  `evals/fixtures/hybrid_verifier_status_offline.json`; Python derives final
+  status from structured observations; zero provider calls; production runtime
+  unchanged.
 - **F-01 callable validation-boundary defect:** CLOSED at
   `8530b078837b1a8669433777c1f8d9a1add25a8a`.
 - **F-02 required-vs-final semantic contract:** validated; approved qualification
@@ -249,23 +256,30 @@ priority.
 
 ## Current authorized mission
 
-**Verifier semantic-contract 3-cell prompt-only experiment preflight and
-transport implementation** is the current authorized engineering mission on
-`experiment/verifier-semantic-contract`. Stage 2D bounded provider qualification
-**EXECUTED / FAIL**: exposure-only changes proved P1 consequence but P6/P7
-COMPLETE still false-verified; forensic diagnosis points to the permissive
-verifier semantic-status paragraph in `prompts/verify_system.md`. The 3-cell
-experiment changes **only** that paragraph (candidate in
-`prompts/verify_system_semantic_contract_candidate.md`) against frozen COMPLETE
-P6/P7/P1 cells reused from Stage 2D. Transport runner
-`execute_verifier_semantic_contract_run()` sends the candidate prompt with
-Stage 2D retry-free safeguards. Qualification gates material false-verification
-numerator = 0; automatic shadow false-pass is **diagnostic only** (routing
-unchanged). Provider execution is **NOT YET AUTHORIZED** until independent
-transport review passes and `VERIFIER_SEMANTIC_CONTRACT_EXECUTE=1` is deliberately
-set (exactly three requests, $0.02 hard ceiling).
+**Hybrid verifier status engine offline qualification** is the current
+authorized engineering mission on `experiment/hybrid-verifier-status-engine`.
+The prompt-only 3-cell experiment completed as a **valid FAIL**: candidate
+semantic-status paragraph fixed P7 and preserved P1 but P6 contradiction remained
+false-verified (`verified / weak / verified`). Next step isolates semantic
+observation from deterministic status derivation: analyzer supplies support
+spans, full-entailment judgment, and blockers; Python alone emits
+`verified / weak / unverified`. Offline fixtures (P6/P7/P1 COMPLETE) qualify the
+engine with zero provider calls. Provider observation qualification, production
+integration, UVR/routing, retrieval, and materiality remain **unchanged and
+blocked** pending independent offline review.
 
-**Next after 3-cell authorization:** bounded real-provider 3-cell qualification.
+**Prior 3-cell context (closed for now):** Stage 2D bounded provider qualification
+**EXECUTED / FAIL**: exposure-only changes proved P1 consequence but P6/P7
+COMPLETE still false-verified under the original prompt; prompt-only contract
+change improved P7 only. Transport runner
+`execute_verifier_semantic_contract_run()` remains on
+`experiment/verifier-semantic-contract` at `b4074fd`; not promoted to production.
+
+**Next after offline review:** provider observation qualification for the hybrid
+engine (not yet authorized).
+
+**Do not:** modify production runtime, UVR, routing, retrieval, or run additional
+3-cell provider calls without explicit authorization.
 Retrieval redesign remains the next major engineering program (frozen roadmap
 priority 5).
 

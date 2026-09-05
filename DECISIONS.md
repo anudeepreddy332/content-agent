@@ -9,6 +9,50 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-05-02
+Date: 2026-09-05
+
+Decision: **Hybrid verifier status engine architecture is frozen for offline
+qualification. Semantic observations and deterministic final status are
+separated. Python alone emits verified/weak/unverified.**
+
+Reason: Valid 3-cell prompt-only experiment **FAILED** with pattern
+`verified / weak / verified` (artifact SHA-256
+`85f9d576c5b424523bc2e5ecd14070bfe80a16b697c032c70b09d5402d608975`): strict
+status paragraph fixed P7 qualifier case and preserved P1 control but P6
+contradiction remained false-verified. Prompt-only contract change is
+insufficient for contradiction reconciliation; next architecture separates
+natural-language semantic observation from deterministic status derivation.
+
+Frozen offline contract:
+
+- analyzer output schema: `claim_id`, `support_spans`, `full_entailment`,
+  `blockers` only; blocker kinds limited to `contradiction` and `limitation`
+- envelope-owned fields: schema version, exact claim text/span, draft hash,
+  evidence manifest, evidence hashes, exposure/request identity
+- span contract: zero-based half-open Unicode code-point offsets; UTF-8 hashes
+- Python derives `meaningful_positive_support = len(valid support_spans) > 0`
+- blockers always veto optimistic `full_entailment=true` → `weak` plus
+  consistency diagnostic
+- `INVALID` is analysis validity, not a fourth semantic status
+- materiality excluded from analyzer schema and status derivation
+- claim extraction excluded; engine adjudicates frozen claim roster exactly once
+- deterministic exact-fact veto interface defined; no regex NL parsing in slice 1
+- zero provider calls in offline slice; no production runtime integration
+
+Status: **OFFLINE IMPLEMENTATION — PROVIDER OBSERVATION QUALIFICATION BLOCKED
+PENDING INDEPENDENT OFFLINE REVIEW**.
+
+Does NOT authorize: production routing/UVR changes, retrieval redesign, provider
+analyzer prompts, or EXPERIMENT_LEDGER entry until offline qualification passes
+independent review.
+
+Confidence: 0.93
+
+Supersedes / superseded by: Accepts 3-cell valid FAIL evidence; does not
+supersede Stage 2D exposure contract or production verifier prompt.
+
+---
 Decision ID: D-2026-09-05-01
 Date: 2026-09-05
 
