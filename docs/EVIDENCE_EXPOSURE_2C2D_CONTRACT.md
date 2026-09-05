@@ -112,8 +112,9 @@ verified / weak / unverified decisions in a materially correct direction.
   `P7-PREFIX`, `P7-COMPLETE`
 - Causal isolation: paired P1/P6/P7 differ only in exposure arm (`prefix` vs `complete`)
 - One attempt per cell; provider SDK retries disabled; timeout/transport failure ⇒ INVALID
-- Hard spend ceiling: **$0.08 USD** (preflight must refuse above ceiling)
+- Hard spend ceiling: **$0.08 USD** (preflight must refuse above ceiling; authorization requires both cl100k estimate and 1-token-per-character char-bound upper bound)
 - Provider execution default: **disabled** (`EVIDENCE_EXPOSURE_2D_EXECUTE=1` required)
+- Execution wiring: dedicated retry-free OpenAI client (`max_retries=0`); no production `_llm_call`/tenacity path; timeout/transport/API/parse failure ⇒ cell/run `INVALID`
 - Shadow current-runtime UVR acceptance computed alongside corrected oracle; production routing unchanged
 
 ### Asset catalog

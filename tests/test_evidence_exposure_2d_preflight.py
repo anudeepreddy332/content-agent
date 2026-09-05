@@ -5,8 +5,11 @@ import copy
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
+from openai import APITimeoutError, RateLimitError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -14,21 +17,27 @@ from scripts.evidence_exposure_2d_preflight import (
     ASSET_IDS,
     CELL_IDS,
     HARD_SPEND_CEILING_USD,
-    MAX_ATTEMPTS_PER_CELL,
     PAIRED_ASSETS,
-    PROVIDER_RETRIES_DISABLED,
     EvidenceExposure2DError,
+    RunExecutionState,
     build_all_requests,
     build_cell_request,
     build_frozen_pack,
+    build_stage2d_client,
+    build_stage2d_client_config,
+    execute_cell_once,
     execute_provider_if_authorized,
     load_2c_case,
     load_pack,
+    map_provider_to_semantic_fixture,
     preflight_budget,
     provider_execution_authorized,
     run_preflight,
+    score_mocked_provider_output,
+    score_run_results,
     shadow_runtime_acceptance,
     sha256_text,
+    validate_cell_request_artifact,
     validate_pack,
     verify_paired_isolation,
 )
@@ -36,6 +45,25 @@ from scripts.evidence_exposure_2d_preflight import (
 
 def _report() -> dict:
     return run_preflight(load_pack())
+
+
+def _verdict(claim: str, status: str, *, source_url: str | None = "https://example.test/src") -> dict:
+    return {
+        "claim": claim,
+        "source_url": source_url,
+        "confidence": 0.9,
+        "status": status,
+        "specificity": "substantive",
+    }
+
+
+def _mock_response(raw: str, *, model: str = "deepseek-chat", response_id: str = "resp-1"):
+    return SimpleNamespace(
+        id=response_id,
+        model=model,
+        choices=[SimpleNamespace(message=SimpleNamespace(content=raw), finish_reason="stop")],
+        usage=SimpleNamespace(prompt_tokens=100, completion_tokens=50, total_tokens=150),
+    )
 
 
 def test_exact_seven_assets_and_ten_cells():
@@ -98,6 +126,24 @@ def test_paired_cells_differ_only_in_exposure():
     paired = verify_paired_isolation(load_pack())
     for asset_id in PAIRED_ASSETS:
         assert paired[asset_id]["isolated"] is True
+
+
+def test_paired_isolation_violation_blocks_preflight_ready():
+    pack = load_pack()
+    original_build = build_cell_request
+
+    def broken_build(current_pack: dict, cell_id: str) -> dict:
+        request = original_build(current_pack, cell_id)
+        if cell_id == "P1-COMPLETE":
+            request = dict(request)
+            request["draft_sha256"] = "0" * 64
+        return request
+
+    with patch("scripts.evidence_exposure_2d_preflight.build_cell_request", side_effect=broken_build):
+        report = run_preflight(pack)
+    assert report["paired_isolation"]["P1"]["isolated"] is False
+    assert report["paired_isolation_ok"] is False
+    assert report["preflight_ready"] is False
 
 
 def test_complete_source_context_contains_required_evidence():
@@ -192,18 +238,121 @@ def test_no_provider_call_under_default_execution():
 def test_no_retry_configuration():
     pack = load_pack()
     assert pack["max_attempts_per_cell"] == 1
-    assert pack["provider_retries_disabled"] is PROVIDER_RETRIES_DISABLED
+    assert pack["provider_retries_disabled"] is True
     request = build_cell_request(pack, "P1-COMPLETE")
-    assert request["max_attempts"] == MAX_ATTEMPTS_PER_CELL
+    assert request["max_attempts"] == 1
     assert request["provider_retries_disabled"] is True
+    config = build_stage2d_client_config()
+    assert config["max_retries"] == 0
 
 
-def test_budget_preflight_authorizes_under_hard_ceiling():
+def test_authorization_flag_false_blocks_execution(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "0")
+    assert provider_execution_authorized() is False
+    with pytest.raises(EvidenceExposure2DError, match="provider execution disabled"):
+        execute_provider_if_authorized(load_pack(), "P1-COMPLETE")
+
+
+def test_stage2d_client_config_retries_disabled():
+    config = build_stage2d_client_config()
+    assert config["max_retries"] == 0
+    assert config["uses_production_llm_call"] is False
+    assert config["uses_tenacity_retry_wrapper"] is False
+
+
+def test_stage2d_client_uses_zero_retries():
+    with patch("scripts.evidence_exposure_2d_preflight.OpenAI") as mock_openai:
+        build_stage2d_client(api_key="test-key")
+        kwargs = mock_openai.call_args.kwargs
+        assert kwargs["max_retries"] == 0
+
+
+def test_execute_cell_once_never_uses_production_llm_call():
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    call_hook = MagicMock(return_value=_mock_response(raw))
+    with patch("agent.nodes._llm_call") as mock_llm_call:
+        result = execute_cell_once(pack, request, call_hook=call_hook)
+    mock_llm_call.assert_not_called()
+    assert call_hook.call_count == 1
+    assert result["disposition"] == "PASS"
+
+
+def test_timeout_marks_cell_invalid_without_second_call():
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    call_hook = MagicMock(side_effect=APITimeoutError("timeout"))
+    result = execute_cell_once(pack, request, call_hook=call_hook)
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_timeout"
+    assert call_hook.call_count == 1
+
+
+def test_transport_failure_marks_cell_invalid_without_second_call():
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    call_hook = MagicMock(side_effect=RateLimitError("rate limited", response=MagicMock(), body=None))
+    result = execute_cell_once(pack, request, call_hook=call_hook)
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_api_error"
+    assert call_hook.call_count == 1
+
+
+def test_malformed_provider_json_marks_cell_invalid():
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    call_hook = MagicMock(return_value=_mock_response("not json"))
+    result = execute_cell_once(pack, request, call_hook=call_hook)
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_parse_error"
+    assert call_hook.call_count == 1
+
+
+def test_returned_model_identity_drift_marks_cell_invalid():
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    state = RunExecutionState()
+    state.frozen_returned_model_identity = "deepseek-chat"
+    call_hook = MagicMock(return_value=_mock_response(raw, model="deepseek-chat-v2"))
+    result = execute_cell_once(pack, request, call_hook=call_hook, run_state=state)
+    assert result["disposition"] == "INVALID"
+    assert "model identity drift" in result["invalid_reason"]
+
+
+def test_live_provider_adapter_uses_validated_semantic_evaluator():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P6")
+    grounding = [_verdict(asset["draft_text"], "verified")]
+    fixture = map_provider_to_semantic_fixture(asset, grounding)
+    from scripts.evidence_exposure_2d_preflight import evaluate_semantic_oracle
+
+    result = evaluate_semantic_oracle(fixture)
+    assert result["oracle"]["semantic_pass"] is False
+    assert result["metrics"]["material_false_verification_rate.v2"]["numerator"] == 1
+
+
+def test_stale_exposed_context_hash_rejects():
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    request["exposed_context_sha256"] = "0" * 64
+    with pytest.raises(EvidenceExposure2DError, match="stale or mismatched exposed-context hash"):
+        validate_cell_request_artifact(pack, request)
+
+
+def test_budget_preflight_requires_both_estimates_under_ceiling():
     budget = preflight_budget(load_pack(), ceiling_usd=HARD_SPEND_CEILING_USD)
     assert budget["hard_ceiling_usd"] == 0.08
     assert budget["budget_authorized"] is True
-    assert budget["conservative_max_spend_usd"] <= HARD_SPEND_CEILING_USD
+    assert budget["estimated_budget_authorized"] is True
+    assert budget["char_bound_budget_authorized"] is True
+    assert budget["estimated_max_spend_usd"] <= HARD_SPEND_CEILING_USD
+    assert budget["char_bound_max_spend_usd"] <= HARD_SPEND_CEILING_USD
     assert len(budget["cell_estimates"]) == 10
+    assert all("input_characters" in item for item in budget["cell_estimates"])
 
 
 def test_budget_preflight_refuses_oversized_pack():
@@ -237,4 +386,43 @@ def test_preflight_report_ready_without_provider():
     assert report["cell_count"] == 10
     assert report["asset_count"] == 7
     assert report["provider_execution_default_disabled"] is True
+    assert report["paired_isolation_ok"] is True
+    assert report["preflight_ready"] is True
+
+
+def test_post_response_scorer_zero_tolerance_fails_unsafe_cell():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P6")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    scored = score_mocked_provider_output(pack, cell_id="P6-COMPLETE", raw_provider_response=raw)
+    assert scored["disposition"] == "FAIL"
+    assert "material_false_verification" in scored["qualification_fail_reasons"]
+
+    run = score_run_results(pack, [{"cell_id": "P6-COMPLETE", "asset_id": "P6", **scored}])
+    assert run["overall_disposition"] == "FAIL"
+    assert run["material_false_verification_rate.v2_numerator"] > 0
+
+
+def test_post_response_scorer_passes_expected_p1_complete():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    scored = score_mocked_provider_output(pack, cell_id="P1-COMPLETE", raw_provider_response=raw)
+    assert scored["disposition"] == "PASS"
+
+
+def test_p6_prefix_unsafe_verified_promotion_fails_qualification():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P6")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    scored = score_mocked_provider_output(pack, cell_id="P6-PREFIX", raw_provider_response=raw)
+    assert scored["disposition"] == "FAIL"
+    assert "high_risk_prefix_unsafe_outcome" in scored["qualification_fail_reasons"]
+
+
+def test_cli_preflight_does_not_call_provider():
+    pack = load_pack()
+    with patch("scripts.evidence_exposure_2d_preflight.build_stage2d_client") as mock_client:
+        report = run_preflight(pack)
+        mock_client.assert_not_called()
     assert report["preflight_ready"] is True

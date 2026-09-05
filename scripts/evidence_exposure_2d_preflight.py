@@ -6,10 +6,14 @@ import hashlib
 import json
 import os
 import sys
+import time
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import tiktoken
+from openai import APIConnectionError, APITimeoutError, OpenAI
+from openai import APIStatusError, AuthenticationError, BadRequestError, RateLimitError
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -29,6 +33,8 @@ MAX_OUTPUT_TOKENS = 4000
 VERIFY_TEMPERATURE = 0.1
 MAX_ATTEMPTS_PER_CELL = 1
 PROVIDER_RETRIES_DISABLED = True
+STAGE2D_PROVIDER_PATH = "stage2d_direct_openai"
+HIGH_RISK_PREFIX_CELLS = frozenset({"P6-PREFIX", "P7-PREFIX"})
 
 ASSET_IDS = ("P1", "P2", "P3", "P4", "P5", "P6", "P7")
 CELL_IDS = (
@@ -66,6 +72,27 @@ def _require(condition: bool, message: str) -> None:
 
 def provider_execution_authorized() -> bool:
     return os.getenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "").strip() == "1"
+
+
+@dataclass
+class RunExecutionState:
+    """Cross-cell execution state for Stage 2D qualification runs."""
+
+    frozen_returned_model_identity: str | None = None
+    cell_artifacts: list[dict[str, Any]] = field(default_factory=list)
+
+    def check_returned_model_identity(self, returned_model: str | None) -> str | None:
+        if not returned_model:
+            return "missing returned model identity"
+        if self.frozen_returned_model_identity is None:
+            self.frozen_returned_model_identity = returned_model
+            return None
+        if returned_model != self.frozen_returned_model_identity:
+            return (
+                f"model identity drift: {returned_model!r} != "
+                f"{self.frozen_returned_model_identity!r}"
+            )
+        return None
 
 
 def load_2c_case(case_id: str) -> dict[str, Any]:
@@ -896,6 +923,121 @@ def build_frozen_pack() -> dict[str, Any]:
     return pack
 
 
+def build_stage2d_client_config() -> dict[str, Any]:
+    """Retry-free Stage 2D provider client configuration."""
+    from config import DEEPSEEK_BASE_URL, LLM_TIMEOUT_S
+
+    return {
+        "provider_path": STAGE2D_PROVIDER_PATH,
+        "base_url": DEEPSEEK_BASE_URL,
+        "timeout_s": LLM_TIMEOUT_S,
+        "max_retries": 0,
+        "uses_production_llm_call": False,
+        "uses_tenacity_retry_wrapper": False,
+    }
+
+
+def build_stage2d_client(*, api_key: str | None = None) -> OpenAI:
+    """Construct a dedicated retry-free OpenAI-compatible client for Stage 2D."""
+    from config import DEEPSEEK_BASE_URL, LLM_TIMEOUT_S
+
+    return OpenAI(
+        api_key=api_key or os.getenv("DEEPSEEK_API_KEY"),
+        base_url=DEEPSEEK_BASE_URL,
+        timeout=LLM_TIMEOUT_S,
+        max_retries=0,
+    )
+
+
+def parse_verifier_output(raw: str) -> list[dict[str, Any]]:
+    """Parse verifier JSON using production parsing rules without production retry path."""
+    from agent.nodes import _parse_verifier_verdicts
+
+    return _parse_verifier_verdicts(raw)
+
+
+def _match_provider_row(candidate_text: str, grounding_report: list[dict[str, Any]]) -> dict[str, Any]:
+    target = candidate_text.strip()
+    matches = [row for row in grounding_report if (row.get("claim") or "").strip() == target]
+    if len(matches) == 1:
+        return matches[0]
+    raise EvidenceExposure2DError(f"cannot map candidate claim {target!r} to provider output")
+
+
+def map_provider_to_semantic_fixture(
+    asset: dict[str, Any],
+    grounding_report: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Map live verifier output into validated Semantic P0 fixture inputs."""
+    fixture = canonicalize_semantic_fixture(json.loads(json.dumps(asset["semantic_fixture"])))
+    if not grounding_report:
+        raise EvidenceExposure2DError("empty grounding report cannot be mapped")
+
+    candidate_by_id = {candidate["id"]: candidate for candidate in fixture["candidates"]}
+    for candidate in fixture["candidates"]:
+        row = _match_provider_row(candidate["text"], grounding_report)
+        status = row.get("status")
+        if status not in {"verified", "weak", "unverified"}:
+            raise EvidenceExposure2DError(f"invalid provider status {status!r}")
+        candidate["predicted_semantic_status"] = status
+
+    for index, verifier_row in enumerate(fixture["verifier_rows"]):
+        verifier_row["status"] = fixture["candidates"][index]["predicted_semantic_status"]
+
+    for final_atom in fixture["final_atoms"]:
+        prediction_id = final_atom.get("prediction_id")
+        if prediction_id and prediction_id in candidate_by_id:
+            final_atom["predicted_semantic_status"] = candidate_by_id[prediction_id][
+                "predicted_semantic_status"
+            ]
+
+    for case in fixture.get("fixed_classification_cases", []):
+        prediction_id = case.get("prediction_id")
+        if prediction_id and prediction_id in candidate_by_id:
+            case["predicted_semantic_status"] = candidate_by_id[prediction_id][
+                "predicted_semantic_status"
+            ]
+
+    shadow = shadow_runtime_acceptance(grounding_report)
+    fixture["automatic_route"] = {"decision": "PASS" if shadow["accepted"] else "FAIL"}
+    return fixture
+
+
+def validate_price_schedule(schedule: dict[str, Any]) -> None:
+    required = (
+        "schedule_id",
+        "model_alias",
+        "input_cost_per_million_tokens_usd",
+        "output_cost_per_million_tokens_usd",
+        "max_output_tokens_per_cell",
+    )
+    for key in required:
+        _require(key in schedule, f"price schedule missing {key}")
+    _require(schedule["max_output_tokens_per_cell"] == MAX_OUTPUT_TOKENS, "output token bound mismatch")
+
+
+def validate_cell_request_artifact(pack: dict[str, Any], request: dict[str, Any]) -> None:
+    rebuilt = build_cell_request(pack, request["cell_id"])
+    _require(
+        rebuilt["exposed_context_sha256"] == request["exposed_context_sha256"],
+        "stale or mismatched exposed-context hash",
+    )
+    _require(rebuilt["draft_sha256"] == request["draft_sha256"], "stale or mismatched draft hash")
+    _require(rebuilt["source_sha256"] == request["source_sha256"], "stale or mismatched source hash")
+
+
+def _user_messages_differ_only_by_context(prefix_req: dict[str, Any], complete_req: dict[str, Any]) -> bool:
+    prefix_user = prefix_req["messages"][1]["content"]
+    complete_user = complete_req["messages"][1]["content"]
+    prefix_context = prefix_req["exposed_verifier_context"]
+    complete_context = complete_req["exposed_verifier_context"]
+    draft = prefix_req["draft_text"]
+    _require(prefix_req["draft_text"] == complete_req["draft_text"], "paired draft mismatch")
+    expected_prefix = build_verifier_user_message(draft, prefix_context)
+    expected_complete = build_verifier_user_message(draft, complete_context)
+    return prefix_user == expected_prefix and complete_user == expected_complete
+
+
 def validate_pack(pack: dict[str, Any]) -> None:
     _require(pack["pack_id"] == PACK_ID, "pack_id mismatch")
     _require(pack["evaluator_id"] == EVALUATOR_ID, "evaluator_id mismatch")
@@ -1034,14 +1176,18 @@ def load_price_schedule(path: Path | str = DEFAULT_PRICE_SCHEDULE) -> dict[str, 
 
 def estimate_cell_cost_usd(request: dict[str, Any], schedule: dict[str, Any]) -> dict[str, Any]:
     input_tokens = sum(count_tokens(message["content"]) for message in request["messages"])
+    input_chars = sum(len(message["content"]) for message in request["messages"])
     output_tokens = schedule["max_output_tokens_per_cell"]
     input_cost = input_tokens * schedule["input_cost_per_million_tokens_usd"] / 1_000_000
     output_cost = output_tokens * schedule["output_cost_per_million_tokens_usd"] / 1_000_000
+    char_input_cost = input_chars * schedule["input_cost_per_million_tokens_usd"] / 1_000_000
     return {
         "cell_id": request["cell_id"],
         "input_tokens": input_tokens,
+        "input_characters": input_chars,
         "output_tokens_bound": output_tokens,
-        "conservative_max_cost_usd": round(input_cost + output_cost, 6),
+        "estimated_max_cost_usd": round(input_cost + output_cost, 6),
+        "char_bound_max_cost_usd": round(char_input_cost + output_cost, 6),
     }
 
 
@@ -1052,14 +1198,25 @@ def preflight_budget(
     ceiling_usd: float = HARD_SPEND_CEILING_USD,
 ) -> dict[str, Any]:
     schedule = load_price_schedule(schedule_path)
+    validate_price_schedule(schedule)
     requests = build_all_requests(pack)
     estimates = [estimate_cell_cost_usd(request, schedule) for request in requests]
-    total = round(sum(item["conservative_max_cost_usd"] for item in estimates), 6)
-    authorized = total <= ceiling_usd
+    estimated_total = round(sum(item["estimated_max_cost_usd"] for item in estimates), 6)
+    char_bound_total = round(sum(item["char_bound_max_cost_usd"] for item in estimates), 6)
+    estimated_authorized = estimated_total <= ceiling_usd
+    char_bound_authorized = char_bound_total <= ceiling_usd
+    authorized = estimated_authorized and char_bound_authorized
     return {
         "schedule_id": schedule["schedule_id"],
+        "model_alias": schedule["model_alias"],
+        "input_price_per_million_usd": schedule["input_cost_per_million_tokens_usd"],
+        "output_price_per_million_usd": schedule["output_cost_per_million_tokens_usd"],
         "cell_estimates": estimates,
-        "conservative_max_spend_usd": total,
+        "estimated_max_spend_usd": estimated_total,
+        "char_bound_max_spend_usd": char_bound_total,
+        "conservative_max_spend_usd": estimated_total,
+        "estimated_budget_authorized": estimated_authorized,
+        "char_bound_budget_authorized": char_bound_authorized,
         "hard_ceiling_usd": ceiling_usd,
         "budget_authorized": authorized,
         "provider_execution_authorized_flag": provider_execution_authorized(),
@@ -1075,11 +1232,18 @@ def verify_paired_isolation(pack: dict[str, Any]) -> dict[str, Any]:
         prefix_req = build_cell_request(pack, prefix_cell["cell_id"])
         complete_req = build_cell_request(pack, complete_cell["cell_id"])
         same = (
-            prefix_req["draft_sha256"] == complete_req["draft_sha256"]
+            prefix_req["draft_text"] == complete_req["draft_text"]
+            and prefix_req["draft_sha256"] == complete_req["draft_sha256"]
             and prefix_req["source_sha256"] == complete_req["source_sha256"]
+            and prefix_req["complete_source_text"] == complete_req["complete_source_text"]
             and prefix_req["model_config"] == complete_req["model_config"]
+            and prefix_req["verify_system_sha256"] == complete_req["verify_system_sha256"]
+            and prefix_req["messages"][0] == complete_req["messages"][0]
+            and prefix_req["max_attempts"] == complete_req["max_attempts"]
+            and prefix_req["provider_retries_disabled"] == complete_req["provider_retries_disabled"]
             and prefix_req["exposure_arm"] != complete_req["exposure_arm"]
             and prefix_req["exposed_context_sha256"] != complete_req["exposed_context_sha256"]
+            and _user_messages_differ_only_by_context(prefix_req, complete_req)
         )
         results[asset_id] = {
             "isolated": same,
@@ -1089,12 +1253,290 @@ def verify_paired_isolation(pack: dict[str, Any]) -> dict[str, Any]:
     return results
 
 
-def execute_provider_if_authorized(pack: dict[str, Any], cell_id: str) -> dict[str, Any]:
+def validate_execution_preflight(pack: dict[str, Any]) -> dict[str, Any]:
+    validate_pack(pack)
+    budget = preflight_budget(pack)
+    paired = verify_paired_isolation(pack)
+    paired_ok = all(item["isolated"] for item in paired.values())
+    for asset in pack["assets"]:
+        _require("semantic_fixture" in asset, f"missing semantic mapping contract for {asset['asset_id']}")
+    return {
+        "budget": budget,
+        "paired_isolation": paired,
+        "paired_isolation_ok": paired_ok,
+        "execution_preflight_ok": paired_ok and budget["budget_authorized"],
+    }
+
+
+def _provider_failure_reason(exc: Exception) -> str:
+    if isinstance(exc, APITimeoutError):
+        return "provider_timeout"
+    if isinstance(exc, APIConnectionError):
+        return "provider_connection_error"
+    if isinstance(exc, (APIStatusError, RateLimitError, AuthenticationError, BadRequestError)):
+        return "provider_api_error"
+    if isinstance(exc, (ValueError, json.JSONDecodeError)):
+        return "provider_parse_error"
+    if isinstance(exc, EvidenceExposure2DError):
+        return "provider_mapping_error"
+    return "provider_execution_error"
+
+
+def execute_cell_once(
+    pack: dict[str, Any],
+    request: dict[str, Any],
+    *,
+    client: OpenAI | None = None,
+    run_state: RunExecutionState | None = None,
+    call_hook: Callable[..., Any] | None = None,
+) -> dict[str, Any]:
+    """Execute exactly one provider attempt for a Stage 2D cell. Never retries."""
+    validate_cell_request_artifact(pack, request)
+    asset = find_asset(pack, request["asset_id"])
+    started = time.time()
+    state = run_state or RunExecutionState()
+    requested_alias = request["model_config"]["model_alias"]
+    artifact: dict[str, Any] = {
+        "cell_id": request["cell_id"],
+        "asset_id": request["asset_id"],
+        "requested_model_alias": requested_alias,
+        "provider_path": STAGE2D_PROVIDER_PATH,
+        "max_attempts": MAX_ATTEMPTS_PER_CELL,
+        "provider_retries_disabled": PROVIDER_RETRIES_DISABLED,
+        "disposition": "INVALID",
+    }
+
+    try:
+        active_client = client or build_stage2d_client()
+        create = call_hook or active_client.chat.completions.create
+        response = create(
+            model=requested_alias,
+            messages=request["messages"],
+            temperature=request["model_config"]["temperature"],
+            max_tokens=request["model_config"]["max_tokens"],
+        )
+        raw = response.choices[0].message.content or ""
+        finish_reason = response.choices[0].finish_reason
+        returned_model = response.model
+        model_error = state.check_returned_model_identity(returned_model)
+        if model_error:
+            artifact.update(
+                {
+                    "invalid_reason": model_error,
+                    "returned_model_identity": returned_model,
+                    "finish_reason": finish_reason,
+                    "raw_provider_response": raw,
+                }
+            )
+            state.cell_artifacts.append(artifact)
+            return artifact
+
+        grounding_report = parse_verifier_output(raw)
+        semantic_fixture = map_provider_to_semantic_fixture(asset, grounding_report)
+        semantic_result = evaluate_semantic_oracle(semantic_fixture)
+        shadow = shadow_runtime_acceptance(grounding_report)
+        scored = score_cell_result(
+            cell_id=request["cell_id"],
+            asset=asset,
+            grounding_report=grounding_report,
+            semantic_result=semantic_result,
+            shadow=shadow,
+        )
+        usage = getattr(response, "usage", None)
+        artifact.update(
+            {
+                "disposition": scored["disposition"],
+                "invalid_reason": scored.get("invalid_reason"),
+                "qualification_fail_reasons": scored.get("qualification_fail_reasons", []),
+                "raw_provider_response": raw,
+                "provider_response_id": getattr(response, "id", None),
+                "returned_model_identity": returned_model,
+                "finish_reason": finish_reason,
+                "parsed_claims": grounding_report,
+                "parsed_statuses": [row.get("status") for row in grounding_report],
+                "semantic_oracle_inputs_outputs": semantic_result,
+                "shadow_runtime_decision": shadow,
+                "input_tokens": getattr(usage, "prompt_tokens", None) if usage else None,
+                "output_tokens": getattr(usage, "completion_tokens", None) if usage else None,
+                "latency_ms": round((time.time() - started) * 1000, 3),
+                "expected_corrected_semantic_pass": asset["expected_corrected_semantic_pass"][request["cell_id"]],
+            }
+        )
+    except Exception as exc:
+        artifact.update(
+            {
+                "invalid_reason": _provider_failure_reason(exc),
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+                "latency_ms": round((time.time() - started) * 1000, 3),
+            }
+        )
+
+    state.cell_artifacts.append(artifact)
+    return artifact
+
+
+def score_cell_result(
+    *,
+    cell_id: str,
+    asset: dict[str, Any],
+    grounding_report: list[dict[str, Any]] | None,
+    semantic_result: dict[str, Any] | None,
+    shadow: dict[str, Any] | None,
+    invalid_reason: str | None = None,
+) -> dict[str, Any]:
+    if invalid_reason:
+        return {"cell_id": cell_id, "disposition": "INVALID", "invalid_reason": invalid_reason}
+
+    expected_pass = asset["expected_corrected_semantic_pass"][cell_id]
+    semantic_pass = bool(semantic_result and semantic_result["oracle"]["semantic_pass"])
+    false_verification = int(
+        semantic_result["metrics"]["material_false_verification_rate.v2"]["numerator"]
+    )
+    automatic_false_pass = semantic_pass is False and bool(shadow and shadow.get("accepted"))
+    qualification_fail_reasons: list[str] = []
+
+    if false_verification > 0:
+        qualification_fail_reasons.append("material_false_verification")
+    if automatic_false_pass:
+        qualification_fail_reasons.append("automatic_semantic_false_pass")
+    if semantic_pass != expected_pass:
+        qualification_fail_reasons.append("semantic_expectation_mismatch")
+    if cell_id in HIGH_RISK_PREFIX_CELLS and (false_verification > 0 or automatic_false_pass):
+        qualification_fail_reasons.append("high_risk_prefix_unsafe_outcome")
+
+    disposition = "PASS" if not qualification_fail_reasons else "FAIL"
+    return {
+        "cell_id": cell_id,
+        "disposition": disposition,
+        "invalid_reason": None,
+        "qualification_fail_reasons": qualification_fail_reasons,
+        "semantic_pass": semantic_pass,
+        "expected_semantic_pass": expected_pass,
+        "false_verification_numerator": false_verification,
+        "automatic_false_pass": automatic_false_pass,
+        "grounding_report": grounding_report,
+        "shadow_runtime_decision": shadow,
+    }
+
+
+def score_run_results(pack: dict[str, Any], cell_results: list[dict[str, Any]]) -> dict[str, Any]:
+    material_false_verification = 0
+    automatic_false_pass = 0
+    invalid_cells: list[str] = []
+    failed_cells: list[str] = []
+
+    for result in cell_results:
+        cell_id = result["cell_id"]
+        if result.get("disposition") == "INVALID":
+            invalid_cells.append(cell_id)
+            continue
+        asset = find_asset(pack, result["asset_id"])
+        semantic = result.get("semantic_oracle_inputs_outputs")
+        shadow = result.get("shadow_runtime_decision")
+        if semantic:
+            material_false_verification += int(
+                semantic["metrics"]["material_false_verification_rate.v2"]["numerator"]
+            )
+            if not semantic["oracle"]["semantic_pass"] and shadow and shadow.get("accepted"):
+                automatic_false_pass += 1
+        scored = score_cell_result(
+            cell_id=cell_id,
+            asset=asset,
+            grounding_report=result.get("parsed_claims"),
+            semantic_result=semantic,
+            shadow=shadow,
+        )
+        if scored["disposition"] == "FAIL":
+            failed_cells.append(cell_id)
+
+    if invalid_cells:
+        overall = "INVALID"
+    elif failed_cells or material_false_verification > 0 or automatic_false_pass > 0:
+        overall = "FAIL"
+    else:
+        overall = "PASS"
+
+    return {
+        "overall_disposition": overall,
+        "invalid_cells": invalid_cells,
+        "failed_cells": failed_cells,
+        "material_false_verification_rate.v2_numerator": material_false_verification,
+        "automatic_semantic_false_pass_rate.v2_numerator": automatic_false_pass,
+        "cell_results": cell_results,
+    }
+
+
+def score_mocked_provider_output(
+    pack: dict[str, Any],
+    *,
+    cell_id: str,
+    raw_provider_response: str,
+    returned_model_identity: str = "deepseek-chat",
+) -> dict[str, Any]:
+    """Deterministic scorer for mocked provider outputs without network I/O."""
+    request = build_cell_request(pack, cell_id)
+    asset = find_asset(pack, request["asset_id"])
+    state = RunExecutionState()
+    try:
+        model_error = state.check_returned_model_identity(returned_model_identity)
+        if model_error:
+            return {
+                "cell_id": cell_id,
+                "disposition": "INVALID",
+                "invalid_reason": model_error,
+            }
+        grounding_report = parse_verifier_output(raw_provider_response)
+        semantic_fixture = map_provider_to_semantic_fixture(asset, grounding_report)
+        semantic_result = evaluate_semantic_oracle(semantic_fixture)
+        shadow = shadow_runtime_acceptance(grounding_report)
+        scored = score_cell_result(
+            cell_id=cell_id,
+            asset=asset,
+            grounding_report=grounding_report,
+            semantic_result=semantic_result,
+            shadow=shadow,
+        )
+        return {
+            **scored,
+            "parsed_claims": grounding_report,
+            "semantic_oracle_inputs_outputs": semantic_result,
+            "shadow_runtime_decision": shadow,
+            "returned_model_identity": returned_model_identity,
+        }
+    except Exception as exc:
+        return {
+            "cell_id": cell_id,
+            "disposition": "INVALID",
+            "invalid_reason": _provider_failure_reason(exc),
+            "error_type": type(exc).__name__,
+            "error_message": str(exc),
+        }
+
+
+def execute_provider_if_authorized(
+    pack: dict[str, Any],
+    cell_id: str,
+    *,
+    client: OpenAI | None = None,
+    run_state: RunExecutionState | None = None,
+    call_hook: Callable[..., Any] | None = None,
+) -> dict[str, Any]:
     if not provider_execution_authorized():
         raise EvidenceExposure2DError(
             "provider execution disabled; set EVIDENCE_EXPOSURE_2D_EXECUTE=1 after independent preflight review"
         )
-    raise EvidenceExposure2DError("provider execution path not enabled in pre-provider checkpoint")
+    preflight = validate_execution_preflight(pack)
+    if not preflight["execution_preflight_ok"]:
+        raise EvidenceExposure2DError("execution preflight failed; provider call blocked")
+    request = build_cell_request(pack, cell_id)
+    return execute_cell_once(
+        pack,
+        request,
+        client=client,
+        run_state=run_state,
+        call_hook=call_hook,
+    )
 
 
 def write_frozen_fixtures(path: Path | str = DEFAULT_FIXTURES) -> None:
@@ -1106,6 +1548,7 @@ def run_preflight(pack: dict[str, Any]) -> dict[str, Any]:
     requests = build_all_requests(pack)
     budget = preflight_budget(pack)
     paired = verify_paired_isolation(pack)
+    paired_ok = all(item["isolated"] for item in paired.values())
     semantic_checks = {}
     for asset in pack["assets"]:
         result = evaluate_semantic_oracle(asset["semantic_fixture"])
@@ -1121,9 +1564,11 @@ def run_preflight(pack: dict[str, Any]) -> dict[str, Any]:
         "requests_built": [request["cell_id"] for request in requests],
         "budget": budget,
         "paired_isolation": paired,
+        "paired_isolation_ok": paired_ok,
         "semantic_template_checks": semantic_checks,
         "provider_execution_default_disabled": not provider_execution_authorized(),
-        "preflight_ready": budget["budget_authorized"],
+        "provider_client_config": build_stage2d_client_config(),
+        "preflight_ready": budget["budget_authorized"] and paired_ok,
     }
 
 

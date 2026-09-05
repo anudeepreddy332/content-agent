@@ -218,9 +218,9 @@ priority.
   `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`; prefix exposure lost required
   evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval; provider
   consequence **UNKNOWN**.
-- **Stage 2D pre-provider implementation — ACTIVE:** seven assets / ten cells
-  frozen; budget preflight; shadow routing; Semantic P0 oracle integration;
-  provider execution **NOT YET AUTHORIZED**.
+- **Stage 2D pre-provider correction — ACTIVE:** retry-free execution wiring, live
+  provider→Semantic P0 adapter, char-bound budget gate, paired-isolation hard gate,
+  executable run scorer; provider execution **NOT YET AUTHORIZED**.
 - **F-01 callable validation-boundary defect:** CLOSED at
   `8530b078837b1a8669433777c1f8d9a1add25a8a`.
 - **F-02 required-vs-final semantic contract:** validated; approved qualification
