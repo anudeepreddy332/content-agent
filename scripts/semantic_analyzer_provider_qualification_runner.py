@@ -74,6 +74,10 @@ LIFECYCLE_TERMINAL = "TERMINAL"
 LIFECYCLE_SUCCESSOR_PROPOSED = "SUCCESSOR_PROPOSED"
 LIFECYCLE_AUTHORIZED = "AUTHORIZED"
 LIFECYCLE_ACTIVE = "ACTIVE"
+TERMINAL_DISPOSITIONS = frozenset({"PASS", "FAIL", "INVALID"})
+NON_TERMINAL_SUCCESSOR_LIFECYCLES = frozenset(
+    {LIFECYCLE_SUCCESSOR_PROPOSED, LIFECYCLE_AUTHORIZED, LIFECYCLE_ACTIVE}
+)
 
 VALID_FINISH_REASONS = frozenset({"stop"})
 REDIRECT_STATUS_CODES = frozenset({301, 302, 303, 307, 308})
@@ -696,6 +700,23 @@ def find_governed_experiment_evidence(
     return list(evidence_by_run_id.values())
 
 
+def disk_evidence_is_terminal(evidence: dict[str, Any]) -> bool:
+    """True when authoritative on-disk evidence proves PASS/FAIL/INVALID."""
+    if evidence.get("terminal_disposition") in TERMINAL_DISPOSITIONS:
+        return True
+    ledger_path_raw = evidence.get("ledger_path")
+    if not isinstance(ledger_path_raw, str) or not ledger_path_raw.strip():
+        return False
+    ledger_path = Path(ledger_path_raw)
+    if not ledger_path.exists():
+        return False
+    try:
+        ledger = DurableAttemptLedger.from_run_dir(ledger_path.parent)
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        return False
+    return ledger.is_terminal()
+
+
 class FrozenExperimentRegistry:
     """Append-preserving experiment history with identity-bound successor authorization."""
 
@@ -793,23 +814,83 @@ class FrozenExperimentRegistry:
                 "orphaned_authoritative_ledger:registry_missing_but_ledger_remains"
             )
 
-    def _registered_run_ids(self) -> set[str]:
-        registered: set[str] = set()
+    def _history_rows(self) -> list[dict[str, Any]]:
         if self.payload is None:
-            return registered
-        for row in self.payload.get("history", []):
-            run_id = row.get("run_id")
-            if isinstance(run_id, str) and run_id.strip():
-                registered.add(run_id)
+            return []
+        history = self.payload.get("history", [])
+        if not isinstance(history, list):
+            raise AttemptGovernanceError("corrupt_registry:history_not_list")
+        return [row for row in history if isinstance(row, dict)]
+
+    def _successor_run_id(self) -> str | None:
         successor = self.get_successor()
-        if successor:
-            run_id = successor.get("run_id")
-            if isinstance(run_id, str) and run_id.strip():
-                registered.add(run_id)
-        return registered
+        if not successor:
+            return None
+        run_id = successor.get("run_id")
+        if isinstance(run_id, str) and run_id.strip():
+            return run_id
+        return None
+
+    def _terminal_disk_evidence(self) -> list[dict[str, Any]]:
+        return [
+            item
+            for item in find_governed_experiment_evidence(
+                output_root=self.output_root,
+                experiment_root=self.experiment_root,
+            )
+            if disk_evidence_is_terminal(item)
+        ]
+
+    def _history_has_terminal_row(self) -> bool:
+        return any(row.get("lifecycle") == LIFECYCLE_TERMINAL for row in self._history_rows())
+
+    def _is_pending_active_successor_archival(self, evidence: dict[str, Any]) -> bool:
+        """True when the current ACTIVE successor's own ledger just became terminal."""
+        successor = self.get_successor()
+        if not successor or successor.get("lifecycle") != LIFECYCLE_ACTIVE:
+            return False
+        if successor.get("run_id") != evidence.get("run_id"):
+            return False
+        successor_identity = successor.get("frozen_experiment_identity_hash")
+        disk_identity = evidence.get("frozen_experiment_identity_hash")
+        return (
+            isinstance(successor_identity, str)
+            and successor_identity.strip() != ""
+            and successor_identity == disk_identity
+        )
+
+    def _validate_terminal_history_row_linkage(
+        self,
+        row: dict[str, Any],
+        disk_evidence: list[dict[str, Any]],
+    ) -> None:
+        run_id = row.get("run_id")
+        if not isinstance(run_id, str) or not run_id.strip():
+            raise AttemptGovernanceError("registry_history_incomplete:missing_run_id")
+        run_dir = row.get("run_dir")
+        if not isinstance(run_dir, str) or not run_dir.strip():
+            raise AttemptGovernanceError("registry_history_linkage_mismatch:missing_run_dir")
+        resolved = self._resolve_run_dir(run_dir, self.experiment_root)
+        if not resolved.exists():
+            raise AttemptGovernanceError("registry_history_linkage_mismatch:run_dir_missing")
+        ledger_path = resolved / DurableAttemptLedger.LEDGER_FILENAME
+        artifact_path = resolved / "run_artifact.json"
+        if not ledger_path.exists() and not artifact_path.exists():
+            raise AttemptGovernanceError("registry_history_linkage_mismatch:evidence_missing")
+        matching = [item for item in disk_evidence if item.get("run_id") == run_id]
+        if not matching:
+            raise AttemptGovernanceError("registry_history_linkage_mismatch:run_not_on_disk")
+        hist_identity = row.get("frozen_experiment_identity_hash")
+        disk_identities = {
+            item.get("frozen_experiment_identity_hash")
+            for item in matching
+            if item.get("frozen_experiment_identity_hash")
+        }
+        if hist_identity and disk_identities and hist_identity not in disk_identities:
+            raise AttemptGovernanceError("registry_history_linkage_mismatch:identity_drift")
 
     def _validate_registry_history_completeness(self) -> None:
-        """Fail closed when registry history omits governed evidence still on disk."""
+        """Fail closed unless terminal disk evidence maps to exactly one TERMINAL history row."""
         if self.payload is None:
             return
         disk_evidence = find_governed_experiment_evidence(
@@ -818,40 +899,93 @@ class FrozenExperimentRegistry:
         )
         if not disk_evidence:
             return
-        registered = self._registered_run_ids()
-        for evidence in disk_evidence:
+        history = self._history_rows()
+        successor = self.get_successor()
+        successor_run_id = self._successor_run_id()
+        successor_lifecycle = successor.get("lifecycle") if successor else None
+        terminal_disk = [item for item in disk_evidence if disk_evidence_is_terminal(item)]
+        non_terminal_disk = [item for item in disk_evidence if not disk_evidence_is_terminal(item)]
+
+        for evidence in terminal_disk:
             run_id = evidence.get("run_id")
-            if isinstance(run_id, str) and run_id not in registered:
+            if not isinstance(run_id, str) or not run_id.strip():
+                raise AttemptGovernanceError("registry_history_incomplete:missing_run_id")
+            matching_rows = [row for row in history if row.get("run_id") == run_id]
+            if not matching_rows:
+                if self._is_pending_active_successor_archival(evidence):
+                    continue
+                if successor_run_id == run_id:
+                    raise AttemptGovernanceError(
+                        "registry_history_role_mismatch:terminal_run_in_successor"
+                    )
                 raise AttemptGovernanceError(
                     "registry_history_incomplete:disk_evidence_unregistered"
                 )
-        for row in self.payload.get("history", []):
+            if len(matching_rows) != 1:
+                raise AttemptGovernanceError(
+                    "registry_history_role_mismatch:duplicate_history_run_id"
+                )
+            row = matching_rows[0]
+            if row.get("lifecycle") != LIFECYCLE_TERMINAL:
+                raise AttemptGovernanceError("registry_history_role_mismatch:history_not_terminal")
+            hist_identity = row.get("frozen_experiment_identity_hash")
+            disk_identity = evidence.get("frozen_experiment_identity_hash")
+            if not isinstance(hist_identity, str) or not hist_identity.strip():
+                raise AttemptGovernanceError("registry_history_role_mismatch:identity_missing")
+            if not isinstance(disk_identity, str) or not disk_identity.strip():
+                raise AttemptGovernanceError("registry_history_role_mismatch:identity_missing")
+            if hist_identity != disk_identity:
+                raise AttemptGovernanceError("registry_history_linkage_mismatch:identity_drift")
+            self._validate_terminal_history_row_linkage(row, disk_evidence)
+
+        for row in history:
+            if row.get("lifecycle") != LIFECYCLE_TERMINAL:
+                continue
+            self._validate_terminal_history_row_linkage(row, disk_evidence)
+
+        terminal_run_ids = {
+            item.get("run_id")
+            for item in terminal_disk
+            if isinstance(item.get("run_id"), str) and item.get("run_id")
+        }
+        for row in history:
             if row.get("lifecycle") != LIFECYCLE_TERMINAL:
                 continue
             run_id = row.get("run_id")
+            if isinstance(run_id, str) and run_id.strip():
+                terminal_run_ids.add(run_id)
+
+        if successor_run_id and successor_run_id in terminal_run_ids:
+            colliding_pending = any(
+                item.get("run_id") == successor_run_id
+                and self._is_pending_active_successor_archival(item)
+                for item in terminal_disk
+            )
+            if not colliding_pending:
+                raise AttemptGovernanceError("successor_run_id_collides_with_terminal_history")
+        if successor is not None and successor_lifecycle == LIFECYCLE_TERMINAL:
+            raise AttemptGovernanceError("registry_history_role_mismatch:successor_is_terminal")
+        if (
+            successor is not None
+            and successor_lifecycle not in NON_TERMINAL_SUCCESSOR_LIFECYCLES
+            and successor_lifecycle is not None
+        ):
+            raise AttemptGovernanceError(
+                f"registry_history_role_mismatch:successor_lifecycle:{successor_lifecycle}"
+            )
+
+        for evidence in non_terminal_disk:
+            run_id = evidence.get("run_id")
             if not isinstance(run_id, str) or not run_id.strip():
                 raise AttemptGovernanceError("registry_history_incomplete:missing_run_id")
-            run_dir = row.get("run_dir")
-            if not isinstance(run_dir, str) or not run_dir.strip():
-                raise AttemptGovernanceError("registry_history_linkage_mismatch:missing_run_dir")
-            resolved = self._resolve_run_dir(run_dir, self.experiment_root)
-            if not resolved.exists():
-                raise AttemptGovernanceError("registry_history_linkage_mismatch:run_dir_missing")
-            ledger_path = resolved / DurableAttemptLedger.LEDGER_FILENAME
-            artifact_path = resolved / "run_artifact.json"
-            if not ledger_path.exists() and not artifact_path.exists():
-                raise AttemptGovernanceError("registry_history_linkage_mismatch:evidence_missing")
-            matching = [item for item in disk_evidence if item.get("run_id") == run_id]
-            if not matching:
-                raise AttemptGovernanceError("registry_history_linkage_mismatch:run_not_on_disk")
-            hist_identity = row.get("frozen_experiment_identity_hash")
-            disk_identities = {
-                item.get("frozen_experiment_identity_hash")
-                for item in matching
-                if item.get("frozen_experiment_identity_hash")
-            }
-            if hist_identity and disk_identities and hist_identity not in disk_identities:
-                raise AttemptGovernanceError("registry_history_linkage_mismatch:identity_drift")
+            if successor_run_id != run_id:
+                raise AttemptGovernanceError(
+                    "registry_history_incomplete:disk_evidence_unregistered"
+                )
+            if successor_lifecycle not in NON_TERMINAL_SUCCESSOR_LIFECYCLES:
+                raise AttemptGovernanceError(
+                    "registry_history_role_mismatch:non_terminal_not_in_successor"
+                )
 
     def _validate_registry_integrity(self) -> None:
         if self.payload is None:
@@ -875,14 +1009,25 @@ class FrozenExperimentRegistry:
             raise AttemptGovernanceError("corrupt_registry:multiple_active_successors")
 
     def has_terminal_predecessor(self) -> bool:
+        disk_terminal = self._terminal_disk_evidence()
         self.ensure_loaded_fail_closed_on_missing_history()
+        predecessor_on_disk = [
+            item
+            for item in disk_terminal
+            if not self._is_pending_active_successor_archival(item)
+        ]
+        if predecessor_on_disk:
+            return True
         if self.payload is None:
             return False
-        return any(
-            row.get("lifecycle") == LIFECYCLE_TERMINAL for row in self.payload.get("history", [])
-        )
+        return self._history_has_terminal_row()
 
     def requires_owner_authorization(self) -> bool:
+        """Owner authorization is required whenever governed terminal evidence exists.
+
+        On-disk terminal evidence is authoritative. Empty or misclassified
+        registry history cannot downgrade the requirement.
+        """
         return self.has_terminal_predecessor()
 
     def get_successor(self) -> dict[str, Any] | None:

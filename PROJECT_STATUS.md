@@ -285,7 +285,9 @@ the current authorized engineering mission on
   authorization terminal; append-preserving registry history preserves first
   INVALID experiment; successor requires explicit identity-bound owner token
   via `SEMANTIC_ANALYZER_OWNER_AUTHORIZATION` (execute env flag alone is
-  insufficient); **no second live experiment authorized or executed**.
+  insufficient); terminal on-disk evidence must map to exactly one TERMINAL
+  `history[]` row and cannot be satisfied by `successor` or a colliding
+  `successor.run_id`; **no second live experiment authorized or executed**.
 - **Provider execution is NOT AUTHORIZED** for a second experiment. UVR/routing,
   retrieval, materiality, and production runtime remain **unchanged**.
 

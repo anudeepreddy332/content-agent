@@ -9,6 +9,52 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-10-03
+Date: 2026-09-10
+
+Decision: **Registry-vs-disk matching is role-invariant: a terminal on-disk
+governed experiment is represented only by exactly one TERMINAL history row.
+A successor slot cannot alias a terminal historical run_id.**
+
+Reason: History completeness at `6257a5cd492813f217580a0ff57cf9d90283317c`
+treated a `run_id` as registered if it appeared anywhere in registry state,
+including `successor`. That let a forged registry with `history=[]` and
+`successor.run_id` equal to terminal INVALID
+`semantic_analyzer_run_ed35656b9a7c` count the historical disk evidence as
+accounted for, skip owner-authorization derivation, and allow leftover
+`SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1` to grant unauthorized execution.
+
+Invariant:
+
+- TERMINAL HISTORICAL RUN: on-disk PASS/FAIL/INVALID evidence must appear
+  exactly once in `history[]` with lifecycle TERMINAL, matching `run_id`,
+  matching frozen experiment identity, and required ledger/artifact linkage.
+  It must never be represented by `successor`, SUCCESSOR_PROPOSED,
+  AUTHORIZED, ACTIVE, or another run_id alias.
+- CURRENT SUCCESSOR RUN: `successor` may represent only the current
+  non-terminal successor. Its `run_id` must not collide with any terminal
+  historical run_id. Collision fails closed as
+  `successor_run_id_collides_with_terminal_history` before execution
+  authorization or network eligibility.
+- Role mismatch fails closed as `registry_history_role_mismatch`.
+- Owner authorization is derived from on-disk terminal evidence, not from
+  `history[]` being empty. Prior governed terminal disk evidence plus a new
+  successor identity always requires a new identity-bound owner token.
+
+Does NOT change: P6/P7/P1 request hashes, provider/model identity contract,
+prompt, fixture, gold oracle, semantic PASS/FAIL, pricing, LangGraph, or
+retrieval. Does NOT authorize a second live provider experiment.
+
+Status: **REGISTRY ROLE INVARIANT APPLIED — EXECUTION NOT AUTHORIZED**.
+
+Confidence: 0.93
+
+Supersedes / superseded by: Tightens D-2026-09-10-02 successor authorization
+and the history-completeness correction at
+`6257a5cd492813f217580a0ff57cf9d90283317c`. Does not supersede the frozen
+request hashes or model-identity pair.
+
+---
 Decision ID: D-2026-09-10-02
 Date: 2026-09-10
 

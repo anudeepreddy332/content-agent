@@ -15,6 +15,8 @@ from scripts.semantic_analyzer_provider_qualification_runner import (
     CASE_ORDER,
     EXECUTE_ENV_VAR,
     HARD_SPEND_CEILING_USD,
+    LIFECYCLE_ACTIVE,
+    LIFECYCLE_AUTHORIZED,
     LIFECYCLE_SUCCESSOR_PROPOSED,
     LIFECYCLE_TERMINAL,
     MAX_OUTPUT_TOKENS,
@@ -149,12 +151,64 @@ def _seed_disk_governed_evidence(
 
 
 def _write_empty_v2_registry(experiment_root: Path) -> None:
-    _registry_path(experiment_root).write_text(
+    _write_v2_registry(experiment_root, history=[], successor=None)
+
+
+def _write_v2_registry(
+    experiment_root: Path,
+    *,
+    history: list[dict],
+    successor: dict | None,
+) -> None:
+    registry_path = _registry_path(experiment_root)
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    registry_path.write_text(
         canonical_json_dumps(
-            {"registry_version": REGISTRY_VERSION, "history": [], "successor": None}
+            {
+                "registry_version": REGISTRY_VERSION,
+                "history": history,
+                "successor": successor,
+            }
         ),
         encoding="utf-8",
     )
+
+
+def _successor_proposal(
+    *,
+    identity_hash: str | None = None,
+    run_id: str | None = None,
+    lifecycle: str = LIFECYCLE_SUCCESSOR_PROPOSED,
+) -> dict:
+    return {
+        "frozen_experiment_identity_hash": identity_hash or frozen_experiment_identity_hash(),
+        "lifecycle": lifecycle,
+        "proposed_at": "2026-09-10T12:00:00+00:00",
+        "owner_authorization_token": None,
+        "authorized_at": None,
+        "run_id": run_id,
+        "run_dir": f"runs/{run_id}" if run_id else None,
+        "execution_session_token": None,
+    }
+
+
+def _terminal_history_row(
+    *,
+    identity_hash: str = CONSUMED_FIRST_LIVE_IDENTITY_HASH,
+    run_id: str = "semantic_analyzer_run_ed35656b9a7c",
+    lifecycle: str = LIFECYCLE_TERMINAL,
+) -> dict:
+    return {
+        "run_id": run_id,
+        "frozen_experiment_identity_hash": identity_hash,
+        "legacy_execution_reference_token": CONSUMED_FIRST_LIVE_AUTH_TOKEN,
+        "owner_authorization_token": CONSUMED_FIRST_LIVE_AUTH_TOKEN,
+        "run_dir": f"runs/{run_id}",
+        "established_at": "2026-09-10T07:44:29.642905+00:00",
+        "terminal_at": "2026-09-10T07:44:31.058286+00:00",
+        "lifecycle": lifecycle,
+        "terminal_disposition": "INVALID",
+    }
 
 
 def _seed_v2_terminal_predecessor(
@@ -1507,3 +1561,193 @@ def test_leftover_execute_flag_cannot_bypass_empty_history_attack(
     )
     with pytest.raises(AttemptGovernanceError, match="registry_history_incomplete"):
         issue_execution_authorization(registry=registry)
+
+
+def _load_registry(experiment_root: Path) -> FrozenExperimentRegistry:
+    return FrozenExperimentRegistry(
+        _registry_path(experiment_root),
+        experiment_root=experiment_root,
+        output_root=experiment_root / "runs",
+    )
+
+
+def test_grok_successor_run_id_alias_attack_blocked(
+    experiment_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    run_id = "semantic_analyzer_run_ed35656b9a7c"
+    run_dir = _seed_disk_governed_evidence(experiment_root, run_id=run_id)
+    historical_artifact = (run_dir / "run_artifact.json").read_text(encoding="utf-8")
+    historical_ledger = (run_dir / DurableAttemptLedger.LEDGER_FILENAME).read_text(
+        encoding="utf-8"
+    )
+    successor_identity = frozen_experiment_identity_hash()
+    assert successor_identity != CONSUMED_FIRST_LIVE_IDENTITY_HASH
+    _write_v2_registry(
+        experiment_root,
+        history=[],
+        successor=_successor_proposal(identity_hash=successor_identity, run_id=run_id),
+    )
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    monkeypatch.delenv(OWNER_AUTHORIZATION_ENV_VAR, raising=False)
+    posts: list[tuple] = []
+
+    def _capture_post(*args, **kwargs):
+        posts.append((args, kwargs))
+        return _mock_response(content="{}")
+
+    with pytest.raises(AttemptGovernanceError, match="registry_history_role_mismatch"):
+        execute_provider_qualification_run(http_post=_capture_post)
+    assert posts == []
+
+    registry = _load_registry(experiment_root)
+    with pytest.raises(AttemptGovernanceError, match="registry_history_role_mismatch"):
+        issue_execution_authorization(registry=registry)
+    with pytest.raises(AttemptGovernanceError, match="registry_history_role_mismatch"):
+        registry.establish_or_resume(
+            expected_identity_hash=successor_identity,
+            authorization_token="unauthorized",
+            run_id="alias-attack-run",
+        )
+
+    payload = json.loads(_registry_path(experiment_root).read_text(encoding="utf-8"))
+    assert payload["history"] == []
+    assert payload["successor"]["lifecycle"] == LIFECYCLE_SUCCESSOR_PROPOSED
+    assert payload["successor"]["lifecycle"] != LIFECYCLE_ACTIVE
+    assert payload["successor"].get("owner_authorization_token") is None
+    assert payload["successor"]["run_id"] == run_id
+    assert (run_dir / "run_artifact.json").read_text(encoding="utf-8") == historical_artifact
+    assert (run_dir / DurableAttemptLedger.LEDGER_FILENAME).read_text(
+        encoding="utf-8"
+    ) == historical_ledger
+
+
+def test_terminal_disk_run_represented_only_as_successor_blocks(experiment_root: Path):
+    _seed_disk_governed_evidence(experiment_root)
+    _write_v2_registry(
+        experiment_root,
+        history=[],
+        successor=_successor_proposal(run_id="semantic_analyzer_run_ed35656b9a7c"),
+    )
+    with pytest.raises(AttemptGovernanceError, match="registry_history_role_mismatch"):
+        _load_registry(experiment_root).ensure_loaded_fail_closed_on_missing_history()
+
+
+def test_terminal_disk_run_in_history_with_wrong_identity_blocks(experiment_root: Path):
+    _seed_disk_governed_evidence(experiment_root)
+    _write_v2_registry(
+        experiment_root,
+        history=[_terminal_history_row(identity_hash="0" * 64)],
+        successor=None,
+    )
+    with pytest.raises(AttemptGovernanceError, match="registry_history_linkage_mismatch"):
+        _load_registry(experiment_root).ensure_loaded_fail_closed_on_missing_history()
+
+
+def test_terminal_disk_run_in_history_with_non_terminal_lifecycle_blocks(
+    experiment_root: Path,
+):
+    _seed_disk_governed_evidence(experiment_root)
+    _write_v2_registry(
+        experiment_root,
+        history=[_terminal_history_row(lifecycle=LIFECYCLE_ACTIVE)],
+        successor=None,
+    )
+    with pytest.raises(AttemptGovernanceError, match="registry_history_role_mismatch"):
+        _load_registry(experiment_root).ensure_loaded_fail_closed_on_missing_history()
+
+
+def test_terminal_disk_run_in_history_and_successor_blocks(experiment_root: Path):
+    _seed_v2_terminal_predecessor(experiment_root)
+    history = json.loads(_registry_path(experiment_root).read_text(encoding="utf-8"))[
+        "history"
+    ]
+    _write_v2_registry(
+        experiment_root,
+        history=history,
+        successor=_successor_proposal(run_id="semantic_analyzer_run_ed35656b9a7c"),
+    )
+    with pytest.raises(
+        AttemptGovernanceError,
+        match="successor_run_id_collides_with_terminal_history",
+    ):
+        _load_registry(experiment_root).ensure_loaded_fail_closed_on_missing_history()
+
+
+def test_successor_run_id_collision_with_terminal_history_blocks(experiment_root: Path):
+    _seed_v2_terminal_predecessor(experiment_root)
+    history = json.loads(_registry_path(experiment_root).read_text(encoding="utf-8"))[
+        "history"
+    ]
+    _write_v2_registry(
+        experiment_root,
+        history=history,
+        successor=_successor_proposal(run_id="semantic_analyzer_run_ed35656b9a7c"),
+    )
+    with pytest.raises(
+        AttemptGovernanceError,
+        match="successor_run_id_collides_with_terminal_history",
+    ):
+        _load_registry(experiment_root).prepare_successor(
+            expected_identity_hash=frozen_experiment_identity_hash()
+        )
+
+
+def test_valid_terminal_history_allows_prepare_but_keeps_successor_unauthorized(
+    experiment_root: Path,
+):
+    _seed_v2_terminal_predecessor(experiment_root)
+    result = prepare_successor_experiment(
+        registry_path=_registry_path(experiment_root),
+        experiment_root=experiment_root,
+        output_root=experiment_root / "runs",
+    )
+    assert result["execution_authorized"] is False
+    assert result["owner_authorization_required"] is True
+    payload = json.loads(_registry_path(experiment_root).read_text(encoding="utf-8"))
+    assert len(payload["history"]) == 1
+    assert payload["history"][0]["lifecycle"] == LIFECYCLE_TERMINAL
+    assert payload["history"][0]["run_id"] == "semantic_analyzer_run_ed35656b9a7c"
+    assert payload["successor"]["lifecycle"] == LIFECYCLE_SUCCESSOR_PROPOSED
+    assert payload["successor"]["run_id"] is None
+    assert (
+        payload["successor"]["frozen_experiment_identity_hash"]
+        != CONSUMED_FIRST_LIVE_IDENTITY_HASH
+    )
+    assert payload["successor"].get("owner_authorization_token") is None
+
+
+def test_leftover_execute_flag_with_valid_successor_still_requires_owner_token(
+    experiment_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _seed_v2_terminal_predecessor(experiment_root)
+    prepare_successor_experiment(
+        registry_path=_registry_path(experiment_root),
+        experiment_root=experiment_root,
+        output_root=experiment_root / "runs",
+    )
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    monkeypatch.delenv(OWNER_AUTHORIZATION_ENV_VAR, raising=False)
+    with pytest.raises(ExecutionAuthorizationError, match="owner authorization missing"):
+        issue_execution_authorization(registry=_load_registry(experiment_root))
+
+
+def test_identity_bound_owner_token_passes_offline_authorization_gate(
+    experiment_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _seed_v2_terminal_predecessor(experiment_root)
+    prepare_successor_experiment(
+        registry_path=_registry_path(experiment_root),
+        experiment_root=experiment_root,
+        output_root=experiment_root / "runs",
+    )
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    monkeypatch.setenv(OWNER_AUTHORIZATION_ENV_VAR, _owner_token())
+    auth = issue_execution_authorization(registry=_load_registry(experiment_root))
+    assert auth.owner_authorization_token == _owner_token()
+    assert auth.provider_execution_authorized is True
+    payload = json.loads(_registry_path(experiment_root).read_text(encoding="utf-8"))
+    assert payload["successor"]["lifecycle"] == LIFECYCLE_AUTHORIZED
+    assert payload["successor"]["lifecycle"] != LIFECYCLE_ACTIVE
