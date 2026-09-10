@@ -282,8 +282,10 @@ the current authorized engineering mission on
 - **Next experiment identity correction ready:** requested model remains
   `deepseek-v4-flash`; accepted returned model frozen as `deepseek-flash`
   (exact pair only); outbound P6/P7/P1 request hashes unchanged; consumed
-  authorization terminal; **new owner authorization required** before any
-  further provider call.
+  authorization terminal; append-preserving registry history preserves first
+  INVALID experiment; successor requires explicit identity-bound owner token
+  via `SEMANTIC_ANALYZER_OWNER_AUTHORIZATION` (execute env flag alone is
+  insufficient); **no second live experiment authorized or executed**.
 - **Provider execution is NOT AUTHORIZED** for a second experiment. UVR/routing,
   retrieval, materiality, and production runtime remain **unchanged**.
 

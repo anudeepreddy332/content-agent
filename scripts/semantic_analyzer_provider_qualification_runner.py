@@ -67,6 +67,13 @@ THINKING = {"type": "disabled"}
 RESPONSE_FORMAT = {"type": "json_object"}
 PROVIDER_PATH = "semantic_analyzer_provider_direct_https"
 EXECUTE_ENV_VAR = "SEMANTIC_ANALYZER_PROVIDER_EXECUTE"
+OWNER_AUTHORIZATION_ENV_VAR = "SEMANTIC_ANALYZER_OWNER_AUTHORIZATION"
+REGISTRY_VERSION = 2
+OWNER_AUTHORIZATION_VERSION = "semantic-analyzer-owner-v1"
+LIFECYCLE_TERMINAL = "TERMINAL"
+LIFECYCLE_SUCCESSOR_PROPOSED = "SUCCESSOR_PROPOSED"
+LIFECYCLE_AUTHORIZED = "AUTHORIZED"
+LIFECYCLE_ACTIVE = "ACTIVE"
 
 VALID_FINISH_REASONS = frozenset({"stop"})
 REDIRECT_STATUS_CODES = frozenset({301, 302, 303, 307, 308})
@@ -111,6 +118,7 @@ class ExecutionAuthorization:
     execution_git_sha: str
     budget_authorized: bool
     provider_execution_authorized: bool
+    owner_authorization_token: str | None = None
 
 
 @dataclass
@@ -533,6 +541,80 @@ def frozen_experiment_identity_hash(*, runner_implementation_sha: str | None = N
     )))
 
 
+def build_owner_authorization_binding(
+    *,
+    experiment_identity_hash: str,
+    runner_implementation_sha: str,
+) -> dict[str, Any]:
+    return {
+        "authorization_version": OWNER_AUTHORIZATION_VERSION,
+        "frozen_experiment_identity_hash": experiment_identity_hash,
+        "runner_implementation_sha": runner_implementation_sha,
+        "requested_model": REQUESTED_MODEL,
+        "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
+        "fixture_sha256": EXPECTED_FIXTURE_SHA256,
+        "schema_sha256": ANALYZER_SCHEMA_SHA256,
+        "prompt_sha256": analyzer_prompt_sha256(),
+        "request_identities": build_request_identities(),
+        "hard_spend_ceiling_usd": HARD_SPEND_CEILING_USD,
+        "max_provider_requests": MAX_PROVIDER_REQUESTS,
+        "case_order": list(CASE_ORDER),
+    }
+
+
+def compute_owner_authorization_token(
+    *,
+    experiment_identity_hash: str,
+    runner_implementation_sha: str | None = None,
+) -> str:
+    runner_sha = runner_implementation_sha or get_implementation_git_sha()
+    return sha256_text(
+        canonical_json_dumps(
+            build_owner_authorization_binding(
+                experiment_identity_hash=experiment_identity_hash,
+                runner_implementation_sha=runner_sha,
+            )
+        )
+    )
+
+
+def find_persisted_terminal_experiments(
+    *,
+    output_root: Path | None = None,
+    experiment_root: Path | None = None,
+) -> list[dict[str, Any]]:
+    """Discover terminal run artifacts when registry state may be missing or stale."""
+    experiment_root = experiment_root or EXPERIMENT_ROOT
+    output_root = output_root or (experiment_root / "runs")
+    if not output_root.exists():
+        return []
+    terminal: list[dict[str, Any]] = []
+    for artifact_path in output_root.glob("*/run_artifact.json"):
+        try:
+            artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        disposition = artifact.get("overall_disposition")
+        if disposition not in {"PASS", "FAIL", "INVALID"}:
+            continue
+        identity = artifact.get("identity_hashes") or {}
+        run_dir = artifact_path.parent
+        try:
+            run_dir_ref = str(run_dir.relative_to(experiment_root))
+        except ValueError:
+            run_dir_ref = str(run_dir)
+        terminal.append(
+            {
+                "run_id": artifact.get("run_id", run_dir.name),
+                "run_dir": run_dir_ref,
+                "frozen_experiment_identity_hash": identity.get("frozen_experiment_identity_hash"),
+                "terminal_disposition": disposition,
+                "artifact_path": str(artifact_path),
+            }
+        )
+    return terminal
+
+
 def find_orphaned_authoritative_ledgers(
     *,
     output_root: Path | None = None,
@@ -556,13 +638,61 @@ def find_orphaned_authoritative_ledgers(
 
 
 class FrozenExperimentRegistry:
-    """Single authoritative experiment identity across process restarts."""
+    """Append-preserving experiment history with identity-bound successor authorization."""
 
-    def __init__(self, registry_path: Path = EXPERIMENT_REGISTRY_PATH) -> None:
-        self.registry_path = registry_path
+    def __init__(
+        self,
+        registry_path: Path | None = None,
+        *,
+        experiment_root: Path | None = None,
+        output_root: Path | None = None,
+    ) -> None:
+        self.registry_path = registry_path or EXPERIMENT_REGISTRY_PATH
+        self.experiment_root = experiment_root or self.registry_path.parent
+        self.output_root = output_root or (self.experiment_root / "runs")
         self.payload: dict[str, Any] | None = None
-        if registry_path.exists():
-            self.payload = json.loads(registry_path.read_text(encoding="utf-8"))
+        if self.registry_path.exists():
+            raw = json.loads(self.registry_path.read_text(encoding="utf-8"))
+            self.payload = self._normalize_registry_payload(raw)
+
+    @staticmethod
+    def _normalize_registry_payload(raw: dict[str, Any]) -> dict[str, Any]:
+        if raw.get("registry_version") == REGISTRY_VERSION:
+            return raw
+        if "history" in raw:
+            raise AttemptGovernanceError("corrupt_registry:invalid_history_format")
+        if "frozen_experiment_identity_hash" not in raw:
+            raise AttemptGovernanceError("corrupt_registry:missing_identity")
+        lifecycle = LIFECYCLE_TERMINAL if raw.get("terminal") else LIFECYCLE_ACTIVE
+        history_entry = {
+            "run_id": raw.get("run_id"),
+            "frozen_experiment_identity_hash": raw["frozen_experiment_identity_hash"],
+            "legacy_execution_reference_token": raw.get("authorization_token"),
+            "owner_authorization_token": raw.get("authorization_token"),
+            "run_dir": raw.get("run_dir"),
+            "established_at": raw.get("established_at"),
+            "terminal_at": raw.get("terminal_at"),
+            "lifecycle": lifecycle,
+            "terminal_disposition": raw.get("terminal_disposition"),
+        }
+        successor = None
+        if lifecycle == LIFECYCLE_ACTIVE:
+            successor = {
+                "frozen_experiment_identity_hash": raw["frozen_experiment_identity_hash"],
+                "lifecycle": LIFECYCLE_ACTIVE,
+                "proposed_at": raw.get("established_at"),
+                "owner_authorization_token": None,
+                "run_id": raw.get("run_id"),
+                "run_dir": raw.get("run_dir"),
+                "execution_session_token": raw.get("authorization_token"),
+            }
+            history_entry = None
+        payload: dict[str, Any] = {
+            "registry_version": REGISTRY_VERSION,
+            "history": [history_entry] if history_entry else [],
+            "successor": successor,
+        }
+        return payload
 
     def _atomic_write(self, payload: dict[str, Any]) -> None:
         self.registry_path.parent.mkdir(parents=True, exist_ok=True)
@@ -581,20 +711,143 @@ class FrozenExperimentRegistry:
         self.payload = payload
 
     @staticmethod
-    def _resolve_run_dir(stored: str) -> Path:
+    def _resolve_run_dir(stored: str, experiment_root: Path) -> Path:
         path = Path(stored)
         if path.is_absolute():
             return path
-        return EXPERIMENT_ROOT / stored
+        return experiment_root / stored
 
-    def _validate_identity(self, expected_hash: str) -> None:
+    def ensure_loaded_fail_closed_on_missing_history(self) -> None:
+        if self.payload is not None:
+            self._validate_registry_integrity()
+            return
+        persisted = find_persisted_terminal_experiments(
+            output_root=self.output_root,
+            experiment_root=self.experiment_root,
+        )
+        if persisted:
+            raise AttemptGovernanceError("registry_history_missing:terminal_artifacts_remain")
+        orphaned = find_orphaned_authoritative_ledgers(output_root=self.output_root)
+        if orphaned:
+            raise AttemptGovernanceError(
+                "orphaned_authoritative_ledger:registry_missing_but_ledger_remains"
+            )
+
+    def _validate_registry_integrity(self) -> None:
         if self.payload is None:
             return
-        stored = self.payload.get("frozen_experiment_identity_hash")
-        if stored != expected_hash:
-            raise AttemptGovernanceError(
-                "conflicting_experiment_identity:requires_new_owner_authorization"
-            )
+        if self.payload.get("registry_version") != REGISTRY_VERSION:
+            raise AttemptGovernanceError("corrupt_registry:unsupported_version")
+        history = self.payload.get("history")
+        if not isinstance(history, list):
+            raise AttemptGovernanceError("corrupt_registry:history_not_list")
+        successor = self.payload.get("successor")
+        if successor is not None and not isinstance(successor, dict):
+            raise AttemptGovernanceError("corrupt_registry:successor_not_object")
+        active_successors = 0
+        if successor and successor.get("lifecycle") in {
+            LIFECYCLE_SUCCESSOR_PROPOSED,
+            LIFECYCLE_AUTHORIZED,
+            LIFECYCLE_ACTIVE,
+        }:
+            active_successors = 1
+        if active_successors > 1:
+            raise AttemptGovernanceError("corrupt_registry:multiple_active_successors")
+
+    def has_terminal_predecessor(self) -> bool:
+        self.ensure_loaded_fail_closed_on_missing_history()
+        if self.payload is None:
+            return False
+        return any(
+            row.get("lifecycle") == LIFECYCLE_TERMINAL for row in self.payload.get("history", [])
+        )
+
+    def requires_owner_authorization(self) -> bool:
+        return self.has_terminal_predecessor()
+
+    def get_successor(self) -> dict[str, Any] | None:
+        if self.payload is None:
+            return None
+        successor = self.payload.get("successor")
+        return successor if isinstance(successor, dict) else None
+
+    def validate_and_persist_owner_authorization(
+        self,
+        submitted_token: str,
+        expected_identity_hash: str,
+    ) -> str:
+        if not submitted_token.strip():
+            raise ExecutionAuthorizationError("owner authorization missing for successor experiment")
+        successor = self.get_successor()
+        if successor is None:
+            raise ExecutionAuthorizationError("successor_not_prepared")
+        if successor.get("frozen_experiment_identity_hash") != expected_identity_hash:
+            raise ExecutionAuthorizationError("owner_authorization_identity_mismatch")
+        expected_token = compute_owner_authorization_token(
+            experiment_identity_hash=expected_identity_hash,
+        )
+        lifecycle = successor.get("lifecycle")
+        if lifecycle == LIFECYCLE_SUCCESSOR_PROPOSED:
+            if submitted_token != expected_token:
+                raise ExecutionAuthorizationError("owner_authorization_identity_mismatch")
+            successor["owner_authorization_token"] = submitted_token
+            successor["lifecycle"] = LIFECYCLE_AUTHORIZED
+            successor["authorized_at"] = datetime.now(UTC).isoformat()
+            self._atomic_write(self.payload)  # type: ignore[arg-type]
+            return submitted_token
+        if lifecycle in {LIFECYCLE_AUTHORIZED, LIFECYCLE_ACTIVE}:
+            stored = successor.get("owner_authorization_token")
+            if stored != submitted_token:
+                raise ExecutionAuthorizationError("owner_authorization_replay_mismatch")
+            if submitted_token != expected_token:
+                raise ExecutionAuthorizationError("owner_authorization_stale_identity")
+            return submitted_token
+        raise ExecutionAuthorizationError(f"successor_not_authorizable:{lifecycle}")
+
+    def prepare_successor(self, *, expected_identity_hash: str) -> dict[str, Any]:
+        self.ensure_loaded_fail_closed_on_missing_history()
+        if not self.has_terminal_predecessor():
+            raise AttemptGovernanceError("successor_preparation_requires_terminal_predecessor")
+        successor = self.get_successor()
+        if successor is not None:
+            lifecycle = successor.get("lifecycle")
+            if lifecycle in {LIFECYCLE_SUCCESSOR_PROPOSED, LIFECYCLE_AUTHORIZED, LIFECYCLE_ACTIVE}:
+                if successor.get("frozen_experiment_identity_hash") == expected_identity_hash:
+                    return successor
+                raise AttemptGovernanceError("successor_identity_conflict")
+            raise AttemptGovernanceError("successor_slot_not_available")
+        proposal = {
+            "frozen_experiment_identity_hash": expected_identity_hash,
+            "lifecycle": LIFECYCLE_SUCCESSOR_PROPOSED,
+            "proposed_at": datetime.now(UTC).isoformat(),
+            "owner_authorization_token": None,
+            "authorized_at": None,
+            "run_id": None,
+            "run_dir": None,
+            "execution_session_token": None,
+        }
+        if self.payload is None:
+            self.payload = {
+                "registry_version": REGISTRY_VERSION,
+                "history": [],
+                "successor": proposal,
+            }
+        else:
+            self.payload["successor"] = proposal
+        self._atomic_write(self.payload)
+        return proposal
+
+    def _reject_terminal_identity_reuse(self, expected_identity_hash: str) -> None:
+        if self.payload is None:
+            return
+        for row in self.payload.get("history", []):
+            if (
+                row.get("lifecycle") == LIFECYCLE_TERMINAL
+                and row.get("frozen_experiment_identity_hash") == expected_identity_hash
+            ):
+                raise AttemptGovernanceError(
+                    f"experiment_terminal:{row.get('terminal_disposition', 'INVALID')}"
+                )
 
     def establish_or_resume(
         self,
@@ -602,24 +855,74 @@ class FrozenExperimentRegistry:
         expected_identity_hash: str,
         authorization_token: str,
         run_id: str | None = None,
+        owner_authorization_token: str | None = None,
     ) -> tuple[Path, DurableAttemptLedger, bool]:
-        self._validate_identity(expected_identity_hash)
+        self.ensure_loaded_fail_closed_on_missing_history()
+        self._reject_terminal_identity_reuse(expected_identity_hash)
+        if self.requires_owner_authorization():
+            if not owner_authorization_token:
+                raise AttemptGovernanceError("successor_not_authorized")
+            self.validate_and_persist_owner_authorization(
+                owner_authorization_token,
+                expected_identity_hash,
+            )
+            successor = self.get_successor()
+            if successor is None:
+                raise AttemptGovernanceError("successor_not_prepared")
+            if successor.get("lifecycle") == LIFECYCLE_AUTHORIZED:
+                if successor.get("run_id") and successor.get("run_dir"):
+                    run_dir = self._resolve_run_dir(str(successor["run_dir"]), self.experiment_root)
+                    ledger = DurableAttemptLedger.from_run_dir(run_dir)
+                    successor["lifecycle"] = LIFECYCLE_ACTIVE
+                    successor["execution_session_token"] = authorization_token
+                    self._atomic_write(self.payload)  # type: ignore[arg-type]
+                    return run_dir, ledger, False
+                run_dir = allocate_run_directory(
+                    run_id=run_id or f"semantic_analyzer_run_{uuid.uuid4().hex[:12]}"
+                )
+                ledger = DurableAttemptLedger(
+                    run_dir,
+                    run_id=run_dir.name,
+                    frozen_experiment_identity_hash=expected_identity_hash,
+                )
+                successor["lifecycle"] = LIFECYCLE_ACTIVE
+                successor["run_id"] = run_dir.name
+                successor["run_dir"] = str(run_dir.relative_to(self.experiment_root))
+                successor["execution_session_token"] = authorization_token
+                successor["established_at"] = datetime.now(UTC).isoformat()
+                self._atomic_write(self.payload)  # type: ignore[arg-type]
+                return run_dir, ledger, True
+            if successor.get("lifecycle") == LIFECYCLE_ACTIVE:
+                run_dir = self._resolve_run_dir(str(successor["run_dir"]), self.experiment_root)
+                ledger = DurableAttemptLedger.from_run_dir(run_dir)
+                ledger.reconcile_consumed_without_finalize()
+                if ledger.is_terminal():
+                    self.mark_terminal(ledger=ledger)
+                    raise AttemptGovernanceError(
+                        f"experiment_terminal:{successor.get('terminal_disposition')}"
+                    )
+                return run_dir, ledger, False
+            if successor.get("lifecycle") == LIFECYCLE_SUCCESSOR_PROPOSED:
+                raise AttemptGovernanceError("successor_not_authorized")
+            raise AttemptGovernanceError("successor_not_prepared")
         if self.payload is not None:
-            if self.payload.get("terminal"):
-                raise AttemptGovernanceError(
-                    f"experiment_terminal:{self.payload.get('terminal_disposition')}"
-                )
-            run_dir = self._resolve_run_dir(self.payload["run_dir"])
-            ledger = DurableAttemptLedger.from_run_dir(run_dir)
-            ledger.reconcile_consumed_without_finalize()
-            if ledger.is_terminal():
-                self.mark_terminal(ledger=ledger)
-                raise AttemptGovernanceError(
-                    f"experiment_terminal:{self.payload.get('terminal_disposition')}"
-                )
-            return run_dir, ledger, False
-
+            successor = self.get_successor()
+            if successor and successor.get("lifecycle") == LIFECYCLE_ACTIVE:
+                if successor.get("frozen_experiment_identity_hash") != expected_identity_hash:
+                    raise AttemptGovernanceError(
+                        "conflicting_experiment_identity:requires_new_owner_authorization"
+                    )
+                run_dir = self._resolve_run_dir(str(successor["run_dir"]), self.experiment_root)
+                ledger = DurableAttemptLedger.from_run_dir(run_dir)
+                ledger.reconcile_consumed_without_finalize()
+                if ledger.is_terminal():
+                    self.mark_terminal(ledger=ledger)
+                    raise AttemptGovernanceError(
+                        f"experiment_terminal:{successor.get('terminal_disposition')}"
+                    )
+                return run_dir, ledger, False
         orphaned = find_orphaned_authoritative_ledgers(
+            output_root=self.output_root,
             expected_identity_hash=expected_identity_hash,
         )
         if orphaned:
@@ -632,14 +935,21 @@ class FrozenExperimentRegistry:
             run_id=run_dir.name,
             frozen_experiment_identity_hash=expected_identity_hash,
         )
-        payload = {
+        run_dir_ref = str(run_dir.relative_to(self.experiment_root))
+        successor_record = {
             "frozen_experiment_identity_hash": expected_identity_hash,
-            "authorization_token": authorization_token,
-            "established_at": datetime.now(UTC).isoformat(),
-            "run_dir": str(run_dir.relative_to(EXPERIMENT_ROOT)),
+            "lifecycle": LIFECYCLE_ACTIVE,
+            "proposed_at": datetime.now(UTC).isoformat(),
+            "owner_authorization_token": owner_authorization_token,
+            "authorized_at": None,
             "run_id": run_dir.name,
-            "terminal": False,
-            "terminal_disposition": None,
+            "run_dir": run_dir_ref,
+            "execution_session_token": authorization_token,
+        }
+        payload = {
+            "registry_version": REGISTRY_VERSION,
+            "history": self.payload.get("history", []) if self.payload else [],
+            "successor": successor_record,
         }
         self._atomic_write(payload)
         return run_dir, ledger, True
@@ -667,10 +977,42 @@ class FrozenExperimentRegistry:
                 disposition = "PASS"
             else:
                 disposition = "IN_PROGRESS"
-        self.payload["terminal"] = disposition in {"PASS", "FAIL", "INVALID"}
-        self.payload["terminal_disposition"] = disposition
-        self.payload["terminal_at"] = datetime.now(UTC).isoformat()
+        successor = self.get_successor()
+        if successor is None:
+            raise AttemptGovernanceError("corrupt_registry:missing_successor_on_terminal")
+        terminal_record = {
+            **successor,
+            "lifecycle": LIFECYCLE_TERMINAL,
+            "terminal_disposition": disposition,
+            "terminal_at": datetime.now(UTC).isoformat(),
+        }
+        history = list(self.payload.get("history", []))
+        history.append(terminal_record)
+        self.payload["history"] = history
+        self.payload["successor"] = None
         self._atomic_write(self.payload)
+
+
+def prepare_successor_experiment(
+    *,
+    registry_path: Path | None = None,
+    experiment_root: Path | None = None,
+    output_root: Path | None = None,
+) -> dict[str, Any]:
+    """Prepare a successor identity offline. Does not authorize execution."""
+    registry = FrozenExperimentRegistry(
+        registry_path,
+        experiment_root=experiment_root,
+        output_root=output_root,
+    )
+    identity_hash = frozen_experiment_identity_hash()
+    proposal = registry.prepare_successor(expected_identity_hash=identity_hash)
+    return {
+        "successor_identity_hash": identity_hash,
+        "lifecycle": proposal.get("lifecycle"),
+        "owner_authorization_required": True,
+        "execution_authorized": False,
+    }
 
 
 def validate_provider_http_response(
@@ -806,7 +1148,10 @@ def verify_run_artifact_integrity(artifact: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def issue_execution_authorization() -> ExecutionAuthorization:
+def issue_execution_authorization(
+    *,
+    registry: FrozenExperimentRegistry | None = None,
+) -> ExecutionAuthorization:
     if not provider_execution_authorized():
         raise ExecutionAuthorizationError(
             f"provider execution disabled; set {EXECUTE_ENV_VAR}=1 after independent review"
@@ -822,6 +1167,20 @@ def issue_execution_authorization() -> ExecutionAuthorization:
     git_sha = get_implementation_git_sha()
     approved_hash = build_approved_execution_config_hash()
     experiment_identity_hash = frozen_experiment_identity_hash(runner_implementation_sha=git_sha)
+    active_registry = registry or FrozenExperimentRegistry()
+    active_registry.ensure_loaded_fail_closed_on_missing_history()
+    owner_token: str | None = None
+    if active_registry.requires_owner_authorization():
+        owner_token = os.getenv(OWNER_AUTHORIZATION_ENV_VAR, "").strip()
+        if not owner_token:
+            raise ExecutionAuthorizationError(
+                "owner authorization missing for successor experiment; "
+                f"set {OWNER_AUTHORIZATION_ENV_VAR} to an identity-bound token"
+            )
+        owner_token = active_registry.validate_and_persist_owner_authorization(
+            owner_token,
+            experiment_identity_hash,
+        )
     token_payload = {
         "approved_execution_config_hash": approved_hash,
         "execution_git_sha": git_sha,
@@ -829,6 +1188,7 @@ def issue_execution_authorization() -> ExecutionAuthorization:
         "budget_authorized": budget["budget_authorized"],
         "provider_execution_authorized": True,
         "case_order": list(CASE_ORDER),
+        "owner_authorization_token": owner_token,
     }
     return ExecutionAuthorization(
         authorization_token=sha256_text(canonical_json_dumps(token_payload)),
@@ -836,6 +1196,7 @@ def issue_execution_authorization() -> ExecutionAuthorization:
         execution_git_sha=git_sha,
         budget_authorized=budget["budget_authorized"],
         provider_execution_authorized=True,
+        owner_authorization_token=owner_token,
     )
 
 
@@ -863,6 +1224,7 @@ def run_provider_preflight() -> dict[str, Any]:
             "historical_first_live_system_fingerprint": HISTORICAL_FIRST_LIVE_SYSTEM_FINGERPRINT,
         },
         "provider_execution_default_disabled": not provider_execution_authorized(),
+        "owner_authorization_env_var": OWNER_AUTHORIZATION_ENV_VAR,
         "execution_ready": identity["valid"] and budget["budget_authorized"],
         "max_provider_requests": MAX_PROVIDER_REQUESTS,
         "max_attempts_per_case": MAX_ATTEMPTS_PER_CASE,
@@ -1031,7 +1393,8 @@ def execute_provider_qualification_run(
         raise ExecutionAuthorizationError(
             f"provider execution disabled; set {EXECUTE_ENV_VAR}=1 after independent review"
         )
-    execution_auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(registry_path)
+    execution_auth = issue_execution_authorization(registry=registry)
     preflight = run_provider_preflight()
     if not preflight["execution_ready"]:
         raise SemanticAnalyzerProviderRunnerError("preflight not ready for execution")
@@ -1039,11 +1402,11 @@ def execute_provider_qualification_run(
     experiment_identity_hash = frozen_experiment_identity_hash(
         runner_implementation_sha=execution_auth.execution_git_sha,
     )
-    registry = FrozenExperimentRegistry(registry_path or EXPERIMENT_REGISTRY_PATH)
     run_dir, durable_ledger, _created = registry.establish_or_resume(
         expected_identity_hash=experiment_identity_hash,
         authorization_token=execution_auth.authorization_token,
         run_id=run_id,
+        owner_authorization_token=execution_auth.owner_authorization_token,
     )
     run_state = ProviderRunState(run_id=run_dir.name, run_dir=run_dir)
     requests = {req["case_id"]: req for req in build_all_case_requests()}
@@ -1096,6 +1459,7 @@ def execute_provider_qualification_run(
             "authorization_token": execution_auth.authorization_token,
             "approved_execution_config_hash": execution_auth.approved_execution_config_hash,
             "execution_git_sha": execution_auth.execution_git_sha,
+            "owner_authorization_token": execution_auth.owner_authorization_token,
         },
         "pricing_snapshot": load_price_schedule(),
         "request_identities": build_request_identities(),

@@ -68,6 +68,11 @@ Correction scope (runner-only, post-first-live):
   hardcoded fingerprint gate
 - new frozen experiment identity + new explicit owner authorization required;
   old authorization consumed
+- successor authorization correction: append-preserving registry history;
+  `SEMANTIC_ANALYZER_OWNER_AUTHORIZATION` identity-bound owner token required
+  for any successor after a terminal predecessor; `SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1`
+  remains execution-enable only and is never owner authorization; registry
+  deletion with remaining terminal artifacts fails closed
 
 Prior correction (still in force):
 
