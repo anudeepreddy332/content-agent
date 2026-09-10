@@ -4,7 +4,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -28,6 +27,8 @@ from scripts.hybrid_verifier_status_engine import (  # noqa: E402
 )
 
 DEFAULT_FIXTURES = REPO_ROOT / "evals" / "fixtures" / "hybrid_verifier_status_offline.json"
+DEFAULT_IDENTITY = REPO_ROOT / "evals" / "fixtures" / "semantic_analyzer_preprovider_harness_identity.json"
+HARNESS_MODULE = REPO_ROOT / "scripts" / "semantic_analyzer_preprovider_harness.py"
 
 PACK_ID = "hybrid_verifier_status_offline"
 HARNESS_ID = "semantic_analyzer_preprovider_harness"
@@ -35,7 +36,7 @@ SCHEMA_VERSION = 1
 STAGE = "semantic-analyzer-preprovider"
 
 REQUIRED_ENGINE_BASELINE_SHA = "1aa4acc7e0ccdb4cb769b8617667d6a505cc2671"
-PARENT_IMPLEMENTATION_SHA = "b4074fdedff502d6d10e40653943a04ed999dcb8"
+FAILED_HARNESS_CHECKPOINT_SHA = "5f325cb871ed9889a1058a510ca3983306b0c7dc"
 EXPECTED_FIXTURE_SHA256 = "72c1bd4dd8a3d39acec01300dd1a9b03021634cfbc49433f0881ee2c2b796d1d"
 
 CASE_ORDER = ("P6", "P7", "P1")
@@ -169,6 +170,56 @@ def get_implementation_git_sha() -> str:
     return result.stdout.strip()
 
 
+def _git_is_ancestor(ancestor_sha: str, descendant_sha: str) -> bool:
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor_sha, descendant_sha],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
+
+
+def load_harness_identity(path: Path | str = DEFAULT_IDENTITY) -> dict[str, Any]:
+    identity_path = Path(path)
+    payload = json.loads(identity_path.read_text(encoding="utf-8"))
+    if payload.get("required_engine_baseline_sha") != REQUIRED_ENGINE_BASELINE_SHA:
+        raise SemanticAnalyzerHarnessError("harness identity engine baseline mismatch")
+    if payload.get("failed_harness_checkpoint_sha") != FAILED_HARNESS_CHECKPOINT_SHA:
+        raise SemanticAnalyzerHarnessError("harness identity failed checkpoint mismatch")
+    if payload.get("fixture_sha256") != EXPECTED_FIXTURE_SHA256:
+        raise SemanticAnalyzerHarnessError("harness identity fixture hash mismatch")
+    return payload
+
+
+def validate_harness_identities(
+    *,
+    harness_implementation_sha: str | None = None,
+) -> dict[str, Any]:
+    """Separate harness implementation SHA from immutable engine baseline SHA."""
+    identity = load_harness_identity()
+    harness_sha = harness_implementation_sha or get_implementation_git_sha()
+    invalid_reasons: list[str] = []
+
+    if harness_sha == REQUIRED_ENGINE_BASELINE_SHA:
+        invalid_reasons.append("harness_sha_equals_engine_baseline_only")
+    if not HARNESS_MODULE.is_file():
+        invalid_reasons.append("harness_module_missing")
+    if not _git_is_ancestor(REQUIRED_ENGINE_BASELINE_SHA, harness_sha):
+        invalid_reasons.append("engine_baseline_not_ancestor_of_harness")
+    if not _git_is_ancestor(FAILED_HARNESS_CHECKPOINT_SHA, harness_sha):
+        invalid_reasons.append("failed_harness_checkpoint_not_ancestor_of_harness")
+
+    return {
+        "valid": not invalid_reasons,
+        "invalid_reasons": invalid_reasons,
+        "harness_implementation_sha": harness_sha,
+        "required_engine_baseline_sha": identity["required_engine_baseline_sha"],
+        "failed_harness_checkpoint_sha": identity["failed_harness_checkpoint_sha"],
+        "failed_harness_checkpoint_parent_sha": identity["failed_harness_checkpoint_parent_sha"],
+    }
+
+
 def sha256_text(text: str) -> str:
     return sha256_utf8(text)
 
@@ -215,6 +266,23 @@ def build_manifest_hash(evidence_manifest: list[dict[str, Any]]) -> str:
         for entry in sorted(evidence_manifest, key=lambda row: row["evidence_id"])
     ]
     return sha256_text(json.dumps(canonical, sort_keys=True, ensure_ascii=True))
+
+
+def build_frozen_case_truth(pack: dict[str, Any], case_id: str) -> dict[str, Any]:
+    """Evaluator-owned immutable qualification input for one case."""
+    bundle = build_case_bundle(pack, case_id)
+    return {
+        "case_id": bundle["case_id"],
+        "case_key": bundle["case_key"],
+        "request_id": bundle["request_id"],
+        "schema_version": bundle["schema_version"],
+        "draft_text": bundle["draft_text"],
+        "draft_sha256": bundle["draft_sha256"],
+        "claims": copy_claims_for_transport(bundle["claims"]),
+        "evidence_manifest": copy_evidence_for_transport(bundle["evidence_manifest"]),
+        "manifest_hash": bundle["manifest_hash"],
+        "exposure_identity": dict(bundle["exposure_identity"]),
+    }
 
 
 def build_case_bundle(pack: dict[str, Any], case_id: str) -> dict[str, Any]:
@@ -293,14 +361,52 @@ def copy_evidence_for_transport(manifest: list[dict[str, Any]]) -> list[dict[str
     ]
 
 
+def validate_against_frozen_truth(
+    bundle: dict[str, Any],
+    frozen_truth: dict[str, Any],
+) -> dict[str, Any]:
+    """Pin decision-critical inputs to evaluator-owned fixture truth."""
+    invalid_reasons: list[str] = []
+
+    for truth_field in (
+        "case_id",
+        "request_id",
+        "schema_version",
+        "draft_text",
+        "draft_sha256",
+        "manifest_hash",
+    ):
+        if bundle.get(truth_field) != frozen_truth.get(truth_field):
+            invalid_reasons.append(f"frozen_{truth_field}_mismatch")
+
+    if copy_claims_for_transport(bundle.get("claims") or []) != frozen_truth["claims"]:
+        invalid_reasons.append("frozen_claims_mismatch")
+
+    if copy_evidence_for_transport(bundle.get("evidence_manifest") or []) != frozen_truth["evidence_manifest"]:
+        invalid_reasons.append("frozen_evidence_manifest_mismatch")
+
+    if dict(bundle.get("exposure_identity") or {}) != frozen_truth["exposure_identity"]:
+        invalid_reasons.append("frozen_exposure_identity_mismatch")
+
+    return {
+        "valid": not invalid_reasons,
+        "invalid_reasons": sorted(set(invalid_reasons)),
+    }
+
+
 def validate_trusted_ingress(
     bundle: dict[str, Any],
     *,
+    frozen_truth: dict[str, Any] | None = None,
     caller_draft_sha256: str | None = None,
     caller_manifest_hash: str | None = None,
 ) -> dict[str, Any]:
     """Deterministic ingress validation before provider call and before accepting results."""
     invalid_reasons: list[str] = []
+
+    if frozen_truth is not None:
+        frozen_result = validate_against_frozen_truth(bundle, frozen_truth)
+        invalid_reasons.extend(frozen_result["invalid_reasons"])
     draft_text = bundle.get("draft_text")
     if not isinstance(draft_text, str) or not draft_text:
         invalid_reasons.append("missing_draft_text")
@@ -310,8 +416,11 @@ def validate_trusted_ingress(
     declared_draft_hash = bundle.get("draft_sha256")
     if declared_draft_hash != recomputed_draft_hash:
         invalid_reasons.append("draft_sha256_mismatch")
-    if caller_draft_sha256 is not None and caller_draft_sha256 != recomputed_draft_hash:
-        invalid_reasons.append("caller_draft_sha256_mismatch")
+    if caller_draft_sha256 is not None:
+        if frozen_truth is not None and caller_draft_sha256 != frozen_truth["draft_sha256"]:
+            invalid_reasons.append("caller_draft_sha256_overrides_frozen_truth")
+        elif caller_draft_sha256 != recomputed_draft_hash:
+            invalid_reasons.append("caller_draft_sha256_mismatch")
 
     claims = bundle.get("claims")
     if not isinstance(claims, list) or not claims:
@@ -384,8 +493,11 @@ def validate_trusted_ingress(
     declared_manifest_hash = bundle.get("manifest_hash")
     if declared_manifest_hash and declared_manifest_hash != recomputed_manifest_hash:
         invalid_reasons.append("manifest_hash_mismatch")
-    if caller_manifest_hash is not None and caller_manifest_hash != recomputed_manifest_hash:
-        invalid_reasons.append("caller_manifest_hash_mismatch")
+    if caller_manifest_hash is not None:
+        if frozen_truth is not None and caller_manifest_hash != frozen_truth["manifest_hash"]:
+            invalid_reasons.append("caller_manifest_hash_overrides_frozen_truth")
+        elif caller_manifest_hash != recomputed_manifest_hash:
+            invalid_reasons.append("caller_manifest_hash_mismatch")
 
     exposure = bundle.get("exposure_identity") or {}
     if exposure.get("request_id") != request_id:
@@ -403,14 +515,6 @@ def validate_trusted_ingress(
     }
 
 
-def _strip_markdown_fences(text: str) -> str:
-    stripped = text.strip()
-    fence_match = re.match(r"^```(?:json)?\s*\n?(.*)\n?```\s*$", stripped, flags=re.DOTALL | re.IGNORECASE)
-    if fence_match:
-        return fence_match.group(1).strip()
-    return stripped
-
-
 def _json_load_no_duplicate_keys(raw: str) -> Any:
     def hook(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
         keys = [key for key, _ in pairs]
@@ -426,9 +530,9 @@ def parse_analyzer_response(raw: str) -> dict[str, Any]:
     if not isinstance(raw, str) or not raw.strip():
         raise ResponseContractError("empty_response")
 
-    text = _strip_markdown_fences(raw)
-    if "```" in raw and text == raw.strip():
-        raise ResponseContractError("markdown_fence_parse_failed")
+    text = raw.strip()
+    if "```" in text:
+        raise ResponseContractError("markdown_fence_rejected")
 
     try:
         parsed = _json_load_no_duplicate_keys(text)
@@ -799,20 +903,52 @@ class AttemptLedger:
             ],
         }
 
+    def derive_state_from_history(self) -> None:
+        self.stopped = False
+        self.stop_reason = None
+        for index, record in enumerate(self.records):
+            if record.case_id != CASE_ORDER[index]:
+                raise AttemptGovernanceError(
+                    f"ledger_order_violation:expected_{CASE_ORDER[index]}_got_{record.case_id}"
+                )
+            if record.attempt_index != index + 1:
+                raise AttemptGovernanceError("ledger_attempt_index_violation")
+            if record.disposition in {"FAIL", "INVALID"}:
+                self.stopped = True
+                self.stop_reason = record.disposition.lower()
+                if index + 1 < len(self.records):
+                    raise AttemptGovernanceError("ledger_attempts_after_terminal_disposition")
+                break
+
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> AttemptLedger:
-        ledger = cls(run_id=payload["run_id"], stopped=payload.get("stopped", False))
-        ledger.stop_reason = payload.get("stop_reason")
+        records: list[AttemptRecord] = []
+        seen_cases: set[str] = set()
         for row in payload.get("records", []):
-            ledger.records.append(
+            case_id = row["case_id"]
+            if case_id in seen_cases:
+                raise AttemptGovernanceError(f"ledger_duplicate_case:{case_id}")
+            seen_cases.add(case_id)
+            records.append(
                 AttemptRecord(
-                    case_id=row["case_id"],
+                    case_id=case_id,
                     attempt_index=row["attempt_index"],
                     authorized=row.get("authorized", True),
                     recorded_at=row.get("recorded_at", ""),
                     disposition=row.get("disposition"),
                 )
             )
+        if len(records) > MAX_PROVIDER_REQUESTS:
+            raise AttemptGovernanceError("ledger_exceeds_max_attempts")
+
+        ledger = cls(run_id=payload["run_id"])
+        ledger.records = records
+        ledger.derive_state_from_history()
+
+        if payload.get("stopped") is False and ledger.stopped:
+            raise AttemptGovernanceError("ledger_stopped_flag_contradicts_history")
+        if payload.get("stop_reason") not in (None, ledger.stop_reason) and ledger.stopped:
+            raise AttemptGovernanceError("ledger_stop_reason_contradicts_history")
         return ledger
 
     def reject_replay_attempt(self, case_id: str) -> None:
@@ -820,11 +956,21 @@ class AttemptLedger:
             raise AttemptGovernanceError(f"replay_retry_denied:{case_id}")
 
 
+def validate_attempt_ledger(payload: dict[str, Any]) -> dict[str, Any]:
+    invalid_reasons: list[str] = []
+    try:
+        AttemptLedger.from_dict(payload)
+    except AttemptGovernanceError as exc:
+        invalid_reasons.append(str(exc))
+    return {"valid": not invalid_reasons, "invalid_reasons": invalid_reasons}
+
+
 def qualify_case_response(
     *,
     case_id: str,
     bundle: dict[str, Any],
     raw_response: str,
+    frozen_truth: dict[str, Any] | None = None,
     ingress: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Qualify one analyzer response against trusted ingress, contract, oracle, and adjudication."""
@@ -833,7 +979,7 @@ def qualify_case_response(
         "request_id": bundle["request_id"],
     }
 
-    ingress_result = ingress or validate_trusted_ingress(bundle)
+    ingress_result = ingress or validate_trusted_ingress(bundle, frozen_truth=frozen_truth)
     case_result["trusted_ingress"] = ingress_result
     if not ingress_result["valid"]:
         case_result.update(
@@ -867,7 +1013,8 @@ def qualify_case_response(
         {
             **bundle,
             "observations": response_contract["observations"],
-        }
+        },
+        frozen_truth=frozen_truth,
     )
     case_result["post_response_ingress"] = post_ingress
     if not post_ingress["valid"]:
@@ -908,13 +1055,15 @@ def qualify_case_response(
 
 def build_run_identity_hashes(
     *,
-    implementation_sha: str,
+    harness_implementation_sha: str,
     fixture_sha256: str = EXPECTED_FIXTURE_SHA256,
 ) -> dict[str, str]:
+    identity = load_harness_identity()
     return {
-        "implementation_sha": implementation_sha,
-        "parent_implementation_sha": PARENT_IMPLEMENTATION_SHA,
-        "required_engine_baseline_sha": REQUIRED_ENGINE_BASELINE_SHA,
+        "harness_implementation_sha": harness_implementation_sha,
+        "required_engine_baseline_sha": identity["required_engine_baseline_sha"],
+        "failed_harness_checkpoint_sha": identity["failed_harness_checkpoint_sha"],
+        "failed_harness_checkpoint_parent_sha": identity["failed_harness_checkpoint_parent_sha"],
         "fixture_sha256": fixture_sha256,
         "schema_sha256": ANALYZER_SCHEMA_SHA256,
         "prompt_sha256": ANALYZER_PROMPT_SHA256,
@@ -930,10 +1079,16 @@ def verify_artifact_integrity(artifact: dict[str, Any]) -> dict[str, Any]:
     invalid_reasons: list[str] = []
     identity = artifact.get("identity_hashes") or {}
     current_sha = get_implementation_git_sha()
+    identity_validation = validate_harness_identities(harness_implementation_sha=current_sha)
+    if not identity_validation["valid"]:
+        invalid_reasons.extend(
+            f"identity_{reason}" for reason in identity_validation["invalid_reasons"]
+        )
 
     for hash_field, expected in (
-        ("implementation_sha", current_sha),
+        ("harness_implementation_sha", current_sha),
         ("required_engine_baseline_sha", REQUIRED_ENGINE_BASELINE_SHA),
+        ("failed_harness_checkpoint_sha", FAILED_HARNESS_CHECKPOINT_SHA),
         ("fixture_sha256", EXPECTED_FIXTURE_SHA256),
         ("schema_sha256", ANALYZER_SCHEMA_SHA256),
         ("prompt_sha256", ANALYZER_PROMPT_SHA256),
@@ -957,6 +1112,14 @@ def verify_artifact_integrity(artifact: dict[str, Any]) -> dict[str, Any]:
         if artifact.get("invalid_case_count", 0) != 0:
             invalid_reasons.append("pass_with_invalid_cases")
 
+    ledger_payload = artifact.get("attempt_ledger")
+    if isinstance(ledger_payload, dict):
+        ledger_validation = validate_attempt_ledger(ledger_payload)
+        if not ledger_validation["valid"]:
+            invalid_reasons.extend(
+                f"ledger_{reason}" for reason in ledger_validation["invalid_reasons"]
+            )
+
     return {
         "valid": not invalid_reasons,
         "invalid_reasons": invalid_reasons,
@@ -964,12 +1127,27 @@ def verify_artifact_integrity(artifact: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def compute_qualification_ready(artifact: dict[str, Any]) -> bool:
+    integrity = artifact.get("artifact_integrity") or {}
+    identity = artifact.get("identity_validation") or {}
+    ledger = artifact.get("attempt_ledger_validation") or {}
+    return (
+        artifact.get("overall_disposition") == "PASS"
+        and artifact.get("pass_count") == 3
+        and artifact.get("invalid_count") == 0
+        and artifact.get("fail_count") == 0
+        and integrity.get("valid") is True
+        and identity.get("valid") is True
+        and ledger.get("valid") is True
+    )
+
+
 def run_offline_qualification(
     pack: dict[str, Any],
     *,
     response_provider: dict[str, str] | None = None,
     run_id: str = "offline-mock-run",
-    implementation_sha: str | None = None,
+    harness_implementation_sha: str | None = None,
 ) -> dict[str, Any]:
     """Execute the frozen P6→P7→P1 mock qualification run. No provider calls."""
     if provider_execution_authorized():
@@ -977,10 +1155,14 @@ def run_offline_qualification(
             "provider execution flag set; offline harness requires mock-only qualification"
         )
 
-    implementation_sha = implementation_sha or get_implementation_git_sha()
-    if implementation_sha != REQUIRED_ENGINE_BASELINE_SHA:
+    harness_implementation_sha = harness_implementation_sha or get_implementation_git_sha()
+    identity_validation = validate_harness_identities(
+        harness_implementation_sha=harness_implementation_sha
+    )
+    if not identity_validation["valid"]:
         raise SemanticAnalyzerHarnessError(
-            f"implementation SHA {implementation_sha} != required baseline {REQUIRED_ENGINE_BASELINE_SHA}"
+            "harness identity validation failed: "
+            + ", ".join(identity_validation["invalid_reasons"])
         )
 
     ledger = AttemptLedger(run_id=run_id)
@@ -991,6 +1173,7 @@ def run_offline_qualification(
         if ledger.stopped:
             break
         bundle = build_case_bundle(pack, case_id)
+        frozen_truth = build_frozen_case_truth(pack, case_id)
         analyzer_input = build_analyzer_input(bundle)
         _require(
             "observation" not in json.dumps(analyzer_input),
@@ -1018,6 +1201,7 @@ def run_offline_qualification(
             case_id=case_id,
             bundle=bundle,
             raw_response=raw_response,
+            frozen_truth=frozen_truth,
         )
         ledger.record_attempt(case_id=case_id, disposition=case_result["disposition"])
         case_result["analyzer_input"] = analyzer_input
@@ -1046,7 +1230,10 @@ def run_offline_qualification(
         "stage": STAGE,
         "pack_id": PACK_ID,
         "provider_calls": 0,
-        "identity_hashes": build_run_identity_hashes(implementation_sha=implementation_sha),
+        "identity_hashes": build_run_identity_hashes(
+            harness_implementation_sha=harness_implementation_sha
+        ),
+        "identity_validation": identity_validation,
         "attempt_ledger": ledger.to_dict(),
         "case_order": list(CASE_ORDER),
         "case_results": case_results,
@@ -1055,7 +1242,6 @@ def run_offline_qualification(
         "invalid_count": invalid_count,
         "not_run_count": not_run_count,
         "overall_disposition": overall,
-        "qualification_ready": overall == "PASS" and invalid_count == 0 and pass_count == 3,
         "provider_execution_authorized": False,
     }
     artifact["artifact_digest"] = compute_artifact_digest(
@@ -1063,6 +1249,9 @@ def run_offline_qualification(
     )
     integrity = verify_artifact_integrity(artifact)
     artifact["artifact_integrity"] = integrity
+    ledger_validation = validate_attempt_ledger(artifact["attempt_ledger"])
+    artifact["attempt_ledger_validation"] = ledger_validation
+    artifact["qualification_ready"] = compute_qualification_ready(artifact)
     return artifact
 
 
@@ -1076,19 +1265,22 @@ def build_gold_mock_responses(pack: dict[str, Any]) -> dict[str, str]:
 
 def run_preflight(pack: dict[str, Any] | None = None) -> dict[str, Any]:
     pack = pack or load_fixture_pack()
-    implementation_sha = get_implementation_git_sha()
+    harness_sha = get_implementation_git_sha()
+    identity_validation = validate_harness_identities(harness_implementation_sha=harness_sha)
     return {
         "harness_id": HARNESS_ID,
         "stage": STAGE,
         "pack_id": PACK_ID,
         "case_order": list(CASE_ORDER),
-        "identity_hashes": build_run_identity_hashes(implementation_sha=implementation_sha),
+        "identity_hashes": build_run_identity_hashes(harness_implementation_sha=harness_sha),
+        "identity_validation": identity_validation,
         "fixture_sha256": EXPECTED_FIXTURE_SHA256,
         "provider_execution_default_disabled": not provider_execution_authorized(),
         "max_provider_requests": MAX_PROVIDER_REQUESTS,
         "max_attempts_per_case": MAX_ATTEMPTS_PER_CASE,
         "analyzer_response_contract": FROZEN_ANALYZER_RESPONSE_CONTRACT,
         "trusted_ingress_controls": [
+            "frozen_fixture_truth_pinning",
             "draft_sha256_recomputation",
             "claim_text_draft_slice_binding",
             "claim_span_bounds",
@@ -1103,5 +1295,5 @@ def run_preflight(pack: dict[str, Any] | None = None) -> dict[str, Any]:
         ],
         "invalid_dominance_path": "adjudicate_hybrid_verifier_observations",
         "semantic_oracle_cases": list(GOLD_ORACLE.keys()),
-        "preflight_ready": implementation_sha == REQUIRED_ENGINE_BASELINE_SHA,
+        "preflight_ready": identity_validation["valid"],
     }

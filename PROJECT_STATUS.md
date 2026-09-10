@@ -256,16 +256,15 @@ priority.
 
 ## Current authorized mission
 
-**Semantic-analyzer pre-provider qualification harness** is the current
-authorized engineering mission on `experiment/hybrid-verifier-status-engine` at
-baseline `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`. The hybrid verifier status
-engine passed offline deterministic qualification (P6/P7/P1 fixtures, zero
-provider calls). The pre-provider harness (`scripts/semantic_analyzer_preprovider_harness.py`)
-now freezes analyzer response contract, trusted ingress, envelope INVALID
-dominance, independent semantic oracle, attempt ledger (P6→P7→P1, max 3), and
-artifact integrity — mock-only, no production integration. **Provider observation
-qualification is NOT AUTHORIZED.** UVR/routing, retrieval, materiality, and
-production runtime remain **unchanged**.
+**Semantic-analyzer pre-provider qualification harness — targeted correction**
+is the current authorized engineering mission on
+`experiment/hybrid-verifier-status-engine`. Checkpoint
+`5f325cb871ed9889a1058a510ca3983306b0c7dc` failed independent review; five
+harness-integrity corrections are in progress (identity pinning, frozen-input
+truth, ledger restore validation, readiness/integrity conjunction, Markdown
+fence rejection). Engine baseline remains `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`.
+**Provider observation qualification is NOT AUTHORIZED.** UVR/routing, retrieval,
+materiality, and production runtime remain **unchanged**.
 
 **Prior 3-cell context (closed for now):** Stage 2D bounded provider qualification
 **EXECUTED / FAIL**: exposure-only changes proved P1 consequence but P6/P7

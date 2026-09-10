@@ -36,8 +36,17 @@ Frozen pre-provider harness contract:
 - artifact bundle preserves identity hashes, attempt ledger, oracle/adjudication
   outputs, and digest integrity checks
 
-Status: **PRE-PROVIDER HARNESS IMPLEMENTATION — READY FOR INDEPENDENT REVIEW —
+Status: **PRE-PROVIDER HARNESS — INDEPENDENT REVIEW FAILED AT CHECKPOINT
+`5f325cb871ed9889a1058a510ca3983306b0c7dc`; TARGETED CORRECTION IN PROGRESS —
 PROVIDER EXECUTION NOT AUTHORIZED**.
+
+Independent review findings (six integrity holes): harness/engine identity
+collapse; self-consistent tampering bypass; ledger restore continuation;
+`qualification_ready` without integrity conjunction; Markdown fence acceptance.
+
+Correction scope (harness-only): separate `harness_implementation_sha` from
+`required_engine_baseline_sha`; pin ingress to evaluator-owned fixture truth;
+fail-closed ledger restore; readiness requires integrity; reject fenced JSON.
 
 Does NOT authorize: provider observation qualification, production integration,
 UVR/routing changes, retrieval redesign, or EXPERIMENT_LEDGER entry.
