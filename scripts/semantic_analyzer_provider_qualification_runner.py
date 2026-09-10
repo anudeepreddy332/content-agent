@@ -50,6 +50,12 @@ EXPERIMENT_REGISTRY_PATH = EXPERIMENT_ROOT / "frozen_experiment_registry.json"
 
 PROVIDER_NAME = "deepseek"
 REQUESTED_MODEL = "deepseek-v4-flash"
+# Frozen exact pair from 2026-09-10 first live experiment: request deepseek-v4-flash,
+# response model field observed as deepseek-flash. No broad alias acceptance.
+ACCEPTED_RETURNED_MODEL = "deepseek-flash"
+# Historical runtime evidence from consumed INVALID run semantic_analyzer_run_ed35656b9a7c
+# (diagnostic only; not used as a validation requirement).
+HISTORICAL_FIRST_LIVE_SYSTEM_FINGERPRINT = "aeb56401ca74e127821c4f9126dcb669"
 TEMPERATURE = 0.1
 MAX_OUTPUT_TOKENS = 2000
 HARD_SPEND_CEILING_USD = 0.02
@@ -115,6 +121,7 @@ class ProviderRunState:
     stopped: bool = False
     stop_reason: str | None = None
     frozen_returned_model_identity: str | None = None
+    frozen_system_fingerprint: str | None = None
     total_cost_usd: float = 0.0
 
 
@@ -203,6 +210,7 @@ def build_case_request(case_id: str) -> dict[str, Any]:
         "model_config": {
             "provider": PROVIDER_NAME,
             "requested_model": REQUESTED_MODEL,
+            "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
             "temperature": TEMPERATURE,
             "max_tokens": MAX_OUTPUT_TOKENS,
             "stream": STREAM,
@@ -256,9 +264,49 @@ def conservative_total_cost_bound(schedule: dict[str, Any] | None = None) -> dic
     }
 
 
+def calculate_observed_cost_usd(
+    usage: dict[str, Any] | None,
+    schedule: dict[str, Any],
+) -> tuple[float | None, str | None]:
+    """Return (cost_usd, unavailable_reason). Never fabricates cost."""
+    if not isinstance(usage, dict):
+        return None, "missing_usage"
+    prompt_tokens = usage.get("prompt_tokens")
+    completion_tokens = usage.get("completion_tokens")
+    if not isinstance(prompt_tokens, int) or isinstance(prompt_tokens, bool):
+        return None, "invalid_prompt_tokens"
+    if not isinstance(completion_tokens, int) or isinstance(completion_tokens, bool):
+        return None, "invalid_completion_tokens"
+    cost = round(
+        prompt_tokens * schedule["input_cost_per_million_tokens_usd"] / 1_000_000
+        + completion_tokens * schedule["output_cost_per_million_tokens_usd"] / 1_000_000,
+        6,
+    )
+    return cost, None
+
+
+def check_system_fingerprint_drift(
+    run_state: ProviderRunState,
+    observed_fingerprint: str | None,
+) -> str | None:
+    """Freeze first observed fingerprint per run; report drift on later cases."""
+    if not isinstance(observed_fingerprint, str) or not observed_fingerprint.strip():
+        return None
+    if run_state.frozen_system_fingerprint is None:
+        run_state.frozen_system_fingerprint = observed_fingerprint
+        return None
+    if observed_fingerprint != run_state.frozen_system_fingerprint:
+        return (
+            f"system_fingerprint_drift:{observed_fingerprint}"
+            f"!={run_state.frozen_system_fingerprint}"
+        )
+    return None
+
+
 def build_approved_execution_config_hash() -> str:
     payload = {
         "requested_model": REQUESTED_MODEL,
+        "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
         "temperature": TEMPERATURE,
         "max_tokens": MAX_OUTPUT_TOKENS,
         "stream": STREAM,
@@ -470,6 +518,7 @@ def build_frozen_experiment_identity(*, runner_implementation_sha: str | None = 
         "prompt_sha256": analyzer_prompt_sha256(),
         "request_identities": build_request_identities(),
         "requested_model": REQUESTED_MODEL,
+        "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
         "approved_execution_config_hash": build_approved_execution_config_hash(),
         "hard_spend_ceiling_usd": HARD_SPEND_CEILING_USD,
         "case_order": list(CASE_ORDER),
@@ -630,6 +679,7 @@ def validate_provider_http_response(
     headers: dict[str, Any],
     body: dict[str, Any],
     requested_model: str = REQUESTED_MODEL,
+    accepted_returned_model: str = ACCEPTED_RETURNED_MODEL,
 ) -> dict[str, Any]:
     invalid_reasons: list[str] = []
     if status_code in REDIRECT_STATUS_CODES:
@@ -651,10 +701,10 @@ def validate_provider_http_response(
     if not isinstance(content, str) or not content.strip():
         invalid_reasons.append("empty_assistant_content")
 
-    returned_model = body.get("model")
-    if not isinstance(returned_model, str) or not returned_model.strip():
+    observed_returned_model = body.get("model")
+    if not isinstance(observed_returned_model, str) or not observed_returned_model.strip():
         invalid_reasons.append("missing_returned_model")
-    elif returned_model != requested_model:
+    elif observed_returned_model != accepted_returned_model:
         invalid_reasons.append("returned_model_mismatch")
 
     usage = body.get("usage")
@@ -675,7 +725,10 @@ def validate_provider_http_response(
         "valid": not invalid_reasons,
         "invalid_reasons": invalid_reasons,
         "finish_reason": finish_reason,
-        "returned_model": returned_model,
+        "requested_model": requested_model,
+        "accepted_returned_model": accepted_returned_model,
+        "observed_returned_model": observed_returned_model,
+        "returned_model": observed_returned_model,
         "provider_response_id": provider_response_id,
         "usage": usage,
         "system_fingerprint": body.get("system_fingerprint"),
@@ -804,6 +857,11 @@ def run_provider_preflight() -> dict[str, Any]:
         "request_identities": build_request_identities(),
         "conservative_cost_bound": budget,
         "provider_client_config": build_provider_client_config(),
+        "provider_model_identity": {
+            "requested_model": REQUESTED_MODEL,
+            "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
+            "historical_first_live_system_fingerprint": HISTORICAL_FIRST_LIVE_SYSTEM_FINGERPRINT,
+        },
         "provider_execution_default_disabled": not provider_execution_authorized(),
         "execution_ready": identity["valid"] and budget["budget_authorized"],
         "max_provider_requests": MAX_PROVIDER_REQUESTS,
@@ -855,6 +913,9 @@ def execute_case_once(
     }
     try:
         durable_ledger.consume_attempt_before_network(case_id)
+        outbound_model = request["request_body"].get("model")
+        if outbound_model != REQUESTED_MODEL:
+            raise ProviderResponseValidationError("outbound_requested_model_mismatch")
         active_client = client or build_semantic_analyzer_http_client()
         post = http_post or active_client.post
         config = build_provider_client_config()
@@ -876,12 +937,37 @@ def execute_case_once(
             body = response.json()
         except json.JSONDecodeError as exc:
             raise ProviderResponseValidationError(f"provider_json_decode_error:{exc.msg}") from exc
+        schedule = load_price_schedule()
+        usage_for_cost = body.get("usage") if isinstance(body, dict) else None
+        observed_cost, cost_unavailable = calculate_observed_cost_usd(usage_for_cost, schedule)
+        if observed_cost is not None:
+            run_state.total_cost_usd = round(run_state.total_cost_usd + observed_cost, 6)
+            artifact["usage"] = usage_for_cost
+            artifact["actual_cost_usd"] = observed_cost
+            artifact["observed_cost_recorded"] = True
+        else:
+            artifact["observed_cost_unavailable"] = cost_unavailable
         validation = validate_provider_http_response(
             status_code=response.status_code,
             headers=dict(response.headers),
             body=body,
         )
+        fingerprint_drift = check_system_fingerprint_drift(
+            run_state,
+            validation.get("system_fingerprint"),
+        )
+        if fingerprint_drift:
+            validation = {
+                **validation,
+                "invalid_reasons": [*validation["invalid_reasons"], "system_fingerprint_drift"],
+                "valid": False,
+                "system_fingerprint_drift": fingerprint_drift,
+            }
         artifact["provider_response_validation"] = validation
+        artifact["accepted_returned_model"] = ACCEPTED_RETURNED_MODEL
+        artifact["observed_returned_model"] = validation.get("observed_returned_model")
+        artifact["system_fingerprint"] = validation.get("system_fingerprint")
+        artifact["system_fingerprint_frozen"] = run_state.frozen_system_fingerprint
         if not validation["valid"]:
             raise ProviderResponseValidationError(",".join(validation["invalid_reasons"]))
         raw_content = validation["raw_content"] or ""
@@ -891,13 +977,7 @@ def execute_case_once(
             raw_response=raw_content,
         )
         usage = validation.get("usage") or {}
-        schedule = load_price_schedule()
-        cost = round(
-            int(usage.get("prompt_tokens", 0)) * schedule["input_cost_per_million_tokens_usd"] / 1_000_000
-            + int(usage.get("completion_tokens", 0)) * schedule["output_cost_per_million_tokens_usd"] / 1_000_000,
-            6,
-        )
-        run_state.total_cost_usd = round(run_state.total_cost_usd + cost, 6)
+        cost = observed_cost if observed_cost is not None else 0.0
         artifact.update(
             {
                 "disposition": case_result["disposition"],
@@ -910,7 +990,7 @@ def execute_case_once(
                 ),
                 "explanation_review_required": case_result.get("explanation_review_required", True),
                 "provider_response_id": validation.get("provider_response_id"),
-                "returned_model": validation.get("returned_model"),
+                "returned_model": validation.get("observed_returned_model"),
                 "finish_reason": validation.get("finish_reason"),
                 "usage": usage,
                 "actual_cost_usd": cost,

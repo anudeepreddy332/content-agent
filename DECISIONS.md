@@ -40,23 +40,52 @@ Frozen provider-runner contract:
 - immutable run artifacts under
   `outputs/semantic_analyzer_provider_qualification/runs/`
 
-Status: **PROVIDER RUNNER CORRECTION APPLIED — EXECUTION NOT AUTHORIZED**.
+Status: **FIRST LIVE PROVIDER EXPERIMENT INVALID — IDENTITY/COST CORRECTION
+APPLIED — EXECUTION NOT AUTHORIZED**.
 
-Correction scope (runner-only):
+First authorized live provider experiment (2026-09-10):
+
+- run `semantic_analyzer_run_ed35656b9a7c`; disposition **INVALID** forever
+- exactly 1 provider request (P6); retries 0; P7/P1 **NOT_RUN**
+- invalid reason: `returned_model_mismatch` (requested `deepseek-v4-flash`,
+  observed response `model` field `deepseek-flash`)
+- raw P6 semantic observations preserved as diagnostic only; oracle **NOT_RUN**
+- estimated incurred cost ~$0.000427 (599 prompt + 124 completion tokens);
+  runner audit defect recorded $0.000000 — corrected in next runner identity
+- historical `system_fingerprint` observed: `aeb56401ca74e127821c4f9126dcb669`
+  (diagnostic only; not a validation requirement)
+- consumed authorization/registry terminal; no reopen permitted
+
+Correction scope (runner-only, post-first-live):
+
+- outbound request model remains exactly `deepseek-v4-flash`; P6/P7/P1 request
+  body hashes unchanged
+- next experiment freezes exact provider identity pair: requested
+  `deepseek-v4-flash`, accepted returned `deepseek-flash` only (no broad alias)
+- cost accounting: structurally readable usage/cost recorded before
+  qualification disposition; INVALID/FAIL do not erase incurred cost
+- `system_fingerprint`: capture first observed per run; report drift; no
+  hardcoded fingerprint gate
+- new frozen experiment identity + new explicit owner authorization required;
+  old authorization consumed
+
+Prior correction (still in force):
 
 - outbound request uses DeepSeek `"thinking": {"type": "disabled"}`; obsolete
-  `thinking_mode` removed; P6/P7/P1 request hashes regenerated
+  `thinking_mode` removed
 - single frozen experiment identity enforced via durable registry; restart cannot
   allocate fresh three-call allowance; orphaned ledger without registry fails
   closed
 
-Does NOT authorize: live DeepSeek calls, provider experiment PASS, production
-integration, UVR/routing changes, retrieval redesign, or EXPERIMENT_LEDGER entry.
+Does NOT authorize: another live DeepSeek call, provider experiment PASS,
+production integration, UVR/routing changes, retrieval redesign, or
+EXPERIMENT_LEDGER entry.
 
-Confidence: 0.90
+Confidence: 0.92
 
-Supersedes / superseded by: Builds on D-2026-09-10-01 qualified harness; does
-not supersede production verifier prompt or Stage 2D exposure contract.
+Supersedes / superseded by: Builds on D-2026-09-10-01 qualified harness;
+supersedes prior “no live calls” clause of this entry only. Does not supersede
+production verifier prompt or Stage 2D exposure contract.
 
 ---
 Decision ID: D-2026-09-10-01

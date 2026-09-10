@@ -273,9 +273,19 @@ the current authorized engineering mission on
   (`SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1`), outbound non-thinking request
   `"thinking": {"type": "disabled"}`, hard spend ceiling `$0.02`, max future
   provider requests `3`.
-- **Provider execution is NOT AUTHORIZED.** No live DeepSeek calls have been
-  made. UVR/routing, retrieval, materiality, and production runtime remain
-  **unchanged**.
+- **First authorized live provider experiment EXECUTED / INVALID**
+  (`semantic_analyzer_run_ed35656b9a7c`): 1 request (P6), retries 0, P7/P1
+  NOT_RUN; invalid reason returned-model identity mismatch (requested
+  `deepseek-v4-flash`, observed `deepseek-flash`); raw P6 semantic output
+  diagnostic only (oracle NOT_RUN); ~$0.000427 incurred; prior runner failed
+  to record cost before disposition — corrected offline.
+- **Next experiment identity correction ready:** requested model remains
+  `deepseek-v4-flash`; accepted returned model frozen as `deepseek-flash`
+  (exact pair only); outbound P6/P7/P1 request hashes unchanged; consumed
+  authorization terminal; **new owner authorization required** before any
+  further provider call.
+- **Provider execution is NOT AUTHORIZED** for a second experiment. UVR/routing,
+  retrieval, materiality, and production runtime remain **unchanged**.
 
 Engine baseline remains `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`.
 
