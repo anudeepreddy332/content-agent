@@ -38,6 +38,7 @@ from scripts.semantic_analyzer_provider_qualification_runner import (
     conservative_total_cost_bound,
     execute_case_once,
     execute_provider_qualification_run,
+    find_governed_experiment_evidence,
     find_persisted_terminal_experiments,
     frozen_experiment_identity_hash,
     issue_execution_authorization,
@@ -122,12 +123,51 @@ def _owner_token(identity_hash: str | None = None) -> str:
     )
 
 
+def _seed_disk_governed_evidence(
+    experiment_root: Path,
+    *,
+    identity_hash: str = CONSUMED_FIRST_LIVE_IDENTITY_HASH,
+    run_id: str = "semantic_analyzer_run_ed35656b9a7c",
+    disposition: str = "INVALID",
+) -> Path:
+    run_dir = experiment_root / "runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    ledger = DurableAttemptLedger(
+        run_dir,
+        run_id=run_id,
+        frozen_experiment_identity_hash=identity_hash,
+    )
+    ledger.consume_attempt_before_network("P6")
+    ledger.finalize_attempt("P6", disposition=disposition, detail={"error": "test"})
+    artifact = {
+        "run_id": run_id,
+        "overall_disposition": disposition,
+        "identity_hashes": {"frozen_experiment_identity_hash": identity_hash},
+    }
+    (run_dir / "run_artifact.json").write_text(json.dumps(artifact), encoding="utf-8")
+    return run_dir
+
+
+def _write_empty_v2_registry(experiment_root: Path) -> None:
+    _registry_path(experiment_root).write_text(
+        canonical_json_dumps(
+            {"registry_version": REGISTRY_VERSION, "history": [], "successor": None}
+        ),
+        encoding="utf-8",
+    )
+
+
 def _seed_v2_terminal_predecessor(
     experiment_root: Path,
     *,
     identity_hash: str = CONSUMED_FIRST_LIVE_IDENTITY_HASH,
     run_id: str = "semantic_analyzer_run_ed35656b9a7c",
 ) -> None:
+    _seed_disk_governed_evidence(
+        experiment_root,
+        identity_hash=identity_hash,
+        run_id=run_id,
+    )
     registry_path = _registry_path(experiment_root)
     registry_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -885,7 +925,7 @@ def test_orphaned_ledger_without_registry_fails_closed(experiment_root: Path, mo
     )
     ledger.consume_attempt_before_network("P6")
     registry = FrozenExperimentRegistry(_registry_path(experiment_root))
-    with pytest.raises(AttemptGovernanceError, match="orphaned_authoritative_ledger"):
+    with pytest.raises(AttemptGovernanceError, match="registry_history_missing"):
         registry.establish_or_resume(
             expected_identity_hash=frozen_experiment_identity_hash(),
             authorization_token=auth.authorization_token,
@@ -1359,3 +1399,111 @@ def test_find_persisted_terminal_experiments_reconstructs_predecessor(experiment
     )
     assert len(found) == 1
     assert found[0]["run_id"] == "reconstruct-run"
+
+
+def test_empty_v2_registry_with_disk_predecessor_blocks(experiment_root: Path):
+    _write_empty_v2_registry(experiment_root)
+    _seed_disk_governed_evidence(experiment_root)
+    registry = FrozenExperimentRegistry(
+        _registry_path(experiment_root),
+        experiment_root=experiment_root,
+    )
+    with pytest.raises(AttemptGovernanceError, match="registry_history_incomplete"):
+        registry.ensure_loaded_fail_closed_on_missing_history()
+
+
+def test_empty_v2_registry_with_differing_identity_ledger_blocks(
+    experiment_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _write_empty_v2_registry(experiment_root)
+    _seed_disk_governed_evidence(
+        experiment_root,
+        identity_hash="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        run_id="other-identity-run",
+    )
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    registry = FrozenExperimentRegistry(
+        _registry_path(experiment_root),
+        experiment_root=experiment_root,
+    )
+    with pytest.raises(AttemptGovernanceError, match="registry_history_incomplete"):
+        issue_execution_authorization(registry=registry)
+
+
+def test_v2_history_omitting_disk_predecessor_blocks(experiment_root: Path):
+    _seed_disk_governed_evidence(experiment_root)
+    _write_empty_v2_registry(experiment_root)
+    registry = FrozenExperimentRegistry(
+        _registry_path(experiment_root),
+        experiment_root=experiment_root,
+    )
+    evidence = find_governed_experiment_evidence(
+        experiment_root=experiment_root,
+        output_root=experiment_root / "runs",
+    )
+    assert len(evidence) == 1
+    with pytest.raises(AttemptGovernanceError, match="registry_history_incomplete"):
+        registry.prepare_successor(expected_identity_hash=frozen_experiment_identity_hash())
+
+
+def test_mismatched_predecessor_linkage_identity_drift_blocks(experiment_root: Path):
+    _seed_disk_governed_evidence(experiment_root)
+    registry_path = _registry_path(experiment_root)
+    registry_path.write_text(
+        canonical_json_dumps(
+            {
+                "registry_version": REGISTRY_VERSION,
+                "history": [
+                    {
+                        "run_id": "semantic_analyzer_run_ed35656b9a7c",
+                        "frozen_experiment_identity_hash": "0" * 64,
+                        "run_dir": "runs/semantic_analyzer_run_ed35656b9a7c",
+                        "lifecycle": LIFECYCLE_TERMINAL,
+                        "terminal_disposition": "INVALID",
+                    }
+                ],
+                "successor": None,
+            }
+        ),
+        encoding="utf-8",
+    )
+    registry = FrozenExperimentRegistry(registry_path, experiment_root=experiment_root)
+    with pytest.raises(AttemptGovernanceError, match="registry_history_linkage_mismatch"):
+        registry.ensure_loaded_fail_closed_on_missing_history()
+
+
+def test_authoritative_predecessor_history_allows_prepare_still_requires_owner_auth(
+    experiment_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _seed_v2_terminal_predecessor(experiment_root)
+    prepare_successor_experiment(
+        registry_path=_registry_path(experiment_root),
+        experiment_root=experiment_root,
+        output_root=experiment_root / "runs",
+    )
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    monkeypatch.delenv(OWNER_AUTHORIZATION_ENV_VAR, raising=False)
+    registry = FrozenExperimentRegistry(
+        _registry_path(experiment_root),
+        experiment_root=experiment_root,
+    )
+    with pytest.raises(ExecutionAuthorizationError, match="owner authorization missing"):
+        issue_execution_authorization(registry=registry)
+
+
+def test_leftover_execute_flag_cannot_bypass_empty_history_attack(
+    experiment_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _write_empty_v2_registry(experiment_root)
+    _seed_disk_governed_evidence(experiment_root)
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    monkeypatch.delenv(OWNER_AUTHORIZATION_ENV_VAR, raising=False)
+    registry = FrozenExperimentRegistry(
+        _registry_path(experiment_root),
+        experiment_root=experiment_root,
+    )
+    with pytest.raises(AttemptGovernanceError, match="registry_history_incomplete"):
+        issue_execution_authorization(registry=registry)

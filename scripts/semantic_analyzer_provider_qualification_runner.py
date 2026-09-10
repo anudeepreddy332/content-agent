@@ -637,6 +637,65 @@ def find_orphaned_authoritative_ledgers(
     return orphaned
 
 
+def find_governed_experiment_evidence(
+    *,
+    output_root: Path | None = None,
+    experiment_root: Path | None = None,
+) -> list[dict[str, Any]]:
+    """Independent disk scan for prior governed experiments (any identity)."""
+    experiment_root = experiment_root or EXPERIMENT_ROOT
+    output_root = output_root or (experiment_root / "runs")
+    evidence_by_run_id: dict[str, dict[str, Any]] = {}
+
+    for row in find_persisted_terminal_experiments(
+        output_root=output_root,
+        experiment_root=experiment_root,
+    ):
+        evidence_by_run_id[row["run_id"]] = {
+            **row,
+            "evidence_kinds": ["terminal_artifact"],
+        }
+
+    if output_root.exists():
+        for ledger_path in output_root.glob(f"*/{DurableAttemptLedger.LEDGER_FILENAME}"):
+            try:
+                payload = json.loads(ledger_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
+            if not payload.get("records"):
+                continue
+            run_dir = ledger_path.parent
+            run_id = payload.get("run_id", run_dir.name)
+            try:
+                run_dir_ref = str(run_dir.relative_to(experiment_root))
+            except ValueError:
+                run_dir_ref = str(run_dir)
+            ledger_row = {
+                "run_id": run_id,
+                "run_dir": run_dir_ref,
+                "frozen_experiment_identity_hash": payload.get("frozen_experiment_identity_hash"),
+                "ledger_attempt_count": payload.get("attempt_count"),
+                "ledger_path": str(ledger_path),
+            }
+            existing = evidence_by_run_id.get(run_id)
+            if existing is None:
+                evidence_by_run_id[run_id] = {
+                    **ledger_row,
+                    "evidence_kinds": ["durable_ledger"],
+                }
+            else:
+                existing.setdefault("evidence_kinds", [])
+                if "durable_ledger" not in existing["evidence_kinds"]:
+                    existing["evidence_kinds"].append("durable_ledger")
+                existing.setdefault("ledger_attempt_count", ledger_row["ledger_attempt_count"])
+                if existing.get("frozen_experiment_identity_hash") is None:
+                    existing["frozen_experiment_identity_hash"] = ledger_row[
+                        "frozen_experiment_identity_hash"
+                    ]
+
+    return list(evidence_by_run_id.values())
+
+
 class FrozenExperimentRegistry:
     """Append-preserving experiment history with identity-bound successor authorization."""
 
@@ -720,18 +779,79 @@ class FrozenExperimentRegistry:
     def ensure_loaded_fail_closed_on_missing_history(self) -> None:
         if self.payload is not None:
             self._validate_registry_integrity()
+            self._validate_registry_history_completeness()
             return
-        persisted = find_persisted_terminal_experiments(
+        disk_evidence = find_governed_experiment_evidence(
             output_root=self.output_root,
             experiment_root=self.experiment_root,
         )
-        if persisted:
+        if disk_evidence:
             raise AttemptGovernanceError("registry_history_missing:terminal_artifacts_remain")
         orphaned = find_orphaned_authoritative_ledgers(output_root=self.output_root)
         if orphaned:
             raise AttemptGovernanceError(
                 "orphaned_authoritative_ledger:registry_missing_but_ledger_remains"
             )
+
+    def _registered_run_ids(self) -> set[str]:
+        registered: set[str] = set()
+        if self.payload is None:
+            return registered
+        for row in self.payload.get("history", []):
+            run_id = row.get("run_id")
+            if isinstance(run_id, str) and run_id.strip():
+                registered.add(run_id)
+        successor = self.get_successor()
+        if successor:
+            run_id = successor.get("run_id")
+            if isinstance(run_id, str) and run_id.strip():
+                registered.add(run_id)
+        return registered
+
+    def _validate_registry_history_completeness(self) -> None:
+        """Fail closed when registry history omits governed evidence still on disk."""
+        if self.payload is None:
+            return
+        disk_evidence = find_governed_experiment_evidence(
+            output_root=self.output_root,
+            experiment_root=self.experiment_root,
+        )
+        if not disk_evidence:
+            return
+        registered = self._registered_run_ids()
+        for evidence in disk_evidence:
+            run_id = evidence.get("run_id")
+            if isinstance(run_id, str) and run_id not in registered:
+                raise AttemptGovernanceError(
+                    "registry_history_incomplete:disk_evidence_unregistered"
+                )
+        for row in self.payload.get("history", []):
+            if row.get("lifecycle") != LIFECYCLE_TERMINAL:
+                continue
+            run_id = row.get("run_id")
+            if not isinstance(run_id, str) or not run_id.strip():
+                raise AttemptGovernanceError("registry_history_incomplete:missing_run_id")
+            run_dir = row.get("run_dir")
+            if not isinstance(run_dir, str) or not run_dir.strip():
+                raise AttemptGovernanceError("registry_history_linkage_mismatch:missing_run_dir")
+            resolved = self._resolve_run_dir(run_dir, self.experiment_root)
+            if not resolved.exists():
+                raise AttemptGovernanceError("registry_history_linkage_mismatch:run_dir_missing")
+            ledger_path = resolved / DurableAttemptLedger.LEDGER_FILENAME
+            artifact_path = resolved / "run_artifact.json"
+            if not ledger_path.exists() and not artifact_path.exists():
+                raise AttemptGovernanceError("registry_history_linkage_mismatch:evidence_missing")
+            matching = [item for item in disk_evidence if item.get("run_id") == run_id]
+            if not matching:
+                raise AttemptGovernanceError("registry_history_linkage_mismatch:run_not_on_disk")
+            hist_identity = row.get("frozen_experiment_identity_hash")
+            disk_identities = {
+                item.get("frozen_experiment_identity_hash")
+                for item in matching
+                if item.get("frozen_experiment_identity_hash")
+            }
+            if hist_identity and disk_identities and hist_identity not in disk_identities:
+                raise AttemptGovernanceError("registry_history_linkage_mismatch:identity_drift")
 
     def _validate_registry_integrity(self) -> None:
         if self.payload is None:
