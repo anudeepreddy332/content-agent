@@ -18,15 +18,18 @@ from scripts.semantic_analyzer_provider_qualification_runner import (
     REQUESTED_MODEL,
     AttemptGovernanceError,
     DurableAttemptLedger,
+    FrozenExperimentRegistry,
     allocate_run_directory,
     build_all_case_requests,
     build_approved_execution_config_hash,
     build_provider_client_config,
     build_request_identities,
     build_semantic_analyzer_http_client,
+    canonical_json_dumps,
     conservative_total_cost_bound,
     execute_case_once,
     execute_provider_qualification_run,
+    frozen_experiment_identity_hash,
     issue_execution_authorization,
     load_price_schedule,
     provider_execution_authorized,
@@ -49,6 +52,30 @@ def deny_network(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def requests_by_case() -> dict[str, dict]:
     return {row["case_id"]: row for row in build_all_case_requests()}
+
+
+@pytest.fixture
+def experiment_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    root = tmp_path / "semantic_analyzer_provider_qualification"
+    runs = root / "runs"
+    runs.mkdir(parents=True)
+    monkeypatch.setattr(
+        "scripts.semantic_analyzer_provider_qualification_runner.EXPERIMENT_ROOT",
+        root,
+    )
+    monkeypatch.setattr(
+        "scripts.semantic_analyzer_provider_qualification_runner.OUTPUT_ROOT",
+        runs,
+    )
+    monkeypatch.setattr(
+        "scripts.semantic_analyzer_provider_qualification_runner.EXPERIMENT_REGISTRY_PATH",
+        root / "frozen_experiment_registry.json",
+    )
+    return root
+
+
+def _registry_path(experiment_root: Path) -> Path:
+    return experiment_root / "frozen_experiment_registry.json"
 
 
 def _mock_response(
@@ -87,7 +114,8 @@ def test_request_hashes_regenerated_for_deepseek_v4_flash():
         assert body["temperature"] == 0.1
         assert body["stream"] is False
         assert body["response_format"] == {"type": "json_object"}
-        assert body["thinking_mode"] == "disabled"
+        assert body["thinking"] == {"type": "disabled"}
+        assert "thinking_mode" not in body
         assert identities[case_id]["request_body_sha256"] == sha256_text(
             __import__(
                 "scripts.semantic_analyzer_provider_qualification_runner",
@@ -487,3 +515,257 @@ def test_mutated_caller_pack_does_not_change_request_hashes():
     # Request identities always derive from verified fixture on disk, not caller pack.
     assert baseline == build_request_identities()
     assert mutated["cases"]["P6-COMPLETE"]["draft_text"] != verified["cases"]["P6-COMPLETE"]["draft_text"]
+
+
+def test_request_hash_drift_fails_closed():
+    identities = build_request_identities()
+    approved = build_approved_execution_config_hash()
+    tampered = canonical_json_dumps(
+        {
+            "requested_model": REQUESTED_MODEL,
+            "request_identities": {
+                **identities,
+                "P6": {**identities["P6"], "request_body_sha256": "0" * 64},
+            },
+        }
+    )
+    assert approved != sha256_text(tampered)
+
+
+def _resume_registry(experiment_root: Path, auth_token: str):
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    return registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth_token,
+        run_id="different-run-id",
+    )
+
+
+def test_fresh_experiment_allows_p6_once(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    run_dir, ledger, created = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="fresh-run",
+    )
+    assert created is True
+    ledger.consume_attempt_before_network("P6")
+    assert ledger.payload["records"][0]["case_id"] == "P6"
+    assert run_dir.exists()
+
+
+def test_p6_consumed_crash_restart_denies_retry(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    _, ledger, _ = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="crash-run",
+    )
+    ledger.consume_attempt_before_network("P6")
+    with pytest.raises(AttemptGovernanceError, match="experiment_terminal"):
+        _resume_registry(experiment_root, auth.authorization_token)
+
+
+def test_p6_timeout_restart_no_replacement(experiment_root: Path, monkeypatch: pytest.MonkeyPatch, requests_by_case: dict):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    run_dir, ledger, _ = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="timeout-restart",
+    )
+    state = __import__(
+        "scripts.semantic_analyzer_provider_qualification_runner",
+        fromlist=["ProviderRunState"],
+    ).ProviderRunState(run_id=run_dir.name, run_dir=run_dir)
+
+    def _timeout(*args, **kwargs):
+        raise httpx.TimeoutException("timeout")
+
+    execute_case_once(
+        request=requests_by_case["P6"],
+        run_state=state,
+        durable_ledger=ledger,
+        execution_auth=auth,
+        http_post=_timeout,
+    )
+    with pytest.raises(AttemptGovernanceError, match="experiment_terminal"):
+        _resume_registry(experiment_root, auth.authorization_token)
+
+
+def test_p6_connection_failure_restart_no_replacement(
+    experiment_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    requests_by_case: dict,
+):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    run_dir, ledger, _ = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="conn-restart",
+    )
+    state = __import__(
+        "scripts.semantic_analyzer_provider_qualification_runner",
+        fromlist=["ProviderRunState"],
+    ).ProviderRunState(run_id=run_dir.name, run_dir=run_dir)
+
+    def _conn_error(*args, **kwargs):
+        raise httpx.ConnectError("connection failed")
+
+    execute_case_once(
+        request=requests_by_case["P6"],
+        run_state=state,
+        durable_ledger=ledger,
+        execution_auth=auth,
+        http_post=_conn_error,
+    )
+    with pytest.raises(AttemptGovernanceError, match="experiment_terminal"):
+        _resume_registry(experiment_root, auth.authorization_token)
+
+
+def test_p6_pass_restart_allows_p7_not_p6(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    _, ledger, _ = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="p6-pass-run",
+    )
+    ledger.consume_attempt_before_network("P6")
+    ledger.finalize_attempt("P6", disposition="PASS")
+    _, ledger2, created = _resume_registry(experiment_root, auth.authorization_token)
+    assert created is False
+    assert ledger2.next_case_id() == "P7"
+    with pytest.raises(AttemptGovernanceError, match="duplicate_retry"):
+        ledger2.consume_attempt_before_network("P6")
+
+
+def test_p6_p7_pass_restart_allows_p1(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    _, ledger, _ = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="p6-p7-pass-run",
+    )
+    for case_id in ("P6", "P7"):
+        ledger.consume_attempt_before_network(case_id)
+        ledger.finalize_attempt(case_id, disposition="PASS")
+    _, ledger2, _ = _resume_registry(experiment_root, auth.authorization_token)
+    assert ledger2.next_case_id() == "P1"
+
+
+def test_p6_fail_restart_blocks_p7_and_new_experiment(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    _, ledger, _ = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="p6-fail-run",
+    )
+    ledger.consume_attempt_before_network("P6")
+    ledger.finalize_attempt("P6", disposition="FAIL")
+    registry.mark_terminal(ledger=ledger, disposition="FAIL")
+    with pytest.raises(AttemptGovernanceError, match="experiment_terminal"):
+        _resume_registry(experiment_root, auth.authorization_token)
+
+
+def test_p6_invalid_restart_blocks_p7(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    _, ledger, _ = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="p6-invalid-run",
+    )
+    ledger.consume_attempt_before_network("P6")
+    ledger.finalize_attempt("P6", disposition="INVALID")
+    registry.mark_terminal(ledger=ledger, disposition="INVALID")
+    with pytest.raises(AttemptGovernanceError, match="experiment_terminal"):
+        _resume_registry(experiment_root, auth.authorization_token)
+
+
+def test_completed_experiment_rerun_denied(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    _, ledger, _ = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="completed-run",
+    )
+    for case_id in CASE_ORDER:
+        ledger.consume_attempt_before_network(case_id)
+        ledger.finalize_attempt(case_id, disposition="PASS")
+    registry.mark_terminal(ledger=ledger, disposition="PASS")
+    with pytest.raises(AttemptGovernanceError, match="experiment_terminal"):
+        _resume_registry(experiment_root, auth.authorization_token)
+
+
+def test_different_run_id_cannot_reset_allowance(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    run_dir_a, ledger_a, _ = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="run-alpha",
+    )
+    ledger_a.consume_attempt_before_network("P6")
+    ledger_a.finalize_attempt("P6", disposition="PASS")
+    run_dir_b, ledger_b, created = registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="run-beta",
+    )
+    assert created is False
+    assert run_dir_b == run_dir_a
+    assert ledger_b.payload["records"][0]["case_id"] == "P6"
+    assert ledger_b.next_case_id() == "P7"
+
+
+def test_orphaned_ledger_without_registry_fails_closed(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    run_dir = allocate_run_directory(run_id="orphan-run")
+    ledger = DurableAttemptLedger(
+        run_dir,
+        run_id=run_dir.name,
+        frozen_experiment_identity_hash=frozen_experiment_identity_hash(),
+    )
+    ledger.consume_attempt_before_network("P6")
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    with pytest.raises(AttemptGovernanceError, match="orphaned_authoritative_ledger"):
+        registry.establish_or_resume(
+            expected_identity_hash=frozen_experiment_identity_hash(),
+            authorization_token=auth.authorization_token,
+            run_id="fresh-after-delete",
+        )
+
+
+def test_conflicting_experiment_identity_blocked(experiment_root: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(EXECUTE_ENV_VAR, "1")
+    auth = issue_execution_authorization()
+    registry = FrozenExperimentRegistry(_registry_path(experiment_root))
+    registry.establish_or_resume(
+        expected_identity_hash=frozen_experiment_identity_hash(),
+        authorization_token=auth.authorization_token,
+        run_id="identity-run",
+    )
+    with pytest.raises(AttemptGovernanceError, match="conflicting_experiment_identity"):
+        registry.establish_or_resume(
+            expected_identity_hash="0" * 64,
+            authorization_token=auth.authorization_token,
+            run_id="identity-run-2",
+        )

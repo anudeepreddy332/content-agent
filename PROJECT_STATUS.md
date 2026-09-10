@@ -268,9 +268,11 @@ the current authorized engineering mission on
   `deepseek-v4-flash`, `max_tokens=2000`, temperature `0.1`, non-thinking
   mode, JSON-object response, zero retries.
 - Dedicated provider runner implemented offline with durable write-ahead
-  attempt ledger, direct HTTPS transport (`retries=0`), fail-closed execution
-  gate (`SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1`), hard spend ceiling `$0.02`,
-  max future provider requests `3`.
+  attempt ledger, single frozen experiment registry across restarts, direct
+  HTTPS transport (`retries=0`), fail-closed execution gate
+  (`SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1`), outbound non-thinking request
+  `"thinking": {"type": "disabled"}`, hard spend ceiling `$0.02`, max future
+  provider requests `3`.
 - **Provider execution is NOT AUTHORIZED.** No live DeepSeek calls have been
   made. UVR/routing, retrieval, materiality, and production runtime remain
   **unchanged**.

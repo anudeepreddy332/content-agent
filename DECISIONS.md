@@ -40,7 +40,15 @@ Frozen provider-runner contract:
 - immutable run artifacts under
   `outputs/semantic_analyzer_provider_qualification/runs/`
 
-Status: **PROVIDER RUNNER IMPLEMENTED — EXECUTION NOT AUTHORIZED**.
+Status: **PROVIDER RUNNER CORRECTION APPLIED — EXECUTION NOT AUTHORIZED**.
+
+Correction scope (runner-only):
+
+- outbound request uses DeepSeek `"thinking": {"type": "disabled"}`; obsolete
+  `thinking_mode` removed; P6/P7/P1 request hashes regenerated
+- single frozen experiment identity enforced via durable registry; restart cannot
+  allocate fresh three-call allowance; orphaned ledger without registry fails
+  closed
 
 Does NOT authorize: live DeepSeek calls, provider experiment PASS, production
 integration, UVR/routing changes, retrieval redesign, or EXPERIMENT_LEDGER entry.

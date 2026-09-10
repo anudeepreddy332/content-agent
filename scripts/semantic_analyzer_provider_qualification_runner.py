@@ -44,7 +44,9 @@ PROMPT_PATH = REPO_ROOT / "prompts" / "semantic_analyzer_system.md"
 PRICE_SCHEDULE_PATH = (
     REPO_ROOT / "evals" / "fixtures" / "semantic_analyzer_provider_qualification_price_schedule.json"
 )
-OUTPUT_ROOT = REPO_ROOT / "outputs" / "semantic_analyzer_provider_qualification" / "runs"
+EXPERIMENT_ROOT = REPO_ROOT / "outputs" / "semantic_analyzer_provider_qualification"
+OUTPUT_ROOT = EXPERIMENT_ROOT / "runs"
+EXPERIMENT_REGISTRY_PATH = EXPERIMENT_ROOT / "frozen_experiment_registry.json"
 
 PROVIDER_NAME = "deepseek"
 REQUESTED_MODEL = "deepseek-v4-flash"
@@ -55,7 +57,7 @@ MAX_PROVIDER_REQUESTS = 3
 MAX_ATTEMPTS_PER_CASE = 1
 PROVIDER_RETRIES_DISABLED = True
 STREAM = False
-THINKING_MODE = "disabled"
+THINKING = {"type": "disabled"}
 RESPONSE_FORMAT = {"type": "json_object"}
 PROVIDER_PATH = "semantic_analyzer_provider_direct_https"
 EXECUTE_ENV_VAR = "SEMANTIC_ANALYZER_PROVIDER_EXECUTE"
@@ -185,7 +187,7 @@ def build_case_request(case_id: str) -> dict[str, Any]:
         "max_tokens": MAX_OUTPUT_TOKENS,
         "stream": STREAM,
         "response_format": RESPONSE_FORMAT,
-        "thinking_mode": THINKING_MODE,
+        "thinking": THINKING,
     }
     return {
         "case_id": case_id,
@@ -204,7 +206,7 @@ def build_case_request(case_id: str) -> dict[str, Any]:
             "temperature": TEMPERATURE,
             "max_tokens": MAX_OUTPUT_TOKENS,
             "stream": STREAM,
-            "thinking_mode": THINKING_MODE,
+            "thinking": THINKING,
             "response_format": RESPONSE_FORMAT,
             "provider_retries_disabled": PROVIDER_RETRIES_DISABLED,
         },
@@ -260,7 +262,7 @@ def build_approved_execution_config_hash() -> str:
         "temperature": TEMPERATURE,
         "max_tokens": MAX_OUTPUT_TOKENS,
         "stream": STREAM,
-        "thinking_mode": THINKING_MODE,
+        "thinking": THINKING,
         "response_format": RESPONSE_FORMAT,
         "prompt_sha256": analyzer_prompt_sha256(),
         "fixture_sha256": EXPECTED_FIXTURE_SHA256,
@@ -317,12 +319,19 @@ class DurableAttemptLedger:
 
     LEDGER_FILENAME = "durable_attempt_ledger.json"
 
-    def __init__(self, run_dir: Path, *, run_id: str) -> None:
+    def __init__(
+        self,
+        run_dir: Path,
+        *,
+        run_id: str,
+        frozen_experiment_identity_hash: str | None = None,
+    ) -> None:
         self.run_dir = run_dir
         self.run_id = run_id
         self.path = run_dir / self.LEDGER_FILENAME
         self.payload: dict[str, Any] = {
             "run_id": run_id,
+            "frozen_experiment_identity_hash": frozen_experiment_identity_hash,
             "stopped": False,
             "stop_reason": None,
             "attempt_count": 0,
@@ -403,6 +412,216 @@ class DurableAttemptLedger:
         ledger = cls(run_dir, run_id=payload["run_id"])
         ledger.payload = payload
         return ledger
+
+    def reconcile_consumed_without_finalize(self) -> bool:
+        """Mark experiment INVALID when a CONSUMED attempt lacks a trustworthy finalize."""
+        changed = False
+        for record in self.payload["records"]:
+            if record.get("state") == "CONSUMED":
+                record["state"] = "FINALIZED"
+                record["disposition"] = "INVALID"
+                record["finalized_at"] = datetime.now(UTC).isoformat()
+                record["detail"] = {"error": "restart_retry_denied:consumed_without_trustworthy_result"}
+                self.payload["stopped"] = True
+                self.payload["stop_reason"] = "invalid"
+                changed = True
+        if changed:
+            self._atomic_write()
+        return changed
+
+    def next_case_id(self) -> str | None:
+        if self.payload.get("stopped"):
+            return None
+        records = self.payload["records"]
+        if len(records) >= MAX_PROVIDER_REQUESTS:
+            return None
+        finalized = {
+            row["case_id"]
+            for row in records
+            if row.get("state") == "FINALIZED" and row.get("disposition") == "PASS"
+        }
+        for case_id in CASE_ORDER:
+            if case_id not in finalized:
+                return case_id
+        return None
+
+    def is_terminal(self) -> bool:
+        finalized = [
+            row
+            for row in self.payload["records"]
+            if row.get("state") == "FINALIZED"
+        ]
+        if self.payload.get("stopped"):
+            return bool(finalized)
+        if len(finalized) == MAX_PROVIDER_REQUESTS and all(
+            row.get("disposition") == "PASS" for row in finalized
+        ):
+            return True
+        return False
+
+
+def build_frozen_experiment_identity(*, runner_implementation_sha: str | None = None) -> dict[str, Any]:
+    return {
+        "runner_id": RUNNER_ID,
+        "qualified_harness_head": QUALIFIED_HARNESS_HEAD,
+        "required_engine_baseline_sha": REQUIRED_ENGINE_BASELINE_SHA,
+        "fixture_sha256": EXPECTED_FIXTURE_SHA256,
+        "schema_sha256": ANALYZER_SCHEMA_SHA256,
+        "prompt_sha256": analyzer_prompt_sha256(),
+        "request_identities": build_request_identities(),
+        "requested_model": REQUESTED_MODEL,
+        "approved_execution_config_hash": build_approved_execution_config_hash(),
+        "hard_spend_ceiling_usd": HARD_SPEND_CEILING_USD,
+        "case_order": list(CASE_ORDER),
+        "max_provider_requests": MAX_PROVIDER_REQUESTS,
+        "runner_implementation_sha": runner_implementation_sha or get_implementation_git_sha(),
+    }
+
+
+def frozen_experiment_identity_hash(*, runner_implementation_sha: str | None = None) -> str:
+    return sha256_text(canonical_json_dumps(build_frozen_experiment_identity(
+        runner_implementation_sha=runner_implementation_sha,
+    )))
+
+
+def find_orphaned_authoritative_ledgers(
+    *,
+    output_root: Path | None = None,
+    expected_identity_hash: str | None = None,
+) -> list[Path]:
+    output_root = output_root or OUTPUT_ROOT
+    if not output_root.exists():
+        return []
+    orphaned: list[Path] = []
+    for ledger_path in output_root.glob(f"*/{DurableAttemptLedger.LEDGER_FILENAME}"):
+        payload = json.loads(ledger_path.read_text(encoding="utf-8"))
+        if not payload.get("records"):
+            continue
+        if expected_identity_hash and payload.get("frozen_experiment_identity_hash") not in {
+            None,
+            expected_identity_hash,
+        }:
+            continue
+        orphaned.append(ledger_path.parent)
+    return orphaned
+
+
+class FrozenExperimentRegistry:
+    """Single authoritative experiment identity across process restarts."""
+
+    def __init__(self, registry_path: Path = EXPERIMENT_REGISTRY_PATH) -> None:
+        self.registry_path = registry_path
+        self.payload: dict[str, Any] | None = None
+        if registry_path.exists():
+            self.payload = json.loads(registry_path.read_text(encoding="utf-8"))
+
+    def _atomic_write(self, payload: dict[str, Any]) -> None:
+        self.registry_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = self.registry_path.with_suffix(".tmp")
+        encoded = canonical_json_dumps(payload)
+        with tmp_path.open("w", encoding="utf-8") as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, self.registry_path)
+        dir_fd = os.open(self.registry_path.parent, os.O_DIRECTORY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+        self.payload = payload
+
+    @staticmethod
+    def _resolve_run_dir(stored: str) -> Path:
+        path = Path(stored)
+        if path.is_absolute():
+            return path
+        return EXPERIMENT_ROOT / stored
+
+    def _validate_identity(self, expected_hash: str) -> None:
+        if self.payload is None:
+            return
+        stored = self.payload.get("frozen_experiment_identity_hash")
+        if stored != expected_hash:
+            raise AttemptGovernanceError(
+                "conflicting_experiment_identity:requires_new_owner_authorization"
+            )
+
+    def establish_or_resume(
+        self,
+        *,
+        expected_identity_hash: str,
+        authorization_token: str,
+        run_id: str | None = None,
+    ) -> tuple[Path, DurableAttemptLedger, bool]:
+        self._validate_identity(expected_identity_hash)
+        if self.payload is not None:
+            if self.payload.get("terminal"):
+                raise AttemptGovernanceError(
+                    f"experiment_terminal:{self.payload.get('terminal_disposition')}"
+                )
+            run_dir = self._resolve_run_dir(self.payload["run_dir"])
+            ledger = DurableAttemptLedger.from_run_dir(run_dir)
+            ledger.reconcile_consumed_without_finalize()
+            if ledger.is_terminal():
+                self.mark_terminal(ledger=ledger)
+                raise AttemptGovernanceError(
+                    f"experiment_terminal:{self.payload.get('terminal_disposition')}"
+                )
+            return run_dir, ledger, False
+
+        orphaned = find_orphaned_authoritative_ledgers(
+            expected_identity_hash=expected_identity_hash,
+        )
+        if orphaned:
+            raise AttemptGovernanceError(
+                "orphaned_authoritative_ledger:registry_missing_but_ledger_remains"
+            )
+        run_dir = allocate_run_directory(run_id=run_id or f"semantic_analyzer_run_{uuid.uuid4().hex[:12]}")
+        ledger = DurableAttemptLedger(
+            run_dir,
+            run_id=run_dir.name,
+            frozen_experiment_identity_hash=expected_identity_hash,
+        )
+        payload = {
+            "frozen_experiment_identity_hash": expected_identity_hash,
+            "authorization_token": authorization_token,
+            "established_at": datetime.now(UTC).isoformat(),
+            "run_dir": str(run_dir.relative_to(EXPERIMENT_ROOT)),
+            "run_id": run_dir.name,
+            "terminal": False,
+            "terminal_disposition": None,
+        }
+        self._atomic_write(payload)
+        return run_dir, ledger, True
+
+    def mark_terminal(
+        self,
+        *,
+        ledger: DurableAttemptLedger,
+        disposition: str | None = None,
+    ) -> None:
+        if self.payload is None:
+            return
+        if disposition is None:
+            finalized = [
+                row
+                for row in ledger.payload["records"]
+                if row.get("state") == "FINALIZED"
+            ]
+            if ledger.payload.get("stopped"):
+                reason = str(ledger.payload.get("stop_reason", "invalid")).lower()
+                disposition = {"invalid": "INVALID", "fail": "FAIL"}.get(reason, reason.upper())
+            elif len(finalized) == MAX_PROVIDER_REQUESTS and all(
+                row.get("disposition") == "PASS" for row in finalized
+            ):
+                disposition = "PASS"
+            else:
+                disposition = "IN_PROGRESS"
+        self.payload["terminal"] = disposition in {"PASS", "FAIL", "INVALID"}
+        self.payload["terminal_disposition"] = disposition
+        self.payload["terminal_at"] = datetime.now(UTC).isoformat()
+        self._atomic_write(self.payload)
 
 
 def validate_provider_http_response(
@@ -549,9 +768,11 @@ def issue_execution_authorization() -> ExecutionAuthorization:
         )
     git_sha = get_implementation_git_sha()
     approved_hash = build_approved_execution_config_hash()
+    experiment_identity_hash = frozen_experiment_identity_hash(runner_implementation_sha=git_sha)
     token_payload = {
         "approved_execution_config_hash": approved_hash,
         "execution_git_sha": git_sha,
+        "frozen_experiment_identity_hash": experiment_identity_hash,
         "budget_authorized": budget["budget_authorized"],
         "provider_execution_authorized": True,
         "case_order": list(CASE_ORDER),
@@ -724,6 +945,7 @@ def execute_provider_qualification_run(
     run_id: str | None = None,
     http_post: Callable[..., httpx.Response] | None = None,
     client: httpx.Client | None = None,
+    registry_path: Path | None = None,
 ) -> dict[str, Any]:
     if not provider_execution_authorized():
         raise ExecutionAuthorizationError(
@@ -734,18 +956,26 @@ def execute_provider_qualification_run(
     if not preflight["execution_ready"]:
         raise SemanticAnalyzerProviderRunnerError("preflight not ready for execution")
 
-    run_dir = allocate_run_directory(run_id=run_id or f"semantic_analyzer_run_{uuid.uuid4().hex[:12]}")
-    durable_ledger = DurableAttemptLedger(run_dir, run_id=run_dir.name)
+    experiment_identity_hash = frozen_experiment_identity_hash(
+        runner_implementation_sha=execution_auth.execution_git_sha,
+    )
+    registry = FrozenExperimentRegistry(registry_path or EXPERIMENT_REGISTRY_PATH)
+    run_dir, durable_ledger, _created = registry.establish_or_resume(
+        expected_identity_hash=experiment_identity_hash,
+        authorization_token=execution_auth.authorization_token,
+        run_id=run_id,
+    )
     run_state = ProviderRunState(run_id=run_dir.name, run_dir=run_dir)
     requests = {req["case_id"]: req for req in build_all_case_requests()}
     case_results: list[dict[str, Any]] = []
 
-    for case_id in CASE_ORDER:
-        if run_state.stopped:
+    while True:
+        next_case_id = durable_ledger.next_case_id()
+        if next_case_id is None or run_state.stopped:
             break
         case_results.append(
             execute_case_once(
-                request=requests[case_id],
+                request=requests[next_case_id],
                 run_state=run_state,
                 durable_ledger=durable_ledger,
                 execution_auth=execution_auth,
@@ -780,6 +1010,7 @@ def execute_provider_qualification_run(
             "fixture_sha256": EXPECTED_FIXTURE_SHA256,
             "schema_sha256": ANALYZER_SCHEMA_SHA256,
             "prompt_sha256": analyzer_prompt_sha256(),
+            "frozen_experiment_identity_hash": experiment_identity_hash,
         },
         "authorization": {
             "authorization_token": execution_auth.authorization_token,
@@ -799,6 +1030,8 @@ def execute_provider_qualification_run(
         "total_cost_usd": run_state.total_cost_usd,
         "provider_execution_authorized": True,
     }
+    registry.mark_terminal(ledger=durable_ledger, disposition=overall)
+    artifact["frozen_experiment_registry"] = registry.payload
     artifact["artifact_digest"] = compute_run_artifact_digest(artifact)
     artifact["artifact_integrity"] = verify_run_artifact_integrity(artifact)
     artifact["qualification_ready"] = (
