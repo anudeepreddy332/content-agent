@@ -9,6 +9,45 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-10-01
+Date: 2026-09-10
+
+Decision: **Semantic-analyzer pre-provider qualification harness is frozen and
+implemented offline. Provider execution remains NOT AUTHORIZED.**
+
+Reason: The hybrid verifier status engine baseline
+(`1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`) independently passed offline
+engine qualification. The next gate requires a deterministic harness that
+qualifies future analyzer *observations* — not Python-derived status alone —
+before any provider call.
+
+Frozen pre-provider harness contract:
+
+- analyzer response top-level field: `observations` only; observation fields
+  limited to `claim_id`, `support_spans`, `full_entailment`, `blockers`
+- trusted ingress: recomputed draft/evidence hashes, claim-text draft-slice
+  binding, request ownership, exposure identity, visibility, unique IDs
+- whole-envelope INVALID dominance via `adjudicate_hybrid_verifier_observations`
+- independent semantic oracle for frozen P6/P7/P1 gold spans (evaluator-only)
+- attempt order P6 → P7 → P1; max 3 requests; one attempt per case; stop on
+  FAIL/INVALID; remaining cases `NOT_RUN`
+- mock-only offline qualification; `SEMANTIC_ANALYZER_EXECUTE=1` reserved for
+  future authorized provider slice
+- artifact bundle preserves identity hashes, attempt ledger, oracle/adjudication
+  outputs, and digest integrity checks
+
+Status: **PRE-PROVIDER HARNESS IMPLEMENTATION — READY FOR INDEPENDENT REVIEW —
+PROVIDER EXECUTION NOT AUTHORIZED**.
+
+Does NOT authorize: provider observation qualification, production integration,
+UVR/routing changes, retrieval redesign, or EXPERIMENT_LEDGER entry.
+
+Confidence: 0.92
+
+Supersedes / superseded by: Accepts D-2026-09-05-02 offline engine baseline;
+does not supersede production verifier prompt or Stage 2D exposure contract.
+
+---
 Decision ID: D-2026-09-05-02
 Date: 2026-09-05
 

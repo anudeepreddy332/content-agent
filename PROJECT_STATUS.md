@@ -256,17 +256,16 @@ priority.
 
 ## Current authorized mission
 
-**Hybrid verifier status engine offline qualification** is the current
-authorized engineering mission on `experiment/hybrid-verifier-status-engine`.
-The prompt-only 3-cell experiment completed as a **valid FAIL**: candidate
-semantic-status paragraph fixed P7 and preserved P1 but P6 contradiction remained
-false-verified (`verified / weak / verified`). Next step isolates semantic
-observation from deterministic status derivation: analyzer supplies support
-spans, full-entailment judgment, and blockers; Python alone emits
-`verified / weak / unverified`. Offline fixtures (P6/P7/P1 COMPLETE) qualify the
-engine with zero provider calls. Provider observation qualification, production
-integration, UVR/routing, retrieval, and materiality remain **unchanged and
-blocked** pending independent offline review.
+**Semantic-analyzer pre-provider qualification harness** is the current
+authorized engineering mission on `experiment/hybrid-verifier-status-engine` at
+baseline `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`. The hybrid verifier status
+engine passed offline deterministic qualification (P6/P7/P1 fixtures, zero
+provider calls). The pre-provider harness (`scripts/semantic_analyzer_preprovider_harness.py`)
+now freezes analyzer response contract, trusted ingress, envelope INVALID
+dominance, independent semantic oracle, attempt ledger (P6→P7→P1, max 3), and
+artifact integrity — mock-only, no production integration. **Provider observation
+qualification is NOT AUTHORIZED.** UVR/routing, retrieval, materiality, and
+production runtime remain **unchanged**.
 
 **Prior 3-cell context (closed for now):** Stage 2D bounded provider qualification
 **EXECUTED / FAIL**: exposure-only changes proved P1 consequence but P6/P7
