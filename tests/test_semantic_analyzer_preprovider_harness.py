@@ -22,18 +22,20 @@ from scripts.semantic_analyzer_preprovider_harness import (
     ResponseContractError,
     build_analyzer_input,
     build_case_bundle,
-    build_frozen_case_truth,
     build_gold_mock_responses,
     build_run_identity_hashes,
     compute_qualification_ready,
     get_implementation_git_sha,
+    get_verified_frozen_case_truth,
     load_fixture_pack,
+    load_verified_fixture_pack,
     parse_analyzer_response,
     provider_execution_authorized,
     qualify_case_response,
     run_offline_qualification,
     run_preflight,
     sha256_text,
+    validate_caller_pack_against_verified,
     validate_harness_identities,
     validate_trusted_ingress,
     verify_artifact_integrity,
@@ -46,8 +48,8 @@ def pack() -> dict:
 
 
 @pytest.fixture
-def gold_responses(pack: dict) -> dict[str, str]:
-    return build_gold_mock_responses(pack)
+def gold_responses() -> dict[str, str]:
+    return build_gold_mock_responses()
 
 
 @pytest.fixture(autouse=True)
@@ -66,8 +68,8 @@ def _bundle(pack: dict, case_id: str = "P6") -> dict:
     return build_case_bundle(pack, case_id)
 
 
-def _frozen(pack: dict, case_id: str = "P6") -> dict:
-    return build_frozen_case_truth(pack, case_id)
+def _frozen(case_id: str = "P6") -> dict:
+    return get_verified_frozen_case_truth(case_id)
 
 
 def _qualify(
@@ -76,12 +78,13 @@ def _qualify(
     raw_response: str,
     *,
     bundle: dict | None = None,
+    frozen_truth: dict | None = None,
 ) -> dict:
     return qualify_case_response(
         case_id=case_id,
         bundle=bundle or _bundle(pack, case_id),
         raw_response=raw_response,
-        frozen_truth=_frozen(pack, case_id),
+        frozen_truth=frozen_truth if frozen_truth is not None else _frozen(case_id),
     )
 
 
@@ -313,7 +316,7 @@ def test_caller_replacement_hash_cannot_override_frozen_truth(pack: dict, gold_r
     bundle["draft_sha256"] = sha256_text(bundle["draft_text"])
     ingress = validate_trusted_ingress(
         bundle,
-        frozen_truth=_frozen(pack, "P6"),
+        frozen_truth=_frozen("P6"),
         caller_draft_sha256=bundle["draft_sha256"],
     )
     assert ingress["valid"] is False
@@ -585,3 +588,147 @@ def test_qualification_ready_false_on_fail_run(pack: dict):
 
 def test_provider_execution_default_disabled():
     assert provider_execution_authorized() is False
+
+
+@pytest.mark.parametrize("case_id", ["P1", "P6", "P7"])
+def test_missing_frozen_truth_invalid(pack: dict, gold_responses: dict, case_id: str):
+    result = qualify_case_response(
+        case_id=case_id,
+        bundle=_bundle(pack, case_id),
+        raw_response=gold_responses[case_id],
+        frozen_truth=None,  # type: ignore[arg-type]
+    )
+    assert result["disposition"] == "INVALID"
+    assert "missing_frozen_truth" in result["invalid_reasons"]
+    assert result.get("semantic_oracle") is None
+    assert result.get("adjudication") is None
+
+
+def test_mutated_draft_without_frozen_truth_invalid(pack: dict, gold_responses: dict):
+    bundle = _bundle(pack, "P6")
+    bundle["draft_text"] = bundle["draft_text"] + " mutated"
+    bundle["draft_sha256"] = sha256_text(bundle["draft_text"])
+    result = qualify_case_response(
+        case_id="P6",
+        bundle=bundle,
+        raw_response=gold_responses["P6"],
+        frozen_truth=None,  # type: ignore[arg-type]
+    )
+    assert result["disposition"] == "INVALID"
+    assert "missing_frozen_truth" in result["invalid_reasons"]
+
+
+def test_mutated_source_without_frozen_truth_invalid(pack: dict, gold_responses: dict):
+    bundle = _bundle(pack, "P6")
+    bundle["evidence_manifest"][0]["source_text"] += "x"
+    bundle["evidence_manifest"][0]["source_sha256"] = sha256_text(
+        bundle["evidence_manifest"][0]["source_text"]
+    )
+    result = qualify_case_response(
+        case_id="P6",
+        bundle=bundle,
+        raw_response=gold_responses["P6"],
+        frozen_truth=None,  # type: ignore[arg-type]
+    )
+    assert result["disposition"] == "INVALID"
+    assert "missing_frozen_truth" in result["invalid_reasons"]
+
+
+def test_verified_fixture_loaded_from_canonical_bytes():
+    import hashlib
+
+    verified = load_verified_fixture_pack()
+    raw = Path("evals/fixtures/hybrid_verifier_status_offline.json").read_bytes()
+    assert verified["pack_id"] == "hybrid_verifier_status_offline"
+    assert hashlib.sha256(raw).hexdigest() == EXPECTED_FIXTURE_SHA256
+
+
+def test_mutated_caller_pack_cannot_redefine_qualification_truth(pack: dict, gold_responses: dict):
+    mutated = copy.deepcopy(pack)
+    mutated["cases"]["P6-COMPLETE"]["draft_text"] += " attacker"
+    mutated["cases"]["P6-COMPLETE"]["source_text"] += " attacker"
+    validation = validate_caller_pack_against_verified(mutated)
+    assert validation["matches_verified_fixture"] is False
+    assert validation["caller_is_authoritative"] is False
+    artifact = run_offline_qualification(mutated, response_provider=gold_responses)
+    assert artifact["fixture_truth_source"]["caller_pack_matches_verified"] is False
+    assert artifact["overall_disposition"] == "PASS"
+    assert artifact["qualification_ready"] is True
+
+
+def test_mutated_caller_pack_bundle_with_verified_frozen_truth_invalid(pack: dict, gold_responses: dict):
+    mutated = copy.deepcopy(pack)
+    case = mutated["cases"]["P6-COMPLETE"]
+    case["draft_text"] += " attacker"
+    case["source_text"] += " attacker"
+    case["source_sha256"] = sha256_text(case["source_text"])
+    bundle = build_case_bundle(mutated, "P6")
+    result = _qualify(pack, "P6", gold_responses["P6"], bundle=bundle)
+    assert result["disposition"] == "INVALID"
+    assert "frozen_draft_text_mismatch" in result["invalid_reasons"]
+
+
+def test_mutated_caller_pack_evidence_id_invalid(pack: dict, gold_responses: dict):
+    mutated = copy.deepcopy(pack)
+    new_id = "SRC-P6-ATTACKER"
+    mutated["cases"]["P6-COMPLETE"]["source_id"] = new_id
+    obs = copy.deepcopy(mutated["cases"]["P6-COMPLETE"]["observation"])
+    for span in obs["support_spans"]:
+        span["evidence_id"] = new_id
+    for blocker in obs["blockers"]:
+        for span in blocker["evidence_spans"]:
+            span["evidence_id"] = new_id
+    bundle = build_case_bundle(mutated, "P6")
+    result = qualify_case_response(
+        case_id="P6",
+        bundle=bundle,
+        raw_response=_raw(obs),
+        frozen_truth=_frozen("P6"),
+    )
+    assert result["disposition"] == "INVALID"
+    assert "frozen_evidence_manifest_mismatch" in result["invalid_reasons"]
+
+
+def test_mutated_caller_pack_exposure_identity_invalid(pack: dict, gold_responses: dict):
+    bundle = _bundle(pack, "P6")
+    bundle["exposure_identity"] = {
+        "request_id": "REQ-ATTACKER",
+        "exposure_arm": "complete",
+        "evidence_ids": ["SRC-P6-W03"],
+    }
+    result = _qualify(pack, "P6", gold_responses["P6"], bundle=bundle)
+    assert result["disposition"] == "INVALID"
+    assert "frozen_exposure_identity_mismatch" in result["invalid_reasons"]
+
+
+def test_honest_artifact_integrity_valid_twice(pack: dict, gold_responses: dict):
+    artifact = run_offline_qualification(pack, response_provider=gold_responses)
+    first = verify_artifact_integrity(artifact)
+    second = verify_artifact_integrity(artifact)
+    assert first["valid"] is True
+    assert second["valid"] is True
+
+
+def test_missing_artifact_digest_invalid(pack: dict, gold_responses: dict):
+    artifact = run_offline_qualification(pack, response_provider=gold_responses)
+    del artifact["artifact_digest"]
+    integrity = verify_artifact_integrity(artifact)
+    assert integrity["valid"] is False
+    assert "missing_artifact_digest" in integrity["invalid_reasons"]
+    assert compute_qualification_ready(artifact) is False
+
+
+def test_empty_artifact_digest_invalid(pack: dict, gold_responses: dict):
+    artifact = run_offline_qualification(pack, response_provider=gold_responses)
+    artifact["artifact_digest"] = ""
+    integrity = verify_artifact_integrity(artifact)
+    assert integrity["valid"] is False
+    assert "missing_artifact_digest" in integrity["invalid_reasons"]
+
+
+def test_missing_digest_with_pass_disposition_not_ready(pack: dict, gold_responses: dict):
+    artifact = run_offline_qualification(pack, response_provider=gold_responses)
+    artifact["artifact_digest"] = None
+    artifact["artifact_integrity"] = verify_artifact_integrity(artifact)
+    assert artifact["overall_disposition"] == "PASS"
+    assert compute_qualification_ready(artifact) is False

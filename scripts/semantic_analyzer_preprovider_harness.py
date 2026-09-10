@@ -48,6 +48,25 @@ CASE_KEYS = {
 MAX_PROVIDER_REQUESTS = 3
 MAX_ATTEMPTS_PER_CASE = 1
 
+ARTIFACT_DIGEST_FIELDS = (
+    "harness_id",
+    "stage",
+    "pack_id",
+    "provider_calls",
+    "identity_hashes",
+    "identity_validation",
+    "fixture_truth_source",
+    "attempt_ledger",
+    "case_order",
+    "case_results",
+    "pass_count",
+    "fail_count",
+    "invalid_count",
+    "not_run_count",
+    "overall_disposition",
+    "provider_execution_authorized",
+)
+
 CaseDisposition = Literal["PASS", "FAIL", "INVALID", "NOT_RUN"]
 OverallDisposition = Literal["PASS", "FAIL", "INVALID"]
 
@@ -239,6 +258,35 @@ def load_fixture_pack(path: Path | str = DEFAULT_FIXTURES) -> dict[str, Any]:
     pack = json.loads(raw_bytes.decode("utf-8"))
     validate_fixture_pack(pack)
     return pack
+
+
+def load_verified_fixture_pack() -> dict[str, Any]:
+    """Load qualification truth only from canonical fixture bytes on disk."""
+    resolved = DEFAULT_FIXTURES.resolve()
+    if not resolved.is_file():
+        raise SemanticAnalyzerHarnessError("canonical qualification fixture missing")
+    return load_fixture_pack(resolved)
+
+
+def validate_caller_pack_against_verified(caller_pack: dict[str, Any]) -> dict[str, Any]:
+    """Caller-supplied packs are untrusted working copies; never qualification truth."""
+    verified_pack = load_verified_fixture_pack()
+    caller_canonical = json.dumps(caller_pack, sort_keys=True, ensure_ascii=True)
+    verified_canonical = json.dumps(verified_pack, sort_keys=True, ensure_ascii=True)
+    matches = caller_canonical == verified_canonical
+    return {
+        "matches_verified_fixture": matches,
+        "fixture_sha256": EXPECTED_FIXTURE_SHA256,
+        "caller_is_authoritative": False,
+    }
+
+
+def get_verified_frozen_case_truth(case_id: str) -> dict[str, Any]:
+    """Evaluator-owned frozen truth built only from verified canonical fixture bytes."""
+    if case_id not in CASE_ORDER:
+        raise SemanticAnalyzerHarnessError(f"unknown qualification case {case_id!r}")
+    verified_pack = load_verified_fixture_pack()
+    return build_frozen_case_truth(verified_pack, case_id)
 
 
 def validate_fixture_pack(pack: dict[str, Any]) -> None:
@@ -970,14 +1018,26 @@ def qualify_case_response(
     case_id: str,
     bundle: dict[str, Any],
     raw_response: str,
-    frozen_truth: dict[str, Any] | None = None,
+    frozen_truth: dict[str, Any],
     ingress: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Qualify one analyzer response against trusted ingress, contract, oracle, and adjudication."""
     case_result: dict[str, Any] = {
         "case_id": case_id,
-        "request_id": bundle["request_id"],
+        "request_id": bundle.get("request_id"),
     }
+
+    if frozen_truth is None:
+        case_result.update(
+            {
+                "disposition": "INVALID",
+                "invalid_reasons": ["missing_frozen_truth"],
+                "response_contract": None,
+                "adjudication": None,
+                "semantic_oracle": None,
+            }
+        )
+        return case_result
 
     ingress_result = ingress or validate_trusted_ingress(bundle, frozen_truth=frozen_truth)
     case_result["trusted_ingress"] = ingress_result
@@ -1070,7 +1130,13 @@ def build_run_identity_hashes(
     }
 
 
-def compute_artifact_digest(payload: dict[str, Any]) -> str:
+def build_artifact_digest_payload(artifact: dict[str, Any]) -> dict[str, Any]:
+    """Decision-critical artifact fields covered by the digest (excludes digest/integrity/readiness)."""
+    return {field: artifact[field] for field in ARTIFACT_DIGEST_FIELDS if field in artifact}
+
+
+def compute_artifact_digest(artifact: dict[str, Any]) -> str:
+    payload = build_artifact_digest_payload(artifact)
     return sha256_text(json.dumps(payload, sort_keys=True, ensure_ascii=True))
 
 
@@ -1098,9 +1164,10 @@ def verify_artifact_integrity(artifact: dict[str, Any]) -> dict[str, Any]:
             invalid_reasons.append(f"stale_{hash_field}")
 
     stored_digest = artifact.get("artifact_digest")
-    payload = {key: value for key, value in artifact.items() if key != "artifact_digest"}
-    recomputed = compute_artifact_digest(payload)
-    if stored_digest and stored_digest != recomputed:
+    recomputed = compute_artifact_digest(artifact)
+    if not isinstance(stored_digest, str) or not stored_digest.strip():
+        invalid_reasons.append("missing_artifact_digest")
+    elif stored_digest != recomputed:
         invalid_reasons.append("corrupt_artifact_digest")
 
     if artifact.get("overall_disposition") == "PASS":
@@ -1131,11 +1198,14 @@ def compute_qualification_ready(artifact: dict[str, Any]) -> bool:
     integrity = artifact.get("artifact_integrity") or {}
     identity = artifact.get("identity_validation") or {}
     ledger = artifact.get("attempt_ledger_validation") or {}
+    digest = artifact.get("artifact_digest")
+    digest_present = isinstance(digest, str) and bool(digest.strip())
     return (
         artifact.get("overall_disposition") == "PASS"
         and artifact.get("pass_count") == 3
         and artifact.get("invalid_count") == 0
         and artifact.get("fail_count") == 0
+        and digest_present
         and integrity.get("valid") is True
         and identity.get("valid") is True
         and ledger.get("valid") is True
@@ -1143,7 +1213,7 @@ def compute_qualification_ready(artifact: dict[str, Any]) -> bool:
 
 
 def run_offline_qualification(
-    pack: dict[str, Any],
+    pack: dict[str, Any] | None = None,
     *,
     response_provider: dict[str, str] | None = None,
     run_id: str = "offline-mock-run",
@@ -1154,6 +1224,11 @@ def run_offline_qualification(
         raise ExecutionAuthorizationError(
             "provider execution flag set; offline harness requires mock-only qualification"
         )
+
+    verified_pack = load_verified_fixture_pack()
+    caller_pack_validation = (
+        validate_caller_pack_against_verified(pack) if pack is not None else None
+    )
 
     harness_implementation_sha = harness_implementation_sha or get_implementation_git_sha()
     identity_validation = validate_harness_identities(
@@ -1172,8 +1247,8 @@ def run_offline_qualification(
     for case_id in CASE_ORDER:
         if ledger.stopped:
             break
-        bundle = build_case_bundle(pack, case_id)
-        frozen_truth = build_frozen_case_truth(pack, case_id)
+        bundle = build_case_bundle(verified_pack, case_id)
+        frozen_truth = get_verified_frozen_case_truth(case_id)
         analyzer_input = build_analyzer_input(bundle)
         _require(
             "observation" not in json.dumps(analyzer_input),
@@ -1234,6 +1309,16 @@ def run_offline_qualification(
             harness_implementation_sha=harness_implementation_sha
         ),
         "identity_validation": identity_validation,
+        "fixture_truth_source": {
+            "path": str(DEFAULT_FIXTURES.relative_to(REPO_ROOT)),
+            "fixture_sha256": EXPECTED_FIXTURE_SHA256,
+            "caller_pack_matches_verified": (
+                caller_pack_validation["matches_verified_fixture"]
+                if caller_pack_validation is not None
+                else None
+            ),
+            "caller_pack_authoritative": False,
+        },
         "attempt_ledger": ledger.to_dict(),
         "case_order": list(CASE_ORDER),
         "case_results": case_results,
@@ -1244,9 +1329,7 @@ def run_offline_qualification(
         "overall_disposition": overall,
         "provider_execution_authorized": False,
     }
-    artifact["artifact_digest"] = compute_artifact_digest(
-        {key: value for key, value in artifact.items() if key != "artifact_digest"}
-    )
+    artifact["artifact_digest"] = compute_artifact_digest(artifact)
     integrity = verify_artifact_integrity(artifact)
     artifact["artifact_integrity"] = integrity
     ledger_validation = validate_attempt_ledger(artifact["attempt_ledger"])
@@ -1255,10 +1338,15 @@ def run_offline_qualification(
     return artifact
 
 
-def build_gold_mock_responses(pack: dict[str, Any]) -> dict[str, str]:
+def build_gold_mock_responses(pack: dict[str, Any] | None = None) -> dict[str, str]:
+    verified_pack = load_verified_fixture_pack()
+    if pack is not None:
+        validation = validate_caller_pack_against_verified(pack)
+        if not validation["matches_verified_fixture"]:
+            raise SemanticAnalyzerHarnessError("caller pack does not match verified fixture")
     responses: dict[str, str] = {}
     for case_id in CASE_ORDER:
-        case = pack["cases"][CASE_KEYS[case_id]]
+        case = verified_pack["cases"][CASE_KEYS[case_id]]
         responses[case_id] = json.dumps({"observations": [case["observation"]]})
     return responses
 

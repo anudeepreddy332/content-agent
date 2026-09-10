@@ -256,13 +256,12 @@ priority.
 
 ## Current authorized mission
 
-**Semantic-analyzer pre-provider qualification harness — targeted correction**
-is the current authorized engineering mission on
-`experiment/hybrid-verifier-status-engine`. Checkpoint
-`5f325cb871ed9889a1058a510ca3983306b0c7dc` failed independent review; five
-harness-integrity corrections are in progress (identity pinning, frozen-input
-truth, ledger restore validation, readiness/integrity conjunction, Markdown
-fence rejection). Engine baseline remains `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`.
+**Semantic-analyzer pre-provider qualification harness — final integrity
+correction** is the current authorized engineering mission on
+`experiment/hybrid-verifier-status-engine`. Correction checkpoint `d25730d`
+failed final independent review; three remaining P1 fixes applied (mandatory
+frozen truth, canonical fixture-byte truth authority, required artifact digest).
+Engine baseline remains `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`.
 **Provider observation qualification is NOT AUTHORIZED.** UVR/routing, retrieval,
 materiality, and production runtime remain **unchanged**.
 
