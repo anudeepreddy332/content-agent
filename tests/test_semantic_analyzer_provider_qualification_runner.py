@@ -52,10 +52,15 @@ from scripts.semantic_analyzer_provider_qualification_runner import (
     verify_run_artifact_integrity,
 )
 
-FROZEN_REQUEST_HASHES = {
+LEGACY_OFFSET_REQUEST_HASHES = {
     "P6": "d25fb7c7588c69eaffd58a54ff4840ec315ea33d41e0f78e23e4883629dbe0bb",
     "P7": "c3459b946a3a46a819010851c2cb25c5b4941a7e23002f1c75bd626bd213cac6",
     "P1": "bdf8a520444a8cdf7d5227ec57c2d3dbcc66b9dc6e25ac04493b4b664c5b7dca",
+}
+QUOTE_BINDING_REQUEST_HASHES = {
+    "P6": "a8d383925fb4a2a258fcabeb1a4a2d3326e185f2b291116f04f6263368d1e9b5",
+    "P7": "e3fe4936d2d4af2275ed1691a0c8a207408f28fad89870bb3d07c56d54d10ad8",
+    "P1": "9aee691f0f69a97dd70bd0ce2801b9275d0a2b9cc215ee9d1c89d6644b90c7d7",
 }
 CONSUMED_FIRST_LIVE_IDENTITY_HASH = (
     "654e5f3438858970f19caa530fe6a634c77092fdb0f4a906a8a405a081e2ac9b"
@@ -1088,17 +1093,23 @@ def test_semantic_fail_records_incurred_cost(
             "observations": [
                 {
                     "claim_id": "P6.claim.1",
-                    "support_spans": [
-                        {"evidence_id": "SRC-P6-W03", "start": 0, "end": 10}
+                    "support_quotes": [
+                        {
+                            "evidence_id": "SRC-P6-W03",
+                            "quote": "elix gate permits export when mode flag HG-ENABLE is set.",
+                        }
                     ],
                     "full_entailment": False,
                     "blockers": [
                         {
                             "kind": "contradiction",
-                            "evidence_spans": [
-                                {"evidence_id": "SRC-P6-W03", "start": 1500, "end": 1562}
+                            "evidence_quotes": [
+                                {
+                                    "evidence_id": "SRC-P6-W03",
+                                    "quote": "Unless mode flag HG-ENABLE is cleared, export remains blocked.",
+                                }
                             ],
-                            "explanation": "Wrong support span; oracle should FAIL not INVALID.",
+                            "explanation": "Missing support; oracle should FAIL not INVALID.",
                         }
                     ],
                 }
@@ -1248,10 +1259,17 @@ def test_new_experiment_requires_fresh_authorization(experiment_root: Path, monk
     assert auth.authorization_token != CONSUMED_FIRST_LIVE_AUTH_TOKEN
 
 
-def test_p6_p7_p1_request_hashes_unchanged_after_identity_correction():
+def test_p6_p7_p1_request_hashes_match_quote_binding_contract():
     identities = build_request_identities()
-    for case_id, expected in FROZEN_REQUEST_HASHES.items():
+    for case_id, expected in QUOTE_BINDING_REQUEST_HASHES.items():
         assert identities[case_id]["request_body_sha256"] == expected
+
+
+def test_legacy_offset_request_hashes_preserved_for_historical_experiments():
+    """Historical provider experiments #1/#2 used the offset-era request hashes."""
+    assert LEGACY_OFFSET_REQUEST_HASHES["P6"] == (
+        "d25fb7c7588c69eaffd58a54ff4840ec315ea33d41e0f78e23e4883629dbe0bb"
+    )
 
 
 def test_prepare_successor_does_not_authorize_execution(experiment_root: Path):

@@ -288,8 +288,17 @@ the current authorized engineering mission on
   insufficient); terminal on-disk evidence must map to exactly one TERMINAL
   `history[]` row and cannot be satisfied by `successor` or a colliding
   `successor.run_id`; **no second live experiment authorized or executed**.
-- **Provider execution is NOT AUTHORIZED** for a second experiment. UVR/routing,
-  retrieval, materiality, and production runtime remain **unchanged**.
+- **Second live provider experiment EXECUTED / FAIL**
+  (`semantic_analyzer_run_342076d6f2e6`): 1 request (P6), P7/P1 NOT_RUN;
+  model identity PASS; semantic oracle FAIL on P6 raw offset localization
+  (P6-LLM-OFFSET-LOCALIZATION-FAILURE). Experiment #1 INVALID preserved.
+- **Quote-binding analyzer contract implemented offline** (no provider calls):
+  LLM emits exact verbatim quotes; Python derives canonical spans via exact
+  string matching; hybrid status engine unchanged; gold oracle spans unchanged;
+  new P6/P7/P1 request hashes for quote-era prompt/schema; historical offset-era
+  hashes and terminal experiments preserved; LangGraph integration deferred.
+- **Provider execution is NOT AUTHORIZED** for a quote-binding experiment.
+  UVR/routing, retrieval, materiality, and production runtime remain **unchanged**.
 
 Engine baseline remains `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`.
 

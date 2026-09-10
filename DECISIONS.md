@@ -9,6 +9,48 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-10-04
+Date: 2026-09-10
+
+Decision: **Semantic analyzer external contract retires raw LLM character offsets.
+The LLM emits exact verbatim evidence quotes; Python performs deterministic
+exact-quote → canonical span binding before the unchanged hybrid status engine.**
+
+Reason: Provider experiment #2 at `2c9643a29b6f31aa1c0b8c2d38ba00da101e0ecf`
+(FAIL, P6-LLM-OFFSET-LOCALIZATION-FAILURE) showed plausible semantic reasoning
+with wrong raw offsets ([512:570], [1096:1156] vs gold [400:458], [1500:1562]).
+Python status was coincidentally `weak`; semantic oracle correctly FAILed.
+
+New analyzer output contract (external):
+
+- `support_quotes[]` and blocker `evidence_quotes[]` with `{evidence_id, quote}`
+- no `start`/`end`, `support_spans`, `evidence_spans`, status, materiality, or routing
+
+Deterministic binding (`scripts/semantic_analyzer_quote_binding.py`):
+
+- exact Python `str.find` against bound `source_text`; no fuzzy/normalized matching
+- zero matches → `quote_not_found` (INVALID; never VERIFIED)
+- multiple matches → `ambiguous_quote` (INVALID; never VERIFIED)
+- success → canonical internal `{support_spans, evidence_spans}` unchanged
+
+Gold oracle spans unchanged. Historical provider experiments preserved:
+
+- experiment #1 INVALID (`semantic_analyzer_run_ed35656b9a7c`)
+- experiment #2 FAIL (`semantic_analyzer_run_342076d6f2e6`, offset-era contract)
+
+Quote-binding contract is a **new experiment version** requiring new implementation
+identity, prompt/schema/request hashes, experiment identity, independent
+qualification, and explicit owner authorization. **No new provider execution
+authorized in this offline task.**
+
+Status: **QUOTE-BINDING CONTRACT IMPLEMENTED OFFLINE — PROVIDER NOT AUTHORIZED**.
+
+Confidence: 0.94
+
+Supersedes: offset-based analyzer response contract for future qualification only.
+Does NOT rewrite historical INVALID/FAIL experiments or consumed authorizations.
+
+---
 Decision ID: D-2026-09-10-03
 Date: 2026-09-10
 

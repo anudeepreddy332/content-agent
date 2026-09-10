@@ -35,11 +35,13 @@ from scripts.semantic_analyzer_preprovider_harness import (
     run_offline_qualification,
     run_preflight,
     sha256_text,
+    span_observation_to_quote_observation,
     validate_caller_pack_against_verified,
     validate_harness_identities,
     validate_trusted_ingress,
     verify_artifact_integrity,
 )
+from scripts.hybrid_verifier_status_engine import extract_span_text
 
 
 @pytest.fixture
@@ -88,8 +90,16 @@ def _qualify(
     )
 
 
-def _obs(pack: dict, case_id: str) -> dict:
+def _span_obs(pack: dict, case_id: str) -> dict:
     return copy.deepcopy(pack["cases"][f"{case_id}-COMPLETE"]["observation"])
+
+
+def _quote_obs(pack: dict, case_id: str) -> dict:
+    case = pack["cases"][f"{case_id}-COMPLETE"]
+    return span_observation_to_quote_observation(
+        source_text=case["source_text"],
+        observation=case["observation"],
+    )
 
 
 def _raw(observation: dict) -> str:
@@ -143,22 +153,30 @@ def test_valid_p1_oracle_passes(pack: dict, gold_responses: dict):
 
 
 def test_wrong_p6_support_fails(pack: dict):
-    obs = _obs(pack, "P6")
-    obs["support_spans"] = [{"evidence_id": "SRC-P6-W03", "start": 401, "end": 457}]
+    obs = _quote_obs(pack, "P6")
+    source = pack["cases"]["P6-COMPLETE"]["source_text"]
+    wrong_span = {"evidence_id": "SRC-P6-W03", "start": 401, "end": 457}
+    obs["support_quotes"] = [
+        {"evidence_id": "SRC-P6-W03", "quote": extract_span_text(source, wrong_span["start"], wrong_span["end"])}
+    ]
     result = _qualify(pack, "P6", _raw(obs))
     assert result["disposition"] == "FAIL"
     assert "support_span_mismatch" in result["fail_reasons"]
 
 
 def test_wrong_p6_contradiction_span_fails(pack: dict):
-    obs = _obs(pack, "P6")
-    obs["blockers"][0]["evidence_spans"] = [{"evidence_id": "SRC-P6-W03", "start": 1501, "end": 1562}]
+    obs = _quote_obs(pack, "P6")
+    source = pack["cases"]["P6-COMPLETE"]["source_text"]
+    wrong_span = {"evidence_id": "SRC-P6-W03", "start": 1501, "end": 1562}
+    obs["blockers"][0]["evidence_quotes"] = [
+        {"evidence_id": "SRC-P6-W03", "quote": extract_span_text(source, wrong_span["start"], wrong_span["end"])}
+    ]
     result = _qualify(pack, "P6", _raw(obs))
     assert result["disposition"] == "FAIL"
 
 
 def test_missing_p6_contradiction_fails(pack: dict):
-    obs = _obs(pack, "P6")
+    obs = _quote_obs(pack, "P6")
     obs["blockers"] = []
     result = _qualify(pack, "P6", _raw(obs))
     assert result["disposition"] == "FAIL"
@@ -166,11 +184,14 @@ def test_missing_p6_contradiction_fails(pack: dict):
 
 
 def test_fabricated_p6_blocker_fails(pack: dict):
-    obs = _obs(pack, "P6")
+    obs = _quote_obs(pack, "P6")
+    source = pack["cases"]["P6-COMPLETE"]["source_text"]
     obs["blockers"].append(
         {
             "kind": "limitation",
-            "evidence_spans": [{"evidence_id": "SRC-P6-W03", "start": 401, "end": 457}],
+            "evidence_quotes": [
+                {"evidence_id": "SRC-P6-W03", "quote": extract_span_text(source, 401, 457)}
+            ],
             "explanation": "Unrelated fabricated restriction.",
         }
     )
@@ -179,7 +200,7 @@ def test_fabricated_p6_blocker_fails(pack: dict):
 
 
 def test_optimistic_p6_entailment_fails(pack: dict):
-    obs = _obs(pack, "P6")
+    obs = _quote_obs(pack, "P6")
     obs["full_entailment"] = True
     result = _qualify(pack, "P6", _raw(obs))
     assert result["disposition"] == "FAIL"
@@ -187,47 +208,59 @@ def test_optimistic_p6_entailment_fails(pack: dict):
 
 
 def test_wrong_p7_support_fails(pack: dict):
-    obs = _obs(pack, "P7")
-    obs["support_spans"] = [{"evidence_id": "SRC-P7-K03", "start": 1, "end": 60}]
+    obs = _quote_obs(pack, "P7")
+    source = pack["cases"]["P7-COMPLETE"]["source_text"]
+    obs["support_quotes"] = [
+        {"evidence_id": "SRC-P7-K03", "quote": extract_span_text(source, 1, 60)}
+    ]
     result = _qualify(pack, "P7", _raw(obs))
     assert result["disposition"] == "FAIL"
 
 
 def test_wrong_p7_limitation_fails(pack: dict):
-    obs = _obs(pack, "P7")
-    obs["blockers"][0]["evidence_spans"] = [{"evidence_id": "SRC-P7-K03", "start": 2001, "end": 2048}]
+    obs = _quote_obs(pack, "P7")
+    source = pack["cases"]["P7-COMPLETE"]["source_text"]
+    obs["blockers"][0]["evidence_quotes"] = [
+        {"evidence_id": "SRC-P7-K03", "quote": extract_span_text(source, 2001, 2048)}
+    ]
     result = _qualify(pack, "P7", _raw(obs))
     assert result["disposition"] == "FAIL"
 
 
 def test_empty_p7_blocker_span_invalid(pack: dict):
-    obs = _obs(pack, "P7")
-    obs["blockers"][0]["evidence_spans"] = []
+    obs = _quote_obs(pack, "P7")
+    obs["blockers"][0]["evidence_quotes"] = []
     result = _qualify(pack, "P7", _raw(obs))
     assert result["disposition"] == "INVALID"
     assert "empty_limitation_evidence_span" in result["invalid_reasons"]
 
 
 def test_optimistic_p7_entailment_fails(pack: dict):
-    obs = _obs(pack, "P7")
+    obs = _quote_obs(pack, "P7")
     obs["full_entailment"] = True
     result = _qualify(pack, "P7", _raw(obs))
     assert result["disposition"] == "FAIL"
 
 
 def test_p1_wrong_but_in_bounds_support_fails(pack: dict):
-    obs = _obs(pack, "P1")
-    obs["support_spans"] = [{"evidence_id": "SRC-P1-W02", "start": 1501, "end": 1563}]
+    obs = _quote_obs(pack, "P1")
+    source = pack["cases"]["P1-COMPLETE"]["source_text"]
+    obs["support_quotes"] = [
+        {"evidence_id": "SRC-P1-W02", "quote": extract_span_text(source, 1501, 1563)}
+    ]
     result = _qualify(pack, "P1", _raw(obs))
     assert result["disposition"] == "FAIL"
 
 
 def test_p1_spurious_blocker_fails(pack: dict):
-    obs = _obs(pack, "P1")
+    obs = _quote_obs(pack, "P1")
+    source = pack["cases"]["P1-COMPLETE"]["source_text"]
     obs["blockers"] = [
         {
             "kind": "limitation",
-            "evidence_spans": [{"evidence_id": "SRC-P1-W02", "start": 1500, "end": 1563}],
+            "evidence_quotes": [
+                {"evidence_id": "SRC-P1-W02", "quote": extract_span_text(source, 1500, 1563)}
+            ],
             "explanation": "Spurious qualifier.",
         }
     ]
@@ -259,29 +292,36 @@ def test_unknown_top_level_field_invalid(pack: dict, gold_responses: dict):
 
 
 def test_duplicate_json_keys_invalid():
-    raw = '{"observations": [{"claim_id": "P1.claim.1", "claim_id": "X", "support_spans": [], "full_entailment": true, "blockers": []}]}'
+    raw = '{"observations": [{"claim_id": "P1.claim.1", "claim_id": "X", "support_quotes": [], "full_entailment": true, "blockers": []}]}'
     with pytest.raises(ResponseContractError, match="duplicate_json_keys"):
         parse_analyzer_response(raw)
 
 
 def test_string_true_boolean_invalid(pack: dict):
-    obs = _obs(pack, "P1")
+    obs = _quote_obs(pack, "P1")
     obs["full_entailment"] = "true"
     with pytest.raises(ResponseContractError, match="invalid_full_entailment_type"):
         parse_analyzer_response(_raw(obs))
 
 
 def test_numeric_one_boolean_invalid(pack: dict):
-    obs = _obs(pack, "P1")
+    obs = _quote_obs(pack, "P1")
     obs["full_entailment"] = 1
     with pytest.raises(ResponseContractError, match="invalid_full_entailment_type"):
         parse_analyzer_response(_raw(obs))
 
 
 def test_unknown_observation_field_invalid(pack: dict):
-    obs = _obs(pack, "P1")
-    obs["status"] = "verified"
+    obs = _quote_obs(pack, "P1")
+    obs["routing_hint"] = "verified"
     with pytest.raises(ResponseContractError, match="unknown_field"):
+        parse_analyzer_response(_raw(obs))
+
+
+def test_raw_llm_offsets_forbidden_invalid(pack: dict):
+    obs = _quote_obs(pack, "P1")
+    obs["support_spans"] = [{"evidence_id": "SRC-P1-W02", "start": 1500, "end": 1563}]
+    with pytest.raises(ResponseContractError, match="forbidden_field"):
         parse_analyzer_response(_raw(obs))
 
 
@@ -352,11 +392,12 @@ def test_invisible_evidence_invalid(pack: dict, gold_responses: dict):
     assert result["disposition"] == "INVALID"
 
 
-def test_invalid_span_invalid(pack: dict, gold_responses: dict):
-    obs = _obs(pack, "P6")
-    obs["support_spans"][0]["start"] = -1
+def test_fabricated_quote_invalid(pack: dict, gold_responses: dict):
+    obs = _quote_obs(pack, "P6")
+    obs["support_quotes"][0]["quote"] = "Fabricated quote not in source."
     result = _qualify(pack, "P6", _raw(obs))
     assert result["disposition"] == "INVALID"
+    assert any("quote_binding" in reason for reason in result["invalid_reasons"])
 
 
 def test_duplicate_evidence_id_invalid(pack: dict, gold_responses: dict):
@@ -377,16 +418,7 @@ def test_invalid_envelope_verified_p1_not_promoted(pack: dict, gold_responses: d
 
 
 def test_attempt_ledger_order_and_stop_on_fail(pack: dict, gold_responses: dict):
-    bad_p6 = json.dumps(
-        {
-            "observations": [
-                {
-                    **_obs(pack, "P6"),
-                    "blockers": [],
-                }
-            ]
-        }
-    )
+    bad_p6 = _raw({**_quote_obs(pack, "P6"), "blockers": []})
     artifact = run_offline_qualification(
         pack,
         response_provider={
@@ -457,7 +489,7 @@ def test_corrupt_pass_artifact_digest_rejected(pack: dict, gold_responses: dict)
 def test_failed_artifact_not_overwritten_by_integrity_check(pack: dict, gold_responses: dict):
     bad = run_offline_qualification(
         pack,
-        response_provider={"P6": _raw({**_obs(pack, "P6"), "blockers": []})},
+        response_provider={"P6": _raw({**_quote_obs(pack, "P6"), "blockers": []})},
     )
     assert bad["overall_disposition"] == "FAIL"
     integrity = verify_artifact_integrity(bad)
@@ -581,7 +613,7 @@ def test_qualification_ready_false_when_digest_corrupt(pack: dict, gold_response
 def test_qualification_ready_false_on_fail_run(pack: dict):
     artifact = run_offline_qualification(
         pack,
-        response_provider={"P6": _raw({**_obs(pack, "P6"), "blockers": []})},
+        response_provider={"P6": _raw({**_quote_obs(pack, "P6"), "blockers": []})},
     )
     assert artifact["qualification_ready"] is False
 
@@ -672,17 +704,21 @@ def test_mutated_caller_pack_evidence_id_invalid(pack: dict, gold_responses: dic
     mutated = copy.deepcopy(pack)
     new_id = "SRC-P6-ATTACKER"
     mutated["cases"]["P6-COMPLETE"]["source_id"] = new_id
-    obs = copy.deepcopy(mutated["cases"]["P6-COMPLETE"]["observation"])
-    for span in obs["support_spans"]:
+    span_obs = copy.deepcopy(mutated["cases"]["P6-COMPLETE"]["observation"])
+    for span in span_obs["support_spans"]:
         span["evidence_id"] = new_id
-    for blocker in obs["blockers"]:
+    for blocker in span_obs["blockers"]:
         for span in blocker["evidence_spans"]:
             span["evidence_id"] = new_id
+    quote_obs = span_observation_to_quote_observation(
+        source_text=mutated["cases"]["P6-COMPLETE"]["source_text"],
+        observation=span_obs,
+    )
     bundle = build_case_bundle(mutated, "P6")
     result = qualify_case_response(
         case_id="P6",
         bundle=bundle,
-        raw_response=_raw(obs),
+        raw_response=_raw(quote_obs),
         frozen_truth=_frozen("P6"),
     )
     assert result["disposition"] == "INVALID"

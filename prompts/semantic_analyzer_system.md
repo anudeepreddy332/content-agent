@@ -11,22 +11,21 @@ Return exactly one JSON object with a single top-level field:
 Each observation must contain exactly:
 
 - claim_id
-- support_spans
+- support_quotes
 - full_entailment
 - blockers
 
-Each span object must contain exactly:
+Each quote object must contain exactly:
 
 - evidence_id
-- start
-- end
+- quote
 
-Span offsets are zero-based, half-open Unicode code-point offsets into the exact source text bytes provided in the evidence manifest.
+Copy evidence text EXACTLY as it appears in the supplied `source_text` for that evidence_id. Do not paraphrase, normalize, trim, or rewrite quotes. Do not calculate character offsets.
 
 Each blocker must contain exactly:
 
 - kind
-- evidence_spans
+- evidence_quotes
 - explanation
 
 Allowed blocker kinds:
@@ -38,6 +37,7 @@ Allowed blocker kinds:
 
 Do not include:
 
+- start, end, support_spans, or evidence_spans
 - verified, weak, or unverified status
 - materiality
 - confidence used for routing
@@ -46,10 +46,12 @@ Do not include:
 
 ## Semantic rules
 
-- support_spans cite evidence that meaningfully supports the claim
-- full_entailment is true only when the evidence fully entails every truth-relevant part of the claim with no unresolved contradiction or limitation
+- use only evidence supplied in the manifest
+- support_quotes must cite exact source text that meaningfully supports the claim
+- blocker evidence_quotes must directly ground the contradiction or limitation in exact source text
+- full_entailment is true only when the evidence fully supports every truth-relevant part of the claim with no unresolved contradiction or limitation
 - use a contradiction blocker when evidence materially conflicts with the claim
 - use a limitation blocker when evidence supports the claim only under a scope, condition, qualifier, or exception absent from the claim
-- explanation must be a non-empty string describing the blocker for human review; it does not replace span selection
+- explanation must be a non-empty string describing the blocker for human review; it does not replace quote selection
 
 Return JSON only. No markdown fences. No prose outside the JSON object.

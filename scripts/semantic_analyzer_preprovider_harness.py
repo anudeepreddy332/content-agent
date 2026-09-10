@@ -25,6 +25,13 @@ from scripts.hybrid_verifier_status_engine import (  # noqa: E402
     extract_span_text,
     sha256_utf8,
 )
+from scripts.semantic_analyzer_quote_binding import (  # noqa: E402
+    ALLOWED_EXTERNAL_BLOCKER_FIELDS,
+    ALLOWED_EXTERNAL_OBSERVATION_FIELDS,
+    ALLOWED_QUOTE_FIELDS,
+    QuoteBindingError,
+    convert_quote_observations_to_canonical,
+)
 
 DEFAULT_FIXTURES = REPO_ROOT / "evals" / "fixtures" / "hybrid_verifier_status_offline.json"
 DEFAULT_IDENTITY = REPO_ROOT / "evals" / "fixtures" / "semantic_analyzer_preprovider_harness_identity.json"
@@ -72,9 +79,12 @@ OverallDisposition = Literal["PASS", "FAIL", "INVALID"]
 
 FROZEN_ANALYZER_RESPONSE_CONTRACT = {
     "top_level_fields": ["observations"],
-    "observation_fields": sorted(ALLOWED_OBSERVATION_FIELDS),
-    "span_fields": sorted(ALLOWED_SPAN_FIELDS),
-    "blocker_fields": sorted(ALLOWED_BLOCKER_FIELDS),
+    "observation_fields": sorted(ALLOWED_EXTERNAL_OBSERVATION_FIELDS),
+    "quote_fields": sorted(ALLOWED_QUOTE_FIELDS),
+    "blocker_fields": sorted(ALLOWED_EXTERNAL_BLOCKER_FIELDS),
+    "canonical_observation_fields": sorted(ALLOWED_OBSERVATION_FIELDS),
+    "canonical_span_fields": sorted(ALLOWED_SPAN_FIELDS),
+    "canonical_blocker_fields": sorted(ALLOWED_BLOCKER_FIELDS),
     "blocker_kinds": sorted(BLOCKER_KINDS),
     "forbidden_analyzer_fields": [
         "status",
@@ -82,6 +92,10 @@ FROZEN_ANALYZER_RESPONSE_CONTRACT = {
         "confidence",
         "publication_decision",
         "routing",
+        "support_spans",
+        "evidence_spans",
+        "start",
+        "end",
     ],
 }
 ANALYZER_SCHEMA_SHA256 = sha256_utf8(
@@ -89,9 +103,10 @@ ANALYZER_SCHEMA_SHA256 = sha256_utf8(
 )
 
 FROZEN_ANALYZER_PROMPT_CONTRACT = (
-    "Semantic analyzer supplies observations only: claim_id, support_spans, "
-    "full_entailment, blockers. Blocker kinds: contradiction, limitation. "
-    "No final status, materiality, publication decision, or routing confidence."
+    "Semantic analyzer supplies observations only: claim_id, support_quotes, "
+    "full_entailment, blockers with evidence_quotes. Exact verbatim quotes only; "
+    "Python binds quotes to canonical spans. Blocker kinds: contradiction, limitation. "
+    "No offsets, final status, materiality, publication decision, or routing confidence."
 )
 ANALYZER_PROMPT_SHA256 = sha256_utf8(FROZEN_ANALYZER_PROMPT_CONTRACT)
 
@@ -299,8 +314,15 @@ def validate_fixture_pack(pack: dict[str, Any]) -> None:
     for case in cases.values():
         _require(case["source_sha256"] == sha256_text(case["source_text"]), "stale source hash in fixture")
         obs = case["observation"]
-        forbidden = set(FROZEN_ANALYZER_RESPONSE_CONTRACT["forbidden_analyzer_fields"])
-        _require(forbidden.isdisjoint(obs.keys()), "fixture observation contains forbidden analyzer fields")
+        fixture_forbidden = {
+            field
+            for field in FROZEN_ANALYZER_RESPONSE_CONTRACT["forbidden_analyzer_fields"]
+            if field not in {"support_spans", "evidence_spans", "start", "end"}
+        }
+        _require(
+            fixture_forbidden.isdisjoint(obs.keys()),
+            "fixture observation contains forbidden analyzer fields",
+        )
 
 
 def build_manifest_hash(evidence_manifest: list[dict[str, Any]]) -> str:
@@ -573,8 +595,29 @@ def _json_load_no_duplicate_keys(raw: str) -> Any:
     return json.loads(raw, object_pairs_hook=hook)
 
 
+def _validate_response_quote(quote: Any, *, prefix: str) -> None:
+    if not isinstance(quote, dict):
+        raise ResponseContractError(f"{prefix}_not_object")
+    extra = set(quote) - ALLOWED_QUOTE_FIELDS
+    if extra:
+        raise ResponseContractError(f"{prefix}_unknown_field")
+    for required in ALLOWED_QUOTE_FIELDS:
+        if required not in quote:
+            raise ResponseContractError(f"{prefix}_missing_{required}")
+        if quote[required] is None:
+            raise ResponseContractError(f"{prefix}_null_{required}")
+    evidence_id = quote["evidence_id"]
+    text = quote["quote"]
+    if not isinstance(evidence_id, str) or not evidence_id:
+        raise ResponseContractError(f"{prefix}_invalid_evidence_id")
+    if not isinstance(text, str):
+        raise ResponseContractError(f"{prefix}_invalid_quote_type")
+    if text == "":
+        raise ResponseContractError(f"{prefix}_empty_quote")
+
+
 def parse_analyzer_response(raw: str) -> dict[str, Any]:
-    """Parse and structurally validate the frozen analyzer response contract."""
+    """Parse and structurally validate the frozen quote-based analyzer response contract."""
     if not isinstance(raw, str) or not raw.strip():
         raise ResponseContractError("empty_response")
 
@@ -609,10 +652,13 @@ def parse_analyzer_response(raw: str) -> dict[str, Any]:
             raise ResponseContractError(f"{prefix}_null")
         if not isinstance(observation, dict):
             raise ResponseContractError(f"{prefix}_not_object")
-        extra = set(observation) - ALLOWED_OBSERVATION_FIELDS
+        forbidden = set(FROZEN_ANALYZER_RESPONSE_CONTRACT["forbidden_analyzer_fields"])
+        if forbidden.intersection(observation):
+            raise ResponseContractError(f"{prefix}_forbidden_field")
+        extra = set(observation) - ALLOWED_EXTERNAL_OBSERVATION_FIELDS
         if extra:
             raise ResponseContractError(f"{prefix}_unknown_field")
-        for required in ALLOWED_OBSERVATION_FIELDS:
+        for required in ALLOWED_EXTERNAL_OBSERVATION_FIELDS:
             if required not in observation:
                 raise ResponseContractError(f"{prefix}_missing_{required}")
             if observation[required] is None:
@@ -626,25 +672,26 @@ def parse_analyzer_response(raw: str) -> dict[str, Any]:
         if not isinstance(full_entailment, bool):
             raise ResponseContractError(f"{prefix}_invalid_full_entailment_type")
 
-        support_spans = observation["support_spans"]
+        support_quotes = observation["support_quotes"]
         blockers = observation["blockers"]
-        if not isinstance(support_spans, list):
-            raise ResponseContractError(f"{prefix}_malformed_support_spans")
+        if not isinstance(support_quotes, list):
+            raise ResponseContractError(f"{prefix}_malformed_support_quotes")
         if not isinstance(blockers, list):
             raise ResponseContractError(f"{prefix}_malformed_blockers")
 
-        for span_index, span in enumerate(support_spans):
-            span_prefix = f"{prefix}_support_span_{span_index}"
-            _validate_response_span(span, prefix=span_prefix)
+        for quote_index, quote_row in enumerate(support_quotes):
+            _validate_response_quote(quote_row, prefix=f"{prefix}_support_quote_{quote_index}")
 
         for blocker_index, blocker in enumerate(blockers):
             blocker_prefix = f"{prefix}_blocker_{blocker_index}"
             if not isinstance(blocker, dict):
                 raise ResponseContractError(f"{blocker_prefix}_not_object")
-            extra_blocker = set(blocker) - ALLOWED_BLOCKER_FIELDS
+            if forbidden.intersection(blocker):
+                raise ResponseContractError(f"{blocker_prefix}_forbidden_field")
+            extra_blocker = set(blocker) - ALLOWED_EXTERNAL_BLOCKER_FIELDS
             if extra_blocker:
                 raise ResponseContractError(f"{blocker_prefix}_unknown_field")
-            for required in ALLOWED_BLOCKER_FIELDS:
+            for required in ALLOWED_EXTERNAL_BLOCKER_FIELDS:
                 if required not in blocker:
                     raise ResponseContractError(f"{blocker_prefix}_missing_{required}")
                 if blocker[required] is None:
@@ -654,13 +701,13 @@ def parse_analyzer_response(raw: str) -> dict[str, Any]:
                 raise ResponseContractError(f"{blocker_prefix}_unknown_kind")
             if not isinstance(blocker["explanation"], str) or not blocker["explanation"].strip():
                 raise ResponseContractError(f"{blocker_prefix}_missing_explanation")
-            evidence_spans = blocker["evidence_spans"]
-            if not isinstance(evidence_spans, list):
-                raise ResponseContractError(f"{blocker_prefix}_malformed_evidence_spans")
-            for span_index, span in enumerate(evidence_spans):
-                _validate_response_span(
-                    span,
-                    prefix=f"{blocker_prefix}_span_{span_index}",
+            evidence_quotes = blocker["evidence_quotes"]
+            if not isinstance(evidence_quotes, list):
+                raise ResponseContractError(f"{blocker_prefix}_malformed_evidence_quotes")
+            for quote_index, quote_row in enumerate(evidence_quotes):
+                _validate_response_quote(
+                    quote_row,
+                    prefix=f"{blocker_prefix}_quote_{quote_index}",
                 )
 
         validated_rows.append(observation)
@@ -668,26 +715,40 @@ def parse_analyzer_response(raw: str) -> dict[str, Any]:
     return {"observations": validated_rows}
 
 
-def _validate_response_span(span: Any, *, prefix: str) -> None:
-    if not isinstance(span, dict):
-        raise ResponseContractError(f"{prefix}_not_object")
-    extra = set(span) - ALLOWED_SPAN_FIELDS
-    if extra:
-        raise ResponseContractError(f"{prefix}_unknown_field")
-    for required in ALLOWED_SPAN_FIELDS:
-        if required not in span:
-            raise ResponseContractError(f"{prefix}_missing_{required}")
-        if span[required] is None:
-            raise ResponseContractError(f"{prefix}_null_{required}")
-    evidence_id = span["evidence_id"]
-    start = span["start"]
-    end = span["end"]
-    if not isinstance(evidence_id, str) or not evidence_id:
-        raise ResponseContractError(f"{prefix}_invalid_evidence_id")
-    if not isinstance(start, int) or isinstance(start, bool):
-        raise ResponseContractError(f"{prefix}_invalid_start_type")
-    if not isinstance(end, int) or isinstance(end, bool):
-        raise ResponseContractError(f"{prefix}_invalid_end_type")
+def span_observation_to_quote_observation(
+    *,
+    source_text: str,
+    observation: dict[str, Any],
+) -> dict[str, Any]:
+    """Build a quote-based analyzer observation from canonical span gold (offline helpers only)."""
+    support_quotes = [
+        {
+            "evidence_id": span["evidence_id"],
+            "quote": extract_span_text(source_text, span["start"], span["end"]),
+        }
+        for span in observation["support_spans"]
+    ]
+    blockers = []
+    for blocker in observation["blockers"]:
+        blockers.append(
+            {
+                "kind": blocker["kind"],
+                "explanation": blocker["explanation"],
+                "evidence_quotes": [
+                    {
+                        "evidence_id": span["evidence_id"],
+                        "quote": extract_span_text(source_text, span["start"], span["end"]),
+                    }
+                    for span in blocker["evidence_spans"]
+                ],
+            }
+        )
+    return {
+        "claim_id": observation["claim_id"],
+        "support_quotes": support_quotes,
+        "full_entailment": observation["full_entailment"],
+        "blockers": blockers,
+    }
 
 
 def _span_key(span: dict[str, Any]) -> tuple[str, int, int]:
@@ -1054,12 +1115,13 @@ def qualify_case_response(
         return case_result
 
     try:
-        response_contract = parse_analyzer_response(raw_response)
+        quote_response_contract = parse_analyzer_response(raw_response)
     except ResponseContractError as exc:
         case_result.update(
             {
                 "disposition": "INVALID",
                 "invalid_reasons": [str(exc)],
+                "quote_response_contract": None,
                 "response_contract": None,
                 "adjudication": None,
                 "semantic_oracle": None,
@@ -1067,6 +1129,25 @@ def qualify_case_response(
         )
         return case_result
 
+    case_result["quote_response_contract"] = quote_response_contract
+    try:
+        canonical_observations = convert_quote_observations_to_canonical(
+            quote_response_contract["observations"],
+            bundle["evidence_manifest"],
+        )
+    except QuoteBindingError as exc:
+        case_result.update(
+            {
+                "disposition": "INVALID",
+                "invalid_reasons": [f"quote_binding:{exc.reason}"],
+                "response_contract": None,
+                "adjudication": None,
+                "semantic_oracle": None,
+            }
+        )
+        return case_result
+
+    response_contract = {"observations": canonical_observations}
     case_result["response_contract"] = response_contract
     envelope = build_envelope_from_bundle(bundle, response_contract["observations"])
     post_ingress = validate_trusted_ingress(
@@ -1347,7 +1428,11 @@ def build_gold_mock_responses(pack: dict[str, Any] | None = None) -> dict[str, s
     responses: dict[str, str] = {}
     for case_id in CASE_ORDER:
         case = verified_pack["cases"][CASE_KEYS[case_id]]
-        responses[case_id] = json.dumps({"observations": [case["observation"]]})
+        quote_observation = span_observation_to_quote_observation(
+            source_text=case["source_text"],
+            observation=case["observation"],
+        )
+        responses[case_id] = json.dumps({"observations": [quote_observation]})
     return responses
 
 
