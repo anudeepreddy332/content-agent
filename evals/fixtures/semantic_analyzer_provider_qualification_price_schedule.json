@@ -1,0 +1,11 @@
+{
+  "schedule_id": "semantic_analyzer_provider_qualification_peak_2026-09-10",
+  "recorded_at": "2026-09-10T06:30:00Z",
+  "pricing_basis": "owner_reviewed_peak_cache_miss_ceiling",
+  "input_cost_per_million_tokens_usd": 0.44,
+  "output_cost_per_million_tokens_usd": 1.32,
+  "hard_spend_ceiling_usd": 0.02,
+  "max_output_tokens_per_case": 2000,
+  "max_cases": 3,
+  "notes": "Conservative preflight bound assumes cache-miss input pricing and max output tokens per case."
+}

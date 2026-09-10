@@ -256,14 +256,26 @@ priority.
 
 ## Current authorized mission
 
-**Semantic-analyzer pre-provider qualification harness — final integrity
-correction** is the current authorized engineering mission on
-`experiment/hybrid-verifier-status-engine`. Correction checkpoint `d25730d`
-failed final independent review; three remaining P1 fixes applied (mandatory
-frozen truth, canonical fixture-byte truth authority, required artifact digest).
+**Semantic-analyzer provider qualification runner — offline implementation** is
+the current authorized engineering mission on
+`experiment/hybrid-verifier-status-engine`.
+
+- Pre-provider harness independently qualified at
+  `47e7f0458e31b2eca0d24ac4f0b791edd20faa89`
+  (`SEMANTIC-ANALYZER-PREPROVIDER-QUALIFICATION-PASS`).
+- Provider preflight architecture review found historical model-contract drift
+  (`deepseek-chat`, `max_tokens=4000`); current frozen contract uses
+  `deepseek-v4-flash`, `max_tokens=2000`, temperature `0.1`, non-thinking
+  mode, JSON-object response, zero retries.
+- Dedicated provider runner implemented offline with durable write-ahead
+  attempt ledger, direct HTTPS transport (`retries=0`), fail-closed execution
+  gate (`SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1`), hard spend ceiling `$0.02`,
+  max future provider requests `3`.
+- **Provider execution is NOT AUTHORIZED.** No live DeepSeek calls have been
+  made. UVR/routing, retrieval, materiality, and production runtime remain
+  **unchanged**.
+
 Engine baseline remains `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`.
-**Provider observation qualification is NOT AUTHORIZED.** UVR/routing, retrieval,
-materiality, and production runtime remain **unchanged**.
 
 **Prior 3-cell context (closed for now):** Stage 2D bounded provider qualification
 **EXECUTED / FAIL**: exposure-only changes proved P1 consequence but P6/P7
@@ -272,8 +284,8 @@ change improved P7 only. Transport runner
 `execute_verifier_semantic_contract_run()` remains on
 `experiment/verifier-semantic-contract` at `b4074fd`; not promoted to production.
 
-**Next after offline review:** provider observation qualification for the hybrid
-engine (not yet authorized).
+**Next after independent runner review:** authorized provider observation
+qualification for the hybrid engine (not yet authorized).
 
 **Do not:** modify production runtime, UVR, routing, retrieval, or run additional
 3-cell provider calls without explicit authorization.

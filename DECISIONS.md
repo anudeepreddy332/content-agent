@@ -9,6 +9,48 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-10-02
+Date: 2026-09-10
+
+Decision: **Semantic-analyzer provider qualification runner is implemented
+offline with durable write-ahead attempt ledger and fail-closed execution gate.
+Provider execution remains NOT AUTHORIZED.**
+
+Reason: Independent pre-provider harness qualification passed at
+`47e7f0458e31b2eca0d24ac4f0b791edd20faa89`. Provider preflight architecture
+review found historical model-contract drift (`deepseek-chat`, `max_tokens=4000`).
+The current frozen experiment contract targets `deepseek-v4-flash` with
+`max_tokens=2000`, temperature `0.1`, non-thinking mode, JSON-object response,
+and zero retries.
+
+Frozen provider-runner contract:
+
+- dedicated direct HTTPS transport (`httpx==0.28.1` compatible;
+  `HTTPTransport(retries=0)`, `follow_redirects=False`, `trust_env=False`)
+- durable write-ahead attempt ledger: persist CONSUMED before network; no
+  restart retry
+- case order P6 → P7 → P1; max 3 requests; one attempt per case; stop on
+  FAIL/INVALID; remaining cases `NOT_RUN`
+- execution authorization: `SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1` required;
+  default DISABLED
+- hard spend ceiling: `$0.02` USD; conservative three-case bound must pass
+  before authorization
+- analyzer prompt frozen at `prompts/semantic_analyzer_system.md`; observations
+  only; no status/routing fields
+- immutable run artifacts under
+  `outputs/semantic_analyzer_provider_qualification/runs/`
+
+Status: **PROVIDER RUNNER IMPLEMENTED — EXECUTION NOT AUTHORIZED**.
+
+Does NOT authorize: live DeepSeek calls, provider experiment PASS, production
+integration, UVR/routing changes, retrieval redesign, or EXPERIMENT_LEDGER entry.
+
+Confidence: 0.90
+
+Supersedes / superseded by: Builds on D-2026-09-10-01 qualified harness; does
+not supersede production verifier prompt or Stage 2D exposure contract.
+
+---
 Decision ID: D-2026-09-10-01
 Date: 2026-09-10
 
@@ -36,9 +78,8 @@ Frozen pre-provider harness contract:
 - artifact bundle preserves identity hashes, attempt ledger, oracle/adjudication
   outputs, and digest integrity checks
 
-Status: **PRE-PROVIDER HARNESS — CORRECTION `d25730d` FAILED FINAL REVIEW;
-THREE REMAINING P1 INTEGRITY FIXES APPLIED — PROVIDER EXECUTION NOT
-AUTHORIZED**.
+Status: **PRE-PROVIDER HARNESS — INDEPENDENTLY QUALIFIED AT `47e7f04`;
+PROVIDER EXECUTION NOT AUTHORIZED**.
 
 Prior review findings (six holes) addressed at `d25730d`. Final review found
 three remaining false-green paths: optional `frozen_truth`; caller pack defining
