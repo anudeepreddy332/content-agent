@@ -33,7 +33,10 @@ class AgentState(TypedDict):
     # Verification
     grounding_report: list      # [{claim, source_url, confidence, status, specificity,
     #   source_kind, source_ref, kb_chunk_candidates?}]
-    grounding_score: float      # routing scalar from engine statuses (not LLM confidence)
+    grounding_score: float      # DEPRECATED as routing authority (Phase 4 Slice 1):
+    #   compatibility/observability only (API/telemetry/benchmark/UI). Derived from
+    #   engine statuses (not LLM confidence); cannot determine semantic acceptance
+    #   or revision routing.
     verification_status: Literal[
         "not_started",
         "completed",
@@ -88,6 +91,10 @@ class AgentState(TypedDict):
     # M4: count of unverified claims injected into the current draft call
     # (0 on iteration 1 and in the control arm). Records injection REALITY,
     # not intent — guard against the M2 interpolation-bug class.
+    # Phase 4 Slice 1: blocker-bearing rows (weak/unverified) are injected via a
+    # separate targeted block and recorded in
+    # semantic_trace revision_linkage.semantic_obligations; this count stays
+    # unverified-only for M4 telemetry comparability.
     m4_feedback_claims: int
 
     # Error log

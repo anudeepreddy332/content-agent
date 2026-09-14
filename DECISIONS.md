@@ -9,6 +9,95 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-14-05
+Date: 2026-09-14
+
+Decision: **Phase 4 Slice 1 — acceptance/remediation foundation: blocker policy
+generalized across statuses, targeted revision feedback, grounding_score
+deprecated from routing authority.**
+
+Reason: Astra architecture audit — hybrid verifier architecture is KEEP;
+`grounding_score` must not be a routing authority; UVR<=0.15 alone is NOT
+sufficient publication acceptance; structured semantic blockers are categorical
+policy inputs; unresolved verifier findings must be explicit review obligations.
+
+Rules:
+
+- Blocker policy generalized: ANY valid semantic row (WEAK **or** UNVERIFIED)
+  carrying an applicable structured blocker (`contradiction` or claim-invalidating
+  `limitation`) blocks semantic acceptance (`has_blocking_semantic_blockers`,
+  superseding WEAK-only `has_blocking_semantic_weakness`). Blockers never change a
+  row's semantic status — only acceptance of the artifact. Rows with
+  `analysis_validity == "INVALID"` are not categorical blocker authority (they fail
+  closed upstream via `verification_status` and still count in UVR); rows lacking
+  the field (pre-engine/hand-built) are treated as valid.
+- Limitation applicability: every emitted applicable limitation is blocking in this
+  slice. Future Phase-4 target (documented, NOT implemented): a limitation
+  accurately represented inside the claim may eventually be considered
+  resolved/non-blocking once a deterministic representation check exists.
+- `unresolved_semantic_obligations()` is the minimal deterministic obligation
+  inventory: claim_id, claim, status, blocker_kinds, blockers (with exact evidence
+  quotes), support_spans, reason_codes, source provenance, `blocking` flag,
+  `resolution="unresolved"`. Blocker-bearing rows are blocking obligations;
+  blocker-free unverified rows are non-blocking UVR-governed obligations. Exposed
+  in the Gate-1 API interrupt payload as `semantic_obligations` and in
+  semantic_trace `revision_linkage.semantic_obligations`.
+- Revision feedback: `draft_node` injects a TARGETED SEMANTIC BLOCKER FEEDBACK
+  block per blocking obligation — exact claim, semantic status, blocker kind,
+  blocker explanation, adverse/supporting evidence quotes with evidence IDs,
+  source, reason codes, and kind-specific repair guidance — never a generic
+  "improve grounding". The M4 unverified-claims block is unchanged and
+  `m4_feedback_claims` stays unverified-only for telemetry comparability. Feedback
+  forbids resolving failures by deleting required substantive content. State
+  carries no explicit required-content/brief field, so required-content
+  completeness remains UNKNOWN (Phase 4 owns it).
+- `grounding_score` deprecated as routing authority: removed from
+  `route_after_reflect` (GROUNDING_FLOOR hard floor and the grounding<0.75 soft-gate
+  conjunct). No thresholds tuned (0.60 / 0.75 / UVR 0.15 unchanged in config); no
+  replacement composite introduced. The floor was already unreachable whenever the
+  semantic gate passed (UVR<=0.15 implies score >= 0.6375). The reflection quality
+  gate (`reflection_score < REFLECTION_THRESHOLD`) is unchanged. `grounding_score`
+  remains in state, API payloads, telemetry, benchmark historical output, and UI as
+  **compatibility/observability only** — it cannot determine semantic acceptance or
+  revision routing.
+
+Metric policy (canonical definitions):
+
+- `UVR_v1` = UNVERIFIED / emitted valid semantic rows (post-dedup), i.e.
+  UNVERIFIED / (VERIFIED + WEAK + UNVERIFIED). Historical/diagnostic only;
+  unchanged; 0.15 retained for historical comparison; cannot override an
+  applicable blocker or an invalid evaluation state. A future materiality-aware
+  metric will be separately versioned.
+- `extracted_claim_verified_rate` = VERIFIED / (VERIFIED + WEAK + UNVERIFIED) —
+  OBSERVABILITY ONLY.
+- `claim_completeness` = UNKNOWN until Phase 4 qualifies the final claim inventory.
+- Neither rate is labeled whole-draft factual accuracy.
+
+`verify_node` stays narrow (semantic analysis -> evidence binding -> dispositions
+-> blockers/provenance); acceptance/remediation consumes those outputs. No inline
+evaluators for answer correctness, task completeness, relevance, citation
+completeness, or retrieval quality were added.
+
+Deferred (later Phase-4 slices): final complete claim inventory, materiality
+classifier/policy, material_verified_rate, citation completeness, final claim
+occurrence anchors, citation placement gate, complete mandatory-deliverable
+policy, relevance redesign.
+
+Does NOT change: quote-based analyzer contract, quote->span binding,
+VERIFIED/WEAK/UNVERIFIED status derivation, retrieval/chunking/embeddings,
+LangGraph topology, prompt baselines, thresholds. Provider calls: zero.
+
+Evidence: `tests/test_phase4_acceptance_remediation.py` (causal cases A-J, P6/P7
+targeted feedback, grounding_score sweep invariance, auto-approve/API bypass
+prevention, mocked E2E hold-at-HITL); `tests/test_blocker_aware_semantic_acceptance.py`
+updated to the generalized policy; full suite 1072 passed; ruff fatal-tier clean.
+
+Status: **PHASE-4 SLICE 1 COMPLETE ON `experiment/hybrid-verifier-status-engine`
+— AWAITING BOUNDED REVIEW** (single local commit; not pushed, not merged).
+
+Confidence: 0.90
+
+---
 Decision ID: D-2026-09-14-04
 Date: 2026-09-14
 

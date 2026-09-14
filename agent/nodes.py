@@ -44,7 +44,6 @@ from config import (
     DRAFT_TEMPERATURE,
     MAX_ITERATIONS,
     REFLECTION_THRESHOLD,
-    GROUNDING_FLOOR,
     UVR_THRESHOLD,
     COST_GATE_USD,
     DEEPSEEK_INPUT_COST_PER_M,
@@ -302,9 +301,14 @@ def draft_node(state: AgentState) -> dict:
     # cache) — Multi-Agent UVR2 0.230 vs control 0.341 with no SV loss; the
     # blind re-roll control regressed UVR on 2/3 topics. Fires on both the
     # reflect-loop and HITL-feedback revision paths (iterations >= 1 in both).
-    # Field name m4_feedback_claims kept deliberately for telemetry continuity.
+    # Field name m4_feedback_claims kept deliberately for telemetry continuity:
+    # it still counts UNVERIFIED claims only. Phase 4 Slice 1 adds a separate
+    # targeted block for blocker-bearing rows (weak OR unverified) carrying the
+    # exact claim, status, blocker kind/explanation, and adverse/supporting
+    # evidence quotes, so the drafter knows WHAT to repair and WHY.
     m4_feedback_claims = 0
     grounding_feedback_block = ""
+    blocker_obligations: list[dict] = []
     if state.get("iterations", 0) >= 1 and state.get("grounding_report"):
         unverified_claims = [
             (r.get("claim") or "").strip()
@@ -328,6 +332,10 @@ def draft_node(state: AgentState) -> dict:
                 "Do NOT invent new specific claims to replace them. Keep all other "
                 "content — especially specific claims that WERE verifiable — intact."
             )
+        blocker_block, blocker_obligations = _format_semantic_blocker_feedback(
+            state["grounding_report"]
+        )
+        grounding_feedback_block += blocker_block
 
 
     source_block = ""
@@ -371,6 +379,7 @@ def draft_node(state: AgentState) -> dict:
     if grounding_feedback_block:
         log.info("draft.grounding_feedback_injected", run_id=state["run_id"],
                  claims=m4_feedback_claims,
+                 blocker_obligations=len(blocker_obligations),
                  block_chars=len(grounding_feedback_block),
                  in_user_message=grounding_feedback_block in user_message)
 
@@ -436,6 +445,7 @@ def draft_node(state: AgentState) -> dict:
             "source_iteration": state.get("iterations", 0),
             "next_iteration": iteration,
             "targeted_unverified_claims": targeted,
+            "semantic_obligations": blocker_obligations,
             "grounding_feedback_block": grounding_feedback_block,
             "hitl_feedback": state.get("hitl_feedback"),
         }
@@ -1447,6 +1457,10 @@ def hitl_node(state: AgentState) -> dict:
             "review_claims": review_rows,
             "claim_summary": claim_review_summary(review_rows),
             "unverified_rate": unverified_rate(state.get("grounding_report", [])),
+            # Explicit unresolved semantic review obligations (Phase 4 Slice 1):
+            # blocker-bearing rows are categorical; blocker-free unverified rows
+            # are UVR-governed. Not hidden behind aggregate scores.
+            "semantic_obligations": unresolved_semantic_obligations(state.get("grounding_report")),
             "claim_completeness": CLAIM_COMPLETENESS,
         }) or {}
         action = decision.get("action")
@@ -2340,44 +2354,183 @@ def unverified_claims(grounding_report: list | None) -> list[str]:
     ]
 
 
-BLOCKING_WEAK_BLOCKER_KINDS = frozenset({"contradiction", "limitation"})
+# Phase 4 Slice 1 (D-2026-09-14-05): blocker policy generalized across statuses.
+# ANY valid semantic row carrying an applicable structured blocker — contradiction
+# or claim-invalidating limitation — blocks semantic acceptance, whether the row
+# is WEAK or UNVERIFIED. The blocker never changes the row's semantic status;
+# it changes acceptance of the artifact.
+BLOCKING_SEMANTIC_BLOCKER_KINDS = frozenset({"contradiction", "limitation"})
+
+# Future Phase-4 target (documented, NOT implemented): a limitation that is
+# accurately represented inside the claim itself may eventually be considered
+# resolved/non-blocking. That requires a deterministic representation check;
+# until then every emitted applicable limitation is blocking.
 
 
-def has_blocking_semantic_weakness(grounding_report: list | None) -> bool:
-    """True when any engine-produced WEAK row carries a categorical semantic blocker.
+def _row_is_valid_semantic_row(row: dict) -> bool:
+    """A row's blockers are categorical only when the row's analysis is valid.
 
-    Only structured blocker ``kind`` is inspected — not free-text explanations.
-    Applies to contradiction and limitation blockers only; other WEAK cases are
-    unchanged. ``engine_compat_grounding_score`` cannot override this gate.
+    Rows without ``analysis_validity`` (hand-built or pre-engine telemetry rows)
+    are treated as valid. Engine INVALID rows failed structural validation, so
+    their blockers are not categorical authority — those rows already fail
+    closed upstream (invalid adjudication => verification error/parse failure)
+    and still count as unverified rows for UVR.
     """
+    validity = row.get("analysis_validity")
+    return validity is None or str(validity).upper() != "INVALID"
+
+
+def unresolved_semantic_obligations(grounding_report: list | None) -> list[dict]:
+    """Deterministic inventory of unresolved semantic review obligations.
+
+    One obligation per emitted row that is NOT cleanly resolved under current
+    policy — this makes unresolved verifier findings explicit instead of hiding
+    them behind aggregate scores:
+
+    - VALID weak/unverified row with an applicable structured blocker
+      (contradiction/limitation) -> ``blocking=True`` obligation; blocks
+      semantic acceptance categorically;
+    - blocker-free unverified row -> ``blocking=False`` obligation; governed by
+      the historical UVR policy, not individually categorical.
+
+    Blocker-free weak rows and verified rows are resolved under current policy
+    and produce no obligation. Resolution is always "unresolved" here — no
+    remediation is recorded against the current artifact yet.
+    """
+    obligations: list[dict] = []
     for row in grounding_report or []:
-        if row.get("status") != "weak":
+        status = row.get("status")
+        if status not in ("weak", "unverified"):
             continue
-        for blocker in row.get("blockers") or []:
-            if blocker.get("kind") in BLOCKING_WEAK_BLOCKER_KINDS:
-                return True
-    return False
+        blockers: list[dict] = []
+        if _row_is_valid_semantic_row(row):
+            blockers = [
+                copy.deepcopy(b)
+                for b in (row.get("blockers") or [])
+                if isinstance(b, dict) and b.get("kind") in BLOCKING_SEMANTIC_BLOCKER_KINDS
+            ]
+        if not blockers and status != "unverified":
+            continue
+        obligations.append({
+            "claim_id": row.get("claim_id"),
+            "claim": row.get("claim"),
+            "status": status,
+            "blocker_kinds": [b.get("kind") for b in blockers],
+            "blockers": blockers,
+            "support_spans": copy.deepcopy(row.get("support_spans") or []),
+            "reason_codes": list(row.get("reason_codes") or []),
+            "source_ref": row.get("source_ref"),
+            "source_url": row.get("source_url"),
+            "blocking": bool(blockers),
+            "resolution": "unresolved",
+        })
+    return obligations
+
+
+def has_blocking_semantic_blockers(grounding_report: list | None) -> bool:
+    """True when any valid semantic row — WEAK or UNVERIFIED — carries an
+    applicable structured blocker (contradiction or claim-invalidating
+    limitation). Only structured blocker ``kind`` is inspected, never free
+    text. ``engine_compat_grounding_score`` cannot override this gate."""
+    return any(o["blocking"] for o in unresolved_semantic_obligations(grounding_report))
+
+
+_BLOCKER_REPAIR_GUIDANCE = {
+    "contradiction": (
+        "The quoted evidence contradicts this claim. Correct or narrow the claim so "
+        "it no longer conflicts with the quoted evidence."
+    ),
+    "limitation": (
+        "The quoted evidence states a limitation/qualifier this claim omits. Add the "
+        "omitted qualifier so the claim matches the evidence exactly."
+    ),
+}
+
+
+def _format_semantic_blocker_feedback(grounding_report: list | None) -> tuple[str, list[dict]]:
+    """Targeted revision feedback for blocker-bearing rows (Phase 4 Slice 1).
+
+    The drafter must know WHAT to repair and WHY: exact claim, semantic status,
+    blocker kind, blocker explanation, exact adverse/supporting evidence quote,
+    source/evidence provenance, and reason codes where available — never a
+    generic 'improve grounding'. Returns ("", []) when no blocking obligations
+    exist.
+    """
+    obligations = [o for o in unresolved_semantic_obligations(grounding_report) if o["blocking"]]
+    if not obligations:
+        return "", []
+    items: list[str] = []
+    for obligation in obligations:
+        lines = [
+            f"- claim_id: {obligation['claim_id'] or 'unknown'}",
+            f"  claim: {obligation['claim']}",
+            f"  semantic_status: {obligation['status']}",
+        ]
+        source = obligation.get("source_ref") or obligation.get("source_url")
+        if source:
+            lines.append(f"  source: {source}")
+        if obligation["reason_codes"]:
+            lines.append(f"  reason_codes: {', '.join(str(c) for c in obligation['reason_codes'])}")
+        for blocker in obligation["blockers"]:
+            lines.append(f"  blocker: {blocker.get('kind')}")
+            explanation = (blocker.get("explanation") or "").strip()
+            if explanation:
+                lines.append(f"  explanation: {explanation}")
+            for span in blocker.get("evidence_spans") or []:
+                quote = (span.get("text") or "").strip()
+                if quote:
+                    lines.append(
+                        f"  adverse evidence ({span.get('evidence_id') or 'unknown'}): \"{quote}\""
+                    )
+            guidance = _BLOCKER_REPAIR_GUIDANCE.get(blocker.get("kind"))
+            if guidance:
+                lines.append(f"  repair: {guidance}")
+        for span in obligation["support_spans"]:
+            quote = (span.get("text") or "").strip()
+            if quote:
+                lines.append(
+                    f"  supporting evidence ({span.get('evidence_id') or 'unknown'}): \"{quote}\""
+                )
+        items.append("\n".join(lines))
+    block = (
+        "\n\nREVISION — TARGETED SEMANTIC BLOCKER FEEDBACK:\n"
+        "Verification found structured semantic blockers on the following claims. "
+        "Repair EACH one specifically; this is NOT a generic request to improve "
+        "grounding.\n"
+        + "\n".join(items)
+        + "\n\nDo NOT resolve a blocker by deleting required substantive content: "
+        "repair, qualify, or ground the claim instead, and keep the required "
+        "deliverable complete (all four sections — problem framing, technical "
+        "deep-dive, code, takeaways — on the assigned topic/card). "
+        "Required-content completeness cannot be determined automatically, so "
+        "treat existing substantive content as required."
+    )
+    return block, obligations
 
 
 def semantic_verification_accepted(state: AgentState) -> bool:
     """True only when every applicable semantic acceptance condition holds.
 
-    Required:
+    Minimum acceptance semantics (Phase 4 Slice 1 — NOT the final production
+    publication policy):
         1. verification_status == "completed"
-        2. verdict set is nonempty
-        3. no WEAK row with contradiction/limitation blocker
-        4. UVR is deterministically computable
-        5. UVR <= UVR_THRESHOLD (0.15)
+        2. verdict set is nonempty (valid report)
+        3. no unresolved applicable contradiction on any valid row
+        4. no unresolved applicable limitation on any valid row
+        5. UVR_v1 deterministically computable and <= UVR_THRESHOLD (0.15)
 
     Parse failure, skipped verification, empty verdicts, upstream failure,
-    unknown/incomplete status, blocking WEAK semantics, and UVR above the gate
-    all fail closed. Scalar grounding/confidence cannot convert those states
-    into a pass. Claim-completeness remains CLAIM_COMPLETENESS ("unknown").
+    unknown/incomplete status, blocker-bearing rows (weak OR unverified), and
+    UVR above the gate all fail closed. Scalar grounding/confidence cannot
+    convert those states into a pass, and UVR <= 0.15 cannot override an
+    applicable blocker or an invalid evaluation state. Claim completeness,
+    materiality, and citation completeness remain CLAIM_COMPLETENESS
+    ("unknown") — they are later Phase-4 slices.
     """
     if state.get("verification_status") != "completed":
         return False
     report = state.get("grounding_report") or []
-    if has_blocking_semantic_weakness(report):
+    if has_blocking_semantic_blockers(report):
         return False
     uvr = unverified_rate(report)
     if uvr is None:
@@ -2410,18 +2563,27 @@ def route_after_reflect(state: AgentState) -> str:
     """
         Decide whether to revise the draft or proceed to HITL.
 
-        Composite gate (NOT reflection score alone — LLMs inflate self-scores):
+        Routing authority (Phase 4 Slice 1, D-2026-09-14-05):
             Force rewrite if:
-                - semantic verification is not accepted (status, nonempty
-                  verdicts, computable UVR, UVR <= 0.15), when iteration
-                  capacity remains
-                - grounding_score < GROUNDING_FLOOR (hard floor, regardless of reflection)
-                - OR reflection_score < REFLECTION_THRESHOLD AND grounding_score < 0.75
+                - semantic verification is not accepted (completed status,
+                  nonempty verdicts, no applicable contradiction/limitation
+                  blocker on any valid row, computable UVR <= 0.15), when
+                  iteration capacity remains
+                - OR reflection_score < REFLECTION_THRESHOLD (quality gate;
+                  threshold unchanged)
             Proceed if:
                 - max iterations reached (HITL; auto-approve cannot launder a
                   semantic failure — see hitl_node)
                 - cost gate trips (same HITL / fail-closed auto-approve rule)
-                - composite gate passes AND semantic verification is accepted
+                - semantic verification is accepted AND reflection gate passes
+
+        grounding_score is DEPRECATED as routing authority: it is
+        compatibility/observability only (state/API/telemetry/benchmark/UI)
+        and is logged here for observability, but it cannot determine semantic
+        acceptance or revision routing. The old GROUNDING_FLOOR hard floor and
+        the grounding<0.75 soft-gate conjunct were already unreachable whenever
+        the semantic gate passed (UVR<=0.15 implies score >= 0.6375) and are
+        removed, not retuned; no replacement composite is introduced.
 
         Returns:
             "draft" — loop back and revise
@@ -2430,7 +2592,7 @@ def route_after_reflect(state: AgentState) -> str:
     log = get_logger("router")
     iterations = state.get("iterations", 0)
     reflection_score = state.get("reflection_score", 8)
-    grounding_score = state.get("grounding_score", 0.75)
+    grounding_score = state.get("grounding_score", 0.75)  # observability only
     uvr = unverified_rate(state.get("grounding_report"))
     semantic_ok = semantic_verification_accepted(state)
 
@@ -2453,13 +2615,10 @@ def route_after_reflect(state: AgentState) -> str:
                  claim_completeness=CLAIM_COMPLETENESS)
         return "draft"
 
-    # Composite gate
-    hard_floor_fail = grounding_score < GROUNDING_FLOOR
-    soft_fail = reflection_score < REFLECTION_THRESHOLD and grounding_score < 0.75
-
-    if hard_floor_fail or soft_fail:
-        reason = "grounding below floor" if hard_floor_fail else "reflection + grounding both weak"
-        log.info("route.revise", run_id=state["run_id"], reason=reason, reflection=reflection_score, grounding=round(grounding_score, 2))
+    # Quality gate (reflection only; grounding_score is not consulted)
+    if reflection_score < REFLECTION_THRESHOLD:
+        log.info("route.revise", run_id=state["run_id"], reason="reflection below threshold",
+                 reflection=reflection_score, grounding=round(grounding_score, 2))
         return "draft"
 
     log.info("route.proceed", run_id=state["run_id"], reflection=reflection_score, grounding=round(grounding_score, 2),

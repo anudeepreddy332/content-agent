@@ -102,8 +102,16 @@ remain preserved below as evidence; they are not reopened here.
    `experiment/hybrid-verifier-status-engine`. Offline deterministic qualification
    of a Python-owned status engine fed by structured semantic observations (no
    model-generated final status). Provider observation qualification **BLOCKED**
-   pending independent offline review. Materiality, UVR, routing, retrieval, and
-   production runtime **unchanged**.
+   pending independent offline review. Materiality, retrieval, and production
+   runtime **unchanged**.
+   - **Phase 4 Slice 1 (acceptance/remediation foundation) — IMPLEMENTED, LOCAL
+     COMMIT ONLY, AWAITING BOUNDED REVIEW** (D-2026-09-14-05): blocker policy
+     generalized to WEAK **and** UNVERIFIED valid rows; targeted blocker revision
+     feedback reaches the drafter; `grounding_score` removed from revision/semantic
+     routing authority (compatibility/observability only); UVR_v1 unchanged and
+     non-overriding; unresolved semantic obligations explicit in Gate-1 payload and
+     trace. Claim completeness, materiality, and citation completeness remain
+     UNKNOWN — later Phase-4 slices. Not pushed, not merged, zero provider calls.
 4. **Verifier semantic-contract 3-cell prompt-only experiment — EXECUTED / FAIL
    (valid):** run 2 artifact
    `outputs/verifier_semantic_contract_3cell/verifier_semantic_contract_run_20260905T130342Z.json`

@@ -1,4 +1,10 @@
-"""Blocker-aware semantic acceptance: WEAK + contradiction/limitation fail closed."""
+"""Blocker-aware semantic acceptance: blocker-bearing rows fail closed.
+
+Phase 4 Slice 1 generalizes the original WEAK-only correction: ANY valid
+semantic row (WEAK or UNVERIFIED) carrying an applicable structured blocker
+(contradiction or claim-invalidating limitation) blocks semantic acceptance.
+The blocker never changes the row's status — only acceptance of the artifact.
+"""
 from __future__ import annotations
 
 import pytest
@@ -24,8 +30,11 @@ def _weak_row(claim: str, *, blocker_kind: str | None = None) -> dict:
     return {"claim": claim, "status": "weak", "blockers": blockers}
 
 
-def _unverified_row(claim: str = "unverified claim") -> dict:
-    return {"claim": claim, "status": "unverified", "blockers": []}
+def _unverified_row(claim: str = "unverified claim", *, blocker_kind: str | None = None) -> dict:
+    blockers = []
+    if blocker_kind is not None:
+        blockers = [{"kind": blocker_kind, "explanation": "test", "evidence_spans": []}]
+    return {"claim": claim, "status": "unverified", "blockers": blockers}
 
 
 def _state(base_state: dict, report: list[dict], **extra) -> dict:
@@ -60,6 +69,20 @@ def _state(base_state: dict, report: list[dict], **extra) -> dict:
             False,
             id="D",
         ),
+        # Phase 4 Slice 1: blocker-bearing UNVERIFIED rows block even when UVR
+        # alone (1/10 = 0.10 <= 0.15) would pass.
+        pytest.param(
+            [_unverified_row("blocked", blocker_kind="contradiction")]
+            + [_verified_row(f"v-{i}") for i in range(9)],
+            False,
+            id="C-unverified",
+        ),
+        pytest.param(
+            [_unverified_row("blocked", blocker_kind="limitation")]
+            + [_verified_row(f"v-{i}") for i in range(9)],
+            False,
+            id="D-unverified",
+        ),
         pytest.param([_verified_row(f"v-{i}") for i in range(10)], True, id="E"),
         pytest.param(
             [_unverified_row("u-1")] + [_verified_row(f"v-{i}") for i in range(9)],
@@ -88,7 +111,7 @@ def test_matrix_f_uvr_below_threshold_without_blockers(base_state):
     report = [_unverified_row("u-1")] + [_verified_row(f"v-{i}") for i in range(9)]
     assert nodes.unverified_rate(report) == 0.1
     assert nodes.unverified_rate(report) <= UVR_THRESHOLD
-    assert nodes.has_blocking_semantic_weakness(report) is False
+    assert nodes.has_blocking_semantic_blockers(report) is False
     assert nodes.semantic_verification_accepted(_state(base_state, report)) is True
 
 
@@ -118,7 +141,10 @@ def test_p7_limitation_weak_routes_to_revision(base_state, monkeypatch):
 
 def test_p1_verified_clean_accepted(base_state, monkeypatch):
     result = _run_fixture_case(monkeypatch, "P1")
-    state = {**_fixture_state(_load_case("P1")), **result}
+    # reflection_score set explicitly: the fixture default (0) never ran a real
+    # reflect pass, and post-Slice-1 the reflection gate no longer requires a
+    # weak grounding_score conjunct to fire.
+    state = {**_fixture_state(_load_case("P1")), **result, "reflection_score": 8}
     assert state["grounding_report"][0]["status"] == "verified"
     assert nodes.semantic_verification_accepted(state) is True
     assert nodes.route_after_reflect(state) == "hitl"
@@ -153,17 +179,40 @@ def test_auto_approve_still_passes_blocker_free_weak(base_state, monkeypatch):
     assert nodes.route_after_hitl({**state, **result}) == "html_gen"
 
 
-def test_has_blocking_semantic_weakness_ignores_non_weak_rows():
-    report = [
+def test_blocker_policy_status_scope():
+    """Verified rows are never blocker-bearing by engine construction, so the
+    policy inspects weak/unverified rows only; unverified blockers DO block."""
+    verified_with_blocker = [
         {"claim": "x", "status": "verified", "blockers": [{"kind": "contradiction"}]},
+    ]
+    assert nodes.has_blocking_semantic_blockers(verified_with_blocker) is False
+
+    unverified_with_blocker = [
         {"claim": "y", "status": "unverified", "blockers": [{"kind": "limitation"}]},
     ]
-    assert nodes.has_blocking_semantic_weakness(report) is False
+    assert nodes.has_blocking_semantic_blockers(unverified_with_blocker) is True
 
 
-def test_has_blocking_semantic_weakness_ignores_other_blocker_kinds():
+def test_invalid_row_blockers_are_not_categorical():
+    """Engine INVALID rows failed structural validation; their blockers are not
+    categorical acceptance authority (they fail closed upstream instead)."""
+    report = [
+        {
+            "claim": "z",
+            "status": "unverified",
+            "analysis_validity": "INVALID",
+            "blockers": [{"kind": "contradiction", "explanation": "t", "evidence_spans": []}],
+        }
+    ]
+    assert nodes.has_blocking_semantic_blockers(report) is False
+    obligations = nodes.unresolved_semantic_obligations(report)
+    assert len(obligations) == 1
+    assert obligations[0]["blocking"] is False
+
+
+def test_has_blocking_semantic_blockers_ignores_other_blocker_kinds():
     report = [_weak_row("x", blocker_kind="unsupported_kind")]
-    assert nodes.has_blocking_semantic_weakness(report) is False
+    assert nodes.has_blocking_semantic_blockers(report) is False
     assert nodes.semantic_verification_accepted(
         {"verification_status": "completed", "grounding_report": report}
     ) is True
