@@ -9,6 +9,35 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-14-01
+Date: 2026-09-14
+
+Decision: **Qualified semantic-analyzer pure logic graduated into production package
+`agent/semantic_analyzer/` (Slice 1). Scripts remain thin compatibility re-exports.**
+
+Reason: Quote-binding provider experiment #3 PASS at identity
+`72023be84f508f1203d05fa8858da6b4cf3d7437a7bc46eb24bb915434381c23`.
+Production integration requires a single canonical source of truth before
+`verify_node` wiring (Slice 2).
+
+Canonical modules:
+
+- `agent/semantic_analyzer/quote_binding.py`
+- `agent/semantic_analyzer/status_engine.py`
+- `agent/semantic_analyzer/response_contract.py`
+
+Compatibility: `scripts/hybrid_verifier_status_engine.py` and
+`scripts/semantic_analyzer_quote_binding.py` re-export only; harness imports
+canonical modules directly.
+
+Does NOT change: LangGraph topology, `verify_node`, UVR, HITL, routing,
+retrieval, or historical provider experiment artifacts.
+
+Status: **PRODUCTION SLICE 1 COMPLETE — RUNTIME UNCHANGED**.
+
+Confidence: 0.95
+
+---
 Decision ID: D-2026-09-10-04
 Date: 2026-09-10
 

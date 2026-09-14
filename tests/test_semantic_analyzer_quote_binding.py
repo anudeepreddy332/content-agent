@@ -9,7 +9,17 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.hybrid_verifier_status_engine import adjudicate_hybrid_verifier_observations, build_minimal_envelope
+from agent.semantic_analyzer.quote_binding import (
+    QuoteBindingError,
+    bind_quote_against_manifest,
+    bind_quote_to_span,
+    convert_quote_observations_to_canonical,
+    find_exact_quote_matches,
+)
+from agent.semantic_analyzer.status_engine import (
+    adjudicate_hybrid_verifier_observations,
+    build_minimal_envelope,
+)
 from scripts.semantic_analyzer_preprovider_harness import (
     build_case_bundle,
     build_gold_mock_responses,
@@ -17,13 +27,6 @@ from scripts.semantic_analyzer_preprovider_harness import (
     load_fixture_pack,
     qualify_case_response,
     span_observation_to_quote_observation,
-)
-from scripts.semantic_analyzer_quote_binding import (
-    QuoteBindingError,
-    bind_quote_against_manifest,
-    bind_quote_to_span,
-    convert_quote_observations_to_canonical,
-    find_exact_quote_matches,
 )
 
 

@@ -410,7 +410,7 @@ def test_blocker_monotonicity_verified_becomes_weak(pack: dict) -> None:
 
 
 def test_deterministic_fact_veto_extension_point(pack: dict, monkeypatch: pytest.MonkeyPatch) -> None:
-    import scripts.hybrid_verifier_status_engine as engine
+    import agent.semantic_analyzer.status_engine as engine
 
     class AlwaysVeto(DeterministicFactVeto):
         def claim_ids(self) -> frozenset[str]:

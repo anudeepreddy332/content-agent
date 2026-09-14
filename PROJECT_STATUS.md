@@ -297,8 +297,16 @@ the current authorized engineering mission on
   string matching; hybrid status engine unchanged; gold oracle spans unchanged;
   new P6/P7/P1 request hashes for quote-era prompt/schema; historical offset-era
   hashes and terminal experiments preserved; LangGraph integration deferred.
-- **Provider execution is NOT AUTHORIZED** for a quote-binding experiment.
-  UVR/routing, retrieval, materiality, and production runtime remain **unchanged**.
+- **Provider experiment #3 EXECUTED / PASS**
+  (`semantic_analyzer_run_712c564531e2`): quote-binding contract; 3/3 PASS;
+  identity `72023be84f508f1203d05fa8858da6b4cf3d7437a7bc46eb24bb915434381c23`.
+  Experiments #1 INVALID and #2 FAIL preserved.
+- **Production Slice 1 complete:** qualified quote binding, status engine, and
+  response contract canonicalized under `agent/semantic_analyzer/`; scripts are
+  thin re-exports; LangGraph/`verify_node` unchanged.
+- **Provider execution is NOT AUTHORIZED** for further experiments without new
+  owner authorization. UVR/routing, retrieval, materiality, and production
+  runtime remain **unchanged**.
 
 Engine baseline remains `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`.
 
