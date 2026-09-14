@@ -9,6 +9,34 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-14-02
+Date: 2026-09-14
+
+Decision: **Production semantic-analyzer contract + provider adapter implemented
+offline (Slice 2). Runtime verify_node remains unwired.**
+
+Reason: Slice 1 canonicalized quote binding, status engine, and response contract.
+Slice 2 adds production bridge modules without changing LangGraph behavior.
+
+New modules:
+
+- `agent/semantic_analyzer/contract.py` — evidence manifest (full text, no char
+  clip), claim roster, legacy verdict bridge, analyzer input/messages,
+  adjudication→grounding_report mapping
+- `agent/semantic_analyzer/provider.py` — injected LLM transport adapter;
+  response→bind→adjudicate pipeline
+
+Policy: source-count preserved (first 5 web + first 5 KB); character clipping
+removed from analyzer path. Legacy verifier status/confidence are NOT semantic
+authority. No fabricated confidence in grounding_report mapper.
+
+Does NOT change: verify_node, UVR, HITL, retrieval breadth, provider experiments.
+
+Status: **SLICE 2 COMPLETE — READY FOR SLICE 3 verify_node WIRING**.
+
+Confidence: 0.95
+
+---
 Decision ID: D-2026-09-14-01
 Date: 2026-09-14
 

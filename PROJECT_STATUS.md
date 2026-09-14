@@ -304,6 +304,10 @@ the current authorized engineering mission on
 - **Production Slice 1 complete:** qualified quote binding, status engine, and
   response contract canonicalized under `agent/semantic_analyzer/`; scripts are
   thin re-exports; LangGraph/`verify_node` unchanged.
+- **Production Slice 2 complete:** `contract.py` + `provider.py` bridge
+  retrieved evidence→manifest (full text, 5+5 count policy), claim roster,
+  injected LLM adapter, grounding_report mapping; offline P6/P7/P1 adapter
+  proofs PASS; `verify_node` still unwired.
 - **Provider execution is NOT AUTHORIZED** for further experiments without new
   owner authorization. UVR/routing, retrieval, materiality, and production
   runtime remain **unchanged**.

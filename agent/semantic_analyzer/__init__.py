@@ -1,4 +1,25 @@
 """Production semantic analyzer: quote binding, response contract, status engine."""
+from agent.semantic_analyzer.contract import (
+    DEFAULT_SCHEMA_VERSION,
+    KB_SOURCE_LIMIT,
+    WEB_SOURCE_LIMIT,
+    ProductionClaim,
+    adjudication_to_grounding_report,
+    assert_manifest_source_integrity,
+    build_adjudication_envelope,
+    build_analyzer_input,
+    build_analyzer_messages,
+    build_analyzer_user_message,
+    build_claim_roster,
+    build_evidence_manifest,
+    legacy_verdict_rows_to_claim_roster,
+    load_semantic_analyzer_system_prompt,
+)
+from agent.semantic_analyzer.provider import (
+    AnalyzerFailureKind,
+    SemanticAnalyzerResult,
+    analyze_semantic_evidence,
+)
 from agent.semantic_analyzer.quote_binding import (
     ALLOWED_EXTERNAL_BLOCKER_FIELDS,
     ALLOWED_EXTERNAL_OBSERVATION_FIELDS,
@@ -40,6 +61,12 @@ from agent.semantic_analyzer.status_engine import (
 )
 
 __all__ = [
+    "AnalyzerFailureKind",
+    "DEFAULT_SCHEMA_VERSION",
+    "KB_SOURCE_LIMIT",
+    "WEB_SOURCE_LIMIT",
+    "ProductionClaim",
+    "SemanticAnalyzerResult",
     "ALLOWED_BLOCKER_FIELDS",
     "ALLOWED_EXTERNAL_BLOCKER_FIELDS",
     "ALLOWED_EXTERNAL_OBSERVATION_FIELDS",
@@ -62,6 +89,17 @@ __all__ = [
     "SemanticStatus",
     "SpanRef",
     "adjudicate_hybrid_verifier_observations",
+    "adjudication_to_grounding_report",
+    "analyze_semantic_evidence",
+    "assert_manifest_source_integrity",
+    "build_adjudication_envelope",
+    "build_analyzer_input",
+    "build_analyzer_messages",
+    "build_analyzer_user_message",
+    "build_claim_roster",
+    "build_evidence_manifest",
+    "legacy_verdict_rows_to_claim_roster",
+    "load_semantic_analyzer_system_prompt",
     "bind_quote_against_manifest",
     "bind_quote_to_span",
     "build_minimal_envelope",
