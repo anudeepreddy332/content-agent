@@ -9,6 +9,28 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-14-04
+Date: 2026-09-14
+
+Decision: **Blocker-aware semantic acceptance gate for WEAK + contradiction/limitation.**
+
+Reason: Independent review showed P6/P7-style WEAK rows (UVR=0, grounding_score=0.75)
+could pass `semantic_verification_accepted` and proceed without revision. The status
+engine correctly emits WEAK for contradiction/limitation; acceptance must not treat
+that as semantically clean.
+
+Rule: `has_blocking_semantic_weakness()` returns True when any engine-produced row has
+`status=="weak"` and a blocker with `kind` in `{contradiction, limitation}`. When True,
+`semantic_verification_accepted()` is False regardless of UVR or grounding_score.
+
+Does NOT change: status engine, quote binding, UVR formula, grounding_score weights,
+LangGraph topology, or other WEAK cases without those blockers.
+
+Status: **BLOCKER-ROUTING CORRECTION COMPLETE**.
+
+Confidence: 0.94
+
+---
 Decision ID: D-2026-09-14-03
 Date: 2026-09-14
 

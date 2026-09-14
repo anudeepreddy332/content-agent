@@ -310,7 +310,10 @@ the current authorized engineering mission on
   proofs PASS.
 - **Production Slice 3 complete:** live `verify_node` wired to two-call Phase-3
   path (legacy claim extraction + quote-based analyzer); P6/P7/P1 proofs through
-  actual `verify_node` with mocked transport; 1013 tests green; provider calls 0.
+  actual `verify_node` with mocked transport; provider calls 0.
+- **Blocker-routing correction:** `semantic_verification_accepted` now rejects
+  WEAK rows with contradiction/limitation blockers (UVR=0 false-green closed);
+  status engine unchanged; 1032 tests green.
 - **Provider execution is NOT AUTHORIZED** for further experiments without new
   owner authorization. UVR/routing, retrieval, materiality, and production
   runtime remain **unchanged**.

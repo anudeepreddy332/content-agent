@@ -135,7 +135,8 @@ def test_p6_through_verify_node(monkeypatch):
     assert row["support_spans"][0]["end"] == 458
     assert row["blockers"][0]["evidence_spans"][0]["start"] == 1500
     assert "confidence" not in row
-    assert nodes.semantic_verification_accepted({**_fixture_state(_load_case("P6")), **result}) is True
+    assert result["grounding_report"][0]["blockers"][0]["kind"] == "contradiction"
+    assert nodes.semantic_verification_accepted({**_fixture_state(_load_case("P6")), **result}) is False
 
 
 def test_p7_through_verify_node(monkeypatch):
@@ -145,6 +146,8 @@ def test_p7_through_verify_node(monkeypatch):
     assert row["support_spans"][0]["start"] == 0
     assert row["support_spans"][0]["end"] == 60
     assert row["blockers"][0]["evidence_spans"][0]["start"] == 2000
+    assert row["blockers"][0]["kind"] == "limitation"
+    assert nodes.semantic_verification_accepted({**_fixture_state(_load_case("P7")), **result}) is False
 
 
 def test_p1_through_verify_node(monkeypatch):
@@ -155,12 +158,15 @@ def test_p1_through_verify_node(monkeypatch):
     assert row["blockers"] == []
     assert row["support_spans"][0]["start"] == 1500
     assert row["support_spans"][0]["end"] == 1563
+    assert nodes.semantic_verification_accepted({**_fixture_state(_load_case("P1")), **result}) is True
 
 
 def test_wrong_legacy_status_does_not_override_engine(monkeypatch):
     """Legacy Call A says verified; engine must still produce weak for P6."""
     result = _run_fixture_case(monkeypatch, "P6", legacy_status="verified")
     assert result["grounding_report"][0]["status"] == "weak"
+    assert result["grounding_report"][0]["blockers"][0]["kind"] == "contradiction"
+    assert nodes.semantic_verification_accepted({**_fixture_state(_load_case("P6")), **result}) is False
     slot = result["semantic_trace"]["iterations"][0]
     assert slot["semantic_analyzer"]["engine_status_by_claim"]["claim-001"] == "weak"
 

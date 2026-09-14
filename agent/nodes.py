@@ -2340,23 +2340,45 @@ def unverified_claims(grounding_report: list | None) -> list[str]:
     ]
 
 
+BLOCKING_WEAK_BLOCKER_KINDS = frozenset({"contradiction", "limitation"})
+
+
+def has_blocking_semantic_weakness(grounding_report: list | None) -> bool:
+    """True when any engine-produced WEAK row carries a categorical semantic blocker.
+
+    Only structured blocker ``kind`` is inspected — not free-text explanations.
+    Applies to contradiction and limitation blockers only; other WEAK cases are
+    unchanged. ``engine_compat_grounding_score`` cannot override this gate.
+    """
+    for row in grounding_report or []:
+        if row.get("status") != "weak":
+            continue
+        for blocker in row.get("blockers") or []:
+            if blocker.get("kind") in BLOCKING_WEAK_BLOCKER_KINDS:
+                return True
+    return False
+
+
 def semantic_verification_accepted(state: AgentState) -> bool:
     """True only when every applicable semantic acceptance condition holds.
 
     Required:
         1. verification_status == "completed"
         2. verdict set is nonempty
-        3. UVR is deterministically computable
-        4. UVR <= UVR_THRESHOLD (0.15)
+        3. no WEAK row with contradiction/limitation blocker
+        4. UVR is deterministically computable
+        5. UVR <= UVR_THRESHOLD (0.15)
 
     Parse failure, skipped verification, empty verdicts, upstream failure,
-    unknown/incomplete status, and UVR above the gate all fail closed.
-    Scalar grounding/confidence cannot convert those states into a pass.
-    Claim-completeness remains CLAIM_COMPLETENESS ("unknown") and is not gated.
+    unknown/incomplete status, blocking WEAK semantics, and UVR above the gate
+    all fail closed. Scalar grounding/confidence cannot convert those states
+    into a pass. Claim-completeness remains CLAIM_COMPLETENESS ("unknown").
     """
     if state.get("verification_status") != "completed":
         return False
     report = state.get("grounding_report") or []
+    if has_blocking_semantic_weakness(report):
+        return False
     uvr = unverified_rate(report)
     if uvr is None:
         return False
