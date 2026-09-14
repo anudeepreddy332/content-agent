@@ -58,8 +58,14 @@ from agent.semantic_trace import (
     copy_trace,
     record_draft,
     record_hitl_event,
+    record_semantic_analyzer,
     record_verify,
 )
+from agent.semantic_analyzer.contract import (
+    engine_compat_grounding_score,
+    legacy_verdict_rows_to_claim_roster,
+)
+from agent.semantic_analyzer.provider import analyze_semantic_evidence
 import html as html_module
 import re
 import datetime
@@ -218,6 +224,26 @@ def _cost(usage) -> float:
         +
         usage.completion_tokens / 1_000_000 * DEEPSEEK_OUTPUT_COST_PER_M
     )
+
+
+def _cost_from_usage(usage) -> float:
+    """Compute cost from OpenAI usage object or analyzer transport dict."""
+    if usage is None:
+        return 0.0
+    if isinstance(usage, dict):
+        return (
+            int(usage.get("prompt_tokens") or 0) / 1_000_000 * DEEPSEEK_INPUT_COST_PER_M
+            + int(usage.get("completion_tokens") or 0) / 1_000_000 * DEEPSEEK_OUTPUT_COST_PER_M
+        )
+    return _cost(usage)
+
+
+def _usage_total_tokens(usage) -> int:
+    if usage is None:
+        return 0
+    if isinstance(usage, dict):
+        return int(usage.get("total_tokens") or 0)
+    return int(getattr(usage, "total_tokens", 0) or 0)
 
 def _assemble_markdown(topic: str, sections: DraftSections) -> str:
     """
@@ -811,158 +837,77 @@ def _resolve_attributions(report: list[dict], web_sources: list, kb_results: lis
 
 # NODE: verify_node
 
-def verify_node(state: AgentState) -> dict:
-    """
-    Extracts factual claims from draft and scores each against retrieved sources.
-    """
-    log = get_logger("verify_node")
-    t_start = time.time()
-    # cost gate
-    if state.get("total_cost_usd", 0) >= COST_GATE_USD:
-        log.warning("verify.cost_gate_hit", run_id=state["run_id"],
-                    cost=state["total_cost_usd"])
-        trace = copy_trace(state)
-        record_verify(
-            trace,
-            iteration=state.get("iterations", 0),
-            consumed=False,
-            skip_reason="skipped_cost_gate",
-            draft_markdown=state.get("draft_markdown") or "",
-        )
-        return {"grounding_report": [], "grounding_score": 0.0,
-                "verification_status": "skipped_cost_gate",
-                "latency_ms": {**state.get("latency_ms", {}), "verify": 0},
-                "semantic_trace": trace}
+def _verify_request_id(state: AgentState) -> str:
+    return f"{state['run_id']}:{state.get('iterations', 0)}:verify"
 
-    client = _get_client()
-    # 1. Extract claims from drafts
-    # Ask llm to pull out every verifiable factual claim as a JSON list
 
-    source_context = _build_source_context(state["web_sources"], state["kb_results"])
-    user_message = f"""
-                            Draft to verify:
-                            {state["draft_markdown"]}
-                            
-                            Available sources:
-                            {source_context}
-                            
-                            Return a JSON array. Each element:
-                            {{"claim": "...", "source_url": "..." or null, "confidence": 0.0-1.0,
-                              "status": "verified" | "weak" | "unverified",
-                              "specificity": "substantive" | "generic"}}
-                            
-                            Return ONLY the JSON array. No preamble.
-                            """
-
-    claim_response = _llm_call(
-        client,
-        model=DEEPSEEK_MODEL,
-        messages=[
-            {"role": "system", "content": VERIFY_SYSTEM},
-            {
-                "role": "user",
-                "content": user_message,
-            }
-        ],
-        temperature=0.1,
-        max_tokens=4000,
-    )
-
-    latency = int((time.time() - t_start) * 1000)
-    run_cost = _cost(claim_response.usage)
-
-    # Parse grounding report
-    raw = claim_response.choices[0].message.content.strip()
-
-    verification_status = "completed"
-    parse_error = None
-    try:
-        grounding_report = _parse_verifier_verdicts(raw)
-        parser_status = "ok"
-    except (json.JSONDecodeError, ValueError, ValidationError) as e:
-        log.error("verify.parse_failed", run_id=state["run_id"], error=str(e),
-                  raw_preview=raw[:300])
-        grounding_report = []
-        verification_status = "parse_failed"
-        parser_status = "parse_failed"
-        parse_error = str(e)
-
-    pre_dedup_rows = copy.deepcopy(grounding_report)
-
-    # Remove near-exact duplicate claims before scoring.
-    # Prompt instruction handles semantic duplicates; this catches string-level dupes.
-    dropped_rows: list[dict] = []
-    grounding_report = _deduplicate_grounding_report(
-        grounding_report, run_id=state["run_id"], dropped_out=dropped_rows,
-    )
-    post_dedup_rows = copy.deepcopy(grounding_report)
-
-    # M5: resolve each claim's source_url against the actual retrieved set.
-    # Pure post-processing — verifier prompt and source context untouched.
-    grounding_report = _resolve_attributions(
-        grounding_report, state.get("web_sources", []), state.get("kb_results", [])
-    )
-    post_attribution_rows = copy.deepcopy(grounding_report)
-
-    trace = copy_trace(state)
-    record_verify(
-        trace,
-        iteration=state.get("iterations", 0),
-        consumed=True,
-        draft_markdown=state.get("draft_markdown") or "",
-        source_context=source_context,
-        user_message=user_message,
-        verify_system_text=VERIFY_SYSTEM,
-        web_sources=state.get("web_sources") or [],
-        kb_results=state.get("kb_results") or [],
-        raw_response=raw,
-        parser_status=parser_status,
-        parse_error=parse_error,
-        pre_dedup_rows=pre_dedup_rows,
-        dropped_rows=dropped_rows,
-        post_dedup_rows=post_dedup_rows,
-        post_attribution_rows=post_attribution_rows,
+def _legacy_claim_extraction_message(draft_markdown: str, source_context: str) -> str:
+    return (
+        f"Draft to verify:\n{draft_markdown}\n\n"
+        f"Available sources:\n{source_context}\n\n"
+        "Return a JSON array. Each element:\n"
+        '{"claim": "...", "source_url": "..." or null, "confidence": 0.0-1.0,\n'
+        '  "status": "verified" | "weak" | "unverified",\n'
+        '  "specificity": "substantive" | "generic"}\n\n'
+        "Return ONLY the JSON array. No preamble."
     )
 
 
-    # Compute mean confidence
-    if grounding_report:
-        grounding_score = sum(r.get("confidence", 0) for r in grounding_report) / len(grounding_report)
-    else:
-        grounding_score = 0
+def _specificity_by_claim_id(
+    legacy_rows: list[dict],
+    claim_roster: list[dict],
+) -> dict[str, str]:
+    """Descriptive metadata from Call A — not semantic authority."""
+    out: dict[str, str] = {}
+    for legacy, claim in zip(legacy_rows, claim_roster, strict=True):
+        out[claim["claim_id"]] = legacy.get("specificity", "generic")
+    return out
 
 
-    existing_latency = state.get("latency_ms", {})
-    existing_latency["verify"] = latency
+def _attach_specificity(grounding_report: list[dict], specificity_by_id: dict[str, str]) -> None:
+    for row in grounding_report:
+        row["specificity"] = specificity_by_id.get(row.get("claim_id"), "generic")
 
+
+def _make_semantic_llm_transport(client: OpenAI):
+    """Inject production ``_llm_call`` into the Slice-2 analyzer adapter."""
+
+    def transport(
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float,
+        max_tokens: int,
+        response_format: dict[str, str] | None = None,
+    ):
+        kwargs = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if response_format is not None:
+            kwargs["response_format"] = response_format
+        return _llm_call(client, **kwargs)
+
+    return transport
+
+
+def _append_verify_iteration_metrics(
+    state: AgentState,
+    *,
+    grounding_report: list[dict],
+    verification_status: str,
+    grounding_score: float,
+) -> list[dict]:
     n_verified = sum(1 for r in grounding_report if r.get("status") == "verified")
     n_weak = sum(1 for r in grounding_report if r.get("status") == "weak")
     n_unverified = sum(1 for r in grounding_report if r.get("status") == "unverified")
-
-    # Grounded-depth signal (M3): SV = Substantive and verified
     n_substantive = sum(1 for r in grounding_report if r.get("specificity") == "substantive")
     n_substantive_verified = sum(
         1 for r in grounding_report
         if r.get("specificity") == "substantive" and r.get("status") == "verified"
     )
-
-
-    log.info("verify.complete",
-             run_id=state["run_id"],
-             grounding_score=round(grounding_score, 3),
-             claims=len(grounding_report),
-             verified=n_verified,
-             weak=n_weak,
-             unverified=n_unverified,
-             substantive=n_substantive,
-             substantive_verified=n_substantive_verified,
-             verification_status=verification_status,
-             latency_ms=latency,
-             cost=round(run_cost, 5),
-             )
-
-    # M4 instrumentation: persist this iteration's metrics. verify runs once per
-    # draft iteration; appending here gives per-iteration SV/UVR in telemetry.
     iteration_metrics = list(state.get("iteration_metrics", []) or [])
     iteration_metrics.append({
         "iteration": state.get("iterations", 0),
@@ -980,18 +925,336 @@ def verify_node(state: AgentState) -> dict:
             (r.get("claim") or "")[:200]
             for r in grounding_report if r.get("status") == "unverified"
         ],
-        # M5: full annotated report per iteration — the final grounding_report
-        # only reflects the LAST iteration; without this, iteration 1 of a
-        # revised run was un-reconstructable.
         "grounding_report": grounding_report,
     })
+    return iteration_metrics
+
+
+def verify_node(state: AgentState) -> dict:
+    """Phase-3 hybrid verifier: legacy claim extraction + quote-based semantic engine.
+
+    CALL A (legacy, clipped source context): claim discovery ONLY — ``status`` and
+    ``confidence`` from this call are ignored for semantic truth.
+
+    CALL B (full evidence manifest via ``build_evidence_manifest``): semantic
+    analysis ONLY — Python quote binding + ``adjudicate_hybrid_verifier_observations``
+    is the sole owner of ``grounding_report[].status``.
+
+    Claim inventory completeness remains ``CLAIM_COMPLETENESS`` (``unknown``); Phase 4
+    owns completeness/materiality.
+    """
+    log = get_logger("verify_node")
+    t_start = time.time()
+    iteration = state.get("iterations", 0)
+    request_id = _verify_request_id(state)
+
+    if state.get("total_cost_usd", 0) >= COST_GATE_USD:
+        log.warning("verify.cost_gate_hit", run_id=state["run_id"],
+                    cost=state["total_cost_usd"])
+        trace = copy_trace(state)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=False,
+            skip_reason="skipped_cost_gate",
+            draft_markdown=state.get("draft_markdown") or "",
+        )
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": "skipped_cost_gate",
+            "latency_ms": {**state.get("latency_ms", {}), "verify": 0},
+            "semantic_trace": trace,
+        }
+
+    client = _get_client()
+    draft_markdown = state.get("draft_markdown") or ""
+    source_context = _build_source_context(state["web_sources"], state["kb_results"])
+    user_message = _legacy_claim_extraction_message(draft_markdown, source_context)
+
+    run_cost = 0.0
+    total_new_tokens = 0
+    raw = ""
+    parser_status = "not_started"
+    parse_error: str | None = None
+    legacy_rows: list[dict] = []
+    verification_status = "completed"
+    claim_response = None
+
+    try:
+        claim_response = _llm_call(
+            client,
+            model=DEEPSEEK_MODEL,
+            messages=[
+                {"role": "system", "content": VERIFY_SYSTEM},
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0.1,
+            max_tokens=4000,
+        )
+    except (RateLimitError, APIConnectionError, APITimeoutError, InternalServerError) as exc:
+        log.error("verify.legacy_transport_failed", run_id=state["run_id"], error=str(exc))
+        latency = int((time.time() - t_start) * 1000)
+        trace = copy_trace(state)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context=source_context,
+            user_message=user_message,
+            verify_system_text=VERIFY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=None,
+            parser_status="verification_error",
+            parse_error=str(exc),
+            pre_dedup_rows=[],
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+        )
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": "verification_error",
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=[],
+                verification_status="verification_error",
+                grounding_score=0.0,
+            ),
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
+
+    run_cost += _cost(claim_response.usage)
+    total_new_tokens += claim_response.usage.total_tokens
+    raw = claim_response.choices[0].message.content.strip()
+
+    try:
+        legacy_rows = _parse_verifier_verdicts(raw)
+        if not legacy_rows:
+            raise ValueError("zero claims from legacy extraction")
+        claim_roster = legacy_verdict_rows_to_claim_roster(legacy_rows)
+        specificity_by_id = _specificity_by_claim_id(legacy_rows, claim_roster)
+        parser_status = "ok"
+    except (json.JSONDecodeError, ValueError, ValidationError) as exc:
+        log.error("verify.legacy_parse_failed", run_id=state["run_id"], error=str(exc),
+                  raw_preview=raw[:300])
+        legacy_rows = []
+        verification_status = "parse_failed"
+        parser_status = "parse_failed"
+        parse_error = str(exc)
+        latency = int((time.time() - t_start) * 1000)
+        trace = copy_trace(state)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context=source_context,
+            user_message=user_message,
+            verify_system_text=VERIFY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=raw,
+            parser_status=parser_status,
+            parse_error=parse_error,
+            pre_dedup_rows=[],
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+        )
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": verification_status,
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=[],
+                verification_status=verification_status,
+                grounding_score=0.0,
+            ),
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
+
+    analyzer_result = analyze_semantic_evidence(
+        request_id=request_id,
+        draft_text=draft_markdown,
+        claims=claim_roster,
+        web_sources=state.get("web_sources") or [],
+        kb_results=state.get("kb_results") or [],
+        llm_call=_make_semantic_llm_transport(client),
+        model=DEEPSEEK_MODEL,
+    )
+    run_cost += _cost_from_usage(analyzer_result.usage)
+    total_new_tokens += _usage_total_tokens(analyzer_result.usage)
+
+    engine_status_by_claim = {}
+    if analyzer_result.adjudication is not None:
+        engine_status_by_claim = dict(analyzer_result.adjudication.semantic_status_by_claim)
+
+    trace = copy_trace(state)
+
+    if not analyzer_result.success:
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context=source_context,
+            user_message=user_message,
+            verify_system_text=VERIFY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=raw,
+            parser_status=parser_status,
+            parse_error=parse_error,
+            pre_dedup_rows=copy.deepcopy(legacy_rows),
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+        )
+        record_semantic_analyzer(
+            trace,
+            iteration=iteration,
+            request_id=request_id,
+            success=False,
+            failure_kind=analyzer_result.failure_kind,
+            failure_detail=analyzer_result.failure_detail,
+            returned_model=analyzer_result.returned_model,
+            provider_response_id=analyzer_result.provider_response_id,
+            usage=analyzer_result.usage,
+            evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
+            engine_status_by_claim=engine_status_by_claim,
+            raw_response=analyzer_result.raw_response,
+        )
+        if analyzer_result.failure_kind == "provider":
+            verification_status = "verification_error"
+        else:
+            verification_status = "parse_failed"
+        grounding_report = list(analyzer_result.grounding_report or [])
+        _attach_specificity(grounding_report, specificity_by_id)
+        grounding_score = engine_compat_grounding_score(grounding_report)
+        latency = int((time.time() - t_start) * 1000)
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        log.error(
+            "verify.analyzer_failed",
+            run_id=state["run_id"],
+            failure_kind=analyzer_result.failure_kind,
+            failure_detail=analyzer_result.failure_detail,
+            verification_status=verification_status,
+        )
+        return {
+            "grounding_report": grounding_report,
+            "grounding_score": grounding_score,
+            "verification_status": verification_status,
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=grounding_report,
+                verification_status=verification_status,
+                grounding_score=grounding_score,
+            ),
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
+
+    grounding_report = copy.deepcopy(analyzer_result.grounding_report)
+    _attach_specificity(grounding_report, specificity_by_id)
+
+    dropped_rows: list[dict] = []
+    grounding_report = _deduplicate_grounding_report(
+        grounding_report, run_id=state["run_id"], dropped_out=dropped_rows,
+    )
+    post_dedup_rows = copy.deepcopy(grounding_report)
+    post_attribution_rows = copy.deepcopy(grounding_report)
+
+    record_verify(
+        trace,
+        iteration=iteration,
+        consumed=True,
+        draft_markdown=draft_markdown,
+        source_context=source_context,
+        user_message=user_message,
+        verify_system_text=VERIFY_SYSTEM,
+        web_sources=state.get("web_sources") or [],
+        kb_results=state.get("kb_results") or [],
+        raw_response=raw,
+        parser_status=parser_status,
+        parse_error=parse_error,
+        pre_dedup_rows=copy.deepcopy(legacy_rows),
+        dropped_rows=dropped_rows,
+        post_dedup_rows=post_dedup_rows,
+        post_attribution_rows=post_attribution_rows,
+    )
+    record_semantic_analyzer(
+        trace,
+        iteration=iteration,
+        request_id=request_id,
+        success=True,
+        failure_kind=None,
+        failure_detail=None,
+        returned_model=analyzer_result.returned_model,
+        provider_response_id=analyzer_result.provider_response_id,
+        usage=analyzer_result.usage,
+        evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
+        engine_status_by_claim=engine_status_by_claim,
+        raw_response=analyzer_result.raw_response,
+    )
+
+    grounding_score = engine_compat_grounding_score(grounding_report)
+    latency = int((time.time() - t_start) * 1000)
+    existing_latency = state.get("latency_ms", {})
+    existing_latency["verify"] = latency
+
+    n_verified = sum(1 for r in grounding_report if r.get("status") == "verified")
+    n_weak = sum(1 for r in grounding_report if r.get("status") == "weak")
+    n_unverified = sum(1 for r in grounding_report if r.get("status") == "unverified")
+    n_substantive = sum(1 for r in grounding_report if r.get("specificity") == "substantive")
+    n_substantive_verified = sum(
+        1 for r in grounding_report
+        if r.get("specificity") == "substantive" and r.get("status") == "verified"
+    )
+
+    log.info(
+        "verify.complete",
+        run_id=state["run_id"],
+        grounding_score=grounding_score,
+        claims=len(grounding_report),
+        verified=n_verified,
+        weak=n_weak,
+        unverified=n_unverified,
+        substantive=n_substantive,
+        substantive_verified=n_substantive_verified,
+        verification_status=verification_status,
+        claim_completeness=CLAIM_COMPLETENESS,
+        latency_ms=latency,
+        cost=round(run_cost, 5),
+        analyzer_request_id=request_id,
+    )
 
     return {
         "grounding_report": grounding_report,
-        "grounding_score": round(grounding_score, 3),
+        "grounding_score": grounding_score,
         "verification_status": verification_status,
-        "iteration_metrics": iteration_metrics,
-        "total_tokens": state.get("total_tokens", 0) + claim_response.usage.total_tokens,
+        "iteration_metrics": _append_verify_iteration_metrics(
+            state,
+            grounding_report=grounding_report,
+            verification_status=verification_status,
+            grounding_score=grounding_score,
+        ),
+        "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
         "semantic_trace": trace,

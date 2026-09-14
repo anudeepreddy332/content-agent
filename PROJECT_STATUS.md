@@ -307,7 +307,10 @@ the current authorized engineering mission on
 - **Production Slice 2 complete:** `contract.py` + `provider.py` bridge
   retrieved evidence→manifest (full text, 5+5 count policy), claim roster,
   injected LLM adapter, grounding_report mapping; offline P6/P7/P1 adapter
-  proofs PASS; `verify_node` still unwired.
+  proofs PASS.
+- **Production Slice 3 complete:** live `verify_node` wired to two-call Phase-3
+  path (legacy claim extraction + quote-based analyzer); P6/P7/P1 proofs through
+  actual `verify_node` with mocked transport; 1013 tests green; provider calls 0.
 - **Provider execution is NOT AUTHORIZED** for further experiments without new
   owner authorization. UVR/routing, retrieval, materiality, and production
   runtime remain **unchanged**.
@@ -324,8 +327,8 @@ change improved P7 only. Transport runner
 **Next after independent runner review:** authorized provider observation
 qualification for the hybrid engine (not yet authorized).
 
-**Do not:** modify production runtime, UVR, routing, retrieval, or run additional
-3-cell provider calls without explicit authorization.
+**Do not:** run additional provider experiments or change UVR/routing/retrieval
+without explicit authorization. Slice 3 modified `verify_node` only (hybrid cutover).
 Retrieval redesign remains the next major engineering program (frozen roadmap
 priority 5).
 

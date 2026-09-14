@@ -319,23 +319,47 @@ def adjudication_to_grounding_report(
                 }
             )
 
-        report.append(
-            {
-                "claim_id": claim_id,
-                "claim": claim_row.get("claim_text", ""),
-                "status": status,
-                "source_url": source_url,
-                "source_kind": source_kind,
-                "source_ref": source_ref,
-                "full_entailment": observation.get("full_entailment"),
-                "support_spans": support_spans,
-                "blockers": blockers,
-                "analysis_validity": claim_result.validity,
-                "invalid_reasons": list(claim_result.invalid_reasons),
-                "reason_codes": list(claim_result.reason_codes),
-            }
-        )
+        kb_chunk_candidates = None
+        if primary_evidence_id and primary_evidence_id in manifest_by_id:
+            provenance = manifest_by_id[primary_evidence_id].get("provenance") or {}
+            if provenance.get("kind") == "kb":
+                chunk_index = provenance.get("chunk_index")
+                if chunk_index is not None:
+                    kb_chunk_candidates = [chunk_index]
+
+        row = {
+            "claim_id": claim_id,
+            "claim": claim_row.get("claim_text", ""),
+            "status": status,
+            "source_url": source_url,
+            "source_kind": source_kind,
+            "source_ref": source_ref,
+            "full_entailment": observation.get("full_entailment"),
+            "support_spans": support_spans,
+            "blockers": blockers,
+            "analysis_validity": claim_result.validity,
+            "invalid_reasons": list(claim_result.invalid_reasons),
+            "reason_codes": list(claim_result.reason_codes),
+        }
+        if kb_chunk_candidates is not None:
+            row["kb_chunk_candidates"] = kb_chunk_candidates
+        report.append(row)
     return report
+
+
+ENGINE_STATUS_GROUNDING_WEIGHTS: dict[str, float] = {
+    "verified": 1.0,
+    "weak": 0.75,
+    "unverified": 0.0,
+}
+
+
+def engine_compat_grounding_score(grounding_report: list[dict[str, Any]]) -> float:
+    """Deterministic routing scalar from engine statuses — not LLM confidence."""
+    if not grounding_report:
+        return 0.0
+    total = sum(ENGINE_STATUS_GROUNDING_WEIGHTS.get(str(row.get("status")), 0.0) for row in grounding_report)
+    return round(total / len(grounding_report), 3)
 
 
 def assert_manifest_source_integrity(manifest: list[dict[str, Any]]) -> None:

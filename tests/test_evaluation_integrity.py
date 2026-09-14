@@ -848,7 +848,7 @@ def test_release_validation_rejects_out_of_order_and_duplicate_run_ids():
 
 @pytest.mark.parametrize(
     "verification_status",
-    ["parse_failed", "skipped_cost_gate", "upstream_failed", "unknown"],
+    ["parse_failed", "verification_error", "skipped_cost_gate", "upstream_failed", "unknown"],
 )
 def test_release_validation_rejects_incomplete_verification_statuses(verification_status):
     config, _ = benchmark.resolve_evaluation_config()

@@ -140,7 +140,7 @@ def test_completed_empty_verdict_set_fails_closed(base_state):
 
 @pytest.mark.parametrize(
     "status",
-    ["parse_failed", "skipped_cost_gate", "upstream_failed", "not_started", "unknown", None],
+    ["parse_failed", "verification_error", "skipped_cost_gate", "upstream_failed", "not_started", "unknown", None],
 )
 def test_incomplete_verification_status_fails_closed(base_state, status):
     report = _report(verified=20, weak=0, unverified=0)

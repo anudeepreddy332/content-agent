@@ -235,10 +235,10 @@ def test_parse_failed_empty_report_and_cost_gate_remain_traceable(base_state, mo
         lambda: FakeLLMClient(response=fake_response("[]")),
     )
     empty = nodes.verify_node(_merge(base_state, {"iterations": 1, "run_id": "empty-run"}))
-    assert empty["verification_status"] == "completed"
+    assert empty["verification_status"] == "parse_failed"
     assert empty["grounding_report"] == []
     empty_slot = empty["semantic_trace"]["iterations"][0]
-    assert empty_slot["verifier_raw"]["parser_status"] == "ok"
+    assert empty_slot["verifier_raw"]["parser_status"] == "parse_failed"
     assert empty_slot["verifier_raw"]["pre_dedup_rows"] == []
     assert nodes.semantic_verification_accepted(_merge(base_state, empty)) is False
 

@@ -210,6 +210,38 @@ def record_verify(
     trace["trace_status"] = "in_progress"
 
 
+def record_semantic_analyzer(
+    trace: dict,
+    *,
+    iteration: int,
+    request_id: str,
+    success: bool,
+    failure_kind: str | None = None,
+    failure_detail: str | None = None,
+    returned_model: str | None = None,
+    provider_response_id: str | None = None,
+    usage: dict | None = None,
+    evidence_ids: list[str] | None = None,
+    engine_status_by_claim: dict[str, str | None] | None = None,
+    raw_response: str | None = None,
+) -> None:
+    """Audit trail for quote-based semantic analyzer (production path)."""
+    slot = _slot(trace, iteration)
+    slot["semantic_analyzer"] = {
+        "request_id": request_id,
+        "success": success,
+        "failure_kind": failure_kind,
+        "failure_detail": failure_detail,
+        "returned_model": returned_model,
+        "provider_response_id": provider_response_id,
+        "usage": usage,
+        "evidence_ids": evidence_ids or [],
+        "engine_status_by_claim": engine_status_by_claim or {},
+        "raw_response_sha256": sha256_utf8(raw_response or ""),
+    }
+    trace["trace_status"] = "in_progress"
+
+
 def record_hitl_event(trace: dict, status: str | None, feedback: str | None) -> None:
     trace.setdefault("hitl_events", []).append({
         "hitl_status": status,

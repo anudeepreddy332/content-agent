@@ -9,6 +9,39 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-14-03
+Date: 2026-09-14
+
+Decision: **Live `verify_node` cut over to hybrid semantic analyzer (Slice 3).**
+
+Reason: Slice 2 adapter qualified offline; production path must use engine-owned
+status without changing LangGraph topology.
+
+Phase-3 temporary two-call design inside `verify_node`:
+
+- **Call A (legacy, clipped `_build_source_context`):** claim extraction only;
+  legacy `status`/`confidence` ignored for semantic truth.
+- **Call B (`analyze_semantic_evidence` + full `build_evidence_manifest`):**
+  quote-based semantic analysis; Python binding + status engine is sole owner of
+  `grounding_report[].status`.
+
+Compatibility:
+
+- `grounding_score` = deterministic `engine_compat_grounding_score` (verified=1.0,
+  weak=0.75, unverified=0.0) — NOT legacy LLM confidence.
+- `specificity` preserved from Call A as descriptive SV metadata only.
+- `verification_error` added for provider/transport failures on Call A or B.
+- Claim inventory completeness remains `CLAIM_COMPLETENESS = unknown` (Phase 4).
+- `_resolve_attributions` skipped on engine path (manifest provenance authoritative).
+
+Does NOT change: LangGraph edges, UVR formula, HITL, retrieval breadth, provider
+experiments #1–#3 artifacts.
+
+Status: **SLICE 3 COMPLETE — PRODUCTION VERIFIER CUTOVER READY FOR REVIEW**.
+
+Confidence: 0.93
+
+---
 Decision ID: D-2026-09-14-02
 Date: 2026-09-14
 

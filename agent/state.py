@@ -33,8 +33,15 @@ class AgentState(TypedDict):
     # Verification
     grounding_report: list      # [{claim, source_url, confidence, status, specificity,
     #   source_kind, source_ref, kb_chunk_candidates?}]
-    grounding_score: float      # mean confidence across all claims
-    verification_status: Literal["not_started", "completed", "parse_failed", "skipped_cost_gate", "upstream_failed"]
+    grounding_score: float      # routing scalar from engine statuses (not LLM confidence)
+    verification_status: Literal[
+        "not_started",
+        "completed",
+        "parse_failed",
+        "verification_error",
+        "skipped_cost_gate",
+        "upstream_failed",
+    ]
 
     # Reflection
     reflection_score: int       # 1–10
