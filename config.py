@@ -85,6 +85,7 @@ _PROJECT_ROOT = _Path(__file__).resolve().parent
 _PROMPT_FILES = [
     "prompts/draft_system.md",
     "prompts/verify_system.md",
+    "prompts/claim_inventory_system.md",
     "prompts/reflect_system.md",
     "prompts/html_template.md",
 ]

@@ -95,6 +95,9 @@ def _slot(trace: dict, iteration: int) -> dict:
         "verifier_input": None,
         "verifier_raw": None,
         "post_processing": None,
+        # Phase 4 Slice 2A: canonical claim inventory for this iteration's exact
+        # draft (draft_sha256-versioned). Persistence/audit only.
+        "claim_inventory": None,
     }
     trace["iterations"].append(slot)
     return slot
@@ -136,8 +139,11 @@ def record_verify(
     dropped_rows: list | None = None,
     post_dedup_rows: list | None = None,
     post_attribution_rows: list | None = None,
+    claim_inventory: dict | None = None,
 ) -> None:
     slot = _slot(trace, iteration)
+    if claim_inventory is not None:
+        slot["claim_inventory"] = json.loads(canonical_json(claim_inventory))
     if consumed:
         identity = source_set_identity(web_sources, kb_results)
         slot["verifier_input"] = {
@@ -148,7 +154,9 @@ def record_verify(
             "source_context_sha256": sha256_utf8(source_context or ""),
             "user_message": user_message,
             "user_message_sha256": sha256_utf8(user_message or ""),
-            "verify_system_hash_12": PROMPT_HASHES.get("verify_system"),
+            # Hash of the system prompt text actually used for this pass (Phase 4
+            # Slice 2A: Call A is claim_inventory_system, not verify_system).
+            "verify_system_hash_12": sha256_utf8(verify_system_text or "")[:12],
             "verify_system_sha256": sha256_utf8(verify_system_text or ""),
             "source_set": identity,
         }

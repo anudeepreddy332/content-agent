@@ -29,6 +29,8 @@ def base_state():
                         "chunk_index": 0, "distance": 0.1, "rrf_score": 0.03}],
         "grounding_report": [],
         "grounding_score": 0.0,
+        "claim_inventory": None,
+        "brief_requirements": [],
         "reflection_score": 0,
         "reflection_notes": "",
         "reflection_provenance": {
@@ -74,22 +76,31 @@ def fake_response(content: str, tokens: int = 100):
                               total_tokens=tokens),
     )
 
-def default_analyzer_payload(legacy_content: str) -> str:
-    """Phase-3 verify_node Call B autofill: all claims unverified, no quotes."""
-    import agent.nodes as nodes
+def default_analyzer_payload(call_a_content: str) -> str:
+    """Phase-4 verify_node Call B autofill: all eligible claims unverified, no quotes.
+
+    Parses the Call-A claim-inventory output (new schema) and mirrors the
+    production roster: Call-B-eligible claims only, with Python content-derived
+    claim IDs (never positional, never model-generated)."""
+    from agent.claim_inventory import (
+        call_b_eligible,
+        compute_claim_id,
+        parse_claim_inventory_rows,
+    )
 
     try:
-        items = nodes._extract_json_array(legacy_content.strip())
+        rows = parse_claim_inventory_rows(call_a_content)
     except Exception:
         return json.dumps({"observations": []})
     observations = [
         {
-            "claim_id": f"claim-{index:03d}",
+            "claim_id": compute_claim_id(row["claim_text"]),
             "support_quotes": [],
             "full_entailment": False,
             "blockers": [],
         }
-        for index in range(1, len(items) + 1)
+        for row in rows
+        if call_b_eligible(row["claim_type"], row["material"])
     ]
     return json.dumps({"observations": observations})
 

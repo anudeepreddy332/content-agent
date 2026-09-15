@@ -9,6 +9,100 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-15-01
+Date: 2026-09-15
+
+Decision: **Phase 4 Slice 2A — Call A upgraded to claim inventory + materiality
+with deterministic draft anchoring and draft-versioned identity.**
+
+Reason: prevent omitted-claim false-greens. Establish draft version → complete
+supplied claim inventory → exact claim occurrence anchors → materiality → Call-B
+semantic verification. Call A owns INVENTORY only; Call B / the deterministic
+status engine remains the ONLY semantic verification authority.
+
+Rules:
+
+- **claim_text ≠ anchor_quote.** `claim_text` is the atomic semantic proposition
+  adjudicated by Call B; `anchor_quote` is an exact verbatim draft substring used
+  only for deterministic location binding. Compound sentences may anchor several
+  atomic claims (both keep the full-sentence anchor).
+- **Anchoring is deterministic Python exact-string binding** (zero-based
+  half-open spans, all occurrences). Model-generated IDs and start/end offsets
+  are rejected at schema level (`extra="forbid"`). 0 matches → `ANCHOR_FAILED`
+  (claim retained; fails closed). >1 matches with canonical claim_text ==
+  anchor_quote → `bound_multiple` (all occurrences preserved). >1 matches with a
+  normalized/derived proposition → `ANCHOR_AMBIGUOUS` (unresolved; fails closed).
+- **Claim IDs are Python-assigned**: `clm-` + sha256(canonical claim_text)[:16]
+  (~64-bit). Repeated instances of one logical proposition merge into one
+  claim_id with multiple occurrence anchors. A changed proposition gets a changed
+  identity. Cross-version identity is diagnostic only — artifacts are versioned
+  by `draft_sha256`, and an inventory from draft N never certifies draft N+1
+  (acceptance fails closed on sha mismatch; inventory rebuilt from scratch every
+  verify pass).
+- **Claim types**: factual / editorial / code / definition. Only factual claims
+  enter Call B by default; a definition classified material=true or
+  material=unknown is Call-B-eligible so checkable content cannot evade
+  verification behind the label.
+- **Materiality** (same Call A; no new model call): true / false / unknown.
+  Never derived from specificity, length, confidence, or semantic status.
+  UNKNOWN is preserved (never converted to false). Deterministic override with
+  precedence: a claim linked (`satisfies_req_ids`) to a mandatory
+  `brief_requirements` entry becomes material=true (`materiality_override =
+  "required_by_brief"`). Requirement identities live in STATE, external to any
+  draft — deleting a linked claim cannot delete the requirement.
+- **Citation preparation (not a gate)**: MATERIAL + FACTUAL ⇒
+  `requires_citation=true`, period; unknown-material factual fails toward true;
+  nonmaterial factual preserves the model's explicit classification (not policy
+  authority). The FULL bound support evidence set (`support_spans`) is the
+  canonical future citation input; `source_ref`/`source_url` remain
+  primary-source compatibility fields only. Slice 2c must not define citation
+  correctness as mere subset-of-support; favor over-citation until support-set
+  minimality is modeled.
+- **Fail closed (§19)**: Call-A provider failure → `verification_error`;
+  malformed/schema-invalid output → `parse_failed`; zero Call-B-eligible factual
+  claims, or any eligible claim with ANCHOR_FAILED/ANCHOR_AMBIGUOUS →
+  `verification_status = "inventory_failed"` (new), Call B does NOT run, the
+  inventory remains in state/trace for audit, and acceptance fails closed.
+- **Routing unchanged from Slice 1**; inventory/materiality fields do NOT loosen
+  acceptance. Grounding rows are re-ordered to draft/document order in the
+  production mapping layer (engine iterates sorted claim-ids; with hash IDs that
+  is not document order). Presentation only — statuses untouched.
+- **verify_node stays narrow**: no evaluators for correctness/completeness/
+  relevance/citation/retrieval added.
+
+**METRIC RE-BASELINE (explicit)**: Call A no longer sees source context and runs
+a new prompt (`prompts/claim_inventory_system.md`, added to `PROMPT_FILES`), so
+`PROMPT_VERSION` changes at import. Grounding/SV/UVR numbers from this slice
+onward are NOT comparable with the sha-6687240c8cd8-era baseline. This is a
+mandated Call-A contract upgrade, not a silent drift.
+
+Golden set: `evals/fixtures/claim_inventory_golden_v1.json` (16 frozen cases,
+hand-authored simulated Call-A outputs + independent gold labels; the extractor
+never grades itself) + `scripts/evaluate_claim_inventory.py` computing factual
+recall/precision, material-claim recall, split/merge counts, duplicate handling,
+anchor-binding accuracy, materiality confusion matrix, and false-nonmaterial
+count/rate with denominators preserved. NO production extraction threshold is
+invented — none is calibrated. Frozen harness results: factual recall/precision
+1.0 (21/21), material recall 16/17, false-nonmaterial 1/17 (deliberate G14
+trap), split/merge 0, anchor accuracy 24/24, duplicate collapse 1/1.
+
+Deferred: Slice 2b (required-content coverage policy/gate), Slice 2c (citation
+completeness/placement gate), extraction-quality calibration.
+
+Does NOT change: quote-based analyzer contract, quote→span binding, status
+engine, blocker derivation, retrieval/chunking/embeddings, LangGraph topology,
+call count (Call A + Call B only). Provider calls: zero.
+
+Evidence: `tests/test_claim_inventory.py` (spec cases A–O + contract + mocked
+E2E), `tests/test_claim_inventory_golden.py`, updated cutover/trace/failure
+suites; full suite 1110 passed; ruff fatal-tier clean.
+
+Status: **PHASE-4 SLICE 2A COMPLETE ON `experiment/hybrid-verifier-status-engine`
+— AWAITING INDEPENDENT REVIEW** (single local commit; not pushed, not merged).
+
+Confidence: 0.88
+
+---
 Decision ID: D-2026-09-14-05
 Date: 2026-09-14
 

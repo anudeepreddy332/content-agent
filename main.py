@@ -78,6 +78,15 @@ def _write_telemetry(state: dict):
         # Unknown is deliberate for historical or partial states. Benchmark code
         # must not infer a completed verification from a missing status.
         "verification_status": state.get("verification_status", "unknown"),
+        # Phase 4 Slice 2A audit: draft-versioned claim inventory (summary).
+        "claim_inventory_summary": (
+            {
+                "draft_sha256": state["claim_inventory"].get("draft_sha256"),
+                "counts": state["claim_inventory"].get("counts"),
+                "satisfied_req_ids": state["claim_inventory"].get("satisfied_req_ids", []),
+            }
+            if isinstance(state.get("claim_inventory"), dict) else None
+        ),
         "hitl_status": state.get("hitl_status"),
         "html_review_status": state.get("html_review_status"),
         "git_status": state.get("git_status"),
@@ -198,6 +207,8 @@ def _build_initial_state(topic, slug, card_id, series, run_id, category="concept
         "grounding_report": [],
         "grounding_score": 0.0,
         "verification_status": "not_started",
+        "claim_inventory": None,
+        "brief_requirements": [],
         "reflection_score": 0,
         "reflection_notes": "",
         "reflection_provenance": {

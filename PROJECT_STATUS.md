@@ -112,6 +112,17 @@ remain preserved below as evidence; they are not reopened here.
      non-overriding; unresolved semantic obligations explicit in Gate-1 payload and
      trace. Claim completeness, materiality, and citation completeness remain
      UNKNOWN — later Phase-4 slices. Not pushed, not merged, zero provider calls.
+   - **Phase 4 Slice 2A (claim inventory + draft anchoring + materiality) —
+     IMPLEMENTED, LOCAL COMMIT ONLY, AWAITING INDEPENDENT REVIEW**
+     (D-2026-09-15-01): Call A now extracts atomic claim inventory + materiality
+     with no evidence context; deterministic exact-string draft anchoring
+     (ANCHOR_FAILED/ANCHOR_AMBIGUOUS fail closed); Python content-derived claim
+     IDs; `draft_sha256`-versioned inventory rebuilt every verify pass;
+     required⇒material override; UNKNOWN materiality preserved; material factual
+     ⇒ requires citation (preparation only, no gate); full Call-B support set
+     preserved. Call B semantic authority unchanged; topology unchanged; zero
+     provider calls. **PROMPT_VERSION re-baselined** (new Call-A prompt; numbers
+     not comparable with the sha-6687240c8cd8 era). Slice 2b/2c deferred.
 4. **Verifier semantic-contract 3-cell prompt-only experiment — EXECUTED / FAIL
    (valid):** run 2 artifact
    `outputs/verifier_semantic_contract_3cell/verifier_semantic_contract_run_20260905T130342Z.json`

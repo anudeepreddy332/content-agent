@@ -122,7 +122,7 @@ def test_matrix_g_uvr_above_threshold(base_state):
 
 
 def test_p6_contradiction_weak_routes_to_revision(base_state, monkeypatch):
-    result = _run_fixture_case(monkeypatch, "P6", legacy_status="verified")
+    result = _run_fixture_case(monkeypatch, "P6")
     state = {**_fixture_state(_load_case("P6")), **result}
     assert state["grounding_report"][0]["status"] == "weak"
     assert nodes.unverified_rate(state["grounding_report"]) == 0.0

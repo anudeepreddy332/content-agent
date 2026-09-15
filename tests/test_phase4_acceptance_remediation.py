@@ -193,10 +193,11 @@ def test_case_j_legacy_confidence_cannot_launder_blocker(base_state):
     assert nodes.route_after_reflect(state) == "draft"
 
 
-def test_case_j_legacy_status_cannot_override_engine_p6(base_state, monkeypatch):
-    """P6: engine says weak+contradiction; legacy Call A verdict is irrelevant."""
-    for legacy_status in ("verified", "weak", "unverified"):
-        result = _run_fixture_case(monkeypatch, "P6", legacy_status=legacy_status)
+def test_case_j_call_a_materiality_cannot_override_engine_p6(base_state, monkeypatch):
+    """P6: engine says weak+contradiction regardless of Call-A materiality
+    classification — materiality is not semantic authority."""
+    for material in (True, False, "unknown"):
+        result = _run_fixture_case(monkeypatch, "P6", material=material)
         state = {**_fixture_state(_load_case("P6")), **result}
         assert state["grounding_report"][0]["status"] == "weak"
         assert state["grounding_report"][0]["blockers"][0]["kind"] == "contradiction"
@@ -204,8 +205,8 @@ def test_case_j_legacy_status_cannot_override_engine_p6(base_state, monkeypatch)
         assert nodes.route_after_reflect(state) == "draft"
 
 
-def test_case_j_legacy_unverified_cannot_sink_engine_verified_p1(base_state, monkeypatch):
-    result = _run_fixture_case(monkeypatch, "P1", legacy_status="unverified")
+def test_case_j_call_a_unknown_materiality_cannot_sink_engine_verified_p1(base_state, monkeypatch):
+    result = _run_fixture_case(monkeypatch, "P1", material="unknown")
     state = {**_fixture_state(_load_case("P1")), **result, "reflection_score": 8}
     assert state["grounding_report"][0]["status"] == "verified"
     assert nodes.semantic_verification_accepted(state) is True
@@ -278,7 +279,7 @@ def _capture_draft_user_message(monkeypatch, state: dict) -> str:
 
 
 def test_p6_contradiction_revision_feedback_is_targeted(base_state, monkeypatch):
-    result = _run_fixture_case(monkeypatch, "P6", legacy_status="verified")
+    result = _run_fixture_case(monkeypatch, "P6")
     state = {**_fixture_state(_load_case("P6")), **result}
     row = state["grounding_report"][0]
     assert row["status"] == "weak"
@@ -323,7 +324,7 @@ def test_p7_limitation_revision_feedback_is_targeted(base_state, monkeypatch):
 
 
 def test_blocker_feedback_reaches_trace_revision_linkage(base_state, monkeypatch):
-    result = _run_fixture_case(monkeypatch, "P6", legacy_status="verified")
+    result = _run_fixture_case(monkeypatch, "P6")
     state = {**_fixture_state(_load_case("P6")), **result}
     client = FakeLLMClient(response=fake_response(json.dumps({
         "problem_framing": "p", "technical_dive": "t", "code_snippets": "c", "takeaways": "k",

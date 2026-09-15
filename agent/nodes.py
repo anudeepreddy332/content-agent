@@ -62,16 +62,24 @@ from agent.semantic_trace import (
 )
 from agent.semantic_analyzer.contract import (
     engine_compat_grounding_score,
-    legacy_verdict_rows_to_claim_roster,
+    sha256_utf8,
 )
 from agent.semantic_analyzer.provider import analyze_semantic_evidence
+from agent.claim_inventory import (
+    build_claim_inventory,
+    call_b_roster,
+    eligible_claims,
+    inventory_critical_failures,
+    parse_claim_inventory_rows,
+)
 import html as html_module
 import re
 import datetime
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text()
+VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text()  # historical; evals only
+CLAIM_INVENTORY_SYSTEM = Path("prompts/claim_inventory_system.md").read_text()
 REFLECT_SYSTEM = Path("prompts/reflect_system.md").read_text()
 
 # DeepSeek client
@@ -851,27 +859,59 @@ def _verify_request_id(state: AgentState) -> str:
     return f"{state['run_id']}:{state.get('iterations', 0)}:verify"
 
 
-def _legacy_claim_extraction_message(draft_markdown: str, source_context: str) -> str:
+def _claim_inventory_user_message(state: AgentState, draft_markdown: str) -> str:
+    """Call-A (claim inventory + materiality) user message.
+
+    The extractor sees the exact current draft plus topic/brief/card context
+    needed to classify relevance and materiality — and NO evidence/sources, so
+    retrieval cannot influence what is extracted as a claim."""
+    requirements = state.get("brief_requirements") or []
+    req_block = json.dumps(requirements, ensure_ascii=True) if requirements else "none provided"
     return (
-        f"Draft to verify:\n{draft_markdown}\n\n"
-        f"Available sources:\n{source_context}\n\n"
-        "Return a JSON array. Each element:\n"
-        '{"claim": "...", "source_url": "..." or null, "confidence": 0.0-1.0,\n'
-        '  "status": "verified" | "weak" | "unverified",\n'
-        '  "specificity": "substantive" | "generic"}\n\n'
-        "Return ONLY the JSON array. No preamble."
+        f"Topic: {state['topic']}\n"
+        f"Card ID: {state['card_id']}\n"
+        f"Series context: {state.get('series_context', '')}\n"
+        f"Brief requirements (JSON): {req_block}\n\n"
+        f"Draft (exact current version) to inventory:\n{draft_markdown}\n\n"
+        "Return ONLY the JSON array specified in your instructions."
     )
 
 
-def _specificity_by_claim_id(
-    legacy_rows: list[dict],
-    claim_roster: list[dict],
-) -> dict[str, str]:
+def _specificity_by_claim_id_from_inventory(inventory: dict | None) -> dict[str, str]:
     """Descriptive metadata from Call A — not semantic authority."""
-    out: dict[str, str] = {}
-    for legacy, claim in zip(legacy_rows, claim_roster, strict=True):
-        out[claim["claim_id"]] = legacy.get("specificity", "generic")
-    return out
+    return {
+        claim["claim_id"]: claim.get("specificity", "generic")
+        for claim in (inventory or {}).get("claims", [])
+    }
+
+
+def _attach_inventory_fields(grounding_report: list[dict], inventory: dict | None) -> None:
+    """Copy descriptive inventory fields onto grounding rows (audit/UI only —
+    no effect on status derivation, which the engine owns)."""
+    by_id = {c["claim_id"]: c for c in (inventory or {}).get("claims", [])}
+    for row in grounding_report:
+        claim = by_id.get(row.get("claim_id"))
+        if not claim:
+            continue
+        row["material"] = claim.get("material")
+        row["claim_type"] = claim.get("claim_type")
+        row["section"] = claim.get("section")
+        row["anchor_quote"] = claim.get("anchor_quote")
+        row["occurrences"] = copy.deepcopy(claim.get("occurrences") or [])
+        row["requires_citation"] = claim.get("requires_citation")
+
+
+def _order_grounding_report_by_draft(grounding_report: list[dict], inventory: dict | None) -> list[dict]:
+    """Restore draft/document order for review output.
+
+    The status engine iterates claim_ids in sorted order; with content-derived
+    hash IDs that is no longer document order. Reordering rows is presentation
+    only — statuses and content are untouched."""
+    order = {c["claim_id"]: i for i, c in enumerate((inventory or {}).get("claims", []))}
+    return sorted(
+        grounding_report,
+        key=lambda r: order.get(r.get("claim_id"), len(order)),
+    )
 
 
 def _attach_specificity(grounding_report: list[dict], specificity_by_id: dict[str, str]) -> None:
@@ -941,17 +981,23 @@ def _append_verify_iteration_metrics(
 
 
 def verify_node(state: AgentState) -> dict:
-    """Phase-3 hybrid verifier: legacy claim extraction + quote-based semantic engine.
+    """Phase-4 hybrid verifier: claim inventory + quote-based semantic engine.
 
-    CALL A (legacy, clipped source context): claim discovery ONLY — ``status`` and
-    ``confidence`` from this call are ignored for semantic truth.
+    CALL A (claim_inventory_system, NO source context): atomic claim inventory
+    + materiality ONLY. Python then owns schema validation (model IDs/offsets
+    rejected), exact draft anchoring, content-derived claim IDs, duplicate
+    merge, and the required⇒material override. Inventory is rebuilt from
+    scratch on every verify pass and versioned by draft_sha256 — a stale
+    inventory can never certify a revised draft.
 
     CALL B (full evidence manifest via ``build_evidence_manifest``): semantic
-    analysis ONLY — Python quote binding + ``adjudicate_hybrid_verifier_observations``
-    is the sole owner of ``grounding_report[].status``.
+    analysis ONLY over the canonical current-version factual claims
+    (``claim_text`` propositions) — Python quote binding +
+    ``adjudicate_hybrid_verifier_observations`` is the sole owner of
+    ``grounding_report[].status``. Call-A materiality never influences status.
 
-    Claim inventory completeness remains ``CLAIM_COMPLETENESS`` (``unknown``); Phase 4
-    owns completeness/materiality.
+    Claim inventory completeness (recall vs everything the draft truly says)
+    remains ``CLAIM_COMPLETENESS`` (``unknown``) until separately calibrated.
     """
     log = get_logger("verify_node")
     t_start = time.time()
@@ -979,15 +1025,18 @@ def verify_node(state: AgentState) -> dict:
 
     client = _get_client()
     draft_markdown = state.get("draft_markdown") or ""
-    source_context = _build_source_context(state["web_sources"], state["kb_results"])
-    user_message = _legacy_claim_extraction_message(draft_markdown, source_context)
+    draft_sha256 = sha256_utf8(draft_markdown)
+    # Call A consumes ONLY the draft + topic/brief context. Sources are NOT
+    # shown to the extractor; the traced source_context is empty by design.
+    user_message = _claim_inventory_user_message(state, draft_markdown)
 
     run_cost = 0.0
     total_new_tokens = 0
     raw = ""
     parser_status = "not_started"
     parse_error: str | None = None
-    legacy_rows: list[dict] = []
+    raw_claim_rows: list[dict] = []
+    claim_inventory: dict | None = None
     verification_status = "completed"
     claim_response = None
 
@@ -996,14 +1045,14 @@ def verify_node(state: AgentState) -> dict:
             client,
             model=DEEPSEEK_MODEL,
             messages=[
-                {"role": "system", "content": VERIFY_SYSTEM},
+                {"role": "system", "content": CLAIM_INVENTORY_SYSTEM},
                 {"role": "user", "content": user_message},
             ],
             temperature=0.1,
             max_tokens=4000,
         )
     except (RateLimitError, APIConnectionError, APITimeoutError, InternalServerError) as exc:
-        log.error("verify.legacy_transport_failed", run_id=state["run_id"], error=str(exc))
+        log.error("verify.inventory_transport_failed", run_id=state["run_id"], error=str(exc))
         latency = int((time.time() - t_start) * 1000)
         trace = copy_trace(state)
         record_verify(
@@ -1011,9 +1060,9 @@ def verify_node(state: AgentState) -> dict:
             iteration=iteration,
             consumed=True,
             draft_markdown=draft_markdown,
-            source_context=source_context,
+            source_context="",
             user_message=user_message,
-            verify_system_text=VERIFY_SYSTEM,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
             web_sources=state.get("web_sources") or [],
             kb_results=state.get("kb_results") or [],
             raw_response=None,
@@ -1030,6 +1079,7 @@ def verify_node(state: AgentState) -> dict:
             "grounding_report": [],
             "grounding_score": 0.0,
             "verification_status": "verification_error",
+            "claim_inventory": None,
             "iteration_metrics": _append_verify_iteration_metrics(
                 state,
                 grounding_report=[],
@@ -1045,16 +1095,11 @@ def verify_node(state: AgentState) -> dict:
     raw = claim_response.choices[0].message.content.strip()
 
     try:
-        legacy_rows = _parse_verifier_verdicts(raw)
-        if not legacy_rows:
-            raise ValueError("zero claims from legacy extraction")
-        claim_roster = legacy_verdict_rows_to_claim_roster(legacy_rows)
-        specificity_by_id = _specificity_by_claim_id(legacy_rows, claim_roster)
+        raw_claim_rows = parse_claim_inventory_rows(raw)
         parser_status = "ok"
     except (json.JSONDecodeError, ValueError, ValidationError) as exc:
-        log.error("verify.legacy_parse_failed", run_id=state["run_id"], error=str(exc),
+        log.error("verify.inventory_parse_failed", run_id=state["run_id"], error=str(exc),
                   raw_preview=raw[:300])
-        legacy_rows = []
         verification_status = "parse_failed"
         parser_status = "parse_failed"
         parse_error = str(exc)
@@ -1065,9 +1110,9 @@ def verify_node(state: AgentState) -> dict:
             iteration=iteration,
             consumed=True,
             draft_markdown=draft_markdown,
-            source_context=source_context,
+            source_context="",
             user_message=user_message,
-            verify_system_text=VERIFY_SYSTEM,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
             web_sources=state.get("web_sources") or [],
             kb_results=state.get("kb_results") or [],
             raw_response=raw,
@@ -1084,6 +1129,7 @@ def verify_node(state: AgentState) -> dict:
             "grounding_report": [],
             "grounding_score": 0.0,
             "verification_status": verification_status,
+            "claim_inventory": None,
             "iteration_metrics": _append_verify_iteration_metrics(
                 state,
                 grounding_report=[],
@@ -1095,6 +1141,72 @@ def verify_node(state: AgentState) -> dict:
             "latency_ms": existing_latency,
             "semantic_trace": trace,
         }
+
+    # Deterministic inventory: exact anchoring, Python claim IDs, duplicate
+    # merge, required⇒material override. Versioned by draft_sha256.
+    claim_inventory = build_claim_inventory(
+        run_id=state["run_id"],
+        iteration=iteration,
+        draft_markdown=draft_markdown,
+        raw_claims=raw_claim_rows,
+        brief_requirements=state.get("brief_requirements"),
+    )
+
+    # Fail closed (§19): no usable factual inventory, or any Call-B-eligible
+    # claim whose draft anchor is unresolved (ANCHOR_FAILED / ANCHOR_AMBIGUOUS).
+    # Call B must NOT run and acceptance must NOT proceed as though a complete
+    # inventory was established. The inventory remains present for audit.
+    critical_failures = inventory_critical_failures(claim_inventory)
+    if not eligible_claims(claim_inventory) or critical_failures:
+        verification_status = "inventory_failed"
+        latency = int((time.time() - t_start) * 1000)
+        trace = copy_trace(state)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context="",
+            user_message=user_message,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=raw,
+            parser_status=parser_status,
+            parse_error=None,
+            pre_dedup_rows=copy.deepcopy(raw_claim_rows),
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+            claim_inventory=claim_inventory,
+        )
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        log.error(
+            "verify.inventory_failed",
+            run_id=state["run_id"],
+            eligible=len(eligible_claims(claim_inventory)),
+            anchor_unresolved=[c["claim_id"] for c in critical_failures],
+        )
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": verification_status,
+            "claim_inventory": claim_inventory,
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=[],
+                verification_status=verification_status,
+                grounding_score=0.0,
+            ),
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
+
+    claim_roster = call_b_roster(claim_inventory)
+    specificity_by_id = _specificity_by_claim_id_from_inventory(claim_inventory)
 
     analyzer_result = analyze_semantic_evidence(
         request_id=request_id,
@@ -1120,18 +1232,19 @@ def verify_node(state: AgentState) -> dict:
             iteration=iteration,
             consumed=True,
             draft_markdown=draft_markdown,
-            source_context=source_context,
+            source_context="",
             user_message=user_message,
-            verify_system_text=VERIFY_SYSTEM,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
             web_sources=state.get("web_sources") or [],
             kb_results=state.get("kb_results") or [],
             raw_response=raw,
             parser_status=parser_status,
             parse_error=parse_error,
-            pre_dedup_rows=copy.deepcopy(legacy_rows),
+            pre_dedup_rows=copy.deepcopy(raw_claim_rows),
             dropped_rows=[],
             post_dedup_rows=[],
             post_attribution_rows=[],
+            claim_inventory=claim_inventory,
         )
         record_semantic_analyzer(
             trace,
@@ -1153,6 +1266,7 @@ def verify_node(state: AgentState) -> dict:
             verification_status = "parse_failed"
         grounding_report = list(analyzer_result.grounding_report or [])
         _attach_specificity(grounding_report, specificity_by_id)
+        _attach_inventory_fields(grounding_report, claim_inventory)
         grounding_score = engine_compat_grounding_score(grounding_report)
         latency = int((time.time() - t_start) * 1000)
         existing_latency = state.get("latency_ms", {})
@@ -1168,6 +1282,7 @@ def verify_node(state: AgentState) -> dict:
             "grounding_report": grounding_report,
             "grounding_score": grounding_score,
             "verification_status": verification_status,
+            "claim_inventory": claim_inventory,
             "iteration_metrics": _append_verify_iteration_metrics(
                 state,
                 grounding_report=grounding_report,
@@ -1182,6 +1297,8 @@ def verify_node(state: AgentState) -> dict:
 
     grounding_report = copy.deepcopy(analyzer_result.grounding_report)
     _attach_specificity(grounding_report, specificity_by_id)
+    _attach_inventory_fields(grounding_report, claim_inventory)
+    grounding_report = _order_grounding_report_by_draft(grounding_report, claim_inventory)
 
     dropped_rows: list[dict] = []
     grounding_report = _deduplicate_grounding_report(
@@ -1195,18 +1312,19 @@ def verify_node(state: AgentState) -> dict:
         iteration=iteration,
         consumed=True,
         draft_markdown=draft_markdown,
-        source_context=source_context,
+        source_context="",
         user_message=user_message,
-        verify_system_text=VERIFY_SYSTEM,
+        verify_system_text=CLAIM_INVENTORY_SYSTEM,
         web_sources=state.get("web_sources") or [],
         kb_results=state.get("kb_results") or [],
         raw_response=raw,
         parser_status=parser_status,
         parse_error=parse_error,
-        pre_dedup_rows=copy.deepcopy(legacy_rows),
+        pre_dedup_rows=copy.deepcopy(raw_claim_rows),
         dropped_rows=dropped_rows,
         post_dedup_rows=post_dedup_rows,
         post_attribution_rows=post_attribution_rows,
+        claim_inventory=claim_inventory,
     )
     record_semantic_analyzer(
         trace,
@@ -1249,6 +1367,8 @@ def verify_node(state: AgentState) -> dict:
         substantive_verified=n_substantive_verified,
         verification_status=verification_status,
         claim_completeness=CLAIM_COMPLETENESS,
+        inventory_counts=claim_inventory.get("counts"),
+        draft_sha256=draft_sha256,
         latency_ms=latency,
         cost=round(run_cost, 5),
         analyzer_request_id=request_id,
@@ -1258,6 +1378,7 @@ def verify_node(state: AgentState) -> dict:
         "grounding_report": grounding_report,
         "grounding_score": grounding_score,
         "verification_status": verification_status,
+        "claim_inventory": claim_inventory,
         "iteration_metrics": _append_verify_iteration_metrics(
             state,
             grounding_report=grounding_report,
@@ -1289,6 +1410,19 @@ def claim_review_summary(rows: list[dict]) -> dict[str, int]:
         if status in ("verified", "weak", "unverified"):
             counts[status] += 1
     return counts
+
+
+def claim_inventory_summary(inventory: dict | None) -> dict | None:
+    """Gate-1 review summary of the current-draft claim inventory (audit aid —
+    NOT an acceptance input by itself)."""
+    if not isinstance(inventory, dict):
+        return None
+    return {
+        "draft_sha256": inventory.get("draft_sha256"),
+        "counts": inventory.get("counts"),
+        "satisfied_req_ids": inventory.get("satisfied_req_ids", []),
+        "critical_failures": len(inventory_critical_failures(inventory)),
+    }
 
 
 def _reflection_provenance(
@@ -1461,6 +1595,7 @@ def hitl_node(state: AgentState) -> dict:
             # blocker-bearing rows are categorical; blocker-free unverified rows
             # are UVR-governed. Not hidden behind aggregate scores.
             "semantic_obligations": unresolved_semantic_obligations(state.get("grounding_report")),
+            "claim_inventory_summary": claim_inventory_summary(state.get("claim_inventory")),
             "claim_completeness": CLAIM_COMPLETENESS,
         }) or {}
         action = decision.get("action")
@@ -2529,6 +2664,16 @@ def semantic_verification_accepted(state: AgentState) -> bool:
     """
     if state.get("verification_status") != "completed":
         return False
+    inventory = state.get("claim_inventory")
+    if inventory is not None:
+        # Phase 4 Slice 2A: a present inventory must belong to THIS exact draft
+        # version (no stale inventory certifies a revised draft) and every
+        # Call-B-eligible claim must be anchor-resolved. An absent inventory
+        # (pre-2A/hand-built state) keeps Slice-1 behavior only.
+        if inventory.get("draft_sha256") != sha256_utf8(state.get("draft_markdown") or ""):
+            return False
+        if inventory_critical_failures(inventory):
+            return False
     report = state.get("grounding_report") or []
     if has_blocking_semantic_blockers(report):
         return False

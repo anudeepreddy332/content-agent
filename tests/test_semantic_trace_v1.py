@@ -61,6 +61,23 @@ def _verdict(
     }
 
 
+def _inv_row(claim_text: str, *, anchor_quote: str, section: str | None = None) -> dict:
+    """Phase-4 Slice-2A Call-A (claim inventory) output row. ``anchor_quote``
+    must be a verbatim substring of the draft under verification."""
+    return {
+        "claim_text": claim_text,
+        "anchor_quote": anchor_quote,
+        "section": section,
+        "claim_type": "factual",
+        "material": True,
+        "materiality_reason_code": None,
+        "materiality_rationale": None,
+        "satisfies_req_ids": [],
+        "specificity": "substantive",
+        "requires_citation": None,
+    }
+
+
 def _merge(state: dict, update: dict) -> dict:
     merged = dict(state)
     merged.update(update)
@@ -142,8 +159,8 @@ def test_iteration_one_and_two_drafts_are_preserved_independently(base_state, mo
     assert slot1["revision_linkage"] is None
 
     verify_raw = json.dumps([
-        _verdict(unverified, status="unverified", source_url=None, confidence=0.2),
-        _verdict("Gradient descent updates parameters."),
+        _inv_row(unverified, anchor_quote="framing-one"),
+        _inv_row("Gradient descent updates parameters.", anchor_quote="dive-one"),
     ])
     monkeypatch.setattr(
         nodes, "_get_client",
@@ -156,12 +173,14 @@ def test_iteration_one_and_two_drafts_are_preserved_independently(base_state, mo
     assert vin["consumed"] is True
     assert vin["user_message"]
     assert md1 in vin["user_message"]
-    assert vin["source_context"] in vin["user_message"]
-    assert "gradient descent content" in vin["source_context"]
+    # Phase 4 Slice 2A: Call A (claim inventory) consumes NO source context —
+    # evidence must not influence what is extracted as a claim.
+    assert vin["source_context"] == ""
+    assert "gradient descent content" not in vin["user_message"]
     raw = v1["semantic_trace"]["iterations"][0]["verifier_raw"]
     assert raw["raw_response"] == verify_raw
     assert raw["parser_status"] == "ok"
-    assert raw["pre_dedup_rows"][0]["claim"] == unverified
+    assert raw["pre_dedup_rows"][0]["claim_text"] == unverified
 
     s_after_v1 = _merge(s_after_d1, v1)
     monkeypatch.setattr(
@@ -186,7 +205,7 @@ def test_iteration_one_and_two_drafts_are_preserved_independently(base_state, mo
     monkeypatch.setattr(
         nodes, "_get_client",
         lambda: FakeLLMClient(response=fake_response(json.dumps([
-            _verdict("Gradient descent updates parameters."),
+            _inv_row("Gradient descent updates parameters.", anchor_quote="dive-two"),
         ]))),
     )
     v2 = nodes.verify_node(_merge(s_after_v1, d2))
@@ -199,10 +218,13 @@ def test_iteration_one_and_two_drafts_are_preserved_independently(base_state, mo
 def test_duplicate_removal_and_post_attribution_are_reconstructable(base_state, monkeypatch):
     claim = "Gradient descent is an iterative optimization algorithm that minimizes a loss function."
     near = "Gradient descent is an iterative optimization algorithm that minimizes a loss function!"
+    # base_state draft contains "Gradient descent minimizes a loss function." once;
+    # distinct atomic claims may legitimately share one anchor sentence.
+    shared_anchor = "Gradient descent minimizes a loss function."
     raw = json.dumps([
-        _verdict(claim, source_url="https://example.com/gd"),
-        _verdict(near, source_url="https://example.com/gd"),
-        _verdict("Unrelated verified fact about line search.", source_url="https://example.com/gd"),
+        _inv_row(claim, anchor_quote=shared_anchor),
+        _inv_row(near, anchor_quote=shared_anchor),
+        _inv_row("Unrelated verified fact about line search.", anchor_quote=shared_anchor),
     ])
     monkeypatch.setattr(nodes, "_get_client", lambda: FakeLLMClient(response=fake_response(raw)))
     result = nodes.verify_node(_merge(base_state, {"iterations": 1, "run_id": "dedup-run"}))
@@ -235,11 +257,14 @@ def test_parse_failed_empty_report_and_cost_gate_remain_traceable(base_state, mo
         lambda: FakeLLMClient(response=fake_response("[]")),
     )
     empty = nodes.verify_node(_merge(base_state, {"iterations": 1, "run_id": "empty-run"}))
-    assert empty["verification_status"] == "parse_failed"
+    # Phase 4 Slice 2A: a structurally valid but empty extraction is an
+    # inventory failure (no usable factual inventory), not a parse failure.
+    assert empty["verification_status"] == "inventory_failed"
     assert empty["grounding_report"] == []
     empty_slot = empty["semantic_trace"]["iterations"][0]
-    assert empty_slot["verifier_raw"]["parser_status"] == "parse_failed"
+    assert empty_slot["verifier_raw"]["parser_status"] == "ok"
     assert empty_slot["verifier_raw"]["pre_dedup_rows"] == []
+    assert empty_slot["claim_inventory"]["claims"] == []
     assert nodes.semantic_verification_accepted(_merge(base_state, empty)) is False
 
     sentinel = FakeLLMClient()
@@ -407,7 +432,7 @@ def test_trace_does_not_emit_test_credentials(base_state, monkeypatch):
     assert BEARER not in blob
     monkeypatch.setattr(
         nodes, "_get_client",
-        lambda: FakeLLMClient(response=fake_response(json.dumps([_verdict("x")]))),
+        lambda: FakeLLMClient(response=fake_response(json.dumps([_inv_row("x", anchor_quote="framing-sec")]))),
     )
     verified = nodes.verify_node(_merge(base_state, drafted))
     blob2 = canonical_json(verified["semantic_trace"])

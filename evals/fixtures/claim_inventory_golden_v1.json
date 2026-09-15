@@ -1,0 +1,909 @@
+{
+  "schema": "claim_inventory_golden_v1",
+  "description": "Frozen offline golden set for the Phase 4 Slice 2A claim-inventory pipeline. call_a_response entries are hand-authored simulated extractor outputs; gold_claims are independent hand labels. NO providers.",
+  "cases": [
+    {
+      "case_id": "G01-simple-factual",
+      "tags": [
+        "simple_factual"
+      ],
+      "draft_markdown": "Gradient descent iteratively updates parameters to reduce the loss.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "Gradient descent iteratively updates parameters to reduce the loss.",
+          "anchor_quote": "Gradient descent iteratively updates parameters to reduce the loss.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "Gradient descent iteratively updates parameters to reduce the loss.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              67
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    },
+    {
+      "case_id": "G02-multi-atomic-one-sentence",
+      "tags": [
+        "multi_atomic"
+      ],
+      "draft_markdown": "System A improves latency and reduces storage cost.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "System A improves latency.",
+          "anchor_quote": "System A improves latency and reduces storage cost.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        },
+        {
+          "claim_text": "System A reduces storage cost.",
+          "anchor_quote": "System A improves latency and reduces storage cost.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "System A improves latency.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              51
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        },
+        {
+          "claim_text": "System A reduces storage cost.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              51
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    },
+    {
+      "case_id": "G03-repeated-identical-claim",
+      "tags": [
+        "repeated_claim"
+      ],
+      "draft_markdown": "The cache tiers differ.\n\nT3 caches aggressively.\n\nT3 caches aggressively.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "T3 caches aggressively.",
+          "anchor_quote": "T3 caches aggressively.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "T3 caches aggressively.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound_multiple",
+          "occurrences": [
+            [
+              25,
+              48
+            ],
+            [
+              50,
+              73
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    },
+    {
+      "case_id": "G04-near-duplicate-claims",
+      "tags": [
+        "near_duplicate"
+      ],
+      "draft_markdown": "Batch size 32 trains stably.\n\nBatch size 32 usually trains stably.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "Batch size 32 trains stably.",
+          "anchor_quote": "Batch size 32 trains stably.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": false,
+          "materiality_reason_code": "incidental_detail",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        },
+        {
+          "claim_text": "Batch size 32 usually trains stably.",
+          "anchor_quote": "Batch size 32 usually trains stably.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": false,
+          "materiality_reason_code": "incidental_detail",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "Batch size 32 trains stably.",
+          "claim_type": "factual",
+          "material": false,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              28
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": false
+        },
+        {
+          "claim_text": "Batch size 32 usually trains stably.",
+          "claim_type": "factual",
+          "material": false,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              30,
+              66
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": false
+        }
+      ]
+    },
+    {
+      "case_id": "G05-factual-definition",
+      "tags": [
+        "factual_definition"
+      ],
+      "draft_markdown": "A transformer is a neural architecture that uses self-attention to model token interactions.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "A transformer is a neural architecture that uses self-attention to model token interactions.",
+          "anchor_quote": "A transformer is a neural architecture that uses self-attention to model token interactions.",
+          "section": "technical_dive",
+          "claim_type": "definition",
+          "material": true,
+          "materiality_reason_code": "definitional_background",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "A transformer is a neural architecture that uses self-attention to model token interactions.",
+          "claim_type": "definition",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              92
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    },
+    {
+      "case_id": "G06-editorial-nonfactual",
+      "tags": [
+        "editorial"
+      ],
+      "draft_markdown": "We find this design elegant.\n\nDropout randomly zeroes activations during training.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "We find this design elegant.",
+          "anchor_quote": "We find this design elegant.",
+          "section": "takeaways",
+          "claim_type": "editorial",
+          "material": false,
+          "materiality_reason_code": "incidental_detail",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        },
+        {
+          "claim_text": "Dropout randomly zeroes activations during training.",
+          "anchor_quote": "Dropout randomly zeroes activations during training.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "We find this design elegant.",
+          "claim_type": "editorial",
+          "material": false,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              28
+            ]
+          ],
+          "call_b_eligible": false,
+          "requires_citation": false
+        },
+        {
+          "claim_text": "Dropout randomly zeroes activations during training.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              30,
+              82
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    },
+    {
+      "case_id": "G07-code-factual-assertion",
+      "tags": [
+        "code_factual"
+      ],
+      "draft_markdown": "The search is efficient.\n\n```python\n# binary search runs in O(log n) time\nbisect_left(a, x)\n```",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "The search is efficient.",
+          "anchor_quote": "The search is efficient.",
+          "section": "technical_dive",
+          "claim_type": "editorial",
+          "material": false,
+          "materiality_reason_code": "incidental_detail",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        },
+        {
+          "claim_text": "Binary search runs in O(log n) time.",
+          "anchor_quote": "# binary search runs in O(log n) time",
+          "section": "code_snippets",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "The search is efficient.",
+          "claim_type": "editorial",
+          "material": false,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              24
+            ]
+          ],
+          "call_b_eligible": false,
+          "requires_citation": false
+        },
+        {
+          "claim_text": "Binary search runs in O(log n) time.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              36,
+              73
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    },
+    {
+      "case_id": "G08-cross-section-claims",
+      "tags": [
+        "cross_section"
+      ],
+      "draft_markdown": "# Topic\n\n## Problem Framing\nModels overfit.\n\n## Takeaways\nRegularization reduces overfitting.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "Models overfit.",
+          "anchor_quote": "Models overfit.",
+          "section": "problem_framing",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        },
+        {
+          "claim_text": "Regularization reduces overfitting.",
+          "anchor_quote": "Regularization reduces overfitting.",
+          "section": "takeaways",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "Models overfit.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              28,
+              43
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        },
+        {
+          "claim_text": "Regularization reduces overfitting.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              58,
+              93
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    },
+    {
+      "case_id": "G09-new-claim-after-revision",
+      "tags": [
+        "revision_new"
+      ],
+      "draft_markdown": "Dropout reduces overfitting.\n\nEarly stopping also helps.",
+      "prior": {
+        "draft_markdown": "Dropout reduces overfitting.",
+        "call_a_response": [
+          {
+            "claim_text": "Dropout reduces overfitting.",
+            "anchor_quote": "Dropout reduces overfitting.",
+            "section": "technical_dive",
+            "claim_type": "factual",
+            "material": true,
+            "materiality_reason_code": "core_technical_conclusion",
+            "materiality_rationale": "fixture label",
+            "satisfies_req_ids": [],
+            "specificity": "substantive",
+            "requires_citation": null
+          }
+        ]
+      },
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "Dropout reduces overfitting.",
+          "anchor_quote": "Dropout reduces overfitting.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        },
+        {
+          "claim_text": "Early stopping also helps.",
+          "anchor_quote": "Early stopping also helps.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "Dropout reduces overfitting.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              28
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        },
+        {
+          "claim_text": "Early stopping also helps.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              30,
+              56
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ],
+      "expect": {
+        "new_claim_texts": [
+          "Early stopping also helps."
+        ],
+        "removed_claim_texts": [],
+        "draft_sha_changed": true
+      }
+    },
+    {
+      "case_id": "G10-removed-claim",
+      "tags": [
+        "revision_removed",
+        "required_by_brief"
+      ],
+      "draft_markdown": "Weight decay penalizes large weights.",
+      "prior": {
+        "draft_markdown": "Dropout reduces overfitting.",
+        "call_a_response": [
+          {
+            "claim_text": "Dropout reduces overfitting.",
+            "anchor_quote": "Dropout reduces overfitting.",
+            "section": "technical_dive",
+            "claim_type": "factual",
+            "material": true,
+            "materiality_reason_code": "required_deliverable",
+            "materiality_rationale": "fixture label",
+            "satisfies_req_ids": [
+              "REQ-1"
+            ],
+            "specificity": "substantive",
+            "requires_citation": null
+          }
+        ]
+      },
+      "brief_requirements": [
+        {
+          "req_id": "REQ-1",
+          "kind": "required_content",
+          "mandatory": true,
+          "description": "Article states at least one regularization mechanism."
+        }
+      ],
+      "call_a_response": [
+        {
+          "claim_text": "Weight decay penalizes large weights.",
+          "anchor_quote": "Weight decay penalizes large weights.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": false,
+          "materiality_reason_code": "incidental_detail",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "Weight decay penalizes large weights.",
+          "claim_type": "factual",
+          "material": false,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              37
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": false
+        }
+      ],
+      "expect": {
+        "new_claim_texts": [
+          "Weight decay penalizes large weights."
+        ],
+        "removed_claim_texts": [
+          "Dropout reduces overfitting."
+        ],
+        "draft_sha_changed": true,
+        "satisfied_req_ids": []
+      }
+    },
+    {
+      "case_id": "G11-material-central-claim",
+      "tags": [
+        "material_central",
+        "unknown_materiality"
+      ],
+      "draft_markdown": "Quorum requires seven acknowledgements before commit.\n\nThe simulator's dashboard is blue.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "Quorum requires seven acknowledgements before commit.",
+          "anchor_quote": "Quorum requires seven acknowledgements before commit.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        },
+        {
+          "claim_text": "The simulator's dashboard is blue.",
+          "anchor_quote": "The simulator's dashboard is blue.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": "unknown",
+          "materiality_reason_code": null,
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "Quorum requires seven acknowledgements before commit.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              53
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        },
+        {
+          "claim_text": "The simulator's dashboard is blue.",
+          "claim_type": "factual",
+          "material": "unknown",
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              55,
+              89
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    },
+    {
+      "case_id": "G12-incidental-factual",
+      "tags": [
+        "incidental"
+      ],
+      "draft_markdown": "The example repository is named after a 19th century workshop.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "The example repository is named after a 19th century workshop.",
+          "anchor_quote": "The example repository is named after a 19th century workshop.",
+          "section": "problem_framing",
+          "claim_type": "factual",
+          "material": false,
+          "materiality_reason_code": "incidental_detail",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": false
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "The example repository is named after a 19th century workshop.",
+          "claim_type": "factual",
+          "material": false,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              62
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": false
+        }
+      ]
+    },
+    {
+      "case_id": "G13-required-by-brief-material",
+      "tags": [
+        "required_by_brief"
+      ],
+      "draft_markdown": "The article includes a failure-modes analysis.",
+      "brief_requirements": [
+        {
+          "req_id": "REQ-2",
+          "kind": "required_content",
+          "mandatory": true,
+          "description": "Article must include a failure-modes analysis."
+        }
+      ],
+      "call_a_response": [
+        {
+          "claim_text": "The article includes a failure-modes analysis.",
+          "anchor_quote": "The article includes a failure-modes analysis.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": false,
+          "materiality_reason_code": "incidental_detail",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [
+            "REQ-2"
+          ],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "The article includes a failure-modes analysis.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              46
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ],
+      "expect": {
+        "materiality_override": "required_by_brief",
+        "satisfied_req_ids": [
+          "REQ-2"
+        ]
+      }
+    },
+    {
+      "case_id": "G14-false-nonmaterial-trap",
+      "tags": [
+        "false_nonmaterial_trap"
+      ],
+      "draft_markdown": "The scheduler guarantees at-most-once delivery.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "The scheduler guarantees at-most-once delivery.",
+          "anchor_quote": "The scheduler guarantees at-most-once delivery.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": false,
+          "materiality_reason_code": "incidental_detail",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "The scheduler guarantees at-most-once delivery.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "bound",
+          "occurrences": [
+            [
+              0,
+              47
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ],
+      "expect": {
+        "false_nonmaterial": true
+      }
+    },
+    {
+      "case_id": "G15-anchor-ambiguity",
+      "tags": [
+        "anchor_ambiguity"
+      ],
+      "draft_markdown": "Alpha mode permits export and logs the event.\n\nAlpha mode permits export and logs the event.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "Alpha mode permits export.",
+          "anchor_quote": "Alpha mode permits export and logs the event.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        },
+        {
+          "claim_text": "Alpha mode logs the event.",
+          "anchor_quote": "Alpha mode permits export and logs the event.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "Alpha mode permits export.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "ANCHOR_AMBIGUOUS",
+          "occurrences": [
+            [
+              0,
+              45
+            ],
+            [
+              47,
+              92
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        },
+        {
+          "claim_text": "Alpha mode logs the event.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "ANCHOR_AMBIGUOUS",
+          "occurrences": [
+            [
+              0,
+              45
+            ],
+            [
+              47,
+              92
+            ]
+          ],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    },
+    {
+      "case_id": "G16-anchor-failure",
+      "tags": [
+        "anchor_failure"
+      ],
+      "draft_markdown": "Momentum accelerates convergence.",
+      "brief_requirements": [],
+      "call_a_response": [
+        {
+          "claim_text": "Momentum always accelerates convergence.",
+          "anchor_quote": "Momentum always accelerates convergence.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true,
+          "materiality_reason_code": "core_technical_conclusion",
+          "materiality_rationale": "fixture label",
+          "satisfies_req_ids": [],
+          "specificity": "substantive",
+          "requires_citation": null
+        }
+      ],
+      "gold_claims": [
+        {
+          "claim_text": "Momentum always accelerates convergence.",
+          "claim_type": "factual",
+          "material": true,
+          "anchor_validity": "ANCHOR_FAILED",
+          "occurrences": [],
+          "call_b_eligible": true,
+          "requires_citation": true
+        }
+      ]
+    }
+  ]
+}
