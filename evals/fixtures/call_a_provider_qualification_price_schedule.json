@@ -1,0 +1,13 @@
+{
+  "schedule_id": "call_a_provider_qualification_2026-09-15",
+  "recorded_at": "2026-09-15T00:00:00Z",
+  "pricing_basis": "config.DEEPSEEK pricing with max-output ceiling per fixture",
+  "input_cost_per_million_tokens_usd": 0.27,
+  "output_cost_per_million_tokens_usd": 1.10,
+  "typical_output_tokens_per_case": 800,
+  "max_output_tokens_per_case": 4000,
+  "max_cases": 16,
+  "recommended_owner_ceiling_usd": 0.12,
+  "hard_spend_ceiling_usd": 0.15,
+  "notes": "Conservative bound assumes max output tokens (4000) per fixture; typical bound uses ~800 output tokens per case."
+}

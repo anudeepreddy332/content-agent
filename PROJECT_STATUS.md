@@ -129,8 +129,17 @@ remain preserved below as evidence; they are not reopened here.
      unchanged; zero provider calls. **PROMPT_VERSION re-baselined** (new Call-A
      prompt; numbers not comparable with the sha-6687240c8cd8 era). Frozen golden
      Call-A outputs remain simulated and do not qualify real-provider extraction
-     quality. Next: separately authorized bounded real-provider Call-A
-     extraction/materiality qualification. Slice 2b/2c deferred.
+     quality.
+   - **Phase 4 real Call-A provider qualification — OFFLINE PREP COMPLETE,
+     AWAITING OWNER AUTHORIZATION** (D-2026-09-15-03; parent SHA
+     `190360086fe8da3b001ca82dcee890edef9d971f`): frozen fixture population
+     (16 cases / 24 gold claims), production Call-A prompt+parser+builder reuse,
+     retry-free qualification runner, bounded critical challenge gate, raw vs
+     final materiality reporting, conservative cost bound ~$0.075 max / ~$0.019
+     typical, recommended owner ceiling $0.12, 16 max provider requests.
+     Mocked runner tests: 18 passed; provider calls: zero. Execute only after
+     owner sets `CALL_A_OWNER_AUTHORIZATION` + `CALL_A_PROVIDER_EXECUTE=1`.
+     Slice 2b/2c deferred.
 4. **Verifier semantic-contract 3-cell prompt-only experiment — EXECUTED / FAIL
    (valid):** run 2 artifact
    `outputs/verifier_semantic_contract_3cell/verifier_semantic_contract_run_20260905T130342Z.json`

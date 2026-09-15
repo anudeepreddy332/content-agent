@@ -9,6 +9,59 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-15-03
+Date: 2026-09-15
+
+Decision: **Phase 4 real Call-A provider qualification — offline freeze + runner
+preparation only (new experiment class).**
+
+Reason: frozen golden `call_a_response` entries qualify the deterministic harness
+only; production Call-A extraction/materiality against the real provider requires a
+separately authorized bounded qualification with immutable artifacts.
+
+Rules:
+
+- Reuse production Call-A path only: `prompts/claim_inventory_system.md`,
+  `parse_claim_inventory_rows`, `build_claim_inventory`, and
+  `_claim_inventory_user_message` from `agent/nodes.py`. No duplicated inventory
+  semantics in the runner.
+- Call B remains out of scope. Flow: frozen fixture → real/mock Call A → strict
+  parse → deterministic inventory → gold comparison.
+- Fixture population frozen at `evals/fixtures/claim_inventory_golden_v1.json`
+  (SHA-256 `112b15ca3b79e16c38d0d9ba94063d60268a4a120414242115a55c5227dae006`,
+  16 cases, 24 gold claims). Gold labels are not rewritten for provider tuning.
+- One provider request per fixture (16 max); qualification transport uses
+  retry-free direct HTTPS (`transport_retries=0`, `max_attempts_per_case=1`).
+  Production `_llm_call` tenacity (up to 3 transient retries) is NOT used;
+  worst-case production-path bound reported as 48 requests if ever invoked via
+  `_llm_call`.
+- Provider identity rule: returned `model` must exactly equal configured
+  `DEEPSEEK_MODEL` (default `deepseek-chat`). Drift fails visibly.
+- Production Call-A config mirrored: temperature `0.1`, `max_tokens=4000`, no
+  `response_format`, timeout `LLM_TIMEOUT_S` (120s).
+- Bounded challenge PASS gate (not population accuracy): no contract failures,
+  no silently dropped emitted claims, no missed critical/required gold claims,
+  no critical false-nonmaterial after final policy (required⇒material override
+  reported separately from raw model materiality), explicit anchor disposition
+  for every emitted claim, no identity/fixture drift.
+- Immutable append-only run artifacts under
+  `outputs/call_a_provider_qualification/runs/`. Owner authorization required
+  via `CALL_A_OWNER_AUTHORIZATION` + `CALL_A_PROVIDER_EXECUTE=1`.
+- Does NOT mutate prior semantic-analyzer provider experiments, Slice 2A golden
+  fixtures/results, or historical prompt identities.
+
+Evidence: `scripts/call_a_preprovider_harness.py`,
+`scripts/call_a_provider_qualification_runner.py`,
+`tests/test_call_a_provider_qualification_runner.py` (18 mocked tests);
+preflight/conservative cost bound ≤ `$0.12` recommended owner ceiling.
+Provider calls: zero.
+
+Status: **REAL-CALL-A-QUALIFICATION-READY-FOR-OWNER-AUTHORIZATION** (local commit
+from parent `190360086fe8da3b001ca82dcee890edef9d971f`; not pushed, not merged).
+
+Confidence: 0.91
+
+---
 Decision ID: D-2026-09-15-02
 Date: 2026-09-15
 
