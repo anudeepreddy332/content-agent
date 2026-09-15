@@ -62,7 +62,6 @@ from agent.semantic_trace import (
 )
 from agent.semantic_analyzer.contract import (
     engine_compat_grounding_score,
-    sha256_utf8,
 )
 from agent.semantic_analyzer.provider import analyze_semantic_evidence
 from agent.claim_inventory import (

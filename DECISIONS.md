@@ -9,6 +9,49 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-15-02
+Date: 2026-09-15
+
+Decision: **Phase 4 Slice 2A final Call-B roster policy is independently qualified
+at `981ee54c868fc26c7082a575316ef3fabac80ef5`.**
+
+Reason: independent qualification closed the demonstrated claim-type omission and
+post-adjudication fuzzy-dedup false-green paths without changing the status engine,
+Call-A/Call-B contracts, topology, routing, evidence binding, or provider call count.
+
+Rules:
+
+- Every successfully anchored inventory claim reaches Call B. `claim_type`,
+  materiality, specificity, and `requires_citation` are metadata/policy inputs
+  only; model-produced metadata cannot suppress semantic verification.
+- `ANCHOR_FAILED` and unresolved `ANCHOR_AMBIGUOUS` remain fail-closed inventory
+  failures. They do not silently disappear because Call B cannot run.
+- The authoritative inventory → Call-B → engine path bypasses fuzzy
+  post-verification grounding-report deduplication. One semantic disposition is
+  retained for each current canonical `claim_id`.
+- Acceptance requires exact current-roster identity and cardinality: no missing,
+  extra, or duplicate grounding-report claim IDs.
+- The frozen golden metrics use simulated Call-A outputs. They do **not** qualify
+  real-provider Call-A extraction or materiality quality.
+
+Evidence: independent Sonnet qualification
+`PHASE-4-SLICE-2A-CLAIM-INVENTORY-QUALIFIED` at the exact SHA above; deterministic
+metadata-mislabel, qualifier, roster-integrity, stale-draft, Slice-1 routing,
+P6/P7/P1, and mocked E2E regressions. Provider calls: zero.
+
+Next step: bounded real-provider Call-A extraction/materiality qualification under
+a separately authorized frozen protocol. No production-quality claim is made until
+that qualification is complete.
+
+Supersedes: the Call-B eligibility and eligible-anchor clauses in
+`D-2026-09-15-01` only. Its historical implementation record remains unchanged.
+
+Status: `PHASE-4-SLICE-2A-CLAIM-INVENTORY-QUALIFIED` (local branch; not pushed or
+merged).
+
+Confidence: 0.97
+
+---
 Decision ID: D-2026-09-15-01
 Date: 2026-09-15
 
