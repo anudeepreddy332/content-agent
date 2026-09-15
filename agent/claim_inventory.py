@@ -161,20 +161,19 @@ def _row_anchor_validity(claim_text: str, anchor_quote: str, occurrences: list[t
 
 
 def call_b_eligible(claim_type: str, material: Any) -> bool:
-    """Which inventory claims enter Call-B semantic verification.
+    """Return whether a Call-A inventory row enters Call B.
 
-    - factual: always eligible.
-    - definition: eligible unless deterministically classified nonmaterial —
-      a definition carrying an externally checkable technical assertion
-      (material true or unknown) must not evade verification via its label.
-    - editorial/code: not eligible (code blocks' factual assertions must be
-      extracted by Call A AS factual claims anchored into the code).
+    Every successfully anchored inventory claim is semantically adjudicated.
+    ``claim_type`` and ``material`` remain descriptive/policy metadata only:
+    model-produced metadata must never decide whether a proposition receives a
+    semantic disposition.  Anchor resolution is checked separately so an
+    unresolved row fails the inventory closed rather than silently vanishing.
+
+    The arguments remain for compatibility with existing callers and fixtures;
+    neither influences eligibility.
     """
-    if claim_type == "factual":
-        return True
-    if claim_type == "definition":
-        return material is not False
-    return False
+    del claim_type, material
+    return True
 
 
 def _derive_requires_citation(claim_type: str, material: Any, model_value: Any) -> bool:
@@ -331,10 +330,11 @@ def eligible_claims(inventory: dict) -> list[dict]:
 
 
 def inventory_critical_failures(inventory: dict) -> list[dict]:
-    """Call-B-eligible claims whose draft anchor is unresolved. Non-empty =>
-    the inventory cannot certify this draft; fail closed (no Call B, no
-    acceptance). Non-eligible claims' anchor failures are recorded but not
-    critical."""
+    """Inventory claims whose draft anchor is unresolved.
+
+    Every inventory claim is eligible for Call B, so an unresolved anchor is
+    always acceptance-critical and prevents silent omission.
+    """
     return [
         c for c in eligible_claims(inventory)
         if c.get("anchor_validity") in ANCHOR_UNRESOLVED

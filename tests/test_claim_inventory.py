@@ -273,6 +273,121 @@ def test_n_call_b_receives_claim_text_not_anchor(base_state, monkeypatch):
     assert claim["claim_span"] == [0, len(DRAFT)]  # first bound occurrence
 
 
+@pytest.mark.parametrize(
+    ("claim_type", "material", "requires_citation", "specificity"),
+    [
+        ("editorial", True, True, "substantive"),
+        ("code", True, True, "substantive"),
+        ("definition", False, True, "substantive"),
+        ("factual", False, True, "substantive"),
+        ("factual", True, False, "substantive"),
+        ("factual", True, True, "generic"),
+    ],
+    ids=["editorial", "code", "definition_nonmaterial", "nonmaterial", "no_citation", "generic"],
+)
+def test_call_b_roster_ignores_all_call_a_eligibility_metadata(
+    base_state, monkeypatch, claim_type, material, requires_citation, specificity
+):
+    claim = "The system has a verifiable behavior."
+    rows = [_row(
+        claim, claim, claim_type=claim_type, material=material,
+        requires_citation=requires_citation, specificity=specificity,
+    )]
+    client = verify_llm_client(json.dumps(rows))
+    captured = []
+    original = client.chat.completions.create
+
+    def create(**kwargs):
+        captured.append(kwargs)
+        return original(**kwargs)
+
+    client.chat.completions.create = create
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    result = nodes.verify_node({**base_state, "draft_markdown": claim, "iterations": 1, "run_id": f"meta-{claim_type}-{material}"})
+    assert result["verification_status"] == "completed"
+    assert client.calls == 2
+    roster = json.loads(captured[1]["messages"][1]["content"])["claims"]
+    assert [row["claim_id"] for row in roster] == [compute_claim_id(claim)]
+
+
+def test_modal_near_duplicate_survives_engine_path_and_blocks_acceptance(base_state, monkeypatch):
+    verified = "Gradient descent is an optimization method."
+    modal = "Gradient descent usually is an optimization method."
+    draft = f"{verified}\n\n{modal}"
+    rows = [_row(verified, verified), _row(modal, modal)]
+    analyzer = json.dumps({"observations": [
+        {
+            "claim_id": compute_claim_id(verified),
+            "support_quotes": [{"evidence_id": "WEB-001", "quote": verified}],
+            "full_entailment": True,
+            "blockers": [],
+        },
+        {
+            "claim_id": compute_claim_id(modal),
+            "support_quotes": [],
+            "full_entailment": False,
+            "blockers": [],
+        },
+    ]})
+    monkeypatch.setattr(nodes, "_get_client", lambda: verify_llm_client(json.dumps(rows), analyzer))
+    result = nodes.verify_node({
+        **base_state, "draft_markdown": draft, "iterations": 1, "run_id": "modal-roster",
+        "web_sources": [{"url": "https://example.com/gd", "content": verified}],
+    })
+    assert result["verification_status"] == "completed"
+    assert [row["claim_id"] for row in result["grounding_report"]] == [
+        compute_claim_id(verified), compute_claim_id(modal),
+    ]
+    assert [row["status"] for row in result["grounding_report"]] == ["verified", "unverified"]
+    assert nodes.semantic_verification_accepted({**base_state, **result}) is False
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        ("The service is available.", "The service is not available."),
+        ("The service is available.", "The service is usually available."),
+        ("Only admins can edit records.", "Admins can edit records."),
+        ("The service may retry requests.", "The service must retry requests."),
+        ("The task runs before deployment.", "The task runs after deployment."),
+        ("The timeout is 10 seconds.", "The timeout is 20 seconds."),
+        ("The limit is 10 MB.", "The limit is 10 GB."),
+        ("The service improves latency by 10%.", "The service improves latency by 20%."),
+    ],
+    ids=["negation", "usually", "only", "modal", "temporal", "numeric", "units", "percent"],
+)
+def test_qualifier_variants_cannot_be_fuzzy_collapsed_after_adjudication(
+    base_state, monkeypatch, first, second
+):
+    draft = f"{first}\n\n{second}"
+    rows = [_row(first, first), _row(second, second)]
+    monkeypatch.setattr(nodes, "_get_client", lambda: verify_llm_client(json.dumps(rows)))
+    result = nodes.verify_node({
+        **base_state, "draft_markdown": draft, "iterations": 1,
+        "run_id": f"qualifier-{compute_claim_id(second)}",
+    })
+    assert result["verification_status"] == "completed"
+    assert [row["claim_id"] for row in result["grounding_report"]] == [
+        compute_claim_id(first), compute_claim_id(second),
+    ]
+
+
+def test_acceptance_rejects_stale_or_duplicate_grounding_roster(base_state):
+    claim_a = "System A improves latency."
+    claim_b = "System B improves latency."
+    draft = f"{claim_a}\n\n{claim_b}"
+    inventory = _build(draft, [_row(claim_a, claim_a), _row(claim_b, claim_b)])
+    report = [
+        {"claim_id": compute_claim_id(claim_a), "status": "verified", "blockers": []},
+        {"claim_id": compute_claim_id(claim_a), "status": "verified", "blockers": []},
+    ]
+    state = {
+        **base_state, "draft_markdown": draft, "verification_status": "completed",
+        "claim_inventory": inventory, "grounding_report": report,
+    }
+    assert nodes.semantic_verification_accepted(state) is False
+
+
 def test_o_full_support_evidence_set_preserved(base_state, monkeypatch):
     claim = "Gradient descent minimizes a loss function."
     rows = [_row(claim, claim)]
@@ -324,16 +439,16 @@ def test_call_a_schema_violations_fail_closed(mutation):
         parse_claim_inventory_rows(json.dumps([row]))
 
 
-def test_call_a_zero_factual_inventory_fails_closed(base_state, monkeypatch):
+def test_all_anchored_inventory_rows_reach_call_b_despite_model_metadata(base_state, monkeypatch):
     rows = [_row("We think this is neat.", "We think this is neat.", claim_type="editorial", material=False)]
     draft = "We think this is neat."
     client = verify_llm_client(json.dumps(rows))
     monkeypatch.setattr(nodes, "_get_client", lambda: client)
-    result = nodes.verify_node({**base_state, "draft_markdown": draft, "iterations": 1, "run_id": "no-factual"})
-    assert result["verification_status"] == "inventory_failed"
-    assert client.calls == 1  # Call B never ran
-    assert result["claim_inventory"]["counts"]["call_b_eligible"] == 0
-    assert nodes.semantic_verification_accepted({**base_state, **result}) is False
+    result = nodes.verify_node({**base_state, "draft_markdown": draft, "iterations": 1, "run_id": "metadata-roster"})
+    assert result["verification_status"] == "completed"
+    assert client.calls == 2
+    assert result["claim_inventory"]["counts"]["call_b_eligible"] == 1
+    assert result["grounding_report"][0]["claim_id"] == compute_claim_id(draft)
 
 
 def test_anchor_failure_on_factual_claim_skips_call_b(base_state, monkeypatch):
@@ -358,7 +473,7 @@ def test_ambiguous_anchor_on_factual_claim_skips_call_b(base_state, monkeypatch)
     assert nodes.semantic_verification_accepted({**base_state, **result}) is False
 
 
-def test_non_factual_anchor_failure_does_not_fail_closed(base_state, monkeypatch):
+def test_any_inventory_anchor_failure_fails_closed(base_state, monkeypatch):
     factual = "Gradient descent minimizes a loss function."
     draft = factual + "\n\nWe like it."
     rows = [
@@ -368,11 +483,11 @@ def test_non_factual_anchor_failure_does_not_fail_closed(base_state, monkeypatch
     client = verify_llm_client(json.dumps(rows))
     monkeypatch.setattr(nodes, "_get_client", lambda: client)
     result = nodes.verify_node({**base_state, "draft_markdown": draft, "iterations": 1, "run_id": "nonfactual-anchor"})
-    assert result["verification_status"] == "completed"
+    assert result["verification_status"] == "inventory_failed"
     inv = result["claim_inventory"]
     editorial = [c for c in inv["claims"] if c["claim_type"] == "editorial"][0]
-    assert editorial["anchor_validity"] == ANCHOR_FAILED  # recorded, non-critical
-    assert inventory_critical_failures(inv) == []
+    assert editorial["anchor_validity"] == ANCHOR_FAILED
+    assert inventory_critical_failures(inv) == [editorial]
 
 
 def test_present_inventory_with_critical_anchor_failure_blocks_acceptance(base_state):
@@ -406,7 +521,7 @@ def test_materiality_unknown_preserved_through_grounding_rows(base_state, monkey
     assert result["grounding_report"][0]["requires_citation"] is True
 
 
-def test_definition_with_checkable_content_cannot_evade_call_b(base_state, monkeypatch):
+def test_definition_metadata_cannot_evade_call_b(base_state, monkeypatch):
     claim = "Gradient descent minimizes a loss function."
     rows = [_row(claim, claim, claim_type="definition", material=True)]
     client = verify_llm_client(json.dumps(rows))
@@ -415,13 +530,13 @@ def test_definition_with_checkable_content_cannot_evade_call_b(base_state, monke
     assert result["verification_status"] == "completed"
     assert client.calls == 2  # Call B RAN for the material definition
     assert result["grounding_report"][0]["claim_type"] == "definition"
-    # A deterministically nonmaterial definition stays out of Call B.
+    # A nonmaterial definition remains a claim and reaches Call B too.
     rows_nm = [_row(claim, claim, claim_type="definition", material=False)]
     client2 = verify_llm_client(json.dumps(rows_nm))
     monkeypatch.setattr(nodes, "_get_client", lambda: client2)
     result2 = nodes.verify_node({**base_state, "draft_markdown": claim, "iterations": 1, "run_id": "defn-nm"})
-    assert result2["verification_status"] == "inventory_failed"  # no eligible claims
-    assert client2.calls == 1
+    assert result2["verification_status"] == "completed"
+    assert client2.calls == 2
 
 
 def test_inventory_recorded_in_trace(base_state, monkeypatch):

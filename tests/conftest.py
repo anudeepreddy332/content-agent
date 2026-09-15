@@ -80,10 +80,9 @@ def default_analyzer_payload(call_a_content: str) -> str:
     """Phase-4 verify_node Call B autofill: all eligible claims unverified, no quotes.
 
     Parses the Call-A claim-inventory output (new schema) and mirrors the
-    production roster: Call-B-eligible claims only, with Python content-derived
+    production roster: every inventory claim, with Python content-derived
     claim IDs (never positional, never model-generated)."""
     from agent.claim_inventory import (
-        call_b_eligible,
         compute_claim_id,
         parse_claim_inventory_rows,
     )
@@ -100,7 +99,6 @@ def default_analyzer_payload(call_a_content: str) -> str:
             "blockers": [],
         }
         for row in rows
-        if call_b_eligible(row["claim_type"], row["material"])
     ]
     return json.dumps({"observations": observations})
 
@@ -159,4 +157,3 @@ def openai_error(cls, status: int):
         return cls(request=req)
     resp = httpx.Response(status, request=req)
     return cls("injected", response=resp, body=None)
-

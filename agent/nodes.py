@@ -1152,8 +1152,8 @@ def verify_node(state: AgentState) -> dict:
         brief_requirements=state.get("brief_requirements"),
     )
 
-    # Fail closed (§19): no usable factual inventory, or any Call-B-eligible
-    # claim whose draft anchor is unresolved (ANCHOR_FAILED / ANCHOR_AMBIGUOUS).
+    # Fail closed (§19): no usable inventory, or any inventory claim whose
+    # draft anchor is unresolved (ANCHOR_FAILED / ANCHOR_AMBIGUOUS).
     # Call B must NOT run and acceptance must NOT proceed as though a complete
     # inventory was established. The inventory remains present for audit.
     critical_failures = inventory_critical_failures(claim_inventory)
@@ -1300,10 +1300,11 @@ def verify_node(state: AgentState) -> dict:
     _attach_inventory_fields(grounding_report, claim_inventory)
     grounding_report = _order_grounding_report_by_draft(grounding_report, claim_inventory)
 
+    # The semantic engine returns exactly one disposition for each roster ID.
+    # Do not apply legacy fuzzy text deduplication here: near textual matches
+    # can be distinct propositions (for example a modal qualifier) and must
+    # never alter the authoritative semantic population or UVR denominator.
     dropped_rows: list[dict] = []
-    grounding_report = _deduplicate_grounding_report(
-        grounding_report, run_id=state["run_id"], dropped_out=dropped_rows,
-    )
     post_dedup_rows = copy.deepcopy(grounding_report)
     post_attribution_rows = copy.deepcopy(grounding_report)
 
@@ -2668,13 +2669,29 @@ def semantic_verification_accepted(state: AgentState) -> bool:
     if inventory is not None:
         # Phase 4 Slice 2A: a present inventory must belong to THIS exact draft
         # version (no stale inventory certifies a revised draft) and every
-        # Call-B-eligible claim must be anchor-resolved. An absent inventory
+        # inventory claim must be anchor-resolved. An absent inventory
         # (pre-2A/hand-built state) keeps Slice-1 behavior only.
         if inventory.get("draft_sha256") != sha256_utf8(state.get("draft_markdown") or ""):
             return False
         if inventory_critical_failures(inventory):
             return False
     report = state.get("grounding_report") or []
+    if inventory is not None:
+        expected_ids = [claim.get("claim_id") for claim in inventory.get("claims", [])]
+        observed_ids = [row.get("claim_id") for row in report]
+        # Defense in depth for stale/manual grounding splices: the completed
+        # report must remain a one-to-one rendering of the CURRENT Call-B
+        # roster. The status engine enforces this at adjudication time; this
+        # protects the acceptance boundary too.
+        if (
+            not expected_ids
+            or any(not isinstance(claim_id, str) or not claim_id for claim_id in expected_ids)
+            or any(not isinstance(claim_id, str) or not claim_id for claim_id in observed_ids)
+            or len(expected_ids) != len(set(expected_ids))
+            or len(observed_ids) != len(set(observed_ids))
+            or set(expected_ids) != set(observed_ids)
+        ):
+            return False
     if has_blocking_semantic_blockers(report):
         return False
     uvr = unverified_rate(report)
