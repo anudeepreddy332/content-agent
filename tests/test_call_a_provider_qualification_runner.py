@@ -18,9 +18,11 @@ from scripts.call_a_preprovider_harness import (
     response_contract_sha256,
 )
 from scripts.call_a_provider_qualification_runner import (
+    ACCEPTED_RETURNED_MODEL,
     EXECUTE_ENV_VAR,
     MAX_PROVIDER_REQUESTS,
     OWNER_AUTHORIZATION_ENV_VAR,
+    REQUESTED_MODEL,
     AttemptGovernanceError,
     DurableAttemptLedger,
     ExecutionAuthorizationError,
@@ -39,6 +41,12 @@ from scripts.call_a_provider_qualification_runner import (
     validate_provider_http_response,
     verify_run_artifact_integrity,
 )
+
+
+@pytest.fixture(autouse=True)
+def enforce_deepseek_flash_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DEEPSEEK_MODEL", "deepseek-flash")
+    monkeypatch.setattr("config.DEEPSEEK_MODEL", "deepseek-flash", raising=False)
 
 
 @pytest.fixture(autouse=True)
@@ -70,6 +78,15 @@ def pack() -> dict:
 @pytest.fixture
 def cases_by_id(pack) -> dict[str, dict]:
     return {case["case_id"]: case for case in pack["cases"]}
+
+
+def test_frozen_model_identity_policy():
+    from config import DEEPSEEK_MODEL
+
+    assert REQUESTED_MODEL == "deepseek-flash"
+    assert ACCEPTED_RETURNED_MODEL == "deepseek-flash"
+    assert REQUESTED_MODEL == ACCEPTED_RETURNED_MODEL
+    assert DEEPSEEK_MODEL == "deepseek-flash"
 
 
 def test_preflight_freezes_fixture_and_hashes(pack):
@@ -146,29 +163,24 @@ def test_noncritical_miss_reported_without_critical_gate_fail(cases_by_id):
 
 
 def test_provider_identity_drift_fails_visibly():
-    model = "deepseek-chat"
     ok = validate_provider_http_response(
         status_code=200,
         body={
             "id": "resp-1",
-            "model": model,
+            "model": REQUESTED_MODEL,
             "choices": [{"finish_reason": "stop", "message": {"content": "[]"}}],
             "usage": {"prompt_tokens": 10, "completion_tokens": 5},
         },
-        requested_model=model,
-        accepted_returned_model=model,
     )
     assert ok["valid"] is True
     drift = validate_provider_http_response(
         status_code=200,
         body={
             "id": "resp-2",
-            "model": "other-model",
+            "model": "deepseek-chat",
             "choices": [{"finish_reason": "stop", "message": {"content": "[]"}}],
             "usage": {"prompt_tokens": 10, "completion_tokens": 5},
         },
-        requested_model=model,
-        accepted_returned_model=model,
     )
     assert drift["valid"] is False
     assert "returned_model_mismatch" in drift["invalid_reasons"]

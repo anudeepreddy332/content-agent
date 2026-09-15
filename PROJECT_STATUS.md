@@ -130,15 +130,18 @@ remain preserved below as evidence; they are not reopened here.
      prompt; numbers not comparable with the sha-6687240c8cd8 era). Frozen golden
      Call-A outputs remain simulated and do not qualify real-provider extraction
      quality.
-   - **Phase 4 real Call-A provider qualification — OFFLINE PREP COMPLETE,
-     AWAITING OWNER AUTHORIZATION** (D-2026-09-15-03; parent SHA
-     `190360086fe8da3b001ca82dcee890edef9d971f`): frozen fixture population
-     (16 cases / 24 gold claims), production Call-A prompt+parser+builder reuse,
-     retry-free qualification runner, bounded critical challenge gate, raw vs
-     final materiality reporting, conservative cost bound ~$0.075 max / ~$0.019
-     typical, recommended owner ceiling $0.12, 16 max provider requests.
-     Mocked runner tests: 18 passed; provider calls: zero. Execute only after
-     owner sets `CALL_A_OWNER_AUTHORIZATION` + `CALL_A_PROVIDER_EXECUTE=1`.
+   - **Phase 4 real Call-A provider qualification — v1 EXECUTED / INVALID**
+     (run `call_a_run_20260915T160540Z_4135c531`, digest
+     `36807aa205b3f1bd45fdf891330df22037a1416ce98279dde8436e07fcc17121`):
+     G01 stopped on `returned_model_mismatch` (`deepseek-chat` requested,
+     `deepseek-flash` returned). Artifact preserved immutable.
+   - **Phase 4 real Call-A provider qualification — v2 RE-FROZEN, AWAITING NEW
+     OWNER AUTHORIZATION** (D-2026-09-15-04; parent SHA
+     `f0e5ba0e61b29d3e1f3a8027138475cd2bc503ee`): production
+     `DEEPSEEK_MODEL=deepseek-flash`; Call A + Call B share configured model;
+     qualification identity request/return `deepseek-flash` exact match;
+     `call-a-owner-v2` authorization required. Cost bound unchanged (~$0.075 max
+     / ~$0.019 typical / $0.12 ceiling). Provider calls: zero since re-freeze.
      Slice 2b/2c deferred.
 4. **Verifier semantic-contract 3-cell prompt-only experiment — EXECUTED / FAIL
    (valid):** run 2 artifact

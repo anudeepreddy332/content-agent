@@ -38,7 +38,9 @@ HARNESS_ID = "call_a_preprovider_harness"
 STAGE = "call-a-preprovider"
 PACK_ID = "claim_inventory_golden_v1"
 
-QUALIFIED_HARNESS_HEAD = "190360086fe8da3b001ca82dcee890edef9d971f"
+QUALIFIED_HARNESS_HEAD = "f0e5ba0e61b29d3e1f3a8027138475cd2bc503ee"
+FROZEN_REQUESTED_MODEL = "deepseek-flash"
+FROZEN_ACCEPTED_RETURNED_MODEL = "deepseek-flash"
 EXPECTED_FIXTURE_SHA256 = "112b15ca3b79e16c38d0d9ba94063d60268a4a120414242115a55c5227dae006"
 
 CASE_ORDER = (
@@ -249,8 +251,13 @@ def build_case_request(case: dict[str, Any]) -> dict[str, Any]:
     user_message = build_case_user_message(case)
     from config import DEEPSEEK_MODEL, LLM_TIMEOUT_S
 
+    if DEEPSEEK_MODEL != FROZEN_REQUESTED_MODEL:
+        raise CallAHarnessError(
+            f"DEEPSEEK_MODEL must be {FROZEN_REQUESTED_MODEL!r}; got {DEEPSEEK_MODEL!r}"
+        )
+
     request_body = {
-        "model": DEEPSEEK_MODEL,
+        "model": FROZEN_REQUESTED_MODEL,
         "messages": [
             {"role": "system", "content": CLAIM_INVENTORY_SYSTEM},
             {"role": "user", "content": user_message},
@@ -271,8 +278,8 @@ def build_case_request(case: dict[str, Any]) -> dict[str, Any]:
         "fixture_sha256": EXPECTED_FIXTURE_SHA256,
         "model_config": {
             "provider": "deepseek",
-            "requested_model": DEEPSEEK_MODEL,
-            "accepted_returned_model": DEEPSEEK_MODEL,
+            "requested_model": FROZEN_REQUESTED_MODEL,
+            "accepted_returned_model": FROZEN_ACCEPTED_RETURNED_MODEL,
             "temperature": 0.1,
             "max_tokens": 4000,
             "response_format": None,

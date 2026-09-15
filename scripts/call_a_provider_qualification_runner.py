@@ -50,7 +50,10 @@ PRICE_SCHEDULE_PATH = REPO_ROOT / "evals" / "fixtures" / "call_a_provider_qualif
 
 EXECUTE_ENV_VAR = "CALL_A_PROVIDER_EXECUTE"
 OWNER_AUTHORIZATION_ENV_VAR = "CALL_A_OWNER_AUTHORIZATION"
-OWNER_AUTHORIZATION_VERSION = "call-a-owner-v1"
+OWNER_AUTHORIZATION_VERSION = "call-a-owner-v2"
+
+REQUESTED_MODEL = "deepseek-flash"
+ACCEPTED_RETURNED_MODEL = "deepseek-flash"
 
 TEMPERATURE = 0.1
 MAX_OUTPUT_TOKENS = 4000
@@ -128,13 +131,25 @@ def provider_execution_authorized() -> bool:
     return os.getenv(EXECUTE_ENV_VAR, "").strip() == "1"
 
 
-def _production_model_config() -> dict[str, Any]:
-    from config import DEEPSEEK_MODEL, DEEPSEEK_BASE_URL, LLM_TIMEOUT_S
+def _validate_production_model_config() -> None:
+    from config import DEEPSEEK_MODEL
 
+    if DEEPSEEK_MODEL != REQUESTED_MODEL:
+        raise CallAProviderRunnerError(
+            f"DEEPSEEK_MODEL must be {REQUESTED_MODEL!r} for Call-A qualification; got {DEEPSEEK_MODEL!r}"
+        )
+    if REQUESTED_MODEL != ACCEPTED_RETURNED_MODEL:
+        raise CallAProviderRunnerError("requested and accepted returned model must match exactly")
+
+
+def _production_model_config() -> dict[str, Any]:
+    from config import DEEPSEEK_BASE_URL, LLM_TIMEOUT_S
+
+    _validate_production_model_config()
     return {
         "provider": "deepseek",
-        "requested_model": DEEPSEEK_MODEL,
-        "accepted_returned_model": DEEPSEEK_MODEL,
+        "requested_model": REQUESTED_MODEL,
+        "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
         "temperature": TEMPERATURE,
         "max_tokens": MAX_OUTPUT_TOKENS,
         "response_format": None,
@@ -217,10 +232,10 @@ def calculate_observed_cost_usd(
 
 
 def build_approved_execution_config_hash(pack: dict[str, Any] | None = None) -> str:
-    model = _production_model_config()
+    _validate_production_model_config()
     payload = {
-        "requested_model": model["requested_model"],
-        "accepted_returned_model": model["accepted_returned_model"],
+        "requested_model": REQUESTED_MODEL,
+        "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
         "temperature": TEMPERATURE,
         "max_tokens": MAX_OUTPUT_TOKENS,
         "response_format": None,
@@ -234,17 +249,18 @@ def build_approved_execution_config_hash(pack: dict[str, Any] | None = None) -> 
 
 
 def build_frozen_experiment_identity(*, runner_implementation_sha: str | None = None) -> dict[str, Any]:
-    model = _production_model_config()
+    _validate_production_model_config()
     return {
         "runner_id": RUNNER_ID,
         "qualified_harness_head": QUALIFIED_HARNESS_HEAD,
+        "authorization_version": OWNER_AUTHORIZATION_VERSION,
         "fixture_sha256": EXPECTED_FIXTURE_SHA256,
         "prompt_sha256": prompt_sha256(),
         "response_contract_sha256": response_contract_sha256(),
         "claim_inventory_code_sha256": call_inventory_code_sha256(),
         "request_identities": build_request_identities(),
-        "requested_model": model["requested_model"],
-        "accepted_returned_model": model["accepted_returned_model"],
+        "requested_model": REQUESTED_MODEL,
+        "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
         "approved_execution_config_hash": build_approved_execution_config_hash(),
         "max_provider_requests": MAX_PROVIDER_REQUESTS,
         "case_order": list(CASE_ORDER),
@@ -266,6 +282,8 @@ def compute_owner_authorization_token(*, experiment_identity_hash: str) -> str:
             "fixture_sha256": EXPECTED_FIXTURE_SHA256,
             "prompt_sha256": prompt_sha256(),
             "response_contract_sha256": response_contract_sha256(),
+            "requested_model": REQUESTED_MODEL,
+            "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
             "max_provider_requests": MAX_PROVIDER_REQUESTS,
             "case_order": list(CASE_ORDER),
         })
@@ -392,8 +410,8 @@ def validate_provider_http_response(
     *,
     status_code: int,
     body: dict[str, Any],
-    requested_model: str,
-    accepted_returned_model: str,
+    requested_model: str = REQUESTED_MODEL,
+    accepted_returned_model: str = ACCEPTED_RETURNED_MODEL,
 ) -> dict[str, Any]:
     invalid_reasons: list[str] = []
     if status_code in REDIRECT_STATUS_CODES:
@@ -494,6 +512,7 @@ def issue_execution_authorization(*, owner_max_spend_usd: float | None = None) -
 
 
 def run_provider_preflight() -> dict[str, Any]:
+    _validate_production_model_config()
     pack = load_fixture_pack()
     identity = validate_harness_identities()
     fixture_validation = validate_fixture_structure(pack)
@@ -513,6 +532,21 @@ def run_provider_preflight() -> dict[str, Any]:
         "request_identities": build_request_identities(pack),
         "conservative_cost_bound": budget,
         "provider_model_config": model,
+        "provider_model_identity": {
+            "requested_model": REQUESTED_MODEL,
+            "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
+            "exact_match_required": True,
+        },
+        "superseded_experiments": [
+            {
+                "run_id": "call_a_run_20260915T160540Z_4135c531",
+                "artifact_digest": "36807aa205b3f1bd45fdf891330df22037a1416ce98279dde8436e07fcc17121",
+                "disposition": "INVALID",
+                "reason": "returned_model_mismatch:requested_deepseek-chat",
+                "authorization_version": "call-a-owner-v1",
+            }
+        ],
+        "owner_authorization_version": OWNER_AUTHORIZATION_VERSION,
         "provider_execution_default_disabled": not provider_execution_authorized(),
         "owner_authorization_env_var": OWNER_AUTHORIZATION_ENV_VAR,
         "execution_ready": identity["valid"] and fixture_validation["valid"],
@@ -576,11 +610,11 @@ def execute_case_once(
     client: httpx.Client | None = None,
 ) -> dict[str, Any]:
     case_id = case["case_id"]
-    model = _production_model_config()
+    _validate_production_model_config()
     started = time.time()
     artifact: dict[str, Any] = {
         "case_id": case_id,
-        "requested_model": model["requested_model"],
+        "requested_model": REQUESTED_MODEL,
         "request_body_sha256": request["request_body_sha256"],
         "disposition": "INVALID",
         "provider_mode": "live",
@@ -606,8 +640,6 @@ def execute_case_once(
         validation = validate_provider_http_response(
             status_code=response.status_code,
             body=body,
-            requested_model=model["requested_model"],
-            accepted_returned_model=model["accepted_returned_model"],
         )
         drift = check_returned_model_drift(run_state, validation.get("observed_returned_model"))
         if drift:

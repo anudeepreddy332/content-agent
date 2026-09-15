@@ -1,7 +1,10 @@
 {
   "harness_id": "call_a_preprovider_harness",
   "stage": "call-a-preprovider",
-  "qualified_harness_head": "190360086fe8da3b001ca82dcee890edef9d971f",
+  "authorization_version": "call-a-owner-v2",
+  "qualified_harness_head": "f0e5ba0e61b29d3e1f3a8027138475cd2bc503ee",
+  "requested_model": "deepseek-flash",
+  "accepted_returned_model": "deepseek-flash",
   "fixture_path": "evals/fixtures/claim_inventory_golden_v1.json",
   "fixture_sha256": "112b15ca3b79e16c38d0d9ba94063d60268a4a120414242115a55c5227dae006",
   "fixture_count": 16,
@@ -10,11 +13,22 @@
   "gold_material_claim_count": 17,
   "prompt_path": "prompts/claim_inventory_system.md",
   "prompt_sha256": "fdf44b0d8b6238f2be4b2dae8532a4f75b55d49660ead1522e27e218a1ba6976",
-  "response_contract_sha256": "b92b17e47cbd76d93d150deaa4be9a9a6da27dadc887e528212f894b8c0f1704",
+  "response_contract_sha256": "2b978428b0fe2084d8410bd79fc92e9701acc12f1fcd3aa961cd5d4548ff72a1",
   "claim_inventory_code_path": "agent/claim_inventory.py",
   "claim_inventory_code_sha256": "6ab31740fc7a1696d47623327f271ab10350cb53c65fb14627ac053044c66100",
   "evaluation_script_path": "scripts/call_a_preprovider_harness.py",
   "runner_script_path": "scripts/call_a_provider_qualification_runner.py",
+  "superseded_experiments": [
+    {
+      "run_id": "call_a_run_20260915T160540Z_4135c531",
+      "artifact_digest": "36807aa205b3f1bd45fdf891330df22037a1416ce98279dde8436e07fcc17121",
+      "disposition": "INVALID",
+      "reason": "returned_model_mismatch",
+      "requested_model": "deepseek-chat",
+      "returned_model": "deepseek-flash",
+      "authorization_version": "call-a-owner-v1"
+    }
+  ],
   "case_order": [
     "G01-simple-factual",
     "G02-multi-atomic-one-sentence",

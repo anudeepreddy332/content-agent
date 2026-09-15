@@ -9,6 +9,35 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-15-04
+Date: 2026-09-15
+
+Decision: **Production `DEEPSEEK_MODEL` corrected to `deepseek-flash`; Call-A
+qualification re-frozen (owner-v2).**
+
+Reason: live Call-A qualification run `call_a_run_20260915T160540Z_4135c531`
+correctly INVALID-stopped on G01 when requesting `deepseek-chat` while DeepSeek
+returned `deepseek-flash`. Official API model name is `deepseek-flash`; no alias
+whitelist.
+
+Rules:
+
+- `config.DEEPSEEK_MODEL` default is now `deepseek-flash` (Call A, Call B, draft,
+  reflect, and all nodes consuming `DEEPSEEK_MODEL`).
+- New Call-A qualification identity: request `deepseek-flash`, accept returned
+  `deepseek-flash` only (exact match). `OWNER_AUTHORIZATION_VERSION =
+  call-a-owner-v2`. Prior v1 token is NOT reusable.
+- Prior run artifact remains immutable: INVALID — `returned_model_mismatch`.
+- Fixture/gold/prompt/claim-inventory semantics unchanged.
+
+Evidence: config + runner/harness updates; mocked tests; preflight recomputed.
+Provider calls: zero.
+
+Status: **DEEPSEEK-FLASH-CALL-A-REFREEZE-READY** (local commit; not pushed).
+
+Confidence: 0.93
+
+---
 Decision ID: D-2026-09-15-03
 Date: 2026-09-15
 
