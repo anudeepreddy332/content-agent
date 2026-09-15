@@ -29,6 +29,7 @@ from scripts.call_a_provider_qualification_runner import (
     allocate_run_directory,
     build_all_case_requests,
     build_approved_execution_config_hash,
+    build_frozen_experiment_identity,
     compute_owner_authorization_token,
     conservative_total_cost_bound,
     execute_case_once,
@@ -127,6 +128,18 @@ def test_mock_run_uses_production_pipeline(cases_by_id, tmp_path, monkeypatch):
     assert all(c["anchor_validity"] == "ANCHOR_AMBIGUOUS" for c in g15["inventory"]["claims"])
     integrity = verify_run_artifact_integrity(artifact)
     assert integrity["valid"] is True
+    identity = artifact["identity_hashes"]
+    assert identity["execution_git_sha"] == identity["harness_implementation_sha"]
+    assert identity["harness_implementation_sha"] == identity["runner_implementation_sha"]
+    assert identity["requested_model"] == "deepseek-flash"
+    assert identity["accepted_returned_model"] == "deepseek-flash"
+
+
+def test_frozen_identity_explicitly_binds_execution_harness_and_runner_heads():
+    identity = build_frozen_experiment_identity()
+    assert identity["execution_git_sha"] == identity["harness_implementation_sha"]
+    assert identity["harness_implementation_sha"] == identity["runner_implementation_sha"]
+    assert identity["execution_git_sha"] != identity["qualified_harness_head"]
 
 
 def test_mock_golden_run_fails_critical_false_nonmaterial_trap():

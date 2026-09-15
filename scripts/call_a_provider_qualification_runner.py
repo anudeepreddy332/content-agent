@@ -250,9 +250,15 @@ def build_approved_execution_config_hash(pack: dict[str, Any] | None = None) -> 
 
 def build_frozen_experiment_identity(*, runner_implementation_sha: str | None = None) -> dict[str, Any]:
     _validate_production_model_config()
+    execution_git_sha = runner_implementation_sha or get_implementation_git_sha()
     return {
         "runner_id": RUNNER_ID,
         "qualified_harness_head": QUALIFIED_HARNESS_HEAD,
+        # The qualified anchor is historical provenance. These three explicit
+        # names identify the exact checkout whose production, harness, and
+        # runner code will make the live requests.
+        "execution_git_sha": execution_git_sha,
+        "harness_implementation_sha": execution_git_sha,
         "authorization_version": OWNER_AUTHORIZATION_VERSION,
         "fixture_sha256": EXPECTED_FIXTURE_SHA256,
         "prompt_sha256": prompt_sha256(),
@@ -264,7 +270,7 @@ def build_frozen_experiment_identity(*, runner_implementation_sha: str | None = 
         "approved_execution_config_hash": build_approved_execution_config_hash(),
         "max_provider_requests": MAX_PROVIDER_REQUESTS,
         "case_order": list(CASE_ORDER),
-        "runner_implementation_sha": runner_implementation_sha or get_implementation_git_sha(),
+        "runner_implementation_sha": execution_git_sha,
     }
 
 
@@ -771,12 +777,16 @@ def _finalize_run_artifact(
         "run_id": run_dir.name,
         "provider_calls": provider_calls,
         "identity_hashes": {
+            "execution_git_sha": authorization.execution_git_sha if authorization else get_implementation_git_sha(),
+            "harness_implementation_sha": get_implementation_git_sha(),
             "runner_implementation_sha": get_implementation_git_sha(),
             "qualified_harness_head": QUALIFIED_HARNESS_HEAD,
             "fixture_sha256": EXPECTED_FIXTURE_SHA256,
             "prompt_sha256": prompt_sha256(),
             "response_contract_sha256": response_contract_sha256(),
             "claim_inventory_code_sha256": call_inventory_code_sha256(),
+            "requested_model": REQUESTED_MODEL,
+            "accepted_returned_model": ACCEPTED_RETURNED_MODEL,
             "frozen_experiment_identity_hash": frozen_experiment_identity_hash(),
         },
         "authorization": None if authorization is None else {
