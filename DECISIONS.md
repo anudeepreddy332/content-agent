@@ -9,6 +9,43 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-16-07
+Date: 2026-09-16
+
+Decision: **Phase 4 Slice 2B P1 — requirement-linkage authority correction.**
+
+Reason: independent review demonstrated Call-A ``satisfies_req_ids`` was
+treated as sufficient proof of mandatory semantic requirement fulfillment,
+enabling a reachable false-green (unrelated VERIFIED claim linked to
+``REQ-QUORUM`` → auto ``satisfied`` → ``material_policy_pass`` → approve →
+``html_gen``).
+
+Rules:
+
+- ``satisfies_req_ids`` = candidate/advisory linkage only; NOT hard
+  requirement-fulfillment authority.
+- Deterministically checkable requirements (``section_presence`` today) MAY
+  reach ``satisfied`` via structural evidence.
+- Semantic/content requirements with linked VERIFIED/material/current claims
+  remain ``unknown`` until HITL explicitly approves coverage — no keyword,
+  entity, embedding, or LLM judge added.
+- ``missing`` / ``unresolved`` / ``unknown`` distinction preserved; UNKNOWN
+  routes to HITL and does NOT trigger stochastic draft retry.
+- Candidate linkage MAY still force ``required⇒material`` (fail-safe scrutiny);
+  it must NOT grant requirement ``satisfied``.
+- HITL payload exposes ``unknown_requirement_obligations`` with candidate
+  claim IDs/text, semantic status, materiality, and reason
+  ``semantic_requirement_coverage_unqualified``.
+
+Evidence: `tests/test_material_policy.py` (43 tests incl. exact Sonnet attack,
+strong-candidate uncertainty control, structural positive control, matrix A–O).
+Provider calls: zero.
+
+Status: Accepted (locked). Does NOT claim full automated brief-completeness.
+
+Confidence: 0.91
+
+---
 Decision ID: D-2026-09-16-06
 Date: 2026-09-16
 
@@ -43,11 +80,11 @@ Rules:
 - `material_verified_rate = resolved material / all material` is
   observability ONLY; hard authority is `unresolved_material_claim_count == 0`
   AND `unknown_materiality_count == 0` (no tolerance).
-- Required-content denominator is the persistent `brief_requirements`; a
-  mandatory requirement is satisfied only by a current-draft basis (structural
-  check or anchored linked claims), and is unresolved/missing/unknown when its
-  linked material claims are unresolved/unknown. Deleting a required claim
-  makes its requirement missing — the artifact does NOT become safer.
+- Required-content denominator is the persistent `brief_requirements`.
+  **Superseded for semantic fulfillment by D-2026-09-16-07:** linked
+  ``satisfies_req_ids`` no longer auto-satisfies semantic requirements;
+  structural checks still satisfy deterministic kinds. Deleting a required
+  claim makes its requirement missing — the artifact does NOT become safer.
 - Version integrity: material/requirement policy consumes only artifacts tied
   to the current `draft_sha256`; stale inventory or mismatched grounding
   roster fails closed (reuses existing version/roster guards; no new

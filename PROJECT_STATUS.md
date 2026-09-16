@@ -270,14 +270,19 @@ priority.
   critical misses 0, critical false-nonmaterial 0, API rerun required NO.
   Known imperfections preserved (false positives, materiality UNKNOWN,
   imperfect claim_type metadata); Slice 2b therefore fails safe.
-- **Phase 4 Slice 2B — material + required-content policy (ACTIVE):**
-  `agent/material_policy.py` is a deterministic layer around existing
-  semantic output. `material_policy_pass` does NOT equal final publication
-  eligibility; citation safety remains pending Slice 2c. No new LLM calls,
-  no topology change, no retrieval/chunking change. UNKNOWN materiality
-  never auto-passes and never triggers stochastic revision retry (HITL).
-  HITL auto-approval and API approve cannot bypass unresolved material
-  claims, UNKNOWN materiality, or missing/unresolved mandatory requirements.
+- **Phase 4 Slice 2B — material + required-content policy (ACTIVE; P1
+  authority correction applied D-2026-09-16-07):** `agent/material_policy.py`
+  is a deterministic layer around existing semantic output.
+  `satisfies_req_ids` is candidate/advisory linkage only — NOT hard semantic
+  requirement fulfillment. Deterministic requirements (e.g. `section_presence`)
+  may auto-satisfy; semantic/content requirements with strong VERIFIED
+  candidates remain `unknown` → HITL. `material_policy_pass` does NOT equal
+  final publication eligibility; citation safety remains pending Slice 2c.
+  No new LLM calls, no topology change. UNKNOWN materiality and UNKNOWN
+  mandatory requirement coverage never auto-pass and never trigger stochastic
+  revision retry. HITL auto-approval and API approve cannot bypass unresolved
+  material claims, UNKNOWN materiality, or missing/unresolved/unknown mandatory
+  requirements.
 - **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED:** exact canonical
   integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
 - **Stage 2C evidence-exposure qualification — PASS (deterministic):**
@@ -604,13 +609,12 @@ redesign program (priority 3). No runtime change authorized by this record.
 - Version integrity: consumes only artifacts tied to current `draft_sha256`;
   stale inventory / mismatched grounding roster / unresolved anchor fail closed
   (reuses existing guards; no new versioning framework).
-- Validation: `tests/test_material_policy.py` 30 tests (spec §19 A–Q +
-  denominator-gaming, version integrity, routing, HITL/API-approval bypass,
-  UNKNOWN no-stochastic-retry, false-positive participation, new-claim-after-
-  revision). Full `tests/` suite green (1181 non-browser; 6 browser errors are
-  environmental Playwright-binary-missing, unrelated). Ruff fatal-tier
-  (`--select E9,F63,F7,F82`) clean. `git diff --check` clean.
-  Provider calls/spend during integration: zero.
+- P1 authority correction (D-2026-09-16-07): `satisfies_req_ids` is
+  candidate/advisory only; semantic requirements with linked VERIFIED claims
+  remain `unknown` until HITL; deterministic `section_presence` may still
+  auto-satisfy. Sonnet false-green attack blocked.
+- Validation: `tests/test_material_policy.py` 43 tests (spec §19 A–Q +
+  P1 matrix + Sonnet attack + structural positive control). Provider calls: zero.
 
 ## Parallel retrieval research
 

@@ -78,6 +78,7 @@ from agent.material_policy import (
     evaluate_material_policy,
     format_required_content_feedback,
     material_policy_passed,
+    unknown_requirement_obligations,
 )
 import html as html_module
 import re
@@ -1635,6 +1636,10 @@ def hitl_node(state: AgentState) -> dict:
             # (spec §16). material_policy_pass is NOT final publication
             # eligibility — citation safety remains Slice 2c.
             "material_policy": material_policy_result(state).to_dict(),
+            "unknown_requirement_obligations": unknown_requirement_obligations(
+                material_policy_result(state),
+                state.get("grounding_report"),
+            ),
         }) or {}
         action = decision.get("action")
         if action == "approve":

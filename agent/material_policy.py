@@ -12,7 +12,9 @@ Authority split (frozen for this slice):
   factual claims are MATERIAL, whether each material claim is RESOLVED
   against the current semantic disposition, and whether every MANDATORY
   brief requirement has a current-draft basis not undermined by an
-  unresolved material claim or an UNKNOWN-materiality claim.
+  unresolved material claim or an UNKNOWN-materiality claim. Call-A
+  ``satisfies_req_ids`` is candidate/advisory linkage only — it does NOT
+  prove semantic requirement fulfillment (Slice 2b P1 correction).
 - Citation safety remains Slice 2c and is intentionally NOT consulted here.
   ``material_policy_pass`` is therefore NOT final publication eligibility.
 
@@ -43,6 +45,7 @@ REQ_UNKNOWN = "unknown"
 
 STRUCTURAL_REQ_KINDS = frozenset({"section_presence"})
 BLOCKING_BLOCKER_KINDS = frozenset({"contradiction", "limitation"})
+SEMANTIC_COVERAGE_UNQUALIFIED = "semantic_requirement_coverage_unqualified"
 
 
 @dataclass
@@ -129,6 +132,11 @@ def _resolve_material_claim(claim: dict, row: dict | None) -> tuple[bool, str]:
     return True, "resolved"
 
 
+def _is_deterministically_checkable(req: dict) -> bool:
+    """True when existing objective machinery can establish fulfillment."""
+    return req.get("kind") in STRUCTURAL_REQ_KINDS
+
+
 def _structural_check(req: dict, draft_markdown: str) -> bool | None:
     """Deterministic structural check for machine-checkable requirements.
 
@@ -144,6 +152,49 @@ def _structural_check(req: dict, draft_markdown: str) -> bool | None:
     if not description:
         return None
     return description in draft_markdown
+
+
+def _candidate_claim_detail(claim: dict, row: dict | None) -> dict:
+    return {
+        "claim_id": claim.get("claim_id"),
+        "claim_text": claim.get("claim_text") or "",
+        "semantic_status": (row or {}).get("status"),
+        "material": claim.get("material"),
+        "materiality_override": claim.get("materiality_override"),
+    }
+
+
+def unknown_requirement_obligations(
+    result: MaterialPolicyResult,
+    _grounding_report: list[dict] | None = None,
+) -> list[dict]:
+    """HITL payload rows for mandatory requirements in UNKNOWN state (spec §11)."""
+    if not result.unknown_requirement_ids:
+        return []
+    obligations: list[dict] = []
+    for req_id in result.unknown_requirement_ids:
+        detail = result.requirement_detail.get(req_id, {})
+        linked_ids = detail.get("linked_claim_ids") or []
+        candidates = detail.get("candidate_claims") or []
+        if not candidates and linked_ids:
+            candidates = [
+                {"claim_id": cid, "claim_text": "", "semantic_status": None, "material": None}
+                for cid in linked_ids
+            ]
+        obligations.append({
+            "req_id": req_id,
+            "requirement": detail.get("description") or "",
+            "candidate_claim_ids": linked_ids,
+            "candidate_claims": candidates,
+            "reason": detail.get("reason") or SEMANTIC_COVERAGE_UNQUALIFIED,
+            "semantic_statuses": {
+                c.get("claim_id"): c.get("semantic_status") for c in candidates if c.get("claim_id")
+            },
+            "materiality": {
+                c.get("claim_id"): c.get("material") for c in candidates if c.get("claim_id")
+            },
+        })
+    return obligations
 
 
 def _integrity_failure(
@@ -257,24 +308,29 @@ def evaluate_material_policy(*, state: dict, max_iterations: int) -> MaterialPol
     for req in mandatory_reqs:
         req_id = req.get("req_id")
         linked = claims_by_req.get(req_id, [])
-        detail = {
+        detail: dict = {
             "description": req.get("description") or "",
             "linked_claim_ids": [c.get("claim_id") for c in linked],
+            "candidate_claims": [
+                _candidate_claim_detail(c, row_by_id.get(c.get("claim_id")))
+                for c in linked
+            ],
             "reason": "",
         }
-        structural = _structural_check(req, draft_markdown)
-        if not linked:
-            if structural is True:
-                state_ = REQ_SATISFIED
-                detail["reason"] = "structural_check_passed"
-                satisfied_req_ids.append(req_id)
-            else:
-                state_ = REQ_MISSING
-                detail["reason"] = (
-                    "structural_check_failed" if structural is False
-                    else "no_linked_current_claims"
-                )
-                missing_ids.append(req_id)
+        deterministic = _is_deterministically_checkable(req)
+        structural = _structural_check(req, draft_markdown) if deterministic else None
+
+        if deterministic and structural is True:
+            state_ = REQ_SATISFIED
+            detail["reason"] = "structural_check_passed"
+            satisfied_req_ids.append(req_id)
+        elif not linked:
+            state_ = REQ_MISSING
+            detail["reason"] = (
+                "structural_check_failed" if structural is False
+                else "no_linked_current_claims"
+            )
+            missing_ids.append(req_id)
         elif any(_is_unknown_materiality(c) for c in linked):
             state_ = REQ_UNKNOWN
             detail["reason"] = "linked_unknown_materiality_claim"
@@ -288,13 +344,16 @@ def evaluate_material_policy(*, state: dict, max_iterations: int) -> MaterialPol
                 state_ = REQ_UNRESOLVED
                 detail["reason"] = "supported_by_unresolved_material_claim"
                 unresolved_req_ids.append(req_id)
+            elif deterministic:
+                state_ = REQ_MISSING
+                detail["reason"] = "structural_check_failed"
+                missing_ids.append(req_id)
             else:
-                state_ = REQ_SATISFIED
-                detail["reason"] = (
-                    "supported_by_resolved_material_claim" if material_linked
-                    else "linked_nonmaterial_claims"
-                )
-                satisfied_req_ids.append(req_id)
+                # Semantic/content requirement: candidate linkage is advisory
+                # only — verified material claims cannot auto-satisfy coverage.
+                state_ = REQ_UNKNOWN
+                detail["reason"] = SEMANTIC_COVERAGE_UNQUALIFIED
+                unknown_req_ids.append(req_id)
         req_states[req_id] = state_
         requirement_detail[req_id] = detail
 

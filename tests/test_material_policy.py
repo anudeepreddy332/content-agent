@@ -18,10 +18,13 @@ from agent.material_policy import (
     MATERIAL_REVISION,
     REQ_MISSING,
     REQ_SATISFIED,
+    REQ_UNKNOWN,
     REQ_UNRESOLVED,
+    SEMANTIC_COVERAGE_UNQUALIFIED,
     evaluate_material_policy,
     format_required_content_feedback,
     material_policy_passed,
+    unknown_requirement_obligations,
 )
 from config import MAX_ITERATIONS
 
@@ -241,7 +244,8 @@ def test_I_mandatory_requirement_supported_only_by_weak_unresolved(base_state):
     assert res.decision == MATERIAL_REVISION
 
 
-def test_J_mandatory_requirement_fulfilled_by_verified_material_claim(base_state):
+def test_J_semantic_requirement_linked_verified_claim_is_unknown_not_satisfied(base_state):
+    """Candidate satisfies_req_ids linkage does NOT prove semantic fulfillment."""
     reqs = [{"req_id": "REQ-1", "kind": "required_content", "mandatory": True,
              "description": "must state the mechanism"}]
     draft = "System A improves latency."
@@ -249,8 +253,10 @@ def test_J_mandatory_requirement_fulfilled_by_verified_material_claim(base_state
                         satisfies_req_ids=["REQ-1"])]
     state, inv = _verified_state(base_state, draft, rows, ["verified"], reqs=reqs)
     res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
-    assert res.mandatory_requirement_states["REQ-1"] == REQ_SATISFIED
-    assert res.decision == MATERIAL_PASS
+    assert res.mandatory_requirement_states["REQ-1"] == REQ_UNKNOWN
+    assert res.unknown_requirement_ids == ["REQ-1"]
+    assert res.decision == MATERIAL_HITL
+    assert res.requirement_detail["REQ-1"]["reason"] == SEMANTIC_COVERAGE_UNQUALIFIED
 
 
 def test_K_optional_requirement_missing_no_hard_block(base_state):
@@ -299,20 +305,16 @@ def test_M_stale_grounding_roster_fail_closed(base_state):
     assert res.decision == MATERIAL_HITL
 
 
-def test_N_all_resolved_and_mandatory_satisfied_pass(base_state):
-    reqs = [{"req_id": "REQ-1", "kind": "required_content", "mandatory": True,
-             "description": "must state the mechanism"}]
-    draft = "System A improves latency. System A reduces storage cost."
-    rows = [
-        _claim_row("System A improves latency.", material=True,
-                    satisfies_req_ids=["REQ-1"]),
-        _claim_row("System A reduces storage cost.", material=True),
-    ]
-    state, inv = _verified_state(base_state, draft, rows, ["verified", "verified"],
-                                 reqs=reqs)
+def test_N_all_resolved_and_deterministic_requirements_satisfied_pass(base_state):
+    reqs = [{"req_id": "REQ-SEC", "kind": "section_presence", "mandatory": True,
+             "description": "## Technical Deep Dive"}]
+    draft = "## Technical Deep Dive\n\nSystem A improves latency."
+    rows = [_claim_row("System A improves latency.", material=True)]
+    state, inv = _verified_state(base_state, draft, rows, ["verified"], reqs=reqs)
     res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
     assert res.decision == MATERIAL_PASS
     assert res.material_safety_state == "pass"
+    assert res.mandatory_requirement_states["REQ-SEC"] == REQ_SATISFIED
     assert res.material_verified_rate == 1.0
     assert nodes.route_after_reflect(state) == "hitl"
 
@@ -357,14 +359,15 @@ def test_denominator_gaming_deleting_required_claim_does_not_improve_gate(base_s
     """Spec §10: deleting required claim A must not make the artifact safer."""
     reqs = [{"req_id": "REQ-1", "kind": "required_content", "mandatory": True,
              "description": "must state the mechanism"}]
-    # Draft N: A present, verified, linked -> pass.
+    # Draft N: A present, verified, linked -> UNKNOWN (not auto-satisfied).
     draft_n = "System A improves latency."
     rows_n = [_claim_row("System A improves latency.", material=True,
                           satisfies_req_ids=["REQ-1"])]
     state_n, inv_n = _verified_state(base_state, draft_n, rows_n, ["verified"],
                                      reqs=reqs)
     res_n = evaluate_material_policy(state=state_n, max_iterations=MAX_ITERATIONS)
-    assert res_n.decision == MATERIAL_PASS
+    assert res_n.decision == MATERIAL_HITL
+    assert res_n.unknown_requirement_ids == ["REQ-1"]
 
     # Revision deletes A: requirement R is now missing -> NOT safer (blocked).
     draft_rev = "Some unrelated content."
@@ -470,8 +473,8 @@ def test_metrics_exposed_separately_not_combined(base_state):
     assert res.unknown_materiality_count == 1
     assert res.material_verified_rate == round(1 / 2, 6)
     assert res.mandatory_requirements_total == 1
-    assert res.mandatory_requirement_states["REQ-1"] == REQ_SATISFIED
-    assert res.satisfied_requirement_count == 1
+    assert res.mandatory_requirement_states["REQ-1"] == REQ_UNKNOWN
+    assert res.satisfied_requirement_count == 0
     assert "score" not in res.to_dict()
 
 
@@ -541,6 +544,213 @@ def test_materiality_does_not_change_semantic_status(base_state):
     assert nodes.semantic_verification_accepted(state) is True
     res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
     assert res.decision == MATERIAL_HITL
+
+
+# ---------------------------------------------------------------------------
+# Slice 2b P1 correction — requirement-linkage authority (spec §6–§16)
+# ---------------------------------------------------------------------------
+
+QUORUM_REQ = {
+    "req_id": "REQ-QUORUM",
+    "kind": "required_content",
+    "mandatory": True,
+    "description": "Explain why quorum requires seven replica acknowledgements.",
+}
+
+
+def test_sonnet_attack_unrelated_verified_claim_linked_to_semantic_req(base_state, monkeypatch):
+    """Exact false-green reproduction: unrelated VERIFIED claim + satisfies_req_ids."""
+    draft = "The cache TTL is 30 seconds."
+    rows = [_claim_row(
+        "The cache TTL is 30 seconds.",
+        material=True,
+        satisfies_req_ids=["REQ-QUORUM"],
+    )]
+    state, inv = _verified_state(base_state, draft, rows, ["verified"], reqs=[QUORUM_REQ])
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.mandatory_requirement_states["REQ-QUORUM"] == REQ_UNKNOWN
+    assert res.mandatory_requirement_states["REQ-QUORUM"] != REQ_SATISFIED
+    assert material_policy_passed(res) is False
+    assert res.decision == MATERIAL_HITL
+    assert nodes.route_after_reflect(state) == "hitl"
+    monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
+    hitl = nodes.hitl_node(state)
+    assert hitl["hitl_status"] == "rejected"
+    assert nodes.route_after_hitl({**state, **hitl}) == END
+    monkeypatch.setenv("HITL_AUTO_APPROVE", "0")
+    monkeypatch.setenv("HITL_MODE", "api")
+    monkeypatch.setattr("langgraph.types.interrupt", lambda payload: {"action": "approve"})
+    hitl_api = nodes.hitl_node(state)
+    assert hitl_api["hitl_status"] == "rejected"
+    assert nodes.route_after_hitl({**state, **hitl_api}) == END
+
+
+def test_strong_related_verified_claim_still_unknown_without_coverage_authority(base_state):
+    quorum_ack = (
+        "The quorum latch engages only after seven replica acknowledgements."
+    )
+    req = {
+        "req_id": "REQ-QUORUM",
+        "kind": "required_content",
+        "mandatory": True,
+        "description": "Explain why quorum requires seven acknowledgements.",
+    }
+    draft = quorum_ack
+    rows = [_claim_row(quorum_ack, material=True, satisfies_req_ids=["REQ-QUORUM"])]
+    state, inv = _verified_state(base_state, draft, rows, ["verified"], reqs=[req])
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.mandatory_requirement_states["REQ-QUORUM"] == REQ_UNKNOWN
+    assert res.decision == MATERIAL_HITL
+    obligations = unknown_requirement_obligations(res)
+    assert len(obligations) == 1
+    assert obligations[0]["req_id"] == "REQ-QUORUM"
+    assert obligations[0]["reason"] == SEMANTIC_COVERAGE_UNQUALIFIED
+    assert obligations[0]["candidate_claims"][0]["semantic_status"] == "verified"
+
+
+def test_semantic_requirement_no_candidate_is_missing(base_state):
+    draft = "Unrelated body text."
+    rows = [_claim_row("Unrelated body text.", material=True)]
+    state, inv = _verified_state(base_state, draft, rows, ["verified"], reqs=[QUORUM_REQ])
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.mandatory_requirement_states["REQ-QUORUM"] == REQ_MISSING
+    assert res.missing_requirement_ids == ["REQ-QUORUM"]
+
+
+def test_semantic_requirement_weak_candidate_is_unresolved(base_state):
+    draft = "The cache TTL is 30 seconds."
+    rows = [_claim_row(
+        "The cache TTL is 30 seconds.",
+        material=True,
+        satisfies_req_ids=["REQ-QUORUM"],
+    )]
+    inv = _inventory(draft, rows, [QUORUM_REQ])
+    cid = inv["claims"][0]["claim_id"]
+    state = _state_with(base_state, draft, inv, [_row(cid, "weak")], iterations=1)
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.mandatory_requirement_states["REQ-QUORUM"] == REQ_UNRESOLVED
+    assert res.decision == MATERIAL_REVISION
+
+
+def test_semantic_requirement_unverified_candidate_is_unresolved(base_state):
+    draft = "The cache TTL is 30 seconds."
+    rows = [_claim_row(
+        "The cache TTL is 30 seconds.",
+        material=True,
+        satisfies_req_ids=["REQ-QUORUM"],
+    )]
+    inv = _inventory(draft, rows, [QUORUM_REQ])
+    cid = inv["claims"][0]["claim_id"]
+    state = _state_with(base_state, draft, inv, [_row(cid, "unverified")], iterations=1)
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.mandatory_requirement_states["REQ-QUORUM"] == REQ_UNRESOLVED
+
+
+def test_semantic_requirement_blocker_candidate_is_unresolved(base_state):
+    draft = "The cache TTL is 30 seconds."
+    rows = [_claim_row(
+        "The cache TTL is 30 seconds.",
+        material=True,
+        satisfies_req_ids=["REQ-QUORUM"],
+    )]
+    inv = _inventory(draft, rows, [QUORUM_REQ])
+    cid = inv["claims"][0]["claim_id"]
+    report = [_row(cid, "weak", blockers=[
+        {"kind": "contradiction", "explanation": "x", "evidence_spans": []}])]
+    state = _state_with(base_state, draft, inv, report, iterations=1)
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.mandatory_requirement_states["REQ-QUORUM"] == REQ_UNRESOLVED
+
+
+def test_structural_section_presence_satisfied_without_claim_link(base_state):
+    req = {"req_id": "REQ-SEC", "kind": "section_presence", "mandatory": True,
+           "description": "## Code"}
+    draft = "## Code\n\nprint('hi')"
+    inv = _inventory(draft, [], [req])
+    state = _state_with(base_state, draft, inv, [], iterations=1)
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.mandatory_requirement_states["REQ-SEC"] == REQ_SATISFIED
+    assert res.decision == MATERIAL_PASS
+
+
+def test_structural_section_presence_missing_when_absent(base_state):
+    req = {"req_id": "REQ-SEC", "kind": "section_presence", "mandatory": True,
+           "description": "## Code"}
+    draft = "No code section here."
+    inv = _inventory(draft, [], [req])
+    state = _state_with(base_state, draft, inv, [], iterations=1)
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.mandatory_requirement_states["REQ-SEC"] == REQ_MISSING
+    assert res.decision == MATERIAL_REVISION
+
+
+def test_candidate_req_link_forces_material_via_inventory_override(base_state):
+    draft = "Incidental detail."
+    rows = [_claim_row("Incidental detail.", material=False,
+                        satisfies_req_ids=["REQ-QUORUM"])]
+    inv = _inventory(draft, rows, [QUORUM_REQ])
+    claim = inv["claims"][0]
+    assert claim["material"] is True
+    assert claim.get("materiality_override") == "required_by_brief"
+
+
+def test_candidate_req_link_never_satisfies_semantic_requirement(base_state):
+    draft = "Incidental detail."
+    rows = [_claim_row("Incidental detail.", material=False,
+                        satisfies_req_ids=["REQ-QUORUM"])]
+    inv = _inventory(draft, rows, [QUORUM_REQ])
+    cid = inv["claims"][0]["claim_id"]
+    state = _state_with(base_state, draft, inv, [_row(cid, "verified")], iterations=1)
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.mandatory_requirement_states["REQ-QUORUM"] == REQ_UNKNOWN
+    assert res.mandatory_requirement_states["REQ-QUORUM"] != REQ_SATISFIED
+
+
+def test_unknown_requirement_routes_hitl_not_draft_retry(base_state):
+    draft = "The cache TTL is 30 seconds."
+    rows = [_claim_row(
+        "The cache TTL is 30 seconds.",
+        material=True,
+        satisfies_req_ids=["REQ-QUORUM"],
+    )]
+    state, inv = _verified_state(base_state, draft, rows, ["verified"], reqs=[QUORUM_REQ],
+                                 iterations=1)
+    res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    assert res.decision == MATERIAL_HITL
+    assert nodes.route_after_reflect(state) == "hitl"
+    assert format_required_content_feedback(res) == ""
+
+
+def test_hitl_auto_approve_cannot_bypass_unknown_requirement(base_state, monkeypatch):
+    draft = "The cache TTL is 30 seconds."
+    rows = [_claim_row(
+        "The cache TTL is 30 seconds.",
+        material=True,
+        satisfies_req_ids=["REQ-QUORUM"],
+    )]
+    state, inv = _verified_state(base_state, draft, rows, ["verified"], reqs=[QUORUM_REQ],
+                                 iterations=MAX_ITERATIONS)
+    monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
+    result = nodes.hitl_node(state)
+    assert result["hitl_status"] == "rejected"
+    assert nodes.route_after_hitl({**state, **result}) == END
+
+
+def test_api_approve_cannot_bypass_unknown_requirement(base_state, monkeypatch):
+    draft = "The cache TTL is 30 seconds."
+    rows = [_claim_row(
+        "The cache TTL is 30 seconds.",
+        material=True,
+        satisfies_req_ids=["REQ-QUORUM"],
+    )]
+    state, inv = _verified_state(base_state, draft, rows, ["verified"], reqs=[QUORUM_REQ],
+                                 iterations=MAX_ITERATIONS)
+    monkeypatch.setenv("HITL_AUTO_APPROVE", "0")
+    monkeypatch.setenv("HITL_MODE", "api")
+    monkeypatch.setattr("langgraph.types.interrupt", lambda payload: {"action": "approve"})
+    result = nodes.hitl_node(state)
+    assert result["hitl_status"] == "rejected"
+    assert nodes.route_after_hitl({**state, **result}) == END
 
 
 def test_new_claim_after_revision_evaluated_from_current_inventory(base_state, monkeypatch):
