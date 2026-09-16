@@ -1,0 +1,25 @@
+{
+  "runner_id": "semantic_analyzer_provider_qualification_runner",
+  "stage": "semantic-analyzer-provider-qualification",
+  "authorization_version": "semantic-analyzer-owner-v2",
+  "qualified_harness_head": "47e7f0458e31b2eca0d24ac4f0b791edd20faa89",
+  "requested_model": "deepseek-flash",
+  "accepted_returned_model": "deepseek-flash",
+  "fixture_path": "evals/fixtures/hybrid_verifier_status_offline.json",
+  "fixture_sha256": "72c1bd4dd8a3d39acec01300dd1a9b03021634cfbc49433f0881ee2c2b796d1d",
+  "prompt_path": "prompts/semantic_analyzer_system.md",
+  "case_order": ["P6", "P7", "P1"],
+  "max_provider_requests": 3,
+  "max_attempts_per_case": 1,
+  "hard_spend_ceiling_usd": 0.02,
+  "superseded_experiments": [
+    {
+      "run_id": "semantic_analyzer_run_712c564531e2",
+      "artifact_digest": "5405ea5db5b42e5683ce8d480be7d9ef6c1a1351fed2ae70f2a5d4b68671fbbe",
+      "disposition": "PASS",
+      "requested_model": "deepseek-v4-flash",
+      "returned_model": "deepseek-flash",
+      "authorization_version": "semantic-analyzer-owner-v1"
+    }
+  ]
+}

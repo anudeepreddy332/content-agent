@@ -1,7 +1,9 @@
 {
-  "schedule_id": "semantic_analyzer_provider_qualification_peak_2026-09-10",
-  "recorded_at": "2026-09-10T06:30:00Z",
+  "schedule_id": "semantic_analyzer_provider_qualification_peak_2026-09-16",
+  "recorded_at": "2026-09-16T17:00:00Z",
   "pricing_basis": "owner_reviewed_peak_cache_miss_ceiling",
+  "requested_model": "deepseek-flash",
+  "accepted_returned_model": "deepseek-flash",
   "input_cost_per_million_tokens_usd": 0.44,
   "output_cost_per_million_tokens_usd": 1.32,
   "hard_spend_ceiling_usd": 0.02,

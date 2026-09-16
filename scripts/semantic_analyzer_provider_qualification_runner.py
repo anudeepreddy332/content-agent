@@ -49,10 +49,11 @@ OUTPUT_ROOT = EXPERIMENT_ROOT / "runs"
 EXPERIMENT_REGISTRY_PATH = EXPERIMENT_ROOT / "frozen_experiment_registry.json"
 
 PROVIDER_NAME = "deepseek"
-REQUESTED_MODEL = "deepseek-v4-flash"
-# Frozen exact pair from 2026-09-10 first live experiment: request deepseek-v4-flash,
-# response model field observed as deepseek-flash. No broad alias acceptance.
+REQUESTED_MODEL = "deepseek-flash"
 ACCEPTED_RETURNED_MODEL = "deepseek-flash"
+# Exact request/return pair matches production config.DEEPSEEK_MODEL. No alias acceptance.
+# Historical run semantic_analyzer_run_712c564531e2 used deepseek-v4-flash request;
+# preserved immutable — not current-model qualification.
 # Historical runtime evidence from consumed INVALID run semantic_analyzer_run_ed35656b9a7c
 # (diagnostic only; not used as a validation requirement).
 HISTORICAL_FIRST_LIVE_SYSTEM_FINGERPRINT = "aeb56401ca74e127821c4f9126dcb669"
@@ -69,7 +70,7 @@ PROVIDER_PATH = "semantic_analyzer_provider_direct_https"
 EXECUTE_ENV_VAR = "SEMANTIC_ANALYZER_PROVIDER_EXECUTE"
 OWNER_AUTHORIZATION_ENV_VAR = "SEMANTIC_ANALYZER_OWNER_AUTHORIZATION"
 REGISTRY_VERSION = 2
-OWNER_AUTHORIZATION_VERSION = "semantic-analyzer-owner-v1"
+OWNER_AUTHORIZATION_VERSION = "semantic-analyzer-owner-v2"
 LIFECYCLE_TERMINAL = "TERMINAL"
 LIFECYCLE_SUCCESSOR_PROPOSED = "SUCCESSOR_PROPOSED"
 LIFECYCLE_AUTHORIZED = "AUTHORIZED"

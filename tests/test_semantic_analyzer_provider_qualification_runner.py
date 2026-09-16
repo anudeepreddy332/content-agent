@@ -57,7 +57,14 @@ LEGACY_OFFSET_REQUEST_HASHES = {
     "P7": "c3459b946a3a46a819010851c2cb25c5b4941a7e23002f1c75bd626bd213cac6",
     "P1": "bdf8a520444a8cdf7d5227ec57c2d3dbcc66b9dc6e25ac04493b4b664c5b7dca",
 }
+# Quote-binding contract with production model deepseek-flash (owner-v2 re-freeze).
 QUOTE_BINDING_REQUEST_HASHES = {
+    "P6": "46651b5121073f5c5400db11a6dec5b75e7ed749492cabeeb8a4d6e64c5606d6",
+    "P7": "e6abc15dfd5154c1f795b7d6139b41237b90fa881cd89f266655c4af8244b7da",
+    "P1": "ffcb858435ccaabc5af705efb99f3c281a537f57bc2b6530ef2699cea4d06be9",
+}
+# Historical PASS run 712c564531e2 (deepseek-v4-flash request) request hashes:
+HISTORICAL_V4_FLASH_QUOTE_BINDING_REQUEST_HASHES = {
     "P6": "a8d383925fb4a2a258fcabeb1a4a2d3326e185f2b291116f04f6263368d1e9b5",
     "P7": "e3fe4936d2d4af2275ed1691a0c8a207408f28fad89870bb3d07c56d54d10ad8",
     "P1": "9aee691f0f69a97dd70bd0ce2801b9275d0a2b9cc215ee9d1c89d6644b90c7d7",
@@ -429,7 +436,7 @@ def test_returned_deepseek_v4_flash_invalid_under_frozen_response_contract():
         headers={},
         body={
             "id": "x",
-            "model": REQUESTED_MODEL,
+            "model": "deepseek-v4-flash",
             "choices": [{"finish_reason": "stop", "message": {"content": "{}"}}],
             "usage": {"prompt_tokens": 1, "completion_tokens": 1},
         },
@@ -1054,7 +1061,7 @@ def test_model_mismatch_with_usage_records_incurred_cost(
     def _mismatch(*args, **kwargs):
         return _mock_response(
             content='{"observations":[]}',
-            model=REQUESTED_MODEL,
+            model="deepseek-chat",
             prompt_tokens=599,
             completion_tokens=124,
         )
