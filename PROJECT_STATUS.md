@@ -270,19 +270,27 @@ priority.
   critical misses 0, critical false-nonmaterial 0, API rerun required NO.
   Known imperfections preserved (false positives, materiality UNKNOWN,
   imperfect claim_type metadata); Slice 2b therefore fails safe.
-- **Phase 4 Slice 2B — material + required-content policy (ACTIVE; P1
+- **Phase 4 Slice 2B — material + required-content policy (CLOSED; P1
   authority correction applied D-2026-09-16-07):** `agent/material_policy.py`
   is a deterministic layer around existing semantic output.
   `satisfies_req_ids` is candidate/advisory linkage only — NOT hard semantic
   requirement fulfillment. Deterministic requirements (e.g. `section_presence`)
   may auto-satisfy; semantic/content requirements with strong VERIFIED
-  candidates remain `unknown` → HITL. `material_policy_pass` does NOT equal
-  final publication eligibility; citation safety remains pending Slice 2c.
-  No new LLM calls, no topology change. UNKNOWN materiality and UNKNOWN
-  mandatory requirement coverage never auto-pass and never trigger stochastic
-  revision retry. HITL auto-approval and API approve cannot bypass unresolved
-  material claims, UNKNOWN materiality, or missing/unresolved/unknown mandatory
-  requirements.
+  candidates remain `unknown` → HITL. `material_policy_pass` is not a human
+  publication decision. No new LLM calls, no topology change. UNKNOWN
+  materiality and UNKNOWN mandatory requirement coverage never auto-pass and
+  never trigger stochastic revision retry. HITL auto-approval and API approve
+  cannot bypass unresolved material claims, UNKNOWN materiality, or
+  missing/unresolved/unknown mandatory requirements.
+- **Phase 4 Slice 2C — citation safety + publication-safety conjunction
+  (ACTIVE, D-2026-09-16-08):** `agent/citation_policy.py`. Call-B bound
+  support is hard citation-support authority; model citation IDs are untrusted
+  unless they reconcile exactly with the sidecar plan. Material+VERIFIED
+  claims require the complete support set at the exact occurrence (no subset
+  completeness, no elsewhere-placement, no stuffing, no dangling IDs).
+  Canonical draft is not mutated. `publication_safety_pass` = semantic AND
+  material AND citation AND current integrity — not a score, not autonomous
+  publish. Auto/API approve cannot bypass citation failure.
 - **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED:** exact canonical
   integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
 - **Stage 2C evidence-exposure qualification — PASS (deterministic):**
@@ -601,7 +609,8 @@ redesign program (priority 3). No runtime change authorized by this record.
 - Authority split preserved: `semantic_verification_accepted()` remains the
   sole semantic authority; `agent/material_policy.py` owns material /
   required-content safety; citation safety remains Slice 2c.
-- `material_policy_pass` is NOT `publication_eligible` (citation safety pending).
+- `material_policy_pass` is one conjunct of `publication_safety_pass`
+  (Slice 2c); it is still not a human publication decision.
 - Hard authority: `unresolved_material_claim_count == 0` AND
   `unknown_materiality_count == 0` AND mandatory requirements
   missing/unresolved/unknown == 0. `material_verified_rate` is observability
@@ -615,6 +624,28 @@ redesign program (priority 3). No runtime change authorized by this record.
   auto-satisfy. Sonnet false-green attack blocked.
 - Validation: `tests/test_material_policy.py` 43 tests (spec §19 A–Q +
   P1 matrix + Sonnet attack + structural positive control). Provider calls: zero.
+
+## Phase 4 Slice 2C citation safety + publication-safety conjunction
+
+- Isolated variable: deterministic citation correctness / completeness /
+  placement plus the publication-safety conjunction. No new LLM calls, no
+  LangGraph topology change, no retrieval/chunking change, no citation judge.
+- Scope: `agent/citation_policy.py` (new), `agent/nodes.py` (HITL/routing/
+  html_gen bibliography + in-body clusters), `tests/test_citation_policy.py`
+  (new), `DECISIONS.md`, `PROJECT_STATUS.md`.
+- Citation-support authority: current VALID Call-B `support_spans` evidence
+  IDs (complete set). Model-declared citation IDs are untrusted unless they
+  reconcile exactly with the sidecar plan.
+- Hard authority: `invalid_citation_count == 0` AND
+  `missing_required_citation_count == 0` AND
+  `citation_placement_failure_count == 0` AND no dangling / stale-plan /
+  overlapping-placement integrity failures. `citation_coverage_rate` is
+  observability only.
+- `publication_safety_pass` = semantic AND material AND citation AND current
+  version/integrity. Not a composite score. Does not autonomously publish.
+- Canonical `draft_markdown` is never mutated for citations.
+- Validation: `tests/test_citation_policy.py` spec matrix A–U. Provider calls:
+  zero.
 
 ## Parallel retrieval research
 

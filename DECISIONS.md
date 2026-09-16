@@ -9,6 +9,58 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-16-08
+Date: 2026-09-16
+
+Decision: **Phase 4 Slice 2C — citation correctness, completeness, placement,
+plus the final publication-safety conjunction.**
+
+Reason: Slice 2a (inventory/anchors) and Slice 2b (material/required-content)
+are CLOSED. Publication still lacked a deterministic citation gate: the HTML
+path used first-`source_ref` plus retrieved-source fallback, which is exactly
+the undercitation / stuffing loophole Slice 2c forbids. Call B already binds
+the complete support set (`support_spans` × `evidence_id` × exact quotes).
+
+Rules:
+
+- Citation-support authority = current VALID Call-B bound support (complete
+  distinct `evidence_id` set). Model-declared citation IDs / claim↔source tags
+  are untrusted unless they reconcile exactly with the authoritative plan.
+- Applicability: `material is True` AND current VALID semantic `verified`.
+  `claim_type` cannot exempt a material verified claim.
+- Sidecar citation plan bound to `draft_sha256` + claim/grounding roster +
+  exact `(anchor_start, anchor_end)`. Canonical `draft_markdown` is never
+  mutated to insert citations.
+- Completeness: rendered attachments at an applicable exact-anchor group must
+  equal the UNION of required support IDs. Subset (`{E1,E2}` required, `{E1}`
+  rendered) FAILS. No coverage-rate threshold.
+- Correctness: every rendered ID must belong to that group's support union.
+  Extra/unsupported IDs FAIL. Dangling IDs FAIL.
+- Placement: a correct source cited elsewhere does not satisfy the occurrence.
+  Shared identical anchors → one group, union support, one cluster. Overlapping
+  non-identical applicable anchors → fail closed (HITL), no guess.
+- Non-material claims: no completeness obligation; any actually-rendered
+  citation must still be valid.
+- Failures HOLD/HITL; no stochastic citation retry; no citation LLM judge.
+- `publication_safety_pass` = semantic_verification_accepted AND
+  material_policy_passed AND citation_policy_passed AND current
+  version/integrity. Not a composite score. Reflection cannot override.
+  `publication_safety_pass` ≠ human publication decision; HITL still required.
+  Auto/API approve cannot bypass citation failure; no `html_gen` on failure.
+- Bibliography is cited-canonical-evidence only (no retrieved-source stuffing)
+  when an inventory is present. Pre-2A absent-inventory states keep Slice-1
+  citation HTML.
+
+Evidence: `agent/citation_policy.py`, routing/HITL/html_gen wiring in
+`agent/nodes.py`, `tests/test_citation_policy.py` (spec matrix A–U).
+Provider calls: zero.
+
+Status: Accepted (locked). Slice 2a CLOSED. Slice 2b CLOSED. Slice 2c
+citation safety + publication-safety conjunction implemented.
+
+Confidence: 0.88
+
+---
 Decision ID: D-2026-09-16-07
 Date: 2026-09-16
 

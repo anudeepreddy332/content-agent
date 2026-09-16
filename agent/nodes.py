@@ -80,6 +80,16 @@ from agent.material_policy import (
     material_policy_passed,
     unknown_requirement_obligations,
 )
+from agent.citation_policy import (
+    CitationPolicyResult,
+    apply_inline_clusters_to_html,
+    bibliography_items,
+    build_evidence_registry,
+    citation_policy_passed,
+    evaluate_citation_policy,
+    evidence_numbering,
+    insert_citation_markers,
+)
 import html as html_module
 import re
 import datetime
@@ -684,6 +694,26 @@ def _build_citations(grounding_report: list, web_sources: list, kb_results: list
     return render_citations_html(items)
 
 
+def _citations_html_for_state(state: AgentState) -> str:
+    """Bibliography for the current artifact.
+
+    When a claim inventory is present, Slice 2c cited-only bibliography is
+    authoritative (no retrieved-source stuffing). Pre-2A / hand-built states
+    keep the historical grounding_report path.
+    """
+    if state.get("claim_inventory") is None:
+        return _build_citations(
+            state.get("grounding_report", []),
+            state.get("web_sources", []),
+            state.get("kb_results", []),
+        )
+    result = evaluate_citation_policy(state=state)
+    items = bibliography_items(result.attached_evidence_ids, build_evidence_registry(state))
+    if not items:
+        items = bibliography_items(result.required_evidence_ids, build_evidence_registry(state))
+    return render_citations_html(items)
+
+
 def _capture_remote_main_sha() -> str | None:
     """Read the selected remote's live main parent when remote publish is enabled.
 
@@ -1006,6 +1036,13 @@ def _append_verify_iteration_metrics(
         ],
         "grounding_report": grounding_report,
         "material_policy": material_state.to_dict(),
+        "citation_policy": evaluate_citation_policy(
+            state={
+                **state,
+                "claim_inventory": claim_inventory,
+                "grounding_report": grounding_report,
+            }
+        ).to_dict(),
     })
     return iteration_metrics
 
@@ -1640,6 +1677,9 @@ def hitl_node(state: AgentState) -> dict:
                 material_policy_result(state),
                 state.get("grounding_report"),
             ),
+            # Phase 4 Slice 2C: citation obligations exposed so auto/API
+            # approval cannot bypass missing/unsupported/misplaced citations.
+            "citation_policy": citation_policy_result(state).to_dict(),
         }) or {}
         action = decision.get("action")
         if action == "approve":
@@ -1936,6 +1976,23 @@ def html_gen_node(state: AgentState) -> dict:
     td_tokens, td_cost = 0, 0.0
 
     try:
+        if state.get("claim_inventory") is not None:
+            cite_gate = evaluate_citation_policy(state=state)
+            if not citation_policy_passed(cite_gate):
+                existing_latency["html_gen"] = int((time.time() - t_start) * 1000)
+                error_log.append("[html_gen] citation policy failure; HTML generation blocked")
+                return {
+                    "html_output": None,
+                    "html_filename": None,
+                    "article_body_html": None,
+                    "html_sha256": None,
+                    "html_policy_version": HTML_POLICY_VERSION,
+                    "approved_html_sha256": None,
+                    "latency_ms": existing_latency,
+                    "error_log": error_log,
+                    "policy_diagnostics": policy_diagnostics + [cite_gate.to_dict()],
+                }
+
         framing = sanitize_fragment(_render_problem_framing(
             draft.get("problem_framing", "No problem framing available.")
         ))
@@ -1952,11 +2009,37 @@ def html_gen_node(state: AgentState) -> dict:
         dive = sanitize_fragment(raw_td)
         del raw_td
 
-        citations_html = _build_citations(
-            state.get("grounding_report", []),
-            state.get("web_sources", []),
-            state.get("kb_results", []),
-        )
+        citations_html = _citations_html_for_state(state)
+        framing_html, dive_html, code_html, takeaways_html = framing.html, dive.html, code.html, takeaways.html
+        if state.get("claim_inventory") is not None:
+            cite = evaluate_citation_policy(state=state)
+            # Local annotated copy only — canonical draft_markdown is untouched.
+            _ = insert_citation_markers(
+                state.get("draft_markdown") or "",
+                cite.anchor_groups,
+            )
+            numbering = evidence_numbering(cite.attached_evidence_ids or cite.required_evidence_ids)
+            draft_md = state.get("draft_markdown") or ""
+            framing_html = apply_inline_clusters_to_html(
+                framing_html, draft_markdown=draft_md,
+                groups=cite.anchor_groups, numbering=numbering,
+            )
+            dive_html = apply_inline_clusters_to_html(
+                dive_html, draft_markdown=draft_md,
+                groups=cite.anchor_groups, numbering=numbering,
+            )
+            code_html = apply_inline_clusters_to_html(
+                code_html, draft_markdown=draft_md,
+                groups=cite.anchor_groups, numbering=numbering,
+            )
+            takeaways_html = apply_inline_clusters_to_html(
+                takeaways_html, draft_markdown=draft_md,
+                groups=cite.anchor_groups, numbering=numbering,
+            )
+            framing = sanitize_fragment(framing_html)
+            dive = sanitize_fragment(dive_html)
+            code = sanitize_fragment(code_html)
+            takeaways = sanitize_fragment(takeaways_html)
         article = assemble_trusted_article(
             **_article_shell_fields(state),
             problem_framing=framing,
@@ -2109,11 +2192,7 @@ def html_revise_node(state: AgentState) -> dict:
     note = state.get("html_feedback") or ""
     errors = list(state.get("error_log") or [])
     policy_diagnostics = list(state.get("policy_diagnostics") or [])
-    citations_html = _build_citations(
-        state.get("grounding_report", []),
-        state.get("web_sources", []),
-        state.get("kb_results", []),
-    )
+    citations_html = _citations_html_for_state(state)
 
     system = Path("prompts/html_revise_system.md").read_text(encoding="utf-8")
     user = (
@@ -2530,6 +2609,37 @@ def material_policy_accepted(state: AgentState) -> bool:
     return material_policy_passed(material_policy_result(state))
 
 
+def citation_policy_result(state: AgentState) -> CitationPolicyResult:
+    """Evaluate Slice-2c citation policy for the current state. Pure; no
+    provider calls. Recomputed on demand from inventory + grounding + draft
+    sha so a stale plan cannot certify a revised draft."""
+    return evaluate_citation_policy(state=state)
+
+
+def citation_policy_accepted(state: AgentState) -> bool:
+    """True only when citation policy passes. Absent inventory (pre-2A) passes,
+    preserving Slice-1 behavior."""
+    return citation_policy_passed(citation_policy_result(state))
+
+
+def publication_safety_accepted(state: AgentState) -> bool:
+    """Deterministic publication-safety conjunction (Slice 2c spec §20).
+
+    Not a composite score. Reflection cannot override any conjunct.
+    This is NOT a human publication decision and does not publish.
+    """
+    return (
+        semantic_verification_accepted(state)
+        and material_policy_accepted(state)
+        and citation_policy_accepted(state)
+    )
+
+
+def publication_safety_pass(state: AgentState) -> bool:
+    """Spec name for the publication-safety conjunction. Does not publish."""
+    return publication_safety_accepted(state)
+
+
 def unverified_rate(grounding_report: list | None) -> float | None:
     """Exact unverified / N, or None when UVR is not deterministically computable."""
     if not grounding_report:
@@ -2716,9 +2826,10 @@ def semantic_verification_accepted(state: AgentState) -> bool:
     unknown/incomplete status, blocker-bearing rows (weak OR unverified), and
     UVR above the gate all fail closed. Scalar grounding/confidence cannot
     convert those states into a pass, and UVR <= 0.15 cannot override an
-    applicable blocker or an invalid evaluation state. Claim completeness,
-    materiality, and citation completeness remain CLAIM_COMPLETENESS
-    ("unknown") — they are later Phase-4 slices.
+    applicable blocker or an invalid evaluation state. Claim completeness
+    versus everything the draft truly says remains CLAIM_COMPLETENESS
+    ("unknown"). Material and citation safety are separate deterministic
+    layers and are not this function's authority.
     """
     if state.get("verification_status") != "completed":
         return False
@@ -2766,21 +2877,30 @@ def _hitl_traced(state: AgentState, payload: dict) -> dict:
 
 
 def hitl_approve_update(state: AgentState) -> dict:
-    """Ordinary approve grants HTML eligibility only if BOTH gates pass:
-    semantic verification (Slice 1) AND material + required-content policy
-    (Slice 2b).
+    """Ordinary approve grants HTML eligibility only if ALL hard gates pass:
+    semantic verification (Slice 1), material + required-content (Slice 2b),
+    and citation safety (Slice 2c).
 
-    Either failure uses the existing reject payload so route_after_hitl → END.
-    This is what prevents HITL_AUTO_APPROVE=1 and API approve from bypassing an
-    unresolved material claim, UNKNOWN materiality, or a missing/unresolved
-    mandatory requirement (spec §16). Feedback and explicit reject unchanged.
+    Any failure uses the existing reject payload so route_after_hitl → END.
+    This is what prevents HITL_AUTO_APPROVE=1 and API approve from bypassing
+    unresolved material claims, UNKNOWN materiality, missing/unresolved
+    mandatory requirements, or citation correctness/completeness/placement
+    failures. Feedback and explicit reject unchanged.
     """
     material = material_policy_result(state)
-    if semantic_verification_accepted(state) and material_policy_passed(material):
+    citation = citation_policy_result(state)
+    if (
+        semantic_verification_accepted(state)
+        and material_policy_passed(material)
+        and citation_policy_passed(citation)
+    ):
         payload = {"hitl_status": "approved", "hitl_feedback": None}
     else:
         payload = {"hitl_status": "rejected", "hitl_feedback": None}
-        payload["policy_diagnostics"] = material.to_dict()
+        payload["policy_diagnostics"] = {
+            "material_policy": material.to_dict(),
+            "citation_policy": citation.to_dict(),
+        }
     return _hitl_traced(state, payload)
 
 
@@ -2863,6 +2983,20 @@ def route_after_reflect(state: AgentState) -> str:
                  reason_codes=material.reason_codes)
         return "hitl"
 
+    # Phase 4 Slice 2C: citation safety AFTER semantic + material. Failures
+    # HOLD/HITL — citations are derived from already-qualified Call-B
+    # support, so we do not ask the drafter to hallucinate references.
+    # A high reflection score cannot override a citation failure.
+    citation = citation_policy_result(state)
+    if not citation_policy_passed(citation):
+        log.info("route.citation_hold", run_id=state["run_id"],
+                 citation_safety_state=citation.citation_safety_state,
+                 reason_codes=citation.reason_codes,
+                 missing=citation.missing_required_citation_count,
+                 invalid=citation.invalid_citation_count,
+                 placement=citation.citation_placement_failure_count)
+        return "hitl"
+
     # Quality gate (reflection only; grounding_score is not consulted)
     if reflection_score < REFLECTION_THRESHOLD:
         log.info("route.revise", run_id=state["run_id"], reason="reflection below threshold",
@@ -2878,32 +3012,34 @@ def route_after_hitl(state: AgentState) -> str:
     """
     Route based on HITL decision.
 
-    Ordinary approve may proceed to HTML only when BOTH gates pass: semantic
-    verification (Slice 1) AND the material + required-content policy (Slice 2b).
-    A semantically or materially failed/incomplete state cannot become
-    HTML-eligible through approve (auto, interactive, or API). Existing
-    destinations only:
-        "html_gen" — approved AND semantically AND materially accepted
+    Ordinary approve may proceed to HTML only when ALL hard gates pass:
+    semantic verification (Slice 1), material + required-content (Slice 2b),
+    and citation safety (Slice 2c). Existing destinations only:
+        "html_gen" — approved AND publication_safety_accepted
         "draft"    — explicit feedback (existing remediation path)
         END        — reject, unknown, or approve blocked by a gate failure
+    publication_safety_pass does not publish by itself.
     """
     from langgraph.graph import END
     log = get_logger("router")
     status = state.get("hitl_status", "pending")
     semantic_ok = semantic_verification_accepted(state)
     material_ok = material_policy_accepted(state)
+    citation_ok = citation_policy_accepted(state)
+    safety_ok = semantic_ok and material_ok and citation_ok
     log.info("hitl.decision", run_id=state["run_id"], status=status,
-             semantic_ok=semantic_ok, material_ok=material_ok)
+             semantic_ok=semantic_ok, material_ok=material_ok, citation_ok=citation_ok)
 
     if status == "feedback":
         return "draft"
-    if status == "approved" and semantic_ok and material_ok:
+    if status == "approved" and safety_ok:
         return "html_gen"
     if status == "approved":
         log.info("hitl.approve_blocked_gate_failure",
                  run_id=state["run_id"],
                  verification_status=state.get("verification_status"),
                  semantic_ok=semantic_ok, material_ok=material_ok,
+                 citation_ok=citation_ok,
                  claim_completeness=CLAIM_COMPLETENESS)
         return END
     return END
