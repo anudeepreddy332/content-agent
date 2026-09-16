@@ -9,6 +9,57 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-16-09
+Date: 2026-09-16
+
+Decision: **Phase 4 — CLOSED / QUALIFIED (final independent closure checkpoint).**
+
+Reason: final Sonnet review at implementation HEAD
+`1a972502ff0a9944fac44529095ecfe0e3e883cf` concluded all Phase-4 slices
+independently qualified; demonstrated P0/P1 none; ready for Phase 5.
+
+Slice closure:
+
+- **Slice 2a — CLOSED:** authoritative claim inventory/materiality; real Call-A
+  provider qualification PASS under provider oracle v2.
+- **Slice 2b — CLOSED:** material-claim safety; required-content denominator
+  preservation; ``satisfies_req_ids`` advisory only; UNKNOWN semantic
+  requirement coverage → HITL; independent qualification PASS.
+- **Slice 2c — CLOSED:** Call-B bound support is citation authority; complete
+  citation support set; correctness/completeness/exact-occurrence placement;
+  sidecar rendering; canonical draft unchanged; final hard
+  publication-safety conjunction; independent qualification PASS.
+
+Final publication-safety conjunction (no composite score; reflection soft only):
+
+1. semantic verification accepted;
+2. material/required-content policy passed;
+3. citation policy passed;
+4. current version/integrity valid;
+5. existing HITL/human publication authority remains.
+
+Carry-forward principle: model-produced relationships/tags/IDs are
+candidate/advisory metadata unless independently validated (e.g.
+``satisfies_req_ids``, citation/source mappings, future document/retrieval
+metadata links). Do not trust model-declared relationships as hard proof.
+
+Non-blocking P2/P3 (logged, not fixed): unused/dead
+``insert_citation_markers`` computation; legacy pre-upgrade checkpoint
+compatibility; no explicit informed-human override for UNKNOWN semantic
+requirements; real ``brief_requirements`` population remains future integration.
+
+Next: **Phase 5 — retrieval/chunking/evidence exposure.** Sol architecture
+audit in progress; review before implementation. Do not define Phase-5
+architecture in this decision.
+
+Evidence: final Sonnet review at HEAD `1a972502ff0a9944fac44529095ecfe0e3e883cf`;
+focused tests 191/191; full tests 1226/1226. Provider calls: zero.
+
+Status: **PHASE-4-CLOSED-QUALIFIED.** Demonstrated P0/P1: none.
+
+Confidence: 0.92
+
+---
 Decision ID: D-2026-09-16-08
 Date: 2026-09-16
 
@@ -55,8 +106,8 @@ Evidence: `agent/citation_policy.py`, routing/HITL/html_gen wiring in
 `agent/nodes.py`, `tests/test_citation_policy.py` (spec matrix A–U).
 Provider calls: zero.
 
-Status: Accepted (locked). Slice 2a CLOSED. Slice 2b CLOSED. Slice 2c
-citation safety + publication-safety conjunction implemented.
+Status: Accepted (locked). Slice 2c independently qualified PASS; Phase 4
+closure recorded in D-2026-09-16-09.
 
 Confidence: 0.88
 

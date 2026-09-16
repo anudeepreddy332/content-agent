@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-04._
+_Canonical current-state snapshot. Last synchronized: 2026-09-16 (Phase 4 closure)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -98,24 +98,22 @@ remain preserved below as evidence; they are not reopened here.
    `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`. Current prefix exposure lost
    required evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval.
    Provider consequence remains **UNKNOWN**.
-3. **Hybrid verifier status engine — CURRENT MISSION** on
-   `experiment/hybrid-verifier-status-engine`. Offline deterministic qualification
-   of a Python-owned status engine fed by structured semantic observations (no
-   model-generated final status). Provider observation qualification **BLOCKED**
-   pending independent offline review. Materiality, retrieval, and production
-   runtime **unchanged**.
-   - **Phase 4 Slice 1 (acceptance/remediation foundation) — IMPLEMENTED, LOCAL
-     COMMIT ONLY, AWAITING BOUNDED REVIEW** (D-2026-09-14-05): blocker policy
+3. **Phase 4 — CLOSED / QUALIFIED** at final implementation HEAD
+   `1a972502ff0a9944fac44529095ecfe0e3e883cf` (D-2026-09-16-09). Independent
+   final Sonnet review: Slice 2c PASS; demonstrated P0/P1 none; focused tests
+   191/191; full tests 1226/1226; provider calls zero; ready for Phase 5 YES.
+   Branch `experiment/hybrid-verifier-status-engine` carries the qualified
+   implementation. See **Phase 4 closure** section below.
+   - **Phase 4 Slice 1 (acceptance/remediation foundation) — CLOSED**
+     (D-2026-09-14-05): blocker policy
      generalized to WEAK **and** UNVERIFIED valid rows; targeted blocker revision
      feedback reaches the drafter; `grounding_score` removed from revision/semantic
      routing authority (compatibility/observability only); UVR_v1 unchanged and
      non-overriding; unresolved semantic obligations explicit in Gate-1 payload and
      trace. Claim completeness, materiality, and citation completeness remain
      UNKNOWN — later Phase-4 slices. Not pushed, not merged, zero provider calls.
-   - **Phase 4 Slice 2A (claim inventory + draft anchoring + materiality) —
-     INDEPENDENTLY QUALIFIED, LOCAL COMMIT ONLY**
-     (D-2026-09-15-02; qualified SHA
-     `981ee54c868fc26c7082a575316ef3fabac80ef5`): Call A extracts atomic claim inventory + materiality
+   - **Phase 4 Slice 2A — CLOSED** (D-2026-09-15-02, D-2026-09-16-05): Call A
+     extracts atomic claim inventory + materiality
      with no evidence context; deterministic exact-string draft anchoring
      (ANCHOR_FAILED/ANCHOR_AMBIGUOUS fail closed); Python content-derived claim
      IDs; `draft_sha256`-versioned inventory rebuilt every verify pass;
@@ -146,7 +144,16 @@ remain preserved below as evidence; they are not reopened here.
      Bounded qualification PASS; factual recall 21/21; genuine imperfections
      retained (G03 invented claim, G06 UNKNOWN materiality). Harness gold v1
      unchanged. **Call A qualified for bounded provider challenge set = YES.**
-     No API rerun. Not population-level accuracy. Slice 2b/2c deferred.
+     No API rerun. Not population-level accuracy.
+   - **Phase 4 Slice 2B — CLOSED** (D-2026-09-16-06, D-2026-09-16-07):
+     material-claim safety; required-content denominator preservation;
+     `satisfies_req_ids` advisory only; UNKNOWN semantic requirement coverage
+     → HITL; independent qualification PASS.
+   - **Phase 4 Slice 2C — CLOSED** (D-2026-09-16-08): Call-B bound support
+     is citation authority; complete citation support set;
+     correctness/completeness/exact-occurrence placement; sidecar rendering;
+     canonical draft unchanged; final hard publication-safety conjunction;
+     independent qualification PASS.
 4. **Verifier semantic-contract 3-cell prompt-only experiment — EXECUTED / FAIL
    (valid):** run 2 artifact
    `outputs/verifier_semantic_contract_3cell/verifier_semantic_contract_run_20260905T130342Z.json`
@@ -262,35 +269,22 @@ priority.
 
 ## Current status
 
+- **Phase 4 — CLOSED / QUALIFIED** at HEAD
+  `1a972502ff0a9944fac44529095ecfe0e3e883cf`. Final independent Sonnet review:
+  Slice 2c PASS; demonstrated P0/P1 **none**; focused tests 191/191; full tests
+  1226/1226; provider calls zero; ready for Phase 5 **YES**.
+- **Phase 4 Slice 2A — CLOSED:** authoritative claim inventory/materiality;
+  real Call-A provider qualification PASS under provider oracle v2.
+- **Phase 4 Slice 2B — CLOSED:** material-claim safety; required-content
+  denominator preservation; `satisfies_req_ids` advisory only; UNKNOWN semantic
+  requirement coverage → HITL; independent qualification PASS.
+- **Phase 4 Slice 2C — CLOSED:** Call-B bound support is citation authority;
+  complete citation support set; correctness/completeness/exact-occurrence
+  placement; sidecar rendering; canonical draft unchanged; final hard
+  publication-safety conjunction; independent qualification PASS.
 - **Client-demo hardening:** CLOSED / LIVE-DEMO-REHEARSED.
-- **Overall P0-2b:** OPEN.
-- **Phase 4 Slice 2A — COMPLETE and real-Call-A provider-qualified:** PASS
-  under provider oracle `call_a_provider_eval_gold_v2` (provider
-  `deepseek-flash`); bounded challenge set factual recall 21/21, genuine
-  critical misses 0, critical false-nonmaterial 0, API rerun required NO.
-  Known imperfections preserved (false positives, materiality UNKNOWN,
-  imperfect claim_type metadata); Slice 2b therefore fails safe.
-- **Phase 4 Slice 2B — material + required-content policy (CLOSED; P1
-  authority correction applied D-2026-09-16-07):** `agent/material_policy.py`
-  is a deterministic layer around existing semantic output.
-  `satisfies_req_ids` is candidate/advisory linkage only — NOT hard semantic
-  requirement fulfillment. Deterministic requirements (e.g. `section_presence`)
-  may auto-satisfy; semantic/content requirements with strong VERIFIED
-  candidates remain `unknown` → HITL. `material_policy_pass` is not a human
-  publication decision. No new LLM calls, no topology change. UNKNOWN
-  materiality and UNKNOWN mandatory requirement coverage never auto-pass and
-  never trigger stochastic revision retry. HITL auto-approval and API approve
-  cannot bypass unresolved material claims, UNKNOWN materiality, or
-  missing/unresolved/unknown mandatory requirements.
-- **Phase 4 Slice 2C — citation safety + publication-safety conjunction
-  (ACTIVE, D-2026-09-16-08):** `agent/citation_policy.py`. Call-B bound
-  support is hard citation-support authority; model citation IDs are untrusted
-  unless they reconcile exactly with the sidecar plan. Material+VERIFIED
-  claims require the complete support set at the exact occurrence (no subset
-  completeness, no elsewhere-placement, no stuffing, no dangling IDs).
-  Canonical draft is not mutated. `publication_safety_pass` = semantic AND
-  material AND citation AND current integrity — not a score, not autonomous
-  publish. Auto/API approve cannot bypass citation failure.
+- **Overall P0-2b:** OPEN (historical P0-2b program boundary; Phase 4 slices
+  above are independently qualified and closed).
 - **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED:** exact canonical
   integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
 - **Stage 2C evidence-exposure qualification — PASS (deterministic):**
@@ -326,9 +320,13 @@ priority.
 
 ## Current authorized mission
 
-**Semantic-analyzer provider qualification runner — offline implementation** is
-the current authorized engineering mission on
-`experiment/hybrid-verifier-status-engine`.
+**Phase 5 — retrieval/chunking/evidence exposure** is the next authorized
+engineering direction. Phase 4 is CLOSED; do not reopen without new material
+P0/P1 evidence. A separate Sol architecture audit is in progress and will be
+reviewed before Phase-5 implementation. Do not define Phase-5 architecture here.
+
+Historical context on `experiment/hybrid-verifier-status-engine` (Phase 4
+implementation branch):
 
 - Pre-provider harness independently qualified at
   `47e7f0458e31b2eca0d24ac4f0b791edd20faa89`
@@ -646,6 +644,45 @@ redesign program (priority 3). No runtime change authorized by this record.
 - Canonical `draft_markdown` is never mutated for citations.
 - Validation: `tests/test_citation_policy.py` spec matrix A–U. Provider calls:
   zero.
+- **Independent qualification:** PASS (final Sonnet review at HEAD
+  `1a972502ff0a9944fac44529095ecfe0e3e883cf`).
+
+## Phase 4 closure (final qualification)
+
+**Status:** CLOSED / QUALIFIED at HEAD `1a972502ff0a9944fac44529095ecfe0e3e883cf`.
+
+| Slice | Status | Summary |
+|-------|--------|---------|
+| 2a | CLOSED | Authoritative claim inventory/materiality; real Call-A provider qualification PASS under provider oracle v2 |
+| 2b | CLOSED | Material-claim safety; required-content denominator; `satisfies_req_ids` advisory only; UNKNOWN semantic requirement coverage → HITL |
+| 2c | CLOSED | Call-B bound citation authority; complete support set; correctness/completeness/placement; sidecar rendering; publication-safety conjunction |
+
+**Final publication-safety conjunction** (no composite score; reflection remains
+soft quality only):
+
+1. `semantic_verification_accepted()`;
+2. `material_policy_passed()`;
+3. `citation_policy_passed()`;
+4. current version/integrity valid;
+5. existing HITL/human publication authority remains.
+
+**Carry-forward design lesson:** model-produced relationships/tags/IDs are
+candidate/advisory metadata unless independently validated (examples:
+`satisfies_req_ids`, citation/source mappings, future document/retrieval metadata
+links). Do not trust model-declared relationships as hard proof by themselves.
+
+**Non-blocking P2/P3 log** (preserved, not fixed in Phase 4):
+
+- unused/dead `insert_citation_markers` computation;
+- legacy pre-upgrade checkpoint compatibility;
+- no explicit informed-human override for UNKNOWN semantic requirements;
+- real `brief_requirements` population remains future integration work.
+
+**Next:** Phase 5 — retrieval/chunking/evidence exposure. Sol architecture audit
+in progress; review before implementation.
+
+**Final qualification evidence:** focused tests 191/191; full tests 1226/1226;
+provider calls zero; demonstrated P0/P1 none.
 
 ## Parallel retrieval research
 
