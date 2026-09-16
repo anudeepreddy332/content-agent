@@ -9,6 +9,53 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-16-10
+Date: 2026-09-16
+
+Decision: **Phase 4 — CLOSED / QUALIFIED / LIVE-WIRED (final integration seal).**
+
+Reason: independent review at HEAD `0139ef891c4e8bd7b5c96f1d94de9676b16e5553`
+established that production entry paths hardcoded `brief_requirements=[]`, leaving
+Slice-2b required-content policy qualified but unpopulated. This decision closes
+that integration gap only — no graph, Call-A/B contract, status-engine, or provider
+qualification artifact changes.
+
+Live wiring:
+
+- `_build_initial_state()` (CLI + API canonical seed) accepts optional
+  `brief_requirements`; normalizes via `normalize_brief_requirements()`; never
+  silently discards a non-empty supplied list.
+- CLI: `--brief-requirements-json <path>` (JSON array of requirement objects).
+- API: `CreateRun.brief_requirements` (list of `{req_id, kind, mandatory, description}`).
+- `verify_node` already consumed `state["brief_requirements"]`; wiring completes
+  the input → state → inventory → material-policy → publication-safety path.
+
+Call-B current-model qualification (execution HEAD `0139ef891c4e8bd7b5c96f1d94de9676b16e5553`):
+
+- Run: `semantic_analyzer_run_8f554fa3eb62`
+- Artifact digest: `0ed38fc378c5106b551fd2442ce8fef534f83db1756a6b2073c8bef6533899c5`
+- Requested/returned model: `deepseek-flash` (exact match)
+- Requests: 3; retries: 0; cost: `$0.001344`
+- P6 contradiction → WEAK → PASS; P7 limitation → WEAK → PASS; P1 full support → VERIFIED → PASS
+- Overall: **PASS** (no population-level reliability claim)
+
+Call-A current-provider qualification: **PASS** under provider oracle v2 (retained).
+
+Evidence: `tests/test_brief_requirements_live_wiring.py` (7 tests) — production
+`_build_initial_state` → graph → verify → inventory/Call-A context/material
+policy/publication-safety; denominator-gaming; advisory-link regression;
+structural positive control. Provider calls: zero.
+
+Status: **PHASE-4-FULLY-CLOSED-QUALIFIED-LIVE-WIRED.** Demonstrated P0/P1: none.
+
+Next: **Phase 5 — retrieval/chunking/evidence exposure.**
+
+Supersedes: the P2/P3 item “real `brief_requirements` population remains future
+integration work” in D-2026-09-16-09.
+
+Confidence: 0.94
+
+---
 Decision ID: D-2026-09-16-09
 Date: 2026-09-16
 
@@ -46,7 +93,7 @@ metadata links). Do not trust model-declared relationships as hard proof.
 Non-blocking P2/P3 (logged, not fixed): unused/dead
 ``insert_citation_markers`` computation; legacy pre-upgrade checkpoint
 compatibility; no explicit informed-human override for UNKNOWN semantic
-requirements; real ``brief_requirements`` population remains future integration.
+requirements. (``brief_requirements`` live wiring closed in D-2026-09-16-10.)
 
 Next: **Phase 5 — retrieval/chunking/evidence exposure.** Sol architecture
 audit in progress; review before implementation. Do not define Phase-5

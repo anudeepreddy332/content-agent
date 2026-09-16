@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-16 (Phase 4 closure)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-16 (Phase 4 live-wiring seal)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -98,10 +98,10 @@ remain preserved below as evidence; they are not reopened here.
    `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`. Current prefix exposure lost
    required evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval.
    Provider consequence remains **UNKNOWN**.
-3. **Phase 4 — CLOSED / QUALIFIED** at final implementation HEAD
-   `1a972502ff0a9944fac44529095ecfe0e3e883cf` (D-2026-09-16-09). Independent
-   final Sonnet review: Slice 2c PASS; demonstrated P0/P1 none; focused tests
-   191/191; full tests 1226/1226; provider calls zero; ready for Phase 5 YES.
+3. **Phase 4 — CLOSED / QUALIFIED / LIVE-WIRED** at HEAD
+   `0139ef891c4e8bd7b5c96f1d94de9676b16e5553` (D-2026-09-16-10). Slice 2b
+   required-content denominator now populated from CLI/API brief input;
+   demonstrated P0/P1 none; ready for Phase 5 YES.
    Branch `experiment/hybrid-verifier-status-engine` carries the qualified
    implementation. See **Phase 4 closure** section below.
    - **Phase 4 Slice 1 (acceptance/remediation foundation) — CLOSED**
@@ -149,6 +149,16 @@ remain preserved below as evidence; they are not reopened here.
      material-claim safety; required-content denominator preservation;
      `satisfies_req_ids` advisory only; UNKNOWN semantic requirement coverage
      → HITL; independent qualification PASS.
+   - **Phase 4 real Call-B provider qualification — current-model LIVE / PASS**
+     (D-2026-09-16-10, HEAD `0139ef8`): run
+     `semantic_analyzer_run_8f554fa3eb62`, digest
+     `0ed38fc378c5106b551fd2442ce8fef534f83db1756a6b2073c8bef6533899c5`,
+     model `deepseek-flash` (exact match), 3 requests, $0.001344, P6/P7/P1 PASS.
+     No population-level reliability claim.
+   - **Phase 4 brief_requirements live wiring — CLOSED** (D-2026-09-16-10):
+     `_build_initial_state` + CLI `--brief-requirements-json` + API
+     `CreateRun.brief_requirements`; production path tests in
+     `tests/test_brief_requirements_live_wiring.py`.
    - **Phase 4 Slice 2C — CLOSED** (D-2026-09-16-08): Call-B bound support
      is citation authority; complete citation support set;
      correctness/completeness/exact-occurrence placement; sidecar rendering;
@@ -269,10 +279,11 @@ priority.
 
 ## Current status
 
-- **Phase 4 — CLOSED / QUALIFIED** at HEAD
-  `1a972502ff0a9944fac44529095ecfe0e3e883cf`. Final independent Sonnet review:
-  Slice 2c PASS; demonstrated P0/P1 **none**; focused tests 191/191; full tests
-  1226/1226; provider calls zero; ready for Phase 5 **YES**.
+- **Phase 4 — CLOSED / QUALIFIED / LIVE-WIRED** at HEAD
+  `0139ef891c4e8bd7b5c96f1d94de9676b16e5553` (D-2026-09-16-10). Brief
+  requirements wired through CLI/API → state → material policy; Call-A oracle v2
+  PASS; Call-B current-model PASS; demonstrated P0/P1 **none**; ready for
+  Phase 5 **YES**.
 - **Phase 4 Slice 2A — CLOSED:** authoritative claim inventory/materiality;
   real Call-A provider qualification PASS under provider oracle v2.
 - **Phase 4 Slice 2B — CLOSED:** material-claim safety; required-content
@@ -647,9 +658,9 @@ redesign program (priority 3). No runtime change authorized by this record.
 - **Independent qualification:** PASS (final Sonnet review at HEAD
   `1a972502ff0a9944fac44529095ecfe0e3e883cf`).
 
-## Phase 4 closure (final qualification)
+## Phase 4 closure (final qualification + live wiring)
 
-**Status:** CLOSED / QUALIFIED at HEAD `1a972502ff0a9944fac44529095ecfe0e3e883cf`.
+**Status:** CLOSED / QUALIFIED / LIVE-WIRED at HEAD `0139ef891c4e8bd7b5c96f1d94de9676b16e5553`.
 
 | Slice | Status | Summary |
 |-------|--------|---------|
@@ -675,14 +686,25 @@ links). Do not trust model-declared relationships as hard proof by themselves.
 
 - unused/dead `insert_citation_markers` computation;
 - legacy pre-upgrade checkpoint compatibility;
-- no explicit informed-human override for UNKNOWN semantic requirements;
-- real `brief_requirements` population remains future integration work.
+- no explicit informed-human override for UNKNOWN semantic requirements.
+
+**Live wiring (D-2026-09-16-10):** caller-supplied brief requirements reach
+`state["brief_requirements"]` via `_build_initial_state` (CLI
+`--brief-requirements-json`, API `CreateRun.brief_requirements`); persist through
+revision; drive material-policy denominator and publication-safety conjunction.
+
+**Provider qualification (current model, HEAD `0139ef8`):**
+
+| Call | Status | Evidence |
+|------|--------|----------|
+| Call A | PASS (oracle v2) | `call_a_provider_eval_gold_v2` rescore |
+| Call B | PASS | run `semantic_analyzer_run_8f554fa3eb62`, digest `0ed38fc3…899c5` |
 
 **Next:** Phase 5 — retrieval/chunking/evidence exposure. Sol architecture audit
 in progress; review before implementation.
 
-**Final qualification evidence:** focused tests 191/191; full tests 1226/1226;
-provider calls zero; demonstrated P0/P1 none.
+**Final qualification evidence:** `tests/test_brief_requirements_live_wiring.py`
+(7/7); full regression suite; provider calls zero; demonstrated P0/P1 none.
 
 ## Parallel retrieval research
 

@@ -245,14 +245,32 @@ def require_auth(authorization: str = Header(default="")):
         raise HTTPException(401, "invalid or missing bearer token")
 
 # ---- request models ----
+class BriefRequirementInput(BaseModel):
+    req_id: str = Field(min_length=1)
+    kind: str = Field(min_length=1)
+    mandatory: bool = True
+    description: str = ""
+
+
 class CreateRun(BaseModel):
     topic: str = Field(min_length=1)
     card_id: str = "standalone"
     series: str = "Learning Log"
+    brief_requirements: list[BriefRequirementInput] = Field(default_factory=list)
 
 class Feedback(BaseModel):
     feedback: str = Field(min_length=1)
 
+
+def _seed_initial_state(body: CreateRun, *, slug: str, run_id: str) -> dict:
+    return _build_initial_state(
+        body.topic,
+        slug,
+        body.card_id,
+        body.series,
+        run_id,
+        brief_requirements=[req.model_dump() for req in body.brief_requirements],
+    )
 
 
 @asynccontextmanager
@@ -301,7 +319,7 @@ def create_run(body: CreateRun):
     if not slug:
         raise HTTPException(422, f"topic {body.topic!r} produces an empty slug")
     run_id = str(uuid.uuid4())
-    initial_state = _build_initial_state(body.topic, slug, body.card_id, body.series, run_id)
+    initial_state = _seed_initial_state(body, slug=slug, run_id=run_id)
     with LOCK:
         REGISTRY[run_id] = {"status": "queued", "initial_state": initial_state,
                             "interrupt_payload": None, "result": None, "error": None}
@@ -367,7 +385,7 @@ def ui_create_run(body: CreateRun):
     if not slug:
         raise HTTPException(422, f"topic {body.topic!r} produces an empty slug")
     run_id = str(uuid.uuid4())
-    initial_state = _build_initial_state(body.topic, slug, body.card_id, body.series, run_id)
+    initial_state = _seed_initial_state(body, slug=slug, run_id=run_id)
     with LOCK:
         REGISTRY[run_id] = {"status": "queued", "initial_state": initial_state,
                             "interrupt_payload": None, "result": None, "error": None,
