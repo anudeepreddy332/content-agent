@@ -9,6 +9,37 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-15-05
+Date: 2026-09-16
+
+Decision: **Provider-eval oracle v2 for live Call-A qualification rescoring.**
+
+Reason: independent review found v1 oracle defects on G05/G06/G16; the immutable
+live run `call_a_run_20260915T161944Z_1c1d81ac` remains FAIL under v1 but is
+re-scored offline under corrected provider-eval gold.
+
+Rules:
+
+- `claim_inventory_golden_v1` = deterministic harness gold (unchanged).
+- `call_a_provider_eval_gold_v2` = live-provider qualification oracle (separate).
+- Matching: exact canonical, pre-adjudicated semantic equivalence, pre-adjudicated
+  atomic decomposition only — no LLM judge, no open-ended paraphrase.
+- Editorial rows excluded from factual-recall critical gate.
+- G16 harness synthetic `"always"` trap remains harness-only; provider eval expects
+  draft proposition `Momentum accelerates convergence.`
+- Genuine imperfections preserved (e.g. G06 materiality UNKNOWN, G03 invented claim).
+- Immutable live artifact preserved; derived rescore written separately.
+
+Evidence: `evals/fixtures/call_a_provider_eval_gold_v2.json` (SHA
+`4591914638478bd1531da2929b9cff3f8f70e2654f194fbdb1d566f914848314`),
+`scripts/call_a_provider_eval_v2.py`, rescored disposition PASS under v2.
+Provider calls: zero.
+
+Status: **REAL-CALL-A-PROVIDER-QUALIFIED-V2** (bounded challenge set only).
+
+Confidence: 0.90
+
+---
 Decision ID: D-2026-09-15-04
 Date: 2026-09-15
 

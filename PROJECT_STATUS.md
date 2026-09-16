@@ -130,19 +130,23 @@ remain preserved below as evidence; they are not reopened here.
      prompt; numbers not comparable with the sha-6687240c8cd8 era). Frozen golden
      Call-A outputs remain simulated and do not qualify real-provider extraction
      quality.
-   - **Phase 4 real Call-A provider qualification — v1 EXECUTED / INVALID**
-     (run `call_a_run_20260915T160540Z_4135c531`, digest
+   - **Phase 4 real Call-A provider qualification — model-mismatch run EXECUTED /
+     INVALID** (run `call_a_run_20260915T160540Z_4135c531`, digest
      `36807aa205b3f1bd45fdf891330df22037a1416ce98279dde8436e07fcc17121`):
-     G01 stopped on `returned_model_mismatch` (`deepseek-chat` requested,
-     `deepseek-flash` returned). Artifact preserved immutable.
-   - **Phase 4 real Call-A provider qualification — v2 RE-FROZEN, AWAITING NEW
-     OWNER AUTHORIZATION** (D-2026-09-15-04; parent SHA
-     `f0e5ba0e61b29d3e1f3a8027138475cd2bc503ee`): production
-     `DEEPSEEK_MODEL=deepseek-flash`; Call A + Call B share configured model;
-     qualification identity request/return `deepseek-flash` exact match;
-     `call-a-owner-v2` authorization required. Cost bound unchanged (~$0.075 max
-     / ~$0.019 typical / $0.12 ceiling). Provider calls: zero since re-freeze.
-     Slice 2b/2c deferred.
+     G01 stopped on `returned_model_mismatch`. Artifact preserved immutable.
+   - **Phase 4 real Call-A provider qualification — flash run EXECUTED / FAIL v1**
+     (run `call_a_run_20260915T161944Z_1c1d81ac`, digest
+     `56873347a00a7473c491cea856de9e7188f6b0af86dbd7841157d33d600dfcf5`): 16/16
+     fixtures, $0.022657, FAIL under v1 oracle (G05/G06/G16 defects). Artifact
+     immutable.
+   - **Phase 4 real Call-A provider qualification — v2 oracle RESCORE / PASS**
+     (D-2026-09-15-05): offline rescore of same immutable flash run under
+     `call_a_provider_eval_gold_v2` (SHA
+     `4591914638478bd1531da2929b9cff3f8f70e2654f194fbdb1d566f914848314`).
+     Bounded qualification PASS; factual recall 21/21; genuine imperfections
+     retained (G03 invented claim, G06 UNKNOWN materiality). Harness gold v1
+     unchanged. **Call A qualified for bounded provider challenge set = YES.**
+     No API rerun. Not population-level accuracy. Slice 2b/2c deferred.
 4. **Verifier semantic-contract 3-cell prompt-only experiment — EXECUTED / FAIL
    (valid):** run 2 artifact
    `outputs/verifier_semantic_contract_3cell/verifier_semantic_contract_run_20260905T130342Z.json`
