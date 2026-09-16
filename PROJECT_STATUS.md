@@ -264,6 +264,20 @@ priority.
 
 - **Client-demo hardening:** CLOSED / LIVE-DEMO-REHEARSED.
 - **Overall P0-2b:** OPEN.
+- **Phase 4 Slice 2A — COMPLETE and real-Call-A provider-qualified:** PASS
+  under provider oracle `call_a_provider_eval_gold_v2` (provider
+  `deepseek-flash`); bounded challenge set factual recall 21/21, genuine
+  critical misses 0, critical false-nonmaterial 0, API rerun required NO.
+  Known imperfections preserved (false positives, materiality UNKNOWN,
+  imperfect claim_type metadata); Slice 2b therefore fails safe.
+- **Phase 4 Slice 2B — material + required-content policy (ACTIVE):**
+  `agent/material_policy.py` is a deterministic layer around existing
+  semantic output. `material_policy_pass` does NOT equal final publication
+  eligibility; citation safety remains pending Slice 2c. No new LLM calls,
+  no topology change, no retrieval/chunking change. UNKNOWN materiality
+  never auto-passes and never triggers stochastic revision retry (HITL).
+  HITL auto-approval and API approve cannot bypass unresolved material
+  claims, UNKNOWN materiality, or missing/unresolved mandatory requirements.
 - **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED:** exact canonical
   integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
 - **Stage 2C evidence-exposure qualification — PASS (deterministic):**
@@ -570,6 +584,33 @@ redesign program (priority 3). No runtime change authorized by this record.
   bind a verified Git/code SHA; crash telemetry may lack complete mid-run evidence;
   verifier source_context is already truncated before trace capture; claim completeness
   remains unknown; Slice-2A claim-semantics oracle is not yet production-connected.
+
+## Phase 4 Slice 2B material + required-content policy boundary
+
+- Isolated variable: deterministic material-claim + required-content
+  acceptance policy only. No new LLM calls, no LangGraph topology change,
+  no retrieval/chunking change, no new materiality model call.
+- Scope: `agent/material_policy.py` (new), `agent/nodes.py` (routing +
+  approval gates + HITL payload + revision feedback + iteration metrics),
+  `tests/test_material_policy.py` (new), `DECISIONS.md`, `PROJECT_STATUS.md`.
+- Authority split preserved: `semantic_verification_accepted()` remains the
+  sole semantic authority; `agent/material_policy.py` owns material /
+  required-content safety; citation safety remains Slice 2c.
+- `material_policy_pass` is NOT `publication_eligible` (citation safety pending).
+- Hard authority: `unresolved_material_claim_count == 0` AND
+  `unknown_materiality_count == 0` AND mandatory requirements
+  missing/unresolved/unknown == 0. `material_verified_rate` is observability
+  only (no tolerance). Aggregate rate cannot override a single critical failure.
+- Version integrity: consumes only artifacts tied to current `draft_sha256`;
+  stale inventory / mismatched grounding roster / unresolved anchor fail closed
+  (reuses existing guards; no new versioning framework).
+- Validation: `tests/test_material_policy.py` 30 tests (spec §19 A–Q +
+  denominator-gaming, version integrity, routing, HITL/API-approval bypass,
+  UNKNOWN no-stochastic-retry, false-positive participation, new-claim-after-
+  revision). Full `tests/` suite green (1181 non-browser; 6 browser errors are
+  environmental Playwright-binary-missing, unrelated). Ruff fatal-tier
+  (`--select E9,F63,F7,F82`) clean. `git diff --check` clean.
+  Provider calls/spend during integration: zero.
 
 ## Parallel retrieval research
 

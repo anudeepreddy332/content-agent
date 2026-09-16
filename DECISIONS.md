@@ -9,6 +9,105 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-16-06
+Date: 2026-09-16
+
+Decision: **Phase 4 Slice 2B — material-claim + required-content acceptance
+policy (deterministic layer around existing semantic output).**
+
+Reason: Slice 2a is CLOSED and real-Call-A provider-qualified (PASS under
+provider oracle `call_a_provider_eval_gold_v2`, 21/21 factual recall, 0
+genuine critical misses). Known imperfections remain (false positives,
+materiality UNKNOWN, imperfect claim_type metadata), so 2b MUST fail safely
+rather than pretending metadata is perfect. Publication safety must not be
+achieved by leaving a material factual claim unresolved, deleting required
+content, allowing UNKNOWN materiality to auto-pass, using aggregate scores
+to hide a critical failure, or allowing stale draft/inventory/semantic
+results to certify the current artifact.
+
+Rules:
+
+- Authority split preserved: `semantic_verification_accepted()` (nodes)
+  remains the sole semantic-correctness authority; THIS slice
+  (`agent/material_policy.py`) owns material / required-content safety;
+  citation safety remains Slice 2c and is NOT consulted here.
+- Material factual claim RESOLVED iff current draft version, valid anchor,
+  current semantic disposition, `analysis_validity == VALID`,
+  `status == VERIFIED`, and no unresolved applicable
+  contradiction/limitation. Anything else (WEAK/UNVERIFIED/INVALID/blocker/
+  stale/missing disposition) is unresolved.
+- UNKNOWN materiality (`material == "unknown"`) is never converted to false,
+  never auto-passes, and never triggers a stochastic revision retry — it
+  routes to `HITL_REQUIRED` with the exact claims exposed.
+- Material INVALID rows are fail-closed (HITL, not revision).
+- `material_verified_rate = resolved material / all material` is
+  observability ONLY; hard authority is `unresolved_material_claim_count == 0`
+  AND `unknown_materiality_count == 0` (no tolerance).
+- Required-content denominator is the persistent `brief_requirements`; a
+  mandatory requirement is satisfied only by a current-draft basis (structural
+  check or anchored linked claims), and is unresolved/missing/unknown when its
+  linked material claims are unresolved/unknown. Deleting a required claim
+  makes its requirement missing — the artifact does NOT become safer.
+- Version integrity: material/requirement policy consumes only artifacts tied
+  to the current `draft_sha256`; stale inventory or mismatched grounding
+  roster fails closed (reuses existing version/roster guards; no new
+  versioning framework).
+- Routing: semantic gate first, then 2b policy. Repairable material/requirement
+  failures with budget remaining → targeted revision; UNKNOWN materiality,
+  integrity/version failure, or unresolved-after-exhaustion → HITL/HOLD;
+  `material_policy_pass` continues toward reflect/HITL (NOT final publication
+  eligibility).
+- Reflection remains relevance/usefulness/audience-fit/qualitative; a high
+  reflection score cannot override a material failure.
+- HITL auto-approval (`HITL_AUTO_APPROVE=1`) and API approve cannot bypass
+  unresolved material claims, UNKNOWN materiality, or missing/unresolved
+  mandatory requirements; obligations are exposed in the HITL payload.
+- `material_policy_pass` is NOT `publication_eligible`; citation safety is
+  pending Slice 2c.
+
+Evidence: `tests/test_material_policy.py` (30 tests, spec §19 matrix A–Q +
+denominator-gaming, version integrity, routing, HITL/API-approval bypass,
+UNKNOWN no-stochastic-retry, false-positive participation, new-claim-after-
+revision). Full `tests/` suite green (1181 non-browser; 6 browser errors are
+environmental Playwright-binary-missing, unrelated). Ruff fatal-tier
+(`--select E9,F63,F7,F82`) clean. Provider calls: zero.
+
+Tradeoffs: The layer is authoritative only when a current claim inventory is
+present (production verify always sets one); absent inventory (pre-2A /
+hand-built states) keeps Slice-1 behavior, preserving the qualified fail-safe
+behavior. Structural requirement checks are limited to `section_presence`;
+richer deterministic coverage is deferred.
+
+Status: Accepted (locked). Slice 2c (citation safety) pending.
+
+Confidence: 0.88
+
+---
+Decision ID: D-2026-09-16-05
+Date: 2026-09-16
+
+Decision: **Phase 4 Slice 2A — CLOSED and real-Call-A provider-qualified.**
+
+Reason: Slice 2a (deterministic claim inventory + draft anchoring +
+materiality + required⇒material override) is complete and qualified
+against the live provider.
+
+Rules:
+
+- Slice 2a status: COMPLETE.
+- Real Call-A provider qualification: PASS under provider oracle
+  `call_a_provider_eval_gold_v2` (provider `deepseek-flash`).
+- Bounded challenge set: factual recall 21/21; genuine critical misses 0;
+  critical false-nonmaterial 0; API rerun required: NO.
+- Known imperfections preserved: false positives exist; materiality UNKNOWN
+  exists; claim_type metadata may be imperfect. Slice 2b therefore fails
+  safe rather than assuming metadata is perfect.
+
+Status: **SLICE-2A-COMPLETE-AND-PROVIDER-QUALIFIED-V2**.
+
+Confidence: 0.90
+
+---
 Decision ID: D-2026-09-15-05
 Date: 2026-09-16
 

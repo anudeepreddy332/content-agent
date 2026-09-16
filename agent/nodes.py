@@ -71,6 +71,14 @@ from agent.claim_inventory import (
     inventory_critical_failures,
     parse_claim_inventory_rows,
 )
+from agent.material_policy import (
+    MATERIAL_HITL,
+    MATERIAL_REVISION,
+    MaterialPolicyResult,
+    evaluate_material_policy,
+    format_required_content_feedback,
+    material_policy_passed,
+)
 import html as html_module
 import re
 import datetime
@@ -343,6 +351,15 @@ def draft_node(state: AgentState) -> dict:
             state["grounding_report"]
         )
         grounding_feedback_block += blocker_block
+        # Phase 4 Slice 2B: targeted material / required-content feedback. Only
+        # repairable failures (revision_required) emit a block; UNKNOWN
+        # materiality and integrity failures route to HITL, not revision, so
+        # they do NOT produce draft feedback (no stochastic retry-to-green).
+        material_feedback = format_required_content_feedback(
+            material_policy_result(state)
+        )
+        if material_feedback:
+            grounding_feedback_block += "\n\n" + material_feedback
 
 
     source_block = ""
@@ -948,6 +965,7 @@ def _append_verify_iteration_metrics(
     grounding_report: list[dict],
     verification_status: str,
     grounding_score: float,
+    claim_inventory: dict | None = None,
 ) -> list[dict]:
     n_verified = sum(1 for r in grounding_report if r.get("status") == "verified")
     n_weak = sum(1 for r in grounding_report if r.get("status") == "weak")
@@ -956,6 +974,17 @@ def _append_verify_iteration_metrics(
     n_substantive_verified = sum(
         1 for r in grounding_report
         if r.get("specificity") == "substantive" and r.get("status") == "verified"
+    )
+    # Phase 4 Slice 2B: materiality / requirement metrics, exposed separately
+    # (spec §20). Never combined into one score; the aggregate
+    # material_verified_rate is observability only and is not gate authority.
+    material_state = evaluate_material_policy(
+        state={
+            **state,
+            "claim_inventory": claim_inventory,
+            "grounding_report": grounding_report,
+        },
+        max_iterations=MAX_ITERATIONS,
     )
     iteration_metrics = list(state.get("iteration_metrics", []) or [])
     iteration_metrics.append({
@@ -975,6 +1004,7 @@ def _append_verify_iteration_metrics(
             for r in grounding_report if r.get("status") == "unverified"
         ],
         "grounding_report": grounding_report,
+        "material_policy": material_state.to_dict(),
     })
     return iteration_metrics
 
@@ -1197,6 +1227,7 @@ def verify_node(state: AgentState) -> dict:
                 grounding_report=[],
                 verification_status=verification_status,
                 grounding_score=0.0,
+                claim_inventory=claim_inventory,
             ),
             "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
             "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
@@ -1287,6 +1318,7 @@ def verify_node(state: AgentState) -> dict:
                 grounding_report=grounding_report,
                 verification_status=verification_status,
                 grounding_score=grounding_score,
+                claim_inventory=claim_inventory,
             ),
             "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
             "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
@@ -1384,6 +1416,7 @@ def verify_node(state: AgentState) -> dict:
             grounding_report=grounding_report,
             verification_status=verification_status,
             grounding_score=grounding_score,
+            claim_inventory=claim_inventory,
         ),
         "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
@@ -1597,6 +1630,11 @@ def hitl_node(state: AgentState) -> dict:
             "semantic_obligations": unresolved_semantic_obligations(state.get("grounding_report")),
             "claim_inventory_summary": claim_inventory_summary(state.get("claim_inventory")),
             "claim_completeness": CLAIM_COMPLETENESS,
+            # Phase 4 Slice 2B: material + required-content obligations exposed
+            # to the human reviewer so auto/API approval cannot bypass them
+            # (spec §16). material_policy_pass is NOT final publication
+            # eligibility — citation safety remains Slice 2c.
+            "material_policy": material_policy_result(state).to_dict(),
         }) or {}
         action = decision.get("action")
         if action == "approve":
@@ -2472,6 +2510,21 @@ def git_node(state: AgentState) -> dict:
 CLAIM_COMPLETENESS = "unknown"
 
 
+def material_policy_result(state: AgentState) -> MaterialPolicyResult:
+    """Evaluate the Phase-4 Slice-2b material + required-content policy for the
+    current state. Pure/deterministic; no provider calls. Recomputed on demand
+    from the current claim inventory + grounding report + draft sha, so a stale
+    material result can never certify a revised draft (spec §11, §12)."""
+    return evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+
+
+def material_policy_accepted(state: AgentState) -> bool:
+    """True only when the material + required-content policy passes for the
+    current artifact. Absent inventory (pre-2A/hand-built) passes, preserving
+    Slice-1 behavior; a present-but-stale or failing inventory fails closed."""
+    return material_policy_passed(material_policy_result(state))
+
+
 def unverified_rate(grounding_report: list | None) -> float | None:
     """Exact unverified / N, or None when UVR is not deterministically computable."""
     if not grounding_report:
@@ -2708,15 +2761,21 @@ def _hitl_traced(state: AgentState, payload: dict) -> dict:
 
 
 def hitl_approve_update(state: AgentState) -> dict:
-    """Ordinary approve grants HTML eligibility only if semantic verification passed.
+    """Ordinary approve grants HTML eligibility only if BOTH gates pass:
+    semantic verification (Slice 1) AND material + required-content policy
+    (Slice 2b).
 
-    Semantic failure uses the existing reject payload so route_after_hitl → END.
-    Feedback and explicit reject are unchanged.
+    Either failure uses the existing reject payload so route_after_hitl → END.
+    This is what prevents HITL_AUTO_APPROVE=1 and API approve from bypassing an
+    unresolved material claim, UNKNOWN materiality, or a missing/unresolved
+    mandatory requirement (spec §16). Feedback and explicit reject unchanged.
     """
-    if semantic_verification_accepted(state):
+    material = material_policy_result(state)
+    if semantic_verification_accepted(state) and material_policy_passed(material):
         payload = {"hitl_status": "approved", "hitl_feedback": None}
     else:
         payload = {"hitl_status": "rejected", "hitl_feedback": None}
+        payload["policy_diagnostics"] = material.to_dict()
     return _hitl_traced(state, payload)
 
 
@@ -2776,6 +2835,29 @@ def route_after_reflect(state: AgentState) -> str:
                  claim_completeness=CLAIM_COMPLETENESS)
         return "draft"
 
+    # Phase 4 Slice 2B: material + required-content policy (spec §14).
+    # Applied AFTER the semantic gate. A material factual claim that is only
+    # WEAK/UNVERIFIED/INVALID, or a missing/unresolved mandatory requirement,
+    # is repairable -> targeted revision while budget remains. UNKNOWN
+    # materiality and integrity/version failures go straight to HITL/HOLD
+    # (never a stochastic revision retry). material_policy_pass does NOT yet
+    # imply final publication eligibility (citation safety is Slice 2c).
+    material = material_policy_result(state)
+    if material.decision == MATERIAL_REVISION:
+        log.info("route.revise", run_id=state["run_id"], reason="material/required-content policy",
+                 material_safety_state=material.material_safety_state,
+                 unresolved_material=material.unresolved_material_claim_count,
+                 unknown_materiality=material.unknown_materiality_count,
+                 missing_reqs=len(material.missing_requirement_ids),
+                 unresolved_reqs=len(material.unresolved_requirement_ids),
+                 material_verified_rate=material.material_verified_rate)
+        return "draft"
+    if material.decision == MATERIAL_HITL:
+        log.info("route.material_hold", run_id=state["run_id"],
+                 material_safety_state=material.material_safety_state,
+                 reason_codes=material.reason_codes)
+        return "hitl"
+
     # Quality gate (reflection only; grounding_score is not consulted)
     if reflection_score < REFLECTION_THRESHOLD:
         log.info("route.revise", run_id=state["run_id"], reason="reflection below threshold",
@@ -2783,34 +2865,40 @@ def route_after_reflect(state: AgentState) -> str:
         return "draft"
 
     log.info("route.proceed", run_id=state["run_id"], reflection=reflection_score, grounding=round(grounding_score, 2),
-             uvr=uvr, claim_completeness=CLAIM_COMPLETENESS)
+             uvr=uvr, claim_completeness=CLAIM_COMPLETENESS,
+             material_safety_state=material.material_safety_state)
     return "hitl"
 
 def route_after_hitl(state: AgentState) -> str:
     """
     Route based on HITL decision.
 
-    Ordinary approve may proceed to HTML only when semantic verification is
-    accepted. A semantically failed/incomplete state cannot become HTML-eligible
-    through approve (auto, interactive, or API). Existing destinations only:
-        "html_gen" — approved AND semantically accepted
+    Ordinary approve may proceed to HTML only when BOTH gates pass: semantic
+    verification (Slice 1) AND the material + required-content policy (Slice 2b).
+    A semantically or materially failed/incomplete state cannot become
+    HTML-eligible through approve (auto, interactive, or API). Existing
+    destinations only:
+        "html_gen" — approved AND semantically AND materially accepted
         "draft"    — explicit feedback (existing remediation path)
-        END        — reject, unknown, or approve blocked by semantic failure
+        END        — reject, unknown, or approve blocked by a gate failure
     """
     from langgraph.graph import END
     log = get_logger("router")
     status = state.get("hitl_status", "pending")
     semantic_ok = semantic_verification_accepted(state)
-    log.info("hitl.decision", run_id=state["run_id"], status=status, semantic_ok=semantic_ok)
+    material_ok = material_policy_accepted(state)
+    log.info("hitl.decision", run_id=state["run_id"], status=status,
+             semantic_ok=semantic_ok, material_ok=material_ok)
 
     if status == "feedback":
         return "draft"
-    if status == "approved" and semantic_ok:
+    if status == "approved" and semantic_ok and material_ok:
         return "html_gen"
     if status == "approved":
-        log.info("hitl.approve_blocked_semantic_failure",
+        log.info("hitl.approve_blocked_gate_failure",
                  run_id=state["run_id"],
                  verification_status=state.get("verification_status"),
+                 semantic_ok=semantic_ok, material_ok=material_ok,
                  claim_completeness=CLAIM_COMPLETENESS)
         return END
     return END
