@@ -335,12 +335,19 @@ priority.
 engineering direction. Phase 4 is CLOSED; do not reopen without new material
 P0/P1 evidence.
 
-**Phase 5 PRE-5A0 — retrieval gold v2 frozen (evaluator correction only).**
+**Phase 5 PRE-5A0 — retrieval gold v2 integrity corrected + eval contract hardened.**
 5A0 was previously blocked on invalid v1 retrieval labels (historical OOS
 queries mislabeled ABSENT; `required_concepts` substring authority). Independent
-35-query corpus adjudication completed; v2 diagnostic evaluator artifact frozen at
-`evals/fixtures/retrieval_golden_v2.json` with deterministic validator
-`scripts/retrieval_golden_v2.py`. V1 evaluator (`scripts/retrieval_eval.py`) and
+35-query corpus adjudication completed; v2 **DEVELOPMENT/DIAGNOSTIC NUCLEUS**
+at `evals/fixtures/retrieval_golden_v2.json` with deterministic validator
+`scripts/retrieval_golden_v2.py`. Answerability aggregate corrected:
+**ANSWERABLE=30** (Q25/Q26 answerable-but-ambiguous, non-gating),
+**PARTIAL=5** (Q31–Q35), **ABSENT=0**. Phase-5 evaluation contract at
+`docs/PHASE5_RAG_EVALUATION_CONTRACT.md` — three non-collapsible layers
+(retrieval incl. Precision@K + graded nDCG, evidence exposure, end-to-end),
+per-query regression authority, golden-set roadmap (100–300 target), true
+holdout contract, mandatory future ABSENT slice, living regression lifecycle,
+production RAG principles. V1 evaluator (`scripts/retrieval_eval.py`) and
 archived reports preserved unchanged. Baseline A identity sidecar at
 `evals/fixtures/retrieval_baseline_a_identity.json`. V2 has **no untouched
 holdout** and **no genuine ABSENT queries**; absence/holdout evaluation remain

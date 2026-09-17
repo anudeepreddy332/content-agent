@@ -1,5 +1,7 @@
 {
   "schema_version": "retrieval_golden_v2",
+  "dataset_status": "DEVELOPMENT/DIAGNOSTIC NUCLEUS",
+  "dataset_status_note": "Not the final production golden set, not an untouched holdout, not sufficient for absence evaluation, not sufficient alone for final Phase-5 qualification.",
   "repo_head": "86712d200fd46382a876f2083f824f03a83341ab",
   "corpus_manifest": [
     {
@@ -139,8 +141,8 @@
       "AMBIGUOUS": 2
     },
     "answerability": {
-      "ANSWERABLE": 28,
-      "PARTIAL": 7,
+      "ANSWERABLE": 30,
+      "PARTIAL": 5,
       "ABSENT": 0
     },
     "gating_eligible": 33,
@@ -1507,7 +1509,7 @@
     {
       "query_id": "Q25",
       "query": "compare the objective functions of ridge regression and support vector regression \u2014 how do they penalize coefficients differently?",
-      "answerability": "PARTIAL",
+      "answerability": "ANSWERABLE",
       "relevant_sources": [
         {
           "source": "ridge-lasso-elasticnet",
@@ -1573,7 +1575,7 @@
     {
       "query_id": "Q26",
       "query": "I need to build a chatbot that can look up company documents, but also remember conversation state and loop to ask follow-up questions. Which two frameworks should I combine?",
-      "answerability": "PARTIAL",
+      "answerability": "ANSWERABLE",
       "relevant_sources": [
         {
           "source": "retrieval-augmented-generation",

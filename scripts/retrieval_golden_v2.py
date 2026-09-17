@@ -181,6 +181,10 @@ def validate_oracle(
                 raise RetrievalGoldenV2Error(f"{qid}: query text drift vs v1 GOLDEN_SET")
 
         if qid in {"Q25", "Q26"}:
+            if answerability != "ANSWERABLE":
+                raise RetrievalGoldenV2Error(
+                    f"{qid}: must have answerability ANSWERABLE (ambiguous != partial)"
+                )
             if query.get("gating_eligible") is not False:
                 raise RetrievalGoldenV2Error(f"{qid}: must be non-gating")
             if verdict != "AMBIGUOUS":
@@ -226,16 +230,31 @@ def validate_oracle(
                     )
                 evidence_spans_validated += 1
 
-    if answerability_counts["ABSENT"] != 0:
-        raise RetrievalGoldenV2Error("v2 must contain zero ABSENT queries")
+    if answerability_counts != {"ANSWERABLE": 30, "PARTIAL": 5, "ABSENT": 0}:
+        raise RetrievalGoldenV2Error(
+            f"answerability aggregate must be ANSWERABLE=30 PARTIAL=5 ABSENT=0, "
+            f"observed={answerability_counts}"
+        )
     if holdout != 0:
         raise RetrievalGoldenV2Error("v2 must contain zero holdout queries")
+    if development != 35:
+        raise RetrievalGoldenV2Error(f"v2 must contain 35 development/diagnostic queries, got {development}")
 
     absence_policy = payload.get("absence_policy", {})
     if absence_policy.get("absent_queries", -1) != 0:
         raise RetrievalGoldenV2Error("absence_policy.absent_queries must be 0")
 
+    if payload.get("dataset_status") != "DEVELOPMENT/DIAGNOSTIC NUCLEUS":
+        raise RetrievalGoldenV2Error("dataset_status must be DEVELOPMENT/DIAGNOSTIC NUCLEUS")
+
     summary = payload.get("adjudication_summary", {})
+    expected_answerability = summary.get("answerability", {})
+    for label, count in expected_answerability.items():
+        if answerability_counts.get(label, 0) != count:
+            raise RetrievalGoldenV2Error(
+                f"answerability count mismatch for {label}: "
+                f"observed={answerability_counts.get(label, 0)} expected={count}"
+            )
     expected_v1 = summary.get("v1_label_verdict", {})
     for label, count in expected_v1.items():
         if v1_verdict_counts.get(label, 0) != count:
@@ -243,6 +262,21 @@ def validate_oracle(
                 f"v1_label_verdict count mismatch for {label}: "
                 f"observed={v1_verdict_counts.get(label, 0)} expected={count}"
             )
+    if summary.get("gating_eligible") != gating_eligible:
+        raise RetrievalGoldenV2Error(
+            f"gating_eligible summary mismatch: observed={gating_eligible} "
+            f"expected={summary.get('gating_eligible')}"
+        )
+    if summary.get("non_gating") != non_gating:
+        raise RetrievalGoldenV2Error(
+            f"non_gating summary mismatch: observed={non_gating} "
+            f"expected={summary.get('non_gating')}"
+        )
+    split_summary = summary.get("split", {})
+    if split_summary.get("development/diagnostic") != development:
+        raise RetrievalGoldenV2Error("split.development/diagnostic must match query count")
+    if split_summary.get("holdout", -1) != 0:
+        raise RetrievalGoldenV2Error("split.holdout must be 0")
 
     return {
         "query_count": len(queries),

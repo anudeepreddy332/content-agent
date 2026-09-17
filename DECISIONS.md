@@ -9,6 +9,35 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-17-03
+Date: 2026-09-17
+
+Decision: **Retrieval golden v2 integrity correction + Phase-5 eval contract hardened (PRE-5A0).**
+
+Reason: Independent adjudication distinguishes ambiguity from partial answerability.
+Q25/Q26 were incorrectly encoded as PARTIAL; corrected to ANSWERABLE with
+gating_eligible=false. Authoritative aggregate: ANSWERABLE=30, PARTIAL=5 (Q31–Q35),
+ABSENT=0. Phase-5 evaluation contract now requires three non-collapsible layers
+(retrieval with Precision@K and graded nDCG, evidence exposure, end-to-end),
+per-query regression reporting, golden-set roadmap, true holdout contract,
+mandatory future ABSENT slice, living regression lifecycle, and production RAG
+principles.
+
+Artifacts:
+
+- `evals/fixtures/retrieval_golden_v2.json` — dataset_status
+  DEVELOPMENT/DIAGNOSTIC NUCLEUS; answerability aggregate corrected.
+- `scripts/retrieval_golden_v2.py` — enforces Q25/Q26 ANSWERABLE, 30/5/0 aggregate,
+  adjudication_summary consistency.
+- `docs/PHASE5_RAG_EVALUATION_CONTRACT.md` — canonical Phase-5 eval design.
+
+Does NOT change: production retrieval, chunking, embeddings, Qdrant, v1 GOLDEN_SET.
+
+Status: **RETRIEVAL-GOLD-V2-INTEGRITY-CORRECTED.** Phase 5A0 may restart.
+
+Confidence: 0.94
+
+---
 Decision ID: D-2026-09-17-02
 Date: 2026-09-17
 

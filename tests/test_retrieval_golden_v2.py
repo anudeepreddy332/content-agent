@@ -1,16 +1,11 @@
 """Deterministic validation for retrieval golden set v2."""
-import json
 import sys
 from pathlib import Path
-
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.retrieval_golden_v2 import (
-    BASELINE_IDENTITY_PATH,
     ORACLE_PATH,
-    RetrievalGoldenV2Error,
     load_baseline_identity,
     load_oracle,
     load_v1_golden_set,
@@ -22,8 +17,9 @@ from scripts.retrieval_golden_v2 import (
 def test_v2_oracle_validates_clean():
     summary = validate_oracle()
     assert summary["query_count"] == 35
-    assert summary["answerability"]["ABSENT"] == 0
+    assert summary["answerability"] == {"ANSWERABLE": 30, "PARTIAL": 5, "ABSENT": 0}
     assert summary["holdout"] == 0
+    assert summary["development"] == 35
     assert summary["gating_eligible"] == 33
     assert summary["non_gating"] == 2
     assert summary["invalid_source_refs"] == 0
@@ -42,22 +38,28 @@ def test_v2_preserves_exact_v1_query_text():
 def test_v2_adjudication_summary_matches_queries():
     payload = load_oracle()
     summary = payload["adjudication_summary"]
+    assert payload["dataset_status"] == "DEVELOPMENT/DIAGNOSTIC NUCLEUS"
     assert summary["v1_label_verdict"] == {
         "CORRECT": 7,
         "INCOMPLETE": 20,
         "WRONG": 6,
         "AMBIGUOUS": 2,
     }
-    assert summary["answerability"]["ABSENT"] == 0
-    assert summary["split"]["holdout"] == 0
+    assert summary["answerability"] == {
+        "ANSWERABLE": 30,
+        "PARTIAL": 5,
+        "ABSENT": 0,
+    }
+    assert summary["split"] == {"development/diagnostic": 35, "holdout": 0}
     assert summary["non_gating"] == 2
 
 
-def test_q25_q26_non_gating_ambiguous():
+def test_q25_q26_answerable_non_gating_ambiguous():
     payload = load_oracle()
     by_id = {q["query_id"]: q for q in payload["queries"]}
     for qid in ("Q25", "Q26"):
         q = by_id[qid]
+        assert q["answerability"] == "ANSWERABLE"
         assert q["gating_eligible"] is False
         assert q["v1_label_verdict"] == "AMBIGUOUS"
 
@@ -84,7 +86,7 @@ def test_baseline_a_identity_sidecar():
 
 def test_oracle_sha256_frozen():
     observed = sha256_bytes(ORACLE_PATH.read_bytes())
-    assert observed == "57396e7c58698ae140104f6cb51541d3b7815bf795b431a3d80bf035c8e79cf9"
+    assert observed == "133035491d81bcc1e4672c023f8bdbf562a05857dcb0b49a9e7d9d0328561b76"
 
 
 def test_v1_evaluator_file_unchanged():
