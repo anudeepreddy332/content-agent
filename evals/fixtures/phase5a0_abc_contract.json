@@ -1,0 +1,329 @@
+{
+  "schema_version": "phase5a0_abc_contract_v1",
+  "starting_head": "f269ab760fc78f0b3a65618ae0c744649d1a0a2e",
+  "status": "FROZEN_FOR_PHASE5A1_SHADOW_IMPLEMENTATION",
+  "scope": {
+    "production_retrieval_behavior_change": false,
+    "production_qdrant_mutation": false,
+    "provider_calls": 0,
+    "serving_collection": "machinist_evergreen",
+    "serving_collection_policy": "DO_NOT_READ_OR_WRITE_FOR_A_B_C_EXPERIMENTS"
+  },
+  "canonical_schema": {
+    "document": {
+      "required": [
+        "document_id",
+        "document_version",
+        "source_uri",
+        "source_sha256",
+        "document_type",
+        "parser_name",
+        "parser_version"
+      ],
+      "optional_future_filter_fields": [
+        "tenant_id",
+        "acl_principals",
+        "source_system",
+        "is_current_version"
+      ]
+    },
+    "block": {
+      "required": [
+        "block_id",
+        "document_version",
+        "parent_block_id",
+        "heading_path",
+        "block_type",
+        "ordinal",
+        "source_char_start",
+        "source_char_end",
+        "source_byte_start",
+        "source_byte_end",
+        "start_line",
+        "end_line"
+      ],
+      "neighbor_contract": "previous_block_id and next_block_id only within one document_version and reading-order parent"
+    },
+    "child": {
+      "required": [
+        "chunk_id",
+        "document_version",
+        "parent_block_id",
+        "chunker_version",
+        "chunk_index",
+        "ordered_block_ids",
+        "source_spans",
+        "canonical_content_sha256",
+        "retrieval_text_sha256",
+        "embedding_tokenizer_id",
+        "embedding_content_token_count",
+        "embedding_special_token_count",
+        "embedding_total_token_count"
+      ]
+    },
+    "future_pdf_provenance": {
+      "required_when_pdf_is_authorized": [
+        "page_number",
+        "reading_order_block",
+        "bounding_box",
+        "extracted_span"
+      ],
+      "display_line_numbers": "derived_only",
+      "llm_generated_provenance": false
+    },
+    "representations": {
+      "canonical_content": "exact parser-derived source content",
+      "payload_metadata": "identity, provenance, security and filter fields",
+      "retrieval_text": "document title + heading breadcrumb + exact child content",
+      "retrieval_text_forbidden": [
+        "UUIDs",
+        "hashes",
+        "timestamps",
+        "arbitrary URLs",
+        "operational metadata",
+        "generated contextual descriptions"
+      ]
+    }
+  },
+  "identity_contract": {
+    "hash": "sha256 of UTF-8 canonical JSON with sorted keys and compact separators",
+    "document_id_payload": [
+      "tenant_scope",
+      "normalized_source_uri"
+    ],
+    "document_version_payload": [
+      "document_id",
+      "source_sha256"
+    ],
+    "block_id_payload": [
+      "document_version",
+      "parser_name",
+      "parser_version",
+      "structural_path",
+      "block_type",
+      "source_byte_start",
+      "source_byte_end",
+      "canonical_content_sha256"
+    ],
+    "chunk_id_payload": [
+      "document_version",
+      "parser_name",
+      "parser_version",
+      "chunker_version",
+      "ordered_block_ids",
+      "source_spans",
+      "retrieval_text_sha256"
+    ],
+    "index_id_payload": [
+      "ordered_corpus_manifest_digest",
+      "parser_name",
+      "parser_version",
+      "chunker_version",
+      "retrieval_serialization_version",
+      "embedding_model_id",
+      "embedding_model_revision",
+      "embedding_tokenizer_fingerprint",
+      "dense_index_config",
+      "bm25_config",
+      "fusion_config"
+    ],
+    "invariants": [
+      "same source bytes plus same parser version plus same chunker version yields the same document version, block IDs and chunk IDs",
+      "a source-byte change yields a new document_version",
+      "a parser or chunker change yields a distinct derived representation and index_id",
+      "unchanged re-ingestion is idempotent and creates no duplicate logical chunks",
+      "all ID inputs are canonical fields; random UUIDs are forbidden"
+    ]
+  },
+  "candidate_a": {
+    "name": "legacy_control",
+    "manifest": "reports/phase5/phase5a0/baseline_a_manifest.json",
+    "report": "reports/phase5/phase5a0/baseline_a_report.json",
+    "truncation_report": "reports/phase5/phase5a0/legacy_chunk_truncation.json",
+    "corpus_source": "checked-in frozen Markdown only",
+    "operational_qdrant_dependency": false,
+    "change_dimensions": []
+  },
+  "candidate_b": {
+    "name": "structural_safe_children",
+    "status": "DESIGN_ONLY_NOT_IMPLEMENTED_IN_5A0",
+    "change_dimensions": [
+      "parser",
+      "chunking",
+      "provenance",
+      "deterministic_identity",
+      "retrieval_text_serialization"
+    ],
+    "held_constant": [
+      "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+      "exact cosine reference search",
+      "rank_bm25.BM25Okapi defaults",
+      "lowercase whitespace BM25 tokenization",
+      "candidate_k=20",
+      "RRF rank_origin=0 and k=60",
+      "final_k=10",
+      "retrieval_golden_v2"
+    ],
+    "markdown_pipeline": [
+      "parse Markdown with markdown-it-py 4.2.0 and source maps",
+      "construct heading section tree and ordered atomic blocks",
+      "preserve paragraphs, list groups, fenced code, tables, blockquotes, HTML blocks and headings",
+      "pack only adjacent compatible blocks within the same structural parent",
+      "recursively subdivide only an oversized legal block",
+      "serialize document title plus heading breadcrumb plus exact child content",
+      "measure the complete serialized retrieval text with the actual embedding tokenizer",
+      "reject or record CHUNK_OVERFLOW before embedding if the complete serialization exceeds the hard maximum"
+    ],
+    "target_token_policy": {
+      "soft_target": null,
+      "reason": "5A0 has no evidence for a magic soft chunk size",
+      "hard_max_content_tokens": 254,
+      "measured_after_complete_retrieval_serialization": true,
+      "special_tokens": 2,
+      "maximum_total_tokens": 256,
+      "silent_truncation_allowed": false
+    },
+    "overlap_policy": {
+      "global_overlap": false,
+      "intact_structural_blocks": "no overlap",
+      "forced_prose_subdivision": "at most one deterministic boundary sentence or paragraph, with duplicated source spans recorded",
+      "code_and_tables": "no arbitrary token overlap"
+    },
+    "oversize_policy": {
+      "prose": "paragraph then sentence then tokenizer-offset fallback",
+      "list": "retain list identity; split by complete items and repeat required list marker/context",
+      "code": "preserve complete fenced block when it fits; split only at deterministic line boundaries while repeating fence/language context",
+      "table": "preserve complete table when it fits; otherwise header-propagating row groups",
+      "smallest_legal_unit_overflow": "durable CHUNK_OVERFLOW; never truncate or silently drop"
+    },
+    "size_sweep": null,
+    "size_sweep_policy": "add at most one pre-registered structural packing ablation only after a measured boundary failure; do not tune on aggregate score"
+  },
+  "candidate_c": {
+    "name": "candidate_b_plus_deterministic_context_expansion",
+    "status": "DESIGN_ONLY_NOT_IMPLEMENTED_IN_5A0",
+    "retrieval_children_and_ranks": "bit-identical to selected Candidate B child index and rank manifests",
+    "parent_definition": "nearest parser-derived heading section within the same document_version",
+    "expansion_rules": [
+      "retain every seed child and its rank",
+      "prefer the complete structural parent when it fits the declared evidence budget",
+      "otherwise add only the immediate previous and next complete siblings within the same parent",
+      "never cross document_version, structural parent, tenant or ACL boundary",
+      "deduplicate by chunk_id and exact source span"
+    ],
+    "expansion_ceiling": "one complete parent or the seed plus at most one immediate sibling on each side",
+    "ordering": [
+      "seed rank ascending",
+      "within one expanded unit source reading order ascending",
+      "stable chunk_id ascending tie break"
+    ],
+    "token_budget": {
+      "primary_experiment": "for each query and consumer, exactly match the actual-tokenizer token count of Candidate A's exposed evidence pack at the same K",
+      "consumer_budget_must_be_manifested": true,
+      "partial_atomic_unit_allowed": false,
+      "overflow_behavior": "stop before the next whole unit and record PACK_BUDGET_EXHAUSTED"
+    },
+    "provenance": "every packed character remains mapped to exact canonical source spans and seed chunk ranks"
+  },
+  "ranker_contract": {
+    "dense_output": [
+      "chunk_id",
+      "native_score",
+      "rank",
+      "provenance"
+    ],
+    "bm25_output": [
+      "chunk_id",
+      "native_score",
+      "rank",
+      "provenance"
+    ],
+    "fusion_input": "ranked canonical chunk IDs",
+    "fusion_output": "ranked canonical chunk IDs",
+    "native_score_averaging": false,
+    "raw_text_identity": false
+  },
+  "evidence_exposure_manifest": {
+    "required_stages": [
+      "retrieved",
+      "expanded",
+      "packed",
+      "drafter_exposed",
+      "verifier_exposed"
+    ],
+    "required_per_item": [
+      "query_id",
+      "index_id",
+      "ranker",
+      "seed_rank",
+      "chunk_id",
+      "document_version",
+      "source_spans",
+      "retrieval_text_sha256",
+      "exposed_text_sha256",
+      "consumer",
+      "consumer_tokenizer_id",
+      "consumer_token_count"
+    ]
+  },
+  "metadata_filter_contract": {
+    "hard_prefilters": [
+      "tenant_id",
+      "acl_principals",
+      "document_version/current-version",
+      "tombstone/deletion state"
+    ],
+    "soft_preferences": [
+      "source",
+      "document_type",
+      "content_type"
+    ],
+    "phase5_implementation": "schema compatibility only; tenant and ACL isolation are not implemented in Phase 5"
+  },
+  "conditional_triggers": {
+    "cross_encoder_reranker": "only when gold evidence is reliably present in candidate top-N but final top-K ranking remains inadequate",
+    "bm25_redesign": "only after frozen lexical fixtures and v2 or later cases isolate tokenization as causal",
+    "query_transformation": "only after failures demonstrate vocabulary mismatch, underspecification or multi-part retrieval need; raw-query baseline remains mandatory",
+    "semantic_chunking": "only after a frozen offline structured-versus-semantic prose ablation demonstrates a specific gain without critical regressions",
+    "embedding_model_change": "separate frozen experiment after Candidate B/C; never simultaneous with parser/chunker changes",
+    "hnsw_tuning": "only at scale and always compared with exact-search recall"
+  },
+  "promotion_contract": {
+    "required": [
+      "zero silent embedding truncation",
+      "exact source-span reconstruction",
+      "deterministic two-run manifest and rank fingerprints",
+      "zero unexplained critical evidence regressions",
+      "aggregate plus per-query dense, BM25 and hybrid metrics",
+      "retrieved, drafter-exposed and verifier-exposed evidence metrics",
+      "bounded latency and storage deltas against measured Candidate A",
+      "immutable versioned index plus tested rollback target"
+    ],
+    "forbidden_shortcuts": [
+      "promotion from aggregate gain alone",
+      "promotion from zero truncation alone",
+      "promotion from chunk count alone",
+      "production alias cutover during Phase 5A1",
+      "mutation of machinist_evergreen"
+    ],
+    "rollback": "retain prior immutable index_id and switch only by an independently authorized alias/config change after qualification"
+  },
+  "phase_plan": {
+    "5A0": "baseline, contracts and experiment freeze",
+    "5A1": "shadow Markdown parser, provenance, deterministic IDs and structural child manifests; no serving cutover",
+    "5A2": "immutable shadow dense/BM25 indexes and A/B measurement",
+    "5B": "Candidate C parent/neighbor expansion and evidence packer",
+    "5C": "only measured optimizations: BM25 hygiene, reranker, generated context, query transformation or embedding model",
+    "5D": "one fixture-qualified heterogeneous format at a time: PDF/tables/OCR/code/books",
+    "5E": "expanded independently adjudicated gold, genuine ABSENT slice, hidden holdout and shadow qualification"
+  },
+  "final_qualification_gaps": [
+    "genuine ABSENT/OOS population",
+    "hard negatives",
+    "untouched independently adjudicated holdout",
+    "100-300 representative cases over time",
+    "production or pilot failures admitted through adjudication",
+    "tenant/ACL enforcement qualification",
+    "scale, latency, storage and recovery qualification"
+  ]
+}

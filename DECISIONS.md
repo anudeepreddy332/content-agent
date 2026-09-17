@@ -9,6 +9,63 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-17-04
+Date: 2026-09-17
+
+Decision: **Phase 5A0 Baseline A measured; production RAG hardening contract frozen.**
+
+Reason: The corrected retrieval-golden v2 foundation now supports a reproducible
+source-only control. Baseline A was reconstructed at required starting HEAD
+`f269ab760fc78f0b3a65618ae0c744649d1a0a2e` from 20 ordered Markdown sources
+and 73 exact legacy 400/50 chunks, without reading or mutating an operational
+Qdrant collection. Local MiniLM revision `1110a243…` reproduces silent
+truncation exposure in 64/73 chunks; 24/35 queries have at least one adjudicated
+span intersecting a truncated tail in an overlapping legacy chunk. Tail
+intersection remains exposure evidence, not automatically a causal ranking
+claim.
+
+Measured 33-query gating slice at hybrid K=5: source recall `0.98484848`,
+Precision@5 `0.56969697`, graded nDCG@5 `0.97094024`, exact evidence-span recall
+`0.83333333`, MRR@10 `0.97979798`. Four gating queries (Q15, Q19, Q21, Q22)
+miss a grade-2 exact evidence span at hybrid K=5. Q07 and Q23 lose evidence
+between retrieved top-5 and drafter-exposed top-3; verifier exposure adds no
+top-5 loss. No ABSENT metric was invented because v2 has zero ABSENT cases.
+
+Frozen architecture: deterministic document/version/block/chunk/index IDs;
+exact Markdown/PDF-ready provenance; canonical content separate from payload
+metadata and retrieval text; Candidate A legacy control; Candidate B structural
+tokenizer-safe children; Candidate C bit-identical B retrieval plus deterministic
+same-parent expansion under an A-matched consumer token budget; dense and BM25
+rank the same canonical child IDs; RRF fuses IDs; immutable digest-named shadow
+indexes; explicit retrieved/expanded/packed/drafter/verifier manifests.
+
+Conditional only: BM25 redesign, reranking, query transformation, generated
+context, semantic chunking, embedding replacement, HNSW tuning, late
+interaction, and GraphRAG. Promotion cannot hide a critical per-query
+regression or rely on aggregate gain/zero truncation alone.
+
+Artifacts:
+
+- `scripts/phase5a0_baseline.py`
+- `reports/phase5/phase5a0/baseline_a_manifest.json`
+- `reports/phase5/phase5a0/legacy_chunk_truncation.json`
+- `reports/phase5/phase5a0/baseline_a_report.json`
+- `evals/fixtures/phase5a0_abc_contract.json`
+- `docs/PHASE5_RAG_ARCHITECTURE_CONTRACT.md`
+- `tests/test_phase5a0_baseline.py`
+
+Operational boundary: production retrieval behavior unchanged; production
+Qdrant reads/writes 0; provider calls 0; no reranker, BM25 redesign, query
+transformation, embedding change, semantic chunking, push, PR, or deployment.
+
+Status: **PHASE-5A0-RAG-HARDENING-CONTRACT-READY.** Next authorized slice is
+5A1 shadow Markdown parser/provenance/deterministic-ID/structural-child
+implementation, stopping before embedding or Qdrant writes unless separately
+authorized.
+
+Confidence: 0.95
+
+---
 Decision ID: D-2026-09-17-03
 Date: 2026-09-17
 

@@ -335,24 +335,32 @@ priority.
 engineering direction. Phase 4 is CLOSED; do not reopen without new material
 P0/P1 evidence.
 
-**Phase 5 PRE-5A0 — retrieval gold v2 integrity corrected + eval contract hardened.**
-5A0 was previously blocked on invalid v1 retrieval labels (historical OOS
-queries mislabeled ABSENT; `required_concepts` substring authority). Independent
-35-query corpus adjudication completed; v2 **DEVELOPMENT/DIAGNOSTIC NUCLEUS**
-at `evals/fixtures/retrieval_golden_v2.json` with deterministic validator
-`scripts/retrieval_golden_v2.py`. Answerability aggregate corrected:
-**ANSWERABLE=30** (Q25/Q26 answerable-but-ambiguous, non-gating),
-**PARTIAL=5** (Q31–Q35), **ABSENT=0**. Phase-5 evaluation contract at
-`docs/PHASE5_RAG_EVALUATION_CONTRACT.md` — three non-collapsible layers
-(retrieval incl. Precision@K + graded nDCG, evidence exposure, end-to-end),
-per-query regression authority, golden-set roadmap (100–300 target), true
-holdout contract, mandatory future ABSENT slice, living regression lifecycle,
-production RAG principles. V1 evaluator (`scripts/retrieval_eval.py`) and
-archived reports preserved unchanged. Baseline A identity sidecar at
-`evals/fixtures/retrieval_baseline_a_identity.json`. V2 has **no untouched
-holdout** and **no genuine ABSENT queries**; absence/holdout evaluation remain
-future authorized work. **Phase 5A0 may now restart** — 5A0 itself is **not**
-complete. No chunking implementation before 5A0 approval.
+**Phase 5A0 — RAG hardening baseline and contract COMPLETE.** Starting from
+required HEAD `f269ab760fc78f0b3a65618ae0c744649d1a0a2e`, the clean Baseline A was
+reconstructed from 20 exact Markdown sources and 73 legacy 400/50 chunks without
+an operational Qdrant dependency. Corpus fingerprint `724a8c3486cb…`; ordered
+chunk fingerprint `c3976d83cc47…`; local MiniLM revision `1110a243…`; effective
+content limit 254; silent truncation exposure 64/73 chunks; 24/35 queries have
+an adjudicated span intersecting at least one truncated legacy tail. The
+33-query gating hybrid result at K=5 is source recall `0.98484848`, Precision@5
+`0.56969697`, graded nDCG@5 `0.97094024`, and exact span recall `0.83333333`;
+source success therefore does not substitute for evidence coverage. Q25/Q26
+remain diagnostic/non-gating; no absence metric exists because v2 has zero
+ABSENT cases and no holdout.
+
+Canonical artifacts: measured manifest/report/truncation rows under
+`reports/phase5/phase5a0/`; architecture contract at
+`docs/PHASE5_RAG_ARCHITECTURE_CONTRACT.md`; machine A/B/C, provenance,
+identity, exposure, promotion, and rollback contract at
+`evals/fixtures/phase5a0_abc_contract.json`; source-only evaluator at
+`scripts/phase5a0_baseline.py`. Production retrieval behavior unchanged;
+production Qdrant reads/writes 0; provider calls 0.
+
+**Next authorized slice: Phase 5A1 shadow implementation** — Markdown parser,
+exact provenance, deterministic IDs, structural children, tokenizer assertion,
+overflow/protected-block fixtures, and two-run manifest comparison. Stop before
+embeddings, Qdrant writes, serving cutover, model replacement, or conditional
+optimization unless separately authorized.
 
 Historical context on `experiment/hybrid-verifier-status-engine` (Phase 4
 implementation branch):

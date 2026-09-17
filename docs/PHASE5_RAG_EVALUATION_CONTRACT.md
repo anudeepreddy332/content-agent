@@ -1,6 +1,13 @@
 # Phase 5 — RAG Evaluation Contract
 
-_Canonical Phase-5 evaluation design. Last updated: 2026-09-17 (PRE-5A0 integrity correction)._
+_Canonical Phase-5 evaluation design. Last updated: 2026-09-17 (5A0 baseline measured)._
+
+Phase 5A0's measured control, per-query report, exact-span exposure analysis,
+and promotion/rollback rules are frozen in
+`docs/PHASE5_RAG_ARCHITECTURE_CONTRACT.md`,
+`evals/fixtures/phase5a0_abc_contract.json`, and
+`reports/phase5/phase5a0/`. This file remains the authoritative dataset and
+metric-layer contract.
 
 ## V2 dataset status
 
