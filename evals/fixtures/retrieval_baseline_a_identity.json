@@ -1,0 +1,49 @@
+{
+  "schema_version": "retrieval_baseline_a_identity",
+  "repo_head": "86712d200fd46382a876f2083f824f03a83341ab",
+  "recommended_experiment": "Baseline A",
+  "corpus": {
+    "source_document_count": 20,
+    "source_root": "kb/seed_docs",
+    "format": "markdown",
+    "clean_reconstructed_chunk_count": 73,
+    "note": "Clean reconstructed 73-chunk corpus from frozen source files. Do not treat operational UUID volume as authoritative control."
+  },
+  "legacy_chunking": {
+    "tokenizer": "cl100k_base",
+    "chunk_size_tokens": 400,
+    "overlap_tokens": 50,
+    "stride_tokens": 350
+  },
+  "embedding": {
+    "canonical_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "local_resolved_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "historical_production_revision": "NOT_VERIFIABLE",
+    "sentence_transformers_version": "5.4.1",
+    "transformers_version": "5.7.0",
+    "tokenizers_version": "0.22.2",
+    "runtime_max_sequence_length": 256,
+    "effective_content_token_limit": 254,
+    "dimension": 384,
+    "normalized_embeddings": true,
+    "normalization_via": "model pipeline"
+  },
+  "qdrant_control_identity": {
+    "provenance": "OBSERVED LOCAL CONTROL — not a historical production claim",
+    "version_intended": "v1.9.2",
+    "dimension": 384,
+    "distance": "Cosine",
+    "persisted_local_config_observed": {
+      "m": 16,
+      "ef_construct": 100,
+      "full_scan_threshold": 10000,
+      "on_disk": false
+    },
+    "quantization": "none",
+    "actual_small_corpus_index_observed": "plain",
+    "live_server_identity": "NOT_VERIFIABLE"
+  },
+  "retrieval_golden_v2_ref": "evals/fixtures/retrieval_golden_v2.json",
+  "v1_evaluator_ref": "scripts/retrieval_eval.py:GOLDEN_SET",
+  "absence_holdout_note": "v2 diagnostic set has no genuine ABSENT queries and no untouched holdout. Absence and holdout evaluation remain future authorized work."
+}

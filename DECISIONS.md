@@ -9,6 +9,41 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-17-02
+Date: 2026-09-17
+
+Decision: **Retrieval golden set v2 — diagnostic evaluator contract frozen (PRE-5A0).**
+
+Reason: Phase 5A0 was blocked on invalid v1 retrieval labels. Independent
+35-query corpus adjudication found v1 CORRECT=7, INCOMPLETE=20, WRONG=6,
+AMBIGUOUS=2; old OOS genuinely ABSENT=0, PARTIAL=5 (Q31–Q35). V1
+`required_concepts` substring checks are not authoritative in v2; evidence
+obligations bound to adjudicated source spans are.
+
+Artifacts:
+
+- `evals/fixtures/retrieval_golden_v2.json` — schema `retrieval_golden_v2`, 35
+  queries, graded relevance (1/2), evidence spans, answerability separate from
+  retrieval relevance.
+- `scripts/retrieval_golden_v2.py` — deterministic validator (no semantic model).
+- `evals/fixtures/retrieval_baseline_a_identity.json` — Baseline A identity
+  sidecar for 5A0 restart (73-chunk clean reconstruction, MiniLM-L6-v2 local
+  revision `1110a243…`, production revision NOT_VERIFIABLE).
+
+Preserved unchanged: `scripts/retrieval_eval.py` (v1 GOLDEN_SET), archived
+retrieval eval reports, historical thresholds.
+
+V2 policy: zero ABSENT queries; zero holdout; Q25/Q26 AMBIGUOUS non-gating;
+Q31–Q35 PARTIAL not OOS; absence/OOS rejection quality not measurable from this
+set; `min_distance_threshold=0.5` not reused as absence oracle.
+
+Does NOT change: production retrieval, chunking, embeddings, Qdrant.
+
+Status: **RETRIEVAL-GOLD-V2-FROZEN.** Phase 5A0 may restart; 5A0 not complete.
+
+Confidence: 0.92
+
+---
 Decision ID: D-2026-09-17-01
 Date: 2026-09-17
 

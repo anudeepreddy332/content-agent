@@ -1,0 +1,2145 @@
+{
+  "schema_version": "retrieval_golden_v2",
+  "repo_head": "86712d200fd46382a876f2083f824f03a83341ab",
+  "corpus_manifest": [
+    {
+      "source": "agentic-ai-production",
+      "path": "kb/seed_docs/agentic-ai-production.md",
+      "sha256": "8cb15469206d4aefd20e5ef9526168ba4a8937ae3fde468f9ebdf54bd49865c8",
+      "line_count": 80
+    },
+    {
+      "source": "attention-transformers",
+      "path": "kb/seed_docs/attention-transformers.md",
+      "sha256": "845faba79fd149a17fd9e1e48abad92c27f836637896bf81405cae3606620a09",
+      "line_count": 73
+    },
+    {
+      "source": "backpropagation",
+      "path": "kb/seed_docs/backpropagation.md",
+      "sha256": "1d7ce30a31388788b45c16ac45cf6c712fcad5d3892a768dae6dce1fc0494350",
+      "line_count": 81
+    },
+    {
+      "source": "catboost",
+      "path": "kb/seed_docs/catboost.md",
+      "sha256": "ec183d0f63e6abf0e1398b1ceab470278ef6b2e973c9794a444117db5bad1881",
+      "line_count": 45
+    },
+    {
+      "source": "decision-trees",
+      "path": "kb/seed_docs/decision-trees.md",
+      "sha256": "e84cbc44bf00dc480b7d8425216f1bff6f6a2584c261b4ba8c37419ae42792bc",
+      "line_count": 66
+    },
+    {
+      "source": "embedding-models-vector-search",
+      "path": "kb/seed_docs/embedding-models-vector-search.md",
+      "sha256": "d8e7b24edcaf322ca493e8ea1adbed358cdbb43788b0bc9ddb5b252175b5a103",
+      "line_count": 73
+    },
+    {
+      "source": "feedforward-neural-networks",
+      "path": "kb/seed_docs/feedforward-neural-networks.md",
+      "sha256": "40ed610f16ab9b2af36a3833e56edc376ef3ad00d87be260132809d095509efe",
+      "line_count": 73
+    },
+    {
+      "source": "gradient-descent",
+      "path": "kb/seed_docs/gradient-descent.md",
+      "sha256": "9bdf5089342e8144568889d57e9027f95b9ead8ef07f76c3d876b09718930b16",
+      "line_count": 86
+    },
+    {
+      "source": "k-nearest-neighbors",
+      "path": "kb/seed_docs/k-nearest-neighbors.md",
+      "sha256": "ff063c8866b7770fa26db5a980d731671e09ac24790752a3683a75f504b86267",
+      "line_count": 58
+    },
+    {
+      "source": "langgraph-state-machines",
+      "path": "kb/seed_docs/langgraph-state-machines.md",
+      "sha256": "8fb948341f125fc32597a7dd994f29e51ce6865e754f93fa972ca59aabd84c62",
+      "line_count": 71
+    },
+    {
+      "source": "linear-logistic-regression",
+      "path": "kb/seed_docs/linear-logistic-regression.md",
+      "sha256": "0ddcbe3e1e8ae59f04ace6a287891ead687942b31f39ebea19ad3e1eb3df1dfb",
+      "line_count": 73
+    },
+    {
+      "source": "multi-agent-systems",
+      "path": "kb/seed_docs/multi-agent-systems.md",
+      "sha256": "41fe54bb3a61edc5a139d17abf484bd7b80be033dc98d6091c6a457a07317ec9",
+      "line_count": 71
+    },
+    {
+      "source": "naive-bayes",
+      "path": "kb/seed_docs/naive-bayes.md",
+      "sha256": "97fd1a58705aabd0167e7c43a34aa240adaeb3e3a7d0cc870d3741208a0907b7",
+      "line_count": 47
+    },
+    {
+      "source": "prompt-engineering-production",
+      "path": "kb/seed_docs/prompt-engineering-production.md",
+      "sha256": "a5f843ada1cee5ddb06ad0f84cdafbb3713a95b04e7088fbe9a5cc62d1b2dd60",
+      "line_count": 62
+    },
+    {
+      "source": "random-forest",
+      "path": "kb/seed_docs/random-forest.md",
+      "sha256": "7af8c09c1b72e1a45c662c32edef5fcfb9840133b846345762ef31876ec31a9b",
+      "line_count": 61
+    },
+    {
+      "source": "react-agent-pattern",
+      "path": "kb/seed_docs/react-agent-pattern.md",
+      "sha256": "26100038d5e47c5ecf42fd085bca34d1f20789725b84ecdf05ce6c30f1ac064b",
+      "line_count": 68
+    },
+    {
+      "source": "retrieval-augmented-generation",
+      "path": "kb/seed_docs/retrieval-augmented-generation.md",
+      "sha256": "fb358e9ab7273e18688b39ec7473461bab9a9ebb5c71ed29f0da9bceda9f993a",
+      "line_count": 77
+    },
+    {
+      "source": "ridge-lasso-elasticnet",
+      "path": "kb/seed_docs/ridge-lasso-elasticnet.md",
+      "sha256": "0c883f972f5f4d1874520e6f4a440320183a76fdd9666262ed3a7b9dd64f1500",
+      "line_count": 43
+    },
+    {
+      "source": "support-vector-machines",
+      "path": "kb/seed_docs/support-vector-machines.md",
+      "sha256": "bbf3e15ff9d232245536949f448567c3cb96626a5d1fc74333c4b885a79e5788",
+      "line_count": 43
+    },
+    {
+      "source": "xgboost",
+      "path": "kb/seed_docs/xgboost.md",
+      "sha256": "ebeacb3d7f8aba77ceb09d7753dc16142c14dbd5bce32bc3f4f997589df7cd7e",
+      "line_count": 56
+    }
+  ],
+  "corpus_manifest_digest": "178f1de4dfaa471913e098c2268762256cd33c476dc938e721bb4f9eae047b59",
+  "v1_ref": "scripts/retrieval_eval.py:GOLDEN_SET",
+  "absence_policy": {
+    "absent_queries": 0,
+    "absence_measurable": false,
+    "holdout_queries": 0,
+    "note": "All 35 queries historically exposed as development/diagnostic. No untouched holdout or genuine ABSENT queries in v2."
+  },
+  "adjudication_summary": {
+    "v1_label_verdict": {
+      "CORRECT": 7,
+      "INCOMPLETE": 20,
+      "WRONG": 6,
+      "AMBIGUOUS": 2
+    },
+    "answerability": {
+      "ANSWERABLE": 28,
+      "PARTIAL": 7,
+      "ABSENT": 0
+    },
+    "gating_eligible": 33,
+    "non_gating": 2,
+    "split": {
+      "development/diagnostic": 35,
+      "holdout": 0
+    }
+  },
+  "queries": [
+    {
+      "query_id": "Q01",
+      "query": "how gradient descent updates weights",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "gradient-descent",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "gradient-descent:12-14",
+              "heading": "Mathematical Formulation",
+              "line_start": 12,
+              "line_end": 14,
+              "quote": "\u03b8_{t+1} = \u03b8_t \u2212 \u03b7 \u00b7 \u2207J(\u03b8_t)\n\nwhere \u03b7 > 0 is the learning rate (step size). The gradient \u2207J(\u03b8_t) is the vector of partial derivatives [\u2202J/\u2202\u03b8_1, ..., \u2202J/\u2202\u03b8_d] evaluated at \u03b8_t.",
+              "supports": "SGD update rule: theta minus eta times gradient of loss"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Learning rate eta scales the gradient step",
+          "supported_by": [
+            "gradient-descent:12-14"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Update moves opposite to loss gradient",
+          "supported_by": [
+            "gradient-descent:12-14"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Gradient is vector of partial derivatives of loss",
+          "supported_by": [
+            "gradient-descent:12-14"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 0,
+      "v1_label_verdict": "CORRECT",
+      "adjudication_note": "v1 expected_sources and concept obligations fully align with grade-2 evidence.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q02",
+      "query": "query key value in self-attention",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "attention-transformers",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "attention-transformers:10-12",
+              "heading": "Mathematical Formulation",
+              "line_start": 10,
+              "line_end": 12,
+              "quote": "**Scaled Dot-Product Attention**  \nGiven queries Q, keys K (dim d_k), values V (dim d_v):  \nAttention(Q, K, V) = softmax( Q K^T / \u221ad_k ) V.",
+              "supports": "Scaled dot-product attention over queries, keys, and values"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Attention maps query and key-value pairs to weighted sum of values",
+          "supported_by": [
+            "attention-transformers:10-12"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Query, key, and value tensors participate in compatibility scoring",
+          "supported_by": [
+            "attention-transformers:10-12"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 1,
+      "v1_label_verdict": "CORRECT",
+      "adjudication_note": "Direct terminology match; v1 labels correct.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q03",
+      "query": "difference between lasso and ridge regression",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "ridge-lasso-elasticnet",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "ridge-lasso-elasticnet:10-13",
+              "heading": "Mathematical Formulation",
+              "line_start": 10,
+              "line_end": 13,
+              "quote": "Minimize over \u03b2:\n- Ridge: \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 \u03a3\u2c7c \u03b2\u2c7c\u00b2\n- Lasso: \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 \u03a3\u2c7c |\u03b2\u2c7c|\n- ElasticNet: \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 [ \u03c1 \u03a3\u2c7c |\u03b2\u2c7c| + 0.5(1\u2212\u03c1) \u03a3\u2c7c \u03b2\u2c7c\u00b2 ]",
+              "supports": "Ridge L2 vs Lasso L1 penalty formulations"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Ridge uses L2 squared penalty on coefficients",
+          "supported_by": [
+            "ridge-lasso-elasticnet:10-13"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Lasso uses L1 absolute penalty inducing sparsity",
+          "supported_by": [
+            "ridge-lasso-elasticnet:10-13"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "L1 can zero coefficients; L2 shrinks but retains all predictors",
+          "supported_by": [
+            "ridge-lasso-elasticnet:10-13"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 2,
+      "v1_label_verdict": "CORRECT",
+      "adjudication_note": "Single-source comparison fully supported; v1 correct.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q04",
+      "query": "what is CatBoost categorical feature handling",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "catboost",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "catboost:4",
+              "heading": "Definition",
+              "line_start": 4,
+              "line_end": 4,
+              "quote": "CatBoost is a gradient boosting library that builds an ensemble of oblivious decision trees. It is distinguished by native handling of categorical features without manual preprocessing, using ordered target statistics with permutations to avoid target leakage, and employs an ordered boosting mechanism to reduce overfitting.",
+              "supports": "Native categorical handling via ordered target statistics"
+            },
+            {
+              "span_id": "catboost:12-14",
+              "heading": "Mathematical Formulation",
+              "line_start": 12,
+              "line_end": 14,
+              "quote": "For categorical feature k with value v, the ordered target statistic is:\nTS_{v} = (sum_{i in D_k, before j} y_i + a * p) / (count_{i in D_k, before j} + a)\nwhere j is the index in a random permutation, D_k is the set of objects with that category, \u201cbefore j\u201d restricts to preceding objects in the permutation, a is a smoothing strength, and p is the global average target. This ensures that the target for object j is encoded only using data preceding it.",
+              "supports": "Ordered target statistic formula with permutation leave-out"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "CatBoost handles categoricals without manual preprocessing",
+          "supported_by": [
+            "catboost:4"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Target statistics encode categories using smoothed mean target",
+          "supported_by": [
+            "catboost:12-14"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Permutation ordering prevents target leakage during encoding",
+          "supported_by": [
+            "catboost:12-14"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Ordered boosting mechanism internals",
+          "supported_by": [
+            "catboost:4"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 3,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required_concepts include ordered boosting but corpus does not tie it to categorical encoding in grade-2 spans.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q05",
+      "query": "ReAct agent pattern reasoning and acting",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "react-agent-pattern",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "react-agent-pattern:4-4",
+              "heading": "Definition",
+              "line_start": 4,
+              "line_end": 4,
+              "quote": "The ReAct (Reasoning and Acting) pattern is an agent design where a language model generates interleaved reasoning traces and executable actions. The model produces a thought explaining what it intends to do, then an action command; the environment executes the action and returns an observation, which is appended to the context, and the loop continues until a final answer is output.",
+              "supports": "ReAct interleaves reasoning traces and executable actions"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Model emits thought then action; environment returns observation",
+          "supported_by": [
+            "react-agent-pattern:4"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Thought-action-observation loop continues until final answer",
+          "supported_by": [
+            "react-agent-pattern:4"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 4,
+      "v1_label_verdict": "CORRECT",
+      "adjudication_note": "Definition section directly names thought, action, observation pattern.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q06",
+      "query": "k nearest neighbors algorithm basics",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "k-nearest-neighbors",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "k-nearest-neighbors:4",
+              "heading": "Definition",
+              "line_start": 4,
+              "line_end": 4,
+              "quote": "K-Nearest Neighbors (KNN) is a non-parametric, instance-based learning algorithm. For a query point, it identifies the k closest training instances according to a chosen distance metric. Classification uses majority vote among these neighbors; regression uses the average of their target values. No explicit training phase occurs; all computation is deferred until prediction time (lazy learning).",
+              "supports": "KNN identifies k closest instances; classification by majority vote; lazy learning"
+            },
+            {
+              "span_id": "k-nearest-neighbors:9",
+              "heading": "Mathematical Formulation",
+              "line_start": 9,
+              "line_end": 9,
+              "quote": "## Mathematical Formulation",
+              "supports": "Distance metric d defines nearness"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Uses distance metric to find k nearest training points",
+          "supported_by": [
+            "k-nearest-neighbors:9"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Classification via majority vote among neighbors",
+          "supported_by": [
+            "k-nearest-neighbors:4"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Lazy learning: no explicit training phase",
+          "supported_by": [
+            "k-nearest-neighbors:4"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 5,
+      "v1_label_verdict": "CORRECT",
+      "adjudication_note": "v1 concepts and source correct.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q07",
+      "query": "XGBoost regularization parameters",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "xgboost",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "xgboost:18-28",
+              "heading": "Mathematical Formulation",
+              "line_start": 18,
+              "line_end": 28,
+              "quote": "where g_i = \u2202L/\u2202y_hat and h_i = \u2202\u00b2L/\u2202y_hat\u00b2 (gradient and hessian). Regularization Omega(f_t) = gamma T + 0.5 lambda ||w||\u00b2, with T leaves and leaf weights w.\n\nFor a fixed tree structure, optimal leaf weight for leaf j:\n\nw_j* = - (sum_{i in leaf j} g_i) / (sum_{i in leaf j} h_i + lambda)\n\nThe resulting optimal objective reduction (split gain) is:\n\nGain = 0.5 [ (G_L)^2/(H_L + lambda) + (G_R)^2/(H_R + lambda) - (G)^2/(H + lambda) ] - gamma\n\nA node is split if gain > 0 (gamma acts as complexity threshold). Tree is grown greedily using this gain.",
+              "supports": "Regularization via gamma, lambda, and optimal leaf weights"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Gamma penalizes number of leaves in Omega(f_t)",
+          "supported_by": [
+            "xgboost:18-28"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Lambda is L2 regularization on leaf weights",
+          "supported_by": [
+            "xgboost:18-28"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Optimal leaf weight formula uses gradient/hessian sums",
+          "supported_by": [
+            "xgboost:18-28"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Alpha L1 leaf penalty (v1 concept alpha)",
+          "supported_by": [
+            "xgboost:18-28"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 6,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required_concepts list gamma/lambda/leaf weight but omits alpha L1 also present in corpus.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q08",
+      "query": "what is a feedforward neural network",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "feedforward-neural-networks",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "feedforward-neural-networks:4",
+              "heading": "Definition",
+              "line_start": 4,
+              "line_end": 4,
+              "quote": "A feedforward neural network (FFNN) is an artificial neural network where connections between nodes do not form cycles. Information moves in one direction\u2014from input, through hidden layers, to output\u2014without feedback loops. When composed of fully connected layers with nonlinear activation functions, it is often called a multilayer perceptron (MLP).",
+              "supports": "FFNN acyclic connections; information flows input to output"
+            },
+            {
+              "span_id": "feedforward-neural-networks:12-17",
+              "heading": "Mathematical Formulation",
+              "line_start": 12,
+              "line_end": 17,
+              "quote": "h^(l) = g_l( W^(l) h^(l-1) + b^(l) )\n\n- h^(0) = x (input vector)\n- W^(l) is a weight matrix, b^(l) a bias vector\n- g_l is a nonlinear activation function (e.g., ReLU, sigmoid, tanh)\n- h^(l) is the activation output of layer l",
+              "supports": "Layer computation with activation functions"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Hidden layers with nonlinear activations compose the mapping",
+          "supported_by": [
+            "feedforward-neural-networks:12-17"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Activation functions (ReLU, sigmoid, tanh) at each layer",
+          "supported_by": [
+            "feedforward-neural-networks:12-17"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Backpropagation as training algorithm detail",
+          "supported_by": [
+            "feedforward-neural-networks:12-17"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 7,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required_concepts include backpropagation; grade-2 spans cover architecture but training/backprop obligation only grade-1 elsewhere.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q09",
+      "query": "support vector machine margin maximization",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "support-vector-machines",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "support-vector-machines:8-12",
+              "heading": "Intuition",
+              "line_start": 8,
+              "line_end": 12,
+              "quote": "\n## Mathematical Formulation\nFor a binary classification problem with labels y_i \u2208 {\u22121,+1}, the primal hard-margin objective is: minimize (1/2)\u2016w\u2016\u00b2 subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1. To handle non-separable data, slack variables \u03be_i \u2265 0 are introduced: minimize (1/2)\u2016w\u2016\u00b2 + C \u03a3 \u03be_i subject to y_i(w\u00b7\u03c6(x_i) + b) \u2265 1 \u2212 \u03be_i, where C > 0 controls the trade-off between margin width and misclassification.\n\nThe dual formulation is: maximize \u03a3 \u03b1_i \u2212 (1/2) \u03a3_i \u03a3_j \u03b1_i \u03b1_j y_i y_j K(x_i, x_j), subject to 0 \u2264 \u03b1_i \u2264 C and \u03a3 \u03b1_i y_i = 0. The kernel function K(x_i, x_j) = \u27e8\u03c6(x_i), \u03c6(x_j)\u27e9 avoids explicit computation of \u03c6. The decision function becomes: f(x) = sign(\u03a3 \u03b1_i y_i K(x_i, x) + b).",
+              "supports": "Margin maximization, support vectors, kernel trick in dual formulation"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Objective maximizes margin between classes",
+          "supported_by": [
+            "support-vector-machines:8-12"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Support vectors lie on or violate margin",
+          "supported_by": [
+            "support-vector-machines:8-12"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Kernel trick enables implicit high-dimensional mapping",
+          "supported_by": [
+            "support-vector-machines:8-12"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 8,
+      "v1_label_verdict": "CORRECT",
+      "adjudication_note": "v1 labels align with definition and formulation sections.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q10",
+      "query": "Naive Bayes conditional independence assumption",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "naive-bayes",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "naive-bayes:10-10",
+              "heading": "Mathematical Formulation",
+              "line_start": 10,
+              "line_end": 10,
+              "quote": "Given class y and feature vector x = (x\u2081,\u2026,x\u209a), Bayes\u2019 rule gives P(y|x) \u221d P(y) \u00b7 P(x|y). Under conditional independence, P(x|y) = \u220f\u1d62 P(x\u1d62|y). The decision rule is \u0177 = argmax_y P(y) \u220f\u1d62 P(x\u1d62|y). The likelihood form P(x\u1d62|y) depends on the data type:",
+              "supports": "Conditional independence assumption and Bayes decision rule"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Features assumed conditionally independent given class",
+          "supported_by": [
+            "naive-bayes:10-10"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Classification via Bayes rule and posterior argmax",
+          "supported_by": [
+            "naive-bayes:10-10"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "easy",
+      "query_bucket": "easy",
+      "split": "development/diagnostic",
+      "v1_index": 9,
+      "v1_label_verdict": "CORRECT",
+      "adjudication_note": "v1 correct.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q11",
+      "query": "vanishing gradient problem in deep networks",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "backpropagation",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "backpropagation:76-77",
+              "heading": "Claim-Dense Reference Facts",
+              "line_start": 76,
+              "line_end": 77,
+              "quote": "- Vanishing gradients occur when |\u2202L/\u2202W^(l)| < 1 repeatedly across layers, exponentially shrinking updates.\n- ReLU mitigates vanishing gradients by having gradient 1 for positive inputs vs sigmoid's maximum of 0.25.",
+              "supports": "Vanishing gradients in deep layers; ReLU mitigation"
+            }
+          ]
+        },
+        {
+          "source": "gradient-descent",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "gradient-descent:49",
+              "heading": "Failure Modes",
+              "line_start": 49,
+              "line_end": 49,
+              "quote": "- **Vanishing/exploding gradients**: Severely scaled gradients in deep networks disrupt updates.",
+              "supports": "Vanishing/exploding gradients disrupt updates in deep networks"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Vanishing gradients arise from repeated small partial derivatives across layers",
+          "supported_by": [
+            "backpropagation:76-77"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "ReLU activation mitigates vanishing gradients vs sigmoid",
+          "supported_by": [
+            "backpropagation:76-77"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Chain rule backpropagation computes gradients through deep networks",
+          "supported_by": [
+            "backpropagation:76-77"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Explicit deep-network layer stacking mechanism",
+          "supported_by": [
+            "backpropagation:76-77"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 10,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 lists both sources; grade-2 evidence primary in backpropagation. gradient-descent is grade-1 supporting only.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q12",
+      "query": "why random forests reduce overfitting compared to a single decision tree",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "random-forest",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "random-forest:7-7",
+              "heading": "Intuition",
+              "line_start": 7,
+              "line_end": 7,
+              "quote": "A single decision tree has low bias but high variance. Averaging many nearly unbiased but noisy trees reduces variance without increasing bias, provided the trees are not all identical. The double randomization (bootstrap samples and random feature subsets) ensures diversity among trees, so their errors cancel out.",
+              "supports": "Averaging decorrelated trees reduces variance without increasing bias"
+            }
+          ]
+        },
+        {
+          "source": "decision-trees",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "decision-trees:31",
+              "heading": "Key Properties",
+              "line_start": 31,
+              "line_end": 31,
+              "quote": "Interpretability: tree structure directly shows decision rules. Handles both numerical and categorical variables without scaling or encoding. Captures non-linear relationships and interactions. Variable importance can be derived from total impurity reduction. High variance: small data changes can yield completely different trees. Tends to overfit, but controlled by pruning or ensemble methods.",
+              "supports": "Single trees high variance; overfit without pruning"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Single decision tree has high variance",
+          "supported_by": [
+            "decision-trees:31"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Random forest averages bootstrap trees with random feature subsets",
+          "supported_by": [
+            "random-forest:7"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Ensemble aggregation reduces variance",
+          "supported_by": [
+            "random-forest:7"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Explicit side-by-side overfitting comparison prose",
+          "supported_by": [
+            "random-forest:7"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 11,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 expected both sources; corpus supports inference but lacks direct comparative sentence v1 implied.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q13",
+      "query": "how to deploy LLM agents with reliability and cost control",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "agentic-ai-production",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "agentic-ai-production:10-10",
+              "heading": "Mathematical Formulation",
+              "line_start": 10,
+              "line_end": 10,
+              "quote": "An agent is a policy \u03c0 that, at step t with history H_t, outputs action A_t in a fixed action space A. The environment E provides observation O_t, producing extended history H_{t+1}=H_t\u222a{(A_t,O_t)}. Production constraints define: (1) a step budget N_max; (2) a total cost bound C_max=\u03a3_t c(A_t); (3) a latency deadline T_max per step. The agent task is to produce a final answer y within these bounds. Formally: y=\u03c0*(x) subject to t \u2264 N_max, \u03a3 c(A_t) \u2264 C_max, per-step latency \u2264 T_max. Validation includes output schema check \u03c8(y) \u2208 {valid, invalid} and optional safety filters.",
+              "supports": "Production constraints: step budget, cost bound, latency deadline"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Step budget N_max limits agent iterations",
+          "supported_by": [
+            "agentic-ai-production:10"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Cost bound C_max caps cumulative tool/LLM spend",
+          "supported_by": [
+            "agentic-ai-production:10"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Observability and guardrails for reliability",
+          "supported_by": [
+            "agentic-ai-production:10"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 12,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required_concepts include observability/guardrails beyond the cited formulation span.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q14",
+      "query": "logistic regression probability estimation formula",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "linear-logistic-regression",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "linear-logistic-regression:11-15",
+              "heading": "Mathematical Formulation",
+              "line_start": 11,
+              "line_end": 15,
+              "quote": "Logistic: log(P(Y=1)/(1\u2212P(Y=1))) = X\u03b2, equivalently P(Y=1) = 1/(1 + exp(\u2212X\u03b2)).\n\n## Estimation\nLinear: ordinary least squares (OLS) minimizes \u03a3 (y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2. Closed-form \u03b2\u0302 = (X\u1d40X)\u207b\u00b9X\u1d40y (if invertible).  \nLogistic: no closed-form. Maximum likelihood is found iteratively (Newton-Raphson, IRLS) maximizing \u2113 = \u220f p\u1d62^{y\u1d62}(1\u2212p\u1d62)^{1\u2212y\u1d62}, with p\u1d62 = 1/(1+exp(\u2212x\u1d62\u00b7\u03b2)).",
+              "supports": "Logistic sigmoid probability and MLE estimation"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Probability via logistic sigmoid of linear score",
+          "supported_by": [
+            "linear-logistic-regression:11-15"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Log-odds linear in predictors",
+          "supported_by": [
+            "linear-logistic-regression:11-15"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Maximum likelihood estimation iteratively",
+          "supported_by": [
+            "linear-logistic-regression:11-15"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 13,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 labels adequate; adjudication marks INCOMPLETE because v1 concept list omitted explicit log-odds formula line as separate obligation.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q15",
+      "query": "LangGraph for cyclic agent workflows",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "langgraph-state-machines",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "langgraph-state-machines:16",
+              "heading": "Mathematical Formulation",
+              "line_start": 16,
+              "line_end": 16,
+              "quote": "Execution iteratively selects the next node based on current node\u2019s outgoing edges, evaluates conditions, applies node functions, and repeats until an END node is reached. Cyclic edges enable loops (e.g., agent \u2192 tool \u2192 agent).",
+              "supports": "Cyclic edges enable agent loops"
+            },
+            {
+              "span_id": "langgraph-state-machines:28-30",
+              "heading": "Key Properties",
+              "line_start": 28,
+              "line_end": 30,
+              "quote": "- **Cyclic graphs** support iterative agent patterns (plan, execute, observe, replan).\n- **Persistence** via integrated checkpointer saves state after each step, enabling resume and time travel.\n- **Human-in-the-loop** by interrupting the graph at any node and awaiting external input.",
+              "supports": "Persistence and human-in-the-loop interrupts"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Graph supports cyclic control flow for iterative agents",
+          "supported_by": [
+            "langgraph-state-machines:16"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Checkpointing persists state across steps",
+          "supported_by": [
+            "langgraph-state-machines:28-30"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Human-in-the-loop via graph interrupt",
+          "supported_by": [
+            "langgraph-state-machines:28-30"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Conditional edges for routing (v1 concept)",
+          "supported_by": [
+            "langgraph-state-machines:16"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 14,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required_concepts include conditional edges not bound in grade-2 spans.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q16",
+      "query": "prompt engineering best practices for production",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "prompt-engineering-production",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "prompt-engineering-production:22-27",
+              "heading": "Key Properties",
+              "line_start": 22,
+              "line_end": 27,
+              "quote": "## Key Properties\n- **Controlled variability**: Inputs are bound to validated template slots; untrusted content is sanitized.\n- **Testable**: Prompts are unit-tested for structure and integrated with CI for regression detection.\n- **Monitorable**: Response quality, latency, and failure modes are tracked post-deploy.\n- **Versioned**: Stored in Git with audit trails, enabling rollback and comparative experiments.\n- **Composable**: Can be combined into chains/graphs while maintaining observability.",
+              "supports": "Versioned, testable, monitorable production prompts"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Prompts version-controlled like code",
+          "supported_by": [
+            "prompt-engineering-production:22-27"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Offline evaluation and online monitoring",
+          "supported_by": [
+            "prompt-engineering-production:22-27"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "A/B testing for prompt changes",
+          "supported_by": [
+            "prompt-engineering-production:22-27"
+          ],
+          "status": "missing"
+        },
+        {
+          "description": "Guardrails against injection",
+          "supported_by": [
+            "prompt-engineering-production:22-27"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 15,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required_concepts broader than grade-2 spans; guardrails/A-B mentioned elsewhere in doc but not bound.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q17",
+      "query": "when to use multi-agent systems vs single agent",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "multi-agent-systems",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "multi-agent-systems:35-37",
+              "heading": "When to Use / Not Use",
+              "line_start": 35,
+              "line_end": 37,
+              "quote": "**Use**: When a task naturally decomposes into parallel or role-based subproblems (code generation + review, multi-perspective analysis, complex negotiation), when error correction via cross-checking is valuable, or when simulations of social dynamics are desired.\n\n**Not use**: For simple single-step queries, latency-sensitive pipelines where serial agent chaining adds unacceptable delay, or when the added complexity of coordination outweighs accuracy gains.",
+              "supports": "When to use MAS: decomposed parallel subproblems"
+            },
+            {
+              "span_id": "multi-agent-systems:37",
+              "heading": "When to Use / Not Use",
+              "line_start": 37,
+              "line_end": 37,
+              "quote": "**Not use**: For simple single-step queries, latency-sensitive pipelines where serial agent chaining adds unacceptable delay, or when the added complexity of coordination outweighs accuracy gains.",
+              "supports": "When not to use: simple single-step queries"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "MAS useful when task decomposes into specialized subproblems",
+          "supported_by": [
+            "multi-agent-systems:35-37"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Single agent preferred for simple single-step queries",
+          "supported_by": [
+            "multi-agent-systems:37"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Dec-POMDP formalization of multi-agent coordination",
+          "supported_by": [
+            "multi-agent-systems:35-37"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 16,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 expected only multi-agent-systems; single-agent counterpoints inferred but Dec-POMDP obligation unsupported in grade-2 spans.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q18",
+      "query": "elastic net combining L1 and L2 penalties",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "ridge-lasso-elasticnet",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "ridge-lasso-elasticnet:13-13",
+              "heading": "Mathematical Formulation",
+              "line_start": 13,
+              "line_end": 13,
+              "quote": "- ElasticNet: \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 [ \u03c1 \u03a3\u2c7c |\u03b2\u2c7c| + 0.5(1\u2212\u03c1) \u03a3\u2c7c \u03b2\u2c7c\u00b2 ]",
+              "supports": "ElasticNet convex combination of L1 and L2 with rho"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "ElasticNet blends L1 and L2 penalties via rho",
+          "supported_by": [
+            "ridge-lasso-elasticnet:13"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Grouping effect for correlated predictors",
+          "supported_by": [
+            "ridge-lasso-elasticnet:13"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Explicit l1_ratio hyperparameter naming",
+          "supported_by": [
+            "ridge-lasso-elasticnet:13"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 17,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required l1_ratio symbol; corpus uses rho notation.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q19",
+      "query": "how RAG reduces hallucination in LLMs",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "retrieval-augmented-generation",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "retrieval-augmented-generation:4",
+              "heading": "Definition",
+              "line_start": 4,
+              "line_end": 4,
+              "quote": "Retrieval Augmented Generation (RAG) is a framework that combines a pre-trained parametric memory (a sequence-to-sequence generator) with a non-parametric memory (a dense vector index of documents) via a neural retriever. At inference time, relevant documents are fetched from the index and provided as additional context for generation, enabling factual grounding and access to external knowledge without enlarging model parameters.",
+              "supports": "RAG combines parametric generator with non-parametric retrieval index"
+            },
+            {
+              "span_id": "retrieval-augmented-generation:32",
+              "heading": "Key Properties",
+              "line_start": 32,
+              "line_end": 32,
+              "quote": "- **Reduced hallucination**: Outputs are grounded in retrieved text, with provenance for verification.",
+              "supports": "Reduced hallucination via retrieved grounding"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "External retrieval supplies factual context at inference",
+          "supported_by": [
+            "retrieval-augmented-generation:4"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Grounding in retrieved documents reduces hallucination",
+          "supported_by": [
+            "retrieval-augmented-generation:32"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Separate retriever and generator components",
+          "supported_by": [
+            "retrieval-augmented-generation:4"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 18,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 concept non-parametric memory phrasing not literal in bound spans though semantically present.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q20",
+      "query": "embedding vectors for semantic search",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "embedding-models-vector-search",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "embedding-models-vector-search:4",
+              "heading": "Definition",
+              "line_start": 4,
+              "line_end": 4,
+              "quote": "Embedding models are functions that map discrete inputs (text tokens, images, audio) into dense, fixed-dimensional real-valued vectors, such that semantically similar items are placed close in the vector space. Vector search is the task of efficiently retrieving the top-k vectors most similar to a query vector from a large collection, using a distance metric (cosine, Euclidean) and approximate nearest neighbor (ANN) indexing.",
+              "supports": "Dense embeddings enable semantic similarity search"
+            },
+            {
+              "span_id": "embedding-models-vector-search:10",
+              "heading": "Mathematical Formulation",
+              "line_start": 10,
+              "line_end": 10,
+              "quote": "An embedding model f: X \u2192 R^d maps input x to v = f(x). Similarity between query q and document d is measured via cosine similarity: cos(q,d) = (q\u00b7d) / (||q|| ||d||). The top-k retrieval solves k = argmax_{i\u2208D} cos(f(q), f(d_i)). Approximate algorithms (HNSW, IVF-PQ) build graph or partition-based indices to achieve sub-linear O(log N) query time by trading minimal accuracy.",
+              "supports": "Cosine similarity and ANN/HNSW retrieval"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Embeddings map text to dense vectors for semantic nearness",
+          "supported_by": [
+            "embedding-models-vector-search:4"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Cosine similarity scores query-document relevance",
+          "supported_by": [
+            "embedding-models-vector-search:10"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "ANN indexes such as HNSW enable scalable search",
+          "supported_by": [
+            "embedding-models-vector-search:10"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "medium",
+      "query_bucket": "medium",
+      "split": "development/diagnostic",
+      "v1_index": 19,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required dense representation phrasing not literal in spans.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q21",
+      "query": "my neural net is deep but gradients become tiny \u2014 which algorithm computes them and how do I avoid this?",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "backpropagation",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "backpropagation:4",
+              "heading": "Definition",
+              "line_start": 4,
+              "line_end": 4,
+              "quote": "Backpropagation is an algorithm that computes the gradient of a scalar loss function with respect to all parameters of a differentiable computational graph by applying the chain rule recursively from output to input. It enables efficient gradient-based learning in neural networks.",
+              "supports": "Backpropagation computes loss gradients via chain rule"
+            },
+            {
+              "span_id": "backpropagation:76-77",
+              "heading": "Claim-Dense Reference Facts",
+              "line_start": 76,
+              "line_end": 77,
+              "quote": "- Vanishing gradients occur when |\u2202L/\u2202W^(l)| < 1 repeatedly across layers, exponentially shrinking updates.\n- ReLU mitigates vanishing gradients by having gradient 1 for positive inputs vs sigmoid's maximum of 0.25.",
+              "supports": "Vanishing gradients; ReLU mitigation"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Backpropagation is the algorithm that computes gradients in deep nets",
+          "supported_by": [
+            "backpropagation:4"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Vanishing gradients plague deep networks",
+          "supported_by": [
+            "backpropagation:76-77"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "ReLU activations help avoid vanishing gradients",
+          "supported_by": [
+            "backpropagation:76-77"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 20,
+      "v1_label_verdict": "WRONG",
+      "adjudication_note": "v1 wrongly lists gradient-descent as expected source; gradient descent consumes gradients but backpropagation computes them.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q22",
+      "query": "tree ensemble that uses gradient and hessian and can handle missing values automatically",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "xgboost",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "xgboost:14-16",
+              "heading": "Mathematical Formulation",
+              "line_start": 14,
+              "line_end": 16,
+              "quote": "L is approximated via second-order Taylor expansion around y_hat^(t-1):\n\nL(y_i, y_hat^(t-1) + f_t(x_i)) \u2248 L(y_i, y_hat^(t-1)) + g_i f_t(x_i) + 0.5 h_i [f_t(x_i)]^2",
+              "supports": "Second-order Taylor using gradient and hessian"
+            },
+            {
+              "span_id": "xgboost:35",
+              "heading": "Assumptions",
+              "line_start": 35,
+              "line_end": 35,
+              "quote": "",
+              "supports": "Native missing value handling via default direction"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Uses gradient and hessian second-order approximation",
+          "supported_by": [
+            "xgboost:14-16"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Handles missing values with learned default split direction",
+          "supported_by": [
+            "xgboost:35"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Sparsity-aware split finding (v1 concept)",
+          "supported_by": [
+            "xgboost:14-16"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 21,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "Adversarial XGBoost description; v1 source correct but sparsity-aware detail not in grade-2 spans.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q23",
+      "query": "I want to classify text with many features but features are not independent \u2014 is there a fast probabilistic model that still works well?",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "naive-bayes",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "naive-bayes:22-25",
+              "heading": "Key Properties",
+              "line_start": 22,
+              "line_end": 25,
+              "quote": "Training and prediction are extremely fast (linear in number of features, instances, and classes). The naive independence assumption biases probability estimates but often preserves the ranking of classes, yielding a correct maximum a posteriori decision even with feature correlations. Handles high-dimensional data and small samples robustly. Interpretable: per-feature class-conditional parameters give direct insight. Smoothing guarantees non-zero likelihoods. No hyperparameter tuning beyond smoothing \u03b1 in basic form.\n\n## Failure Modes\nSevere violation of conditional independence (e.g., highly redundant features) can inflate confidence and degrade probability calibration while possibly keeping classification accurate. Continuous features that are multimodal or heavy-tailed violate the Gaussian assumption, harming performance. Strongly overlapping classes with similar feature means yield poor separation. Zero-frequency problem without smoothing yields undefined predictions. Cannot model feature interactions directly.",
+              "supports": "Independence violation may preserve classification despite correlation"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Naive Bayes assumes conditional independence of features",
+          "supported_by": [
+            "naive-bayes:22-25"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Works for text/spam despite correlated features",
+          "supported_by": [
+            "naive-bayes:22-25"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Multinomial variant for count features",
+          "supported_by": [
+            "naive-bayes:22-25"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 22,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required multinomial/spam filtering concepts not bound to grade-2 spans.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q24",
+      "query": "what happens to the decision boundary when you increase k in k-NN from 1 to a large number?",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "k-nearest-neighbors",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "k-nearest-neighbors:7",
+              "heading": "Intuition",
+              "line_start": 7,
+              "line_end": 7,
+              "quote": "Predict the label of a new point by looking at the labels of its nearest neighbors. Nearness in feature space implies similarity. The hyperparameter k controls the locality of the decision: a small k captures fine details but is sensitive to noise, while a large k averages over a wider region, producing a smoother boundary. The underlying assumption is that the target function is locally smooth.",
+              "supports": "Small k captures fine detail; large k smooths boundary"
+            },
+            {
+              "span_id": "k-nearest-neighbors:23",
+              "heading": "Key Properties",
+              "line_start": 23,
+              "line_end": 23,
+              "quote": "Non-parametric: no functional form is imposed. Lazy learning: training is merely storing the dataset. The decision boundary is a Voronoi tessellation (for k=1) or a smoothed version. As training size n \u2192 \u221e with k \u2192 \u221e and k/n \u2192 0, the risk converges to the Bayes risk (consistent, under certain conditions). Query time complexity is O(nd) for brute-force; memory footprint is O(nd). Suffers from the curse of dimensionality: data sparsity makes local neighborhoods nearly empty in high dimensions.",
+              "supports": "k=1 Voronoi tessellation; larger k smoothed boundary"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Increasing k smooths decision boundary (bias-variance tradeoff)",
+          "supported_by": [
+            "k-nearest-neighbors:7"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "k=1 yields Voronoi decision regions",
+          "supported_by": [
+            "k-nearest-neighbors:23"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Majority vote over wider neighborhood at large k",
+          "supported_by": [
+            "k-nearest-neighbors:7"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 23,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 concepts present but v1 did not encode bias-variance obligation explicitly.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q25",
+      "query": "compare the objective functions of ridge regression and support vector regression \u2014 how do they penalize coefficients differently?",
+      "answerability": "PARTIAL",
+      "relevant_sources": [
+        {
+          "source": "ridge-lasso-elasticnet",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "ridge-lasso-elasticnet:11-11",
+              "heading": "Mathematical Formulation",
+              "line_start": 11,
+              "line_end": 11,
+              "quote": "- Ridge: \u03a3(y\u1d62 \u2212 x\u1d62\u00b7\u03b2)\u00b2 + \u03b1 \u03a3\u2c7c \u03b2\u2c7c\u00b2",
+              "supports": "Ridge L2 squared penalty on coefficients"
+            }
+          ]
+        },
+        {
+          "source": "support-vector-machines",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "support-vector-machines:14-14",
+              "heading": "Mathematical Formulation",
+              "line_start": 14,
+              "line_end": 14,
+              "quote": "For regression (SVR), an \u03b5-insensitive loss is used: minimize (1/2)\u2016w\u2016\u00b2 + C \u03a3 (\u03be_i + \u03be_i^*), with constraints y_i \u2212 w\u00b7\u03c6(x_i) \u2212 b \u2264 \u03b5 + \u03be_i, etc.",
+              "supports": "SVR epsilon-insensitive loss with slack variables"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Ridge objective adds L2 penalty on coefficients",
+          "supported_by": [
+            "ridge-lasso-elasticnet:11"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "SVR uses epsilon-insensitive loss with slack penalties",
+          "supported_by": [
+            "support-vector-machines:14"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Direct comparison of coefficient penalization across ridge vs SVR objectives",
+          "supported_by": [
+            "ridge-lasso-elasticnet:11",
+            "support-vector-machines:14"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 24,
+      "v1_label_verdict": "AMBIGUOUS",
+      "adjudication_note": "Multi-hop comparison underspecified; no single span compares ridge L2 vs SVR epsilon losses. Diagnostic only.",
+      "gating_eligible": false
+    },
+    {
+      "query_id": "Q26",
+      "query": "I need to build a chatbot that can look up company documents, but also remember conversation state and loop to ask follow-up questions. Which two frameworks should I combine?",
+      "answerability": "PARTIAL",
+      "relevant_sources": [
+        {
+          "source": "retrieval-augmented-generation",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "retrieval-augmented-generation:4-4",
+              "heading": "Definition",
+              "line_start": 4,
+              "line_end": 4,
+              "quote": "Retrieval Augmented Generation (RAG) is a framework that combines a pre-trained parametric memory (a sequence-to-sequence generator) with a non-parametric memory (a dense vector index of documents) via a neural retriever. At inference time, relevant documents are fetched from the index and provided as additional context for generation, enabling factual grounding and access to external knowledge without enlarging model parameters.",
+              "supports": "RAG retrieves documents for grounded generation"
+            }
+          ]
+        },
+        {
+          "source": "langgraph-state-machines",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "langgraph-state-machines:7-7",
+              "heading": "Intuition",
+              "line_start": 7,
+              "line_end": 7,
+              "quote": "Many AI agent tasks require branching, looping, and tool use\u2014patterns that simple chain-of-calls cannot express. LangGraph represents these workflows as a state machine, where each node modifies a persistent state and conditional edges determine the next step. This provides the flexibility of a general program while remaining inspectable and resumable.",
+              "supports": "LangGraph models cyclic stateful agent workflows"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "RAG provides document lookup / non-parametric memory",
+          "supported_by": [
+            "retrieval-augmented-generation:4"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "LangGraph supports conversational state and looping workflows",
+          "supported_by": [
+            "langgraph-state-machines:7"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Authoritative pairing of exactly two named frameworks",
+          "supported_by": [
+            "retrieval-augmented-generation:4",
+            "langgraph-state-machines:7"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 25,
+      "v1_label_verdict": "AMBIGUOUS",
+      "adjudication_note": "Multiple valid framework combinations exist; v1 expected_sources reasonable but query is not uniquely gateable.",
+      "gating_eligible": false
+    },
+    {
+      "query_id": "Q27",
+      "query": "how does CatBoost's ordered target encoding prevent leakage compared to regular target encoding?",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "catboost",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "catboost:12-14",
+              "heading": "Mathematical Formulation",
+              "line_start": 12,
+              "line_end": 14,
+              "quote": "For categorical feature k with value v, the ordered target statistic is:\nTS_{v} = (sum_{i in D_k, before j} y_i + a * p) / (count_{i in D_k, before j} + a)\nwhere j is the index in a random permutation, D_k is the set of objects with that category, \u201cbefore j\u201d restricts to preceding objects in the permutation, a is a smoothing strength, and p is the global average target. This ensures that the target for object j is encoded only using data preceding it.",
+              "supports": "Ordered target statistic uses permutation prefix only"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Ordered TS encodes each object using only prior objects in permutation",
+          "supported_by": [
+            "catboost:12-14"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Prevents target leakage from future labels",
+          "supported_by": [
+            "catboost:12-14"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Smoothing parameter a and prior p in formula",
+          "supported_by": [
+            "catboost:12-14"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Contrast with unordered target encoding baseline",
+          "supported_by": [
+            "catboost:12-14"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 26,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "Deep CatBoost question; v1 concepts present but regular target encoding comparison absent.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q28",
+      "query": "In the ReAct pattern, what is the risk if the model hallucinates an observation instead of executing a tool?",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "react-agent-pattern",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "react-agent-pattern:32-32",
+              "heading": "Failure Modes",
+              "line_start": 32,
+              "line_end": 32,
+              "quote": "- **Fabricated observations**: Model may hallucinate the outcome of an action instead of waiting for the real observation.",
+              "supports": "Fabricated observations when model hallucinates tool results"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Model may hallucinate observation instead of executing tool",
+          "supported_by": [
+            "react-agent-pattern:32"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Breaks grounding loop and propagates false evidence",
+          "supported_by": [
+            "react-agent-pattern:32"
+          ],
+          "status": "supported"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 27,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "v1 required action parsing failure mode not bound separately.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q29",
+      "query": "design a production prompt for sentiment analysis that includes JSON output, version control, and injection protection \u2014 what are the key engineering practices?",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "prompt-engineering-production",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "prompt-engineering-production:29-30",
+              "heading": "Failure Modes",
+              "line_start": 29,
+              "line_end": 30,
+              "quote": "## Failure Modes\n- **Prompt injection**: Unvalidated user input overwrites instructions or leaks system prompts.",
+              "supports": "Prompt injection from unvalidated user input"
+            },
+            {
+              "span_id": "prompt-engineering-production:52-58",
+              "heading": "Minimal Example (Python)",
+              "line_start": 52,
+              "line_end": 58,
+              "quote": "import json\nprompt_template = \"\"\"Classify sentiment: {text}\\nReturn JSON: {{\"label\": \"positive\"|\"negative\"}}\"\"\"\ndef evaluate(text):\n    prompt = prompt_template.format(text=text)\n    # mock model call\n    response = '{\"label\": \"positive\"}'\n    return json.loads(response)[\"label\"]",
+              "supports": "JSON output template example with structured return"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Sanitize untrusted template inputs against injection",
+          "supported_by": [
+            "prompt-engineering-production:29-30"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Structured JSON output format in prompts",
+          "supported_by": [
+            "prompt-engineering-production:52-58"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Version control and CI/CD for prompts",
+          "supported_by": [
+            "prompt-engineering-production:52-58"
+          ],
+          "status": "missing"
+        },
+        {
+          "description": "Schema validation of model JSON output",
+          "supported_by": [
+            "prompt-engineering-production:52-58"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 28,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "Scenario bundles multiple engineering practices; v1 concepts span beyond bound grade-2 evidence.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q30",
+      "query": "when would you choose a linear model over a random forest even if the random forest has higher accuracy?",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "linear-logistic-regression",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "linear-logistic-regression:30",
+              "heading": "When to Use / Not Use",
+              "line_start": 30,
+              "line_end": 30,
+              "quote": "Use linear regression for continuous unbounded outcomes when the mean is linear in predictors and coefficient interpretation is important. Avoid for proportions, counts, or binary data.  ",
+              "supports": "Choose linear models when coefficient interpretation matters"
+            }
+          ]
+        },
+        {
+          "source": "random-forest",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "random-forest:32",
+              "heading": "When to Use / Not Use",
+              "line_start": 32,
+              "line_end": 32,
+              "quote": "Use as a strong general-purpose classifier/regressor, especially with tabular data, many features, and little domain knowledge to design parametric models. Good for feature selection via importance scores. Not use when interpretability of the model is paramount, when inference on coefficients is required, or when the data is highly structured in a way better suited to deep learning (e.g., images, sequences) with ample samples.",
+              "supports": "Avoid RF when interpretability or coefficient inference required"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Linear models preferred when interpretable coefficients needed",
+          "supported_by": [
+            "linear-logistic-regression:30"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Random forests less interpretable than linear models",
+          "supported_by": [
+            "random-forest:32"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Explicit tradeoff accepting lower accuracy for interpretability",
+          "supported_by": [
+            "linear-logistic-regression:30"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "hard",
+      "query_bucket": "hard",
+      "split": "development/diagnostic",
+      "v1_index": 29,
+      "v1_label_verdict": "INCOMPLETE",
+      "adjudication_note": "Corpus supports interpretability rationale but not accuracy-sacrifice framing in v1 wording.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q31",
+      "query": "what is the BERT architecture and how does masking work?",
+      "answerability": "PARTIAL",
+      "relevant_sources": [
+        {
+          "source": "attention-transformers",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "attention-transformers:26",
+              "heading": "Estimation",
+              "line_start": 26,
+              "line_end": 26,
+              "quote": "Transformers are trained end-to-end with backpropagation. Loss functions are task-specific: cross-entropy for language modeling or sequence-to-sequence tasks. Optimization often uses Adam with warm-up and gradient clipping. Autoregressive decoders apply causal masking to prevent attending to future tokens. Large-scale pre-training (BERT, GPT) uses self-supervised objectives, then fine-tuning on downstream tasks.",
+              "supports": "BERT mentioned as encoder-only pre-training example"
+            },
+            {
+              "span_id": "attention-transformers:55",
+              "heading": "Variants / Extensions",
+              "line_start": 55,
+              "line_end": 55,
+              "quote": "- **Encoder-only** (BERT), **decoder-only** (GPT), **encoder-decoder** (T5).",
+              "supports": "Encoder-only (BERT) variant listed"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "BERT exists as encoder-only Transformer variant",
+          "supported_by": [
+            "attention-transformers:55"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "BERT architecture details (layers, hidden size)",
+          "supported_by": [
+            "attention-transformers:55"
+          ],
+          "status": "missing"
+        },
+        {
+          "description": "Masked language modeling mechanism",
+          "supported_by": [
+            "attention-transformers:55"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "out-of-scope",
+      "query_bucket": "former-oos",
+      "split": "development/diagnostic",
+      "v1_index": 30,
+      "v1_label_verdict": "WRONG",
+      "adjudication_note": "v1 labeled OOS/absent; corpus has partial mentions only. Not genuinely absent.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q32",
+      "query": "explain convolutional neural networks and pooling layers",
+      "answerability": "PARTIAL",
+      "relevant_sources": [
+        {
+          "source": "feedforward-neural-networks",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "feedforward-neural-networks:56-56",
+              "heading": "Variants / Extensions",
+              "line_start": 56,
+              "line_end": 56,
+              "quote": "- **Convolutional neural networks (CNNs)**: Replace matrix multiplication with convolution for spatial invariance.",
+              "supports": "CNN variant replaces matrix multiply with convolution"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "CNNs listed as spatial extension of feedforward nets",
+          "supported_by": [
+            "feedforward-neural-networks:56"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Convolution operation mechanics",
+          "supported_by": [
+            "feedforward-neural-networks:56"
+          ],
+          "status": "missing"
+        },
+        {
+          "description": "Pooling layer behavior",
+          "supported_by": [
+            "feedforward-neural-networks:56"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "out-of-scope",
+      "query_bucket": "former-oos",
+      "split": "development/diagnostic",
+      "v1_index": 31,
+      "v1_label_verdict": "WRONG",
+      "adjudication_note": "v1 labeled OOS; corpus mentions CNNs without convolution/pooling mechanism.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q33",
+      "query": "how does batch normalization stabilize training?",
+      "answerability": "PARTIAL",
+      "relevant_sources": [
+        {
+          "source": "feedforward-neural-networks",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "feedforward-neural-networks:44-44",
+              "heading": "Failure Modes",
+              "line_start": 44,
+              "line_end": 44,
+              "quote": "- **Vanishing/exploding gradients**: In deep networks, gradients may become extremely small or large, impeding training (mitigated by ReLU, batch normalization, skip connections).",
+              "supports": "Batch normalization listed as deep-network training mitigation"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Batch normalization referenced as training stabilizer",
+          "supported_by": [
+            "feedforward-neural-networks:44"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Mechanism by which batch norm stabilizes training",
+          "supported_by": [
+            "feedforward-neural-networks:44"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "out-of-scope",
+      "query_bucket": "former-oos",
+      "split": "development/diagnostic",
+      "v1_index": 32,
+      "v1_label_verdict": "WRONG",
+      "adjudication_note": "v1 labeled OOS; feedforward-neural-networks mentions batch norm but no mechanism \u2014 PARTIAL per adjudication spec.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q34",
+      "query": "what is the difference between vanilla RNNs and LSTMs?",
+      "answerability": "PARTIAL",
+      "relevant_sources": [
+        {
+          "source": "feedforward-neural-networks",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "feedforward-neural-networks:52",
+              "heading": "When to Use / Not Use",
+              "line_start": 52,
+              "line_end": 52,
+              "quote": "**Not use**: When data exhibits temporal dynamics (use RNNs, LSTMs), spatial locality (use CNNs), graph structure (use GNNs), or when interpretability is critical. Also not ideal for extremely low-data regimes where simpler models suffice.",
+              "supports": "Use RNNs/LSTMs for temporal dynamics"
+            },
+            {
+              "span_id": "feedforward-neural-networks:57",
+              "heading": "Variants / Extensions",
+              "line_start": 57,
+              "line_end": 57,
+              "quote": "- **Recurrent neural networks (RNNs)**: Add feedback connections for sequences.",
+              "supports": "RNNs add feedback connections for sequences"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "RNNs handle sequential/temporal data unlike feedforward nets",
+          "supported_by": [
+            "feedforward-neural-networks:57"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "LSTM architecture and gating mechanism",
+          "supported_by": [
+            "feedforward-neural-networks:57"
+          ],
+          "status": "missing"
+        },
+        {
+          "description": "Comparison of vanilla RNN vs LSTM strengths",
+          "supported_by": [
+            "feedforward-neural-networks:57"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "out-of-scope",
+      "query_bucket": "former-oos",
+      "split": "development/diagnostic",
+      "v1_index": 33,
+      "v1_label_verdict": "WRONG",
+      "adjudication_note": "v1 labeled OOS; only brief RNN mentions without LSTM comparison.",
+      "gating_eligible": true
+    },
+    {
+      "query_id": "Q35",
+      "query": "explain the Adam optimizer and its hyperparameters",
+      "answerability": "PARTIAL",
+      "relevant_sources": [
+        {
+          "source": "gradient-descent",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "gradient-descent:60",
+              "heading": "Variants / Extensions",
+              "line_start": 60,
+              "line_end": 60,
+              "quote": "- **AdaGrad, RMSProp, Adam**: Adaptive learning rate methods that scale updates per-parameter.",
+              "supports": "Adam listed among adaptive learning-rate variants"
+            },
+            {
+              "span_id": "gradient-descent:78",
+              "heading": "Claim-Dense Reference Facts",
+              "line_start": 78,
+              "line_end": 78,
+              "quote": "- Adam optimizer uses \u03b2\u2081=0.9, \u03b2\u2082=0.999, \u03b5=1e-8 as default hyperparameters in PyTorch.",
+              "supports": "Adam default hyperparameters beta1 beta2 epsilon"
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "Adam is an adaptive learning-rate optimizer extension",
+          "supported_by": [
+            "gradient-descent:60"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Default Adam hyperparameters (beta1, beta2, epsilon)",
+          "supported_by": [
+            "gradient-descent:78"
+          ],
+          "status": "supported"
+        },
+        {
+          "description": "Full Adam update equations and bias correction",
+          "supported_by": [
+            "gradient-descent:78"
+          ],
+          "status": "missing"
+        }
+      ],
+      "difficulty": "out-of-scope",
+      "query_bucket": "former-oos",
+      "split": "development/diagnostic",
+      "v1_index": 34,
+      "v1_label_verdict": "WRONG",
+      "adjudication_note": "v1 labeled OOS; gradient-descent mentions Adam defaults but not full optimizer derivation.",
+      "gating_eligible": true
+    }
+  ]
+}

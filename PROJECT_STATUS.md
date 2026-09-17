@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-16 (Phase 4 live-wiring seal)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-17 (Phase 5 PRE-5A0 retrieval gold v2 freeze)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -333,8 +333,19 @@ priority.
 
 **Phase 5 — retrieval/chunking/evidence exposure** is the next authorized
 engineering direction. Phase 4 is CLOSED; do not reopen without new material
-P0/P1 evidence. A separate Sol architecture audit is in progress and will be
-reviewed before Phase-5 implementation. Do not define Phase-5 architecture here.
+P0/P1 evidence.
+
+**Phase 5 PRE-5A0 — retrieval gold v2 frozen (evaluator correction only).**
+5A0 was previously blocked on invalid v1 retrieval labels (historical OOS
+queries mislabeled ABSENT; `required_concepts` substring authority). Independent
+35-query corpus adjudication completed; v2 diagnostic evaluator artifact frozen at
+`evals/fixtures/retrieval_golden_v2.json` with deterministic validator
+`scripts/retrieval_golden_v2.py`. V1 evaluator (`scripts/retrieval_eval.py`) and
+archived reports preserved unchanged. Baseline A identity sidecar at
+`evals/fixtures/retrieval_baseline_a_identity.json`. V2 has **no untouched
+holdout** and **no genuine ABSENT queries**; absence/holdout evaluation remain
+future authorized work. **Phase 5A0 may now restart** — 5A0 itself is **not**
+complete. No chunking implementation before 5A0 approval.
 
 Historical context on `experiment/hybrid-verifier-status-engine` (Phase 4
 implementation branch):
