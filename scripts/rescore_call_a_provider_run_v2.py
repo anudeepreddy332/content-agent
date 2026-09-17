@@ -9,12 +9,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.call_a_provider_eval_v2 import rescore_live_run_artifact  # noqa: E402
-
-DEFAULT_RUN_ARTIFACT = (
-    REPO_ROOT
-    / "outputs/call_a_provider_qualification/runs/call_a_run_20260915T161944Z_1c1d81ac/run_artifact.json"
+from scripts.call_a_provider_eval_v2 import (  # noqa: E402
+    FROZEN_LIVE_RUN_ARTIFACT,
+    rescore_live_run_artifact,
 )
+
+DEFAULT_RUN_ARTIFACT = FROZEN_LIVE_RUN_ARTIFACT
 EXPECTED_SOURCE_DIGEST = "56873347a00a7473c491cea856de9e7188f6b0af86dbd7841157d33d600dfcf5"
 
 

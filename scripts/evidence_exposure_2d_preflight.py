@@ -1844,8 +1844,12 @@ def execute_cell_once(
     }
 
     try:
-        active_client = client or build_stage2d_client()
-        create = call_hook or active_client.chat.completions.create
+        if call_hook is not None:
+            create = call_hook
+        elif client is not None:
+            create = client.chat.completions.create
+        else:
+            create = build_stage2d_client().chat.completions.create
         response = _invoke_stage2d_provider_create(create, request=request)
         raw = response.choices[0].message.content or ""
         finish_reason = response.choices[0].finish_reason

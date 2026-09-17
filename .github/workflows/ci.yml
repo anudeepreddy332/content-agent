@@ -27,13 +27,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # Full history required: harness identity tests use git merge-base --is-ancestor
+      # against frozen baseline/checkpoint SHAs (default checkout fetch-depth=1 breaks them).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
       - run: uv python install 3.14
       - run: uv sync --dev
       - run: uv run playwright install --with-deps chromium
+      # Warm tiktoken encoding cache before tests that deny socket I/O (qualification runners).
+      - run: uv run python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
       # B2 failure-injection suite + B1 slug tests. Zero network, zero API cost
       # (verified offline 2026-06-13). Imports pull torch via sentence-transformers,
       # so the first uncached sync is the slow step (~3-5 min), not the tests.

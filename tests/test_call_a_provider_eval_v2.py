@@ -10,6 +10,7 @@ import pytest
 from agent.claim_inventory import build_claim_inventory, parse_claim_inventory_rows
 from scripts.call_a_provider_eval_v2 import (
     EXPECTED_ORACLE_SHA256,
+    FROZEN_LIVE_RUN_ARTIFACT,
     evaluate_provider_eval_v2_case,
     load_harness_pack,
     load_oracle,
@@ -18,9 +19,7 @@ from scripts.call_a_provider_eval_v2 import (
 
 HARNESS_PATH = Path("evals/fixtures/claim_inventory_golden_v1.json")
 ORACLE_PATH = Path("evals/fixtures/call_a_provider_eval_gold_v2.json")
-LIVE_ARTIFACT = Path(
-    "outputs/call_a_provider_qualification/runs/call_a_run_20260915T161944Z_1c1d81ac/run_artifact.json"
-)
+LIVE_ARTIFACT = FROZEN_LIVE_RUN_ARTIFACT
 EXPECTED_LIVE_DIGEST = "56873347a00a7473c491cea856de9e7188f6b0af86dbd7841157d33d600dfcf5"
 HARNESS_SHA = "112b15ca3b79e16c38d0d9ba94063d60268a4a120414242115a55c5227dae006"
 

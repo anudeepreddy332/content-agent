@@ -23,6 +23,9 @@ from agent.claim_inventory import (
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ORACLE_PATH = REPO_ROOT / "evals/fixtures/call_a_provider_eval_gold_v2.json"
 HARNESS_PATH = REPO_ROOT / "evals/fixtures/claim_inventory_golden_v1.json"
+FROZEN_LIVE_RUN_ARTIFACT = (
+    REPO_ROOT / "evals/fixtures/call_a_provider_qualification_run_20260915T161944Z_1c1d81ac.json"
+)
 EXPECTED_ORACLE_SHA256 = "4591914638478bd1531da2929b9cff3f8f70e2654f194fbdb1d566f914848314"
 
 MatchRule = Literal[

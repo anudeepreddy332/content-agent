@@ -1786,7 +1786,14 @@ def _render_takeaways(raw: str) -> str:
     return "<ul>\n" + "\n".join(items) + "\n</ul>"
 
 
-def _render_technical_dive_via_llm(topic: str, technical_dive: str, client, run_id: str) -> tuple[str, int, float]:
+def _render_technical_dive_via_llm(
+    topic: str,
+    technical_dive: str,
+    client=None,
+    run_id: str = "",
+) -> tuple[str, int, float]:
+    if client is None:
+        client = _get_client()
     prompt = f"""Convert this technical section into clean HTML for an article about: {topic}
 
 RULES:
@@ -1969,7 +1976,6 @@ def html_gen_node(state: AgentState) -> dict:
                 "approved_html_sha256": None,
                 "latency_ms": existing_latency}
 
-    client = _get_client()
     draft = state.get("draft_sections", {})
     topic = state["topic"]
     run_id = state["run_id"]
@@ -2003,7 +2009,6 @@ def html_gen_node(state: AgentState) -> dict:
         raw_td, td_tokens, td_cost = _render_technical_dive_via_llm(
             topic=topic,
             technical_dive=draft.get("technical_dive", ""),
-            client=client,
             run_id=run_id,
         )
         dive = sanitize_fragment(raw_td)
