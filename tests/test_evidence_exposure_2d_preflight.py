@@ -1,0 +1,944 @@
+"""Deterministic Stage 2D evidence-exposure preflight tests. No providers."""
+from __future__ import annotations
+
+import copy
+import json
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
+
+import httpx
+import pytest
+from openai import APITimeoutError, RateLimitError
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts.evidence_exposure_2d_preflight import (
+    ASSET_IDS,
+    CELL_IDS,
+    HARD_SPEND_CEILING_USD,
+    PAIRED_ASSETS,
+    EvidenceExposure2DError,
+    ExecutionAuthorization2DError,
+    RunExecutionState,
+    SemanticMapping2DError,
+    SemanticValidation2DError,
+    build_all_requests,
+    build_approved_execution_config_hash,
+    build_cell_request,
+    build_frozen_pack,
+    build_stage2d_client,
+    build_stage2d_client_config,
+    build_stage2d_http_client,
+    evaluate_semantic_oracle,
+    execute_cell_once,
+    issue_stage2d_execution_authorization,
+    execute_provider_if_authorized,
+    execute_stage2d_run,
+    enrich_cell_artifact,
+    load_2c_case,
+    load_pack,
+    load_price_schedule,
+    map_provider_to_semantic_fixture,
+    preflight_budget,
+    provider_execution_authorized,
+    run_preflight,
+    score_mocked_provider_output,
+    score_run_results,
+    shadow_runtime_acceptance,
+    sha256_text,
+    validate_cell_request_artifact,
+    validate_execution_preflight,
+    validate_frozen_prediction_references,
+    validate_pack,
+    validate_run_cell_catalog,
+    verify_paired_isolation,
+    MAX_OUTPUT_TOKENS,
+)
+
+
+def _report() -> dict:
+    return run_preflight(load_pack())
+
+
+def _verdict(claim: str, status: str, *, source_url: str | None = "https://example.test/src") -> dict:
+    return {
+        "claim": claim,
+        "source_url": source_url,
+        "confidence": 0.9,
+        "status": status,
+        "specificity": "substantive",
+    }
+
+
+def _mock_response(raw: str, *, model: str = "deepseek-chat", response_id: str = "resp-1"):
+    return SimpleNamespace(
+        id=response_id,
+        model=model,
+        choices=[SimpleNamespace(message=SimpleNamespace(content=raw), finish_reason="stop")],
+        usage=SimpleNamespace(prompt_tokens=100, completion_tokens=50, total_tokens=150),
+    )
+
+
+def _scored_cell(pack: dict, cell_id: str, *, status: str = "unverified") -> dict:
+    request = build_cell_request(pack, cell_id)
+    asset = next(item for item in pack["assets"] if item["asset_id"] == request["asset_id"])
+    claims = [
+        _verdict(candidate["text"], status)
+        for candidate in asset["semantic_fixture"]["candidates"]
+    ]
+    raw = json.dumps(claims)
+    scored = score_mocked_provider_output(pack, cell_id=cell_id, raw_provider_response=raw)
+    return {"cell_id": cell_id, "asset_id": request["asset_id"], **scored}
+
+
+def _full_ten_cell_results(pack: dict, *, status: str = "unverified") -> list[dict]:
+    return [_scored_cell(pack, cell_id, status=status) for cell_id in CELL_IDS]
+
+
+def _issue_auth(pack: dict, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    return issue_stage2d_execution_authorization(pack)
+
+
+def _authorized_request(pack: dict, cell_id: str, auth) -> dict:
+    request = build_cell_request(pack, cell_id)
+    request["approved_execution_config_hash"] = auth.approved_execution_config_hash
+    return request
+
+
+def test_exact_seven_assets_and_ten_cells():
+    pack = load_pack()
+    assert len(pack["assets"]) == 7
+    assert [asset["asset_id"] for asset in pack["assets"]] == list(ASSET_IDS)
+    cell_ids: list[str] = []
+    for asset in pack["assets"]:
+        cell_ids.extend(cell["cell_id"] for cell in asset["cells"])
+    assert cell_ids == list(CELL_IDS)
+    assert len(cell_ids) == 10
+
+
+def test_paired_arm_membership():
+    pack = load_pack()
+    for asset_id in PAIRED_ASSETS:
+        asset = next(item for item in pack["assets"] if item["asset_id"] == asset_id)
+        arms = {cell["exposure_arm"] for cell in asset["cells"]}
+        assert arms == {"prefix", "complete"}
+        assert len(asset["cells"]) == 2
+    single_assets = [aid for aid in ASSET_IDS if aid not in PAIRED_ASSETS]
+    for asset_id in single_assets:
+        asset = next(item for item in pack["assets"] if item["asset_id"] == asset_id)
+        assert len(asset["cells"]) == 1
+        assert asset["cells"][0]["exposure_arm"] == "complete"
+
+
+def test_fixed_draft_and_source_identity():
+    pack = load_pack()
+    built = build_frozen_pack()
+    for live, frozen in zip(pack["assets"], built["assets"], strict=True):
+        assert live["asset_id"] == frozen["asset_id"]
+        assert live["draft_sha256"] == frozen["draft_sha256"]
+        assert live["source"]["source_sha256"] == frozen["source"]["source_sha256"]
+        assert live["draft_text"] == frozen["draft_text"]
+        assert live["source"]["source_text"] == frozen["source"]["source_text"]
+
+
+def test_duplicate_stage_2d_identities_reject():
+    pack = load_pack()
+    dup_cell = copy.deepcopy(pack)
+    dup_cell["assets"][0]["cells"].append(copy.deepcopy(dup_cell["assets"][0]["cells"][0]))
+    with pytest.raises(EvidenceExposure2DError, match="duplicate cell id"):
+        validate_pack(dup_cell)
+
+    dup_asset = copy.deepcopy(pack)
+    dup_asset["assets"][1]["asset_id"] = dup_asset["assets"][0]["asset_id"]
+    with pytest.raises(EvidenceExposure2DError, match="duplicate asset id"):
+        validate_pack(dup_asset)
+
+    dup_sem = copy.deepcopy(pack)
+    dup_sem["assets"][1]["semantic_fixture"]["gold_atoms"].append(
+        copy.deepcopy(dup_sem["assets"][1]["semantic_fixture"]["gold_atoms"][0])
+    )
+    with pytest.raises(EvidenceExposure2DError, match="duplicate semantic identity"):
+        validate_pack(dup_sem)
+
+
+def test_paired_cells_differ_only_in_exposure():
+    paired = verify_paired_isolation(load_pack())
+    for asset_id in PAIRED_ASSETS:
+        assert paired[asset_id]["isolated"] is True
+
+
+def test_paired_isolation_violation_blocks_preflight_ready():
+    pack = load_pack()
+    original_build = build_cell_request
+
+    def broken_build(current_pack: dict, cell_id: str) -> dict:
+        request = original_build(current_pack, cell_id)
+        if cell_id == "P1-COMPLETE":
+            request = dict(request)
+            request["draft_sha256"] = "0" * 64
+        return request
+
+    with patch("scripts.evidence_exposure_2d_preflight.build_cell_request", side_effect=broken_build):
+        report = run_preflight(pack)
+    assert report["paired_isolation"]["P1"]["isolated"] is False
+    assert report["paired_isolation_ok"] is False
+    assert report["preflight_ready"] is False
+
+
+def test_complete_source_context_contains_required_evidence():
+    pack = load_pack()
+    for cell_id in CELL_IDS:
+        if not cell_id.endswith("COMPLETE"):
+            continue
+        request = build_cell_request(pack, cell_id)
+        asset = next(item for item in pack["assets"] if item["asset_id"] == request["asset_id"])
+        source_text = asset["source"]["source_text"]
+        if asset["asset_id"] == "P1":
+            w02 = load_2c_case("E2C-W02")
+            span = w02["requirements"][0]["truth_spans"][0]
+            evidence = w02["source_text"][span[0] : span[1]]
+            assert evidence in request["exposed_verifier_context"]
+            assert evidence in source_text
+        elif asset["asset_id"] == "P6":
+            w03 = load_2c_case("E2C-W03")
+            spans = w03["requirements"][0]["truth_spans"]
+            for span in spans:
+                evidence = w03["source_text"][span[0] : span[1]]
+                assert evidence in request["exposed_verifier_context"]
+        elif asset["asset_id"] == "P7":
+            k03 = load_2c_case("E2C-K03")
+            span = k03["requirements"][0]["truth_spans"][0]
+            evidence = k03["source_text"][span[0] : span[1]]
+            assert evidence in request["exposed_verifier_context"]
+
+
+def test_prefix_context_reproduces_known_p1_p6_p7_exposure_loss():
+    pack = load_pack()
+    mappings = {
+        "P1-PREFIX": "E2C-W02",
+        "P6-PREFIX": "E2C-W03",
+        "P7-PREFIX": "E2C-K03",
+    }
+    for cell_id, case_id in mappings.items():
+        request = build_cell_request(pack, cell_id)
+        case = load_2c_case(case_id)
+        requirement = case["requirements"][0]
+        for span in requirement["truth_spans"]:
+            evidence = case["source_text"][span[0] : span[1]]
+            if len(requirement["truth_spans"]) == 1:
+                assert evidence not in request["exposed_verifier_context"]
+            elif span == requirement["truth_spans"][0]:
+                assert evidence in request["exposed_verifier_context"]
+            else:
+                assert evidence not in request["exposed_verifier_context"]
+
+
+def test_frozen_semantic_expected_dispositions():
+    pack = load_pack()
+    expected_pass = {"P1": True, "P4": True}
+    expected_fail = {"P2", "P3", "P5", "P6", "P7"}
+    checks = _report()["semantic_template_checks"]
+    for asset_id, should_pass in expected_pass.items():
+        assert checks[asset_id]["semantic_pass"] is should_pass
+    for asset_id in expected_fail:
+        assert checks[asset_id]["semantic_pass"] is False
+    for asset in pack["assets"]:
+        for cell_id, expected in asset["expected_corrected_semantic_pass"].items():
+            if cell_id.endswith("COMPLETE") and asset["asset_id"] in expected_pass:
+                assert expected is True
+            if asset["asset_id"] in expected_fail:
+                assert asset["expected_corrected_semantic_pass"][cell_id] is False
+
+
+def test_zero_tolerance_gate_definitions():
+    pack = load_pack()
+    gates = pack["zero_tolerance_gates"]
+    assert gates["material_false_verification_rate.v2_numerator"] == 0
+    assert gates["automatic_semantic_false_pass_rate.v2_numerator"] == 0
+
+
+def test_shadow_runtime_adapter_is_read_only():
+    high_uvr = [{"status": "unverified"} for _ in range(10)]
+    low_uvr = [{"status": "verified"} for _ in range(10)]
+    rejected = shadow_runtime_acceptance(high_uvr)
+    accepted = shadow_runtime_acceptance(low_uvr)
+    assert rejected["accepted"] is False
+    assert accepted["accepted"] is True
+    assert rejected["uvr"] == pytest.approx(1.0)
+    assert accepted["uvr"] == pytest.approx(0.0)
+
+
+def test_no_provider_call_under_default_execution():
+    assert provider_execution_authorized() is False
+    with pytest.raises(EvidenceExposure2DError, match="provider execution disabled"):
+        execute_provider_if_authorized(load_pack(), "P1-COMPLETE")
+
+
+def test_no_retry_configuration():
+    pack = load_pack()
+    assert pack["max_attempts_per_cell"] == 1
+    assert pack["provider_retries_disabled"] is True
+    request = build_cell_request(pack, "P1-COMPLETE")
+    assert request["max_attempts"] == 1
+    assert request["provider_retries_disabled"] is True
+    config = build_stage2d_client_config()
+    assert config["max_retries"] == 0
+
+
+def test_authorization_flag_false_blocks_execution(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "0")
+    assert provider_execution_authorized() is False
+    with pytest.raises(EvidenceExposure2DError, match="provider execution disabled"):
+        execute_provider_if_authorized(load_pack(), "P1-COMPLETE")
+
+
+def test_stage2d_client_config_retries_disabled():
+    config = build_stage2d_client_config()
+    assert config["max_retries"] == 0
+    assert config["follow_redirects"] is False
+    assert config["uses_production_llm_call"] is False
+    assert config["uses_tenacity_retry_wrapper"] is False
+
+
+def test_stage2d_client_uses_zero_retries():
+    with patch("scripts.evidence_exposure_2d_preflight.OpenAI") as mock_openai:
+        build_stage2d_client(api_key="test-key")
+        kwargs = mock_openai.call_args.kwargs
+        assert kwargs["max_retries"] == 0
+        assert kwargs["http_client"].follow_redirects is False
+
+
+def test_stage2d_http_client_disables_redirects():
+    client = build_stage2d_http_client()
+    try:
+        assert client.follow_redirects is False
+    finally:
+        client.close()
+
+
+def test_execute_cell_once_blocks_without_execution_authorization():
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    call_hook = MagicMock()
+    with pytest.raises(ExecutionAuthorization2DError, match="execution authorization"):
+        execute_cell_once(pack, request, call_hook=call_hook)
+    call_hook.assert_not_called()
+
+
+def test_execute_cell_once_never_uses_production_llm_call(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    call_hook = MagicMock(return_value=_mock_response(raw))
+    with patch("agent.nodes._llm_call") as mock_llm_call:
+        result = execute_cell_once(
+            pack,
+            request,
+            call_hook=call_hook,
+            execution_auth=auth,
+        )
+    mock_llm_call.assert_not_called()
+    assert call_hook.call_count == 1
+    assert result["disposition"] == "PASS"
+
+
+def test_timeout_marks_cell_invalid_without_second_call(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    call_hook = MagicMock(side_effect=APITimeoutError("timeout"))
+    result = execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_timeout"
+    assert call_hook.call_count == 1
+
+
+def test_transport_failure_marks_cell_invalid_without_second_call(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    call_hook = MagicMock(side_effect=RateLimitError("rate limited", response=MagicMock(), body=None))
+    result = execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_api_error"
+    assert call_hook.call_count == 1
+
+
+def test_malformed_provider_json_marks_cell_invalid(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    call_hook = MagicMock(return_value=_mock_response("not json"))
+    result = execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_parse_error"
+    assert call_hook.call_count == 1
+
+
+def test_returned_model_identity_drift_marks_cell_invalid(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    state = RunExecutionState()
+    state.frozen_returned_model_identity = "deepseek-chat"
+    call_hook = MagicMock(return_value=_mock_response(raw, model="deepseek-chat-v2"))
+    result = execute_cell_once(
+        pack,
+        request,
+        call_hook=call_hook,
+        run_state=state,
+        execution_auth=auth,
+    )
+    assert result["disposition"] == "INVALID"
+    assert "model identity drift" in result["invalid_reason"]
+
+
+def test_live_provider_adapter_uses_validated_semantic_evaluator():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P6")
+    grounding = [_verdict(asset["draft_text"], "verified")]
+    fixture = map_provider_to_semantic_fixture(asset, grounding)
+    from scripts.evidence_exposure_2d_preflight import evaluate_semantic_oracle
+
+    result = evaluate_semantic_oracle(fixture)
+    assert result["oracle"]["semantic_pass"] is False
+    assert result["metrics"]["material_false_verification_rate.v2"]["numerator"] == 1
+
+
+def test_stale_exposed_context_hash_rejects():
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    request["exposed_context_sha256"] = "0" * 64
+    with pytest.raises(EvidenceExposure2DError, match="stale or mismatched exposed-context hash"):
+        validate_cell_request_artifact(pack, request)
+
+
+def test_budget_preflight_requires_both_estimates_under_ceiling():
+    budget = preflight_budget(load_pack(), ceiling_usd=HARD_SPEND_CEILING_USD)
+    assert budget["hard_ceiling_usd"] == 0.08
+    assert budget["budget_authorized"] is True
+    assert budget["estimated_budget_authorized"] is True
+    assert budget["char_bound_budget_authorized"] is True
+    assert budget["estimated_max_spend_usd"] <= HARD_SPEND_CEILING_USD
+    assert budget["char_bound_max_spend_usd"] <= HARD_SPEND_CEILING_USD
+    assert len(budget["cell_estimates"]) == 10
+    assert all("input_characters" in item for item in budget["cell_estimates"])
+
+
+def test_budget_preflight_refuses_oversized_pack():
+    budget = preflight_budget(load_pack(), ceiling_usd=0.000001)
+    assert budget["budget_authorized"] is False
+
+
+def test_deterministic_request_construction():
+    pack = load_pack()
+    first = build_all_requests(pack)
+    second = build_all_requests(pack)
+    assert [item["cell_id"] for item in first] == list(CELL_IDS)
+    assert first == second
+    for request in first:
+        assert request["exposed_context_sha256"] == sha256_text(request["exposed_verifier_context"])
+        assert request["draft_sha256"] == sha256_text(request["draft_text"])
+        assert len(request["messages"]) == 2
+        assert request["messages"][0]["role"] == "system"
+        assert request["messages"][1]["role"] == "user"
+
+
+def test_no_secrets_serialized_in_requests():
+    pack = load_pack()
+    blob = json.dumps(build_all_requests(pack))
+    for token in ("API_KEY", "Bearer ", "sk-", "DEEPSEEK_API_KEY", "TAVILY"):
+        assert token not in blob
+
+
+def test_preflight_report_ready_without_provider():
+    report = _report()
+    assert report["cell_count"] == 10
+    assert report["asset_count"] == 7
+    assert report["provider_execution_default_disabled"] is True
+    assert report["paired_isolation_ok"] is True
+    assert report["preflight_ready"] is True
+
+
+def test_post_response_scorer_zero_tolerance_fails_unsafe_cell():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P6")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    scored = score_mocked_provider_output(pack, cell_id="P6-COMPLETE", raw_provider_response=raw)
+    assert scored["disposition"] == "FAIL"
+    assert "material_false_verification" in scored["qualification_fail_reasons"]
+
+    run = score_run_results(pack, [{"cell_id": "P6-COMPLETE", "asset_id": "P6", **scored}])
+    assert run["overall_disposition"] == "INVALID"
+    assert run["catalog"]["cell_count"] == 1
+
+
+def test_post_response_scorer_passes_expected_p1_complete():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    scored = score_mocked_provider_output(pack, cell_id="P1-COMPLETE", raw_provider_response=raw)
+    assert scored["disposition"] == "PASS"
+
+
+def test_p6_prefix_unsafe_verified_promotion_fails_qualification():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P6")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    scored = score_mocked_provider_output(pack, cell_id="P6-PREFIX", raw_provider_response=raw)
+    assert scored["disposition"] == "FAIL"
+    assert "high_risk_prefix_unsafe_outcome" in scored["qualification_fail_reasons"]
+
+
+def test_cli_preflight_does_not_call_provider():
+    pack = load_pack()
+    with patch("scripts.evidence_exposure_2d_preflight.build_stage2d_client") as mock_client:
+        report = run_preflight(pack)
+        mock_client.assert_not_called()
+    assert report["preflight_ready"] is True
+
+
+def test_score_run_ten_valid_cells_proceeds_to_qualification():
+    pack = load_pack()
+    results = _full_ten_cell_results(pack)
+    run = score_run_results(pack, results)
+    assert run["catalog"]["catalog_valid"] is True
+    assert run["overall_disposition"] in {"PASS", "FAIL"}
+
+
+def test_score_run_nine_cells_invalid():
+    pack = load_pack()
+    results = _full_ten_cell_results(pack)[:9]
+    run = score_run_results(pack, results)
+    assert run["overall_disposition"] == "INVALID"
+    assert "P7-COMPLETE" in run["catalog"]["missing_cells"]
+
+
+def test_score_run_one_cell_invalid():
+    pack = load_pack()
+    run = score_run_results(pack, [_scored_cell(pack, "P1-COMPLETE")])
+    assert run["overall_disposition"] == "INVALID"
+
+
+def test_score_run_missing_p7_complete_invalid():
+    pack = load_pack()
+    results = [item for item in _full_ten_cell_results(pack) if item["cell_id"] != "P7-COMPLETE"]
+    run = score_run_results(pack, results)
+    assert run["overall_disposition"] == "INVALID"
+    assert "P7-COMPLETE" in run["catalog"]["missing_cells"]
+
+
+def test_score_run_duplicate_cell_invalid():
+    pack = load_pack()
+    results = _full_ten_cell_results(pack)
+    results.append(copy.deepcopy(results[0]))
+    run = score_run_results(pack, results)
+    assert run["overall_disposition"] == "INVALID"
+    assert results[0]["cell_id"] in run["catalog"]["duplicate_cells"]
+
+
+def test_score_run_extra_unknown_cell_invalid():
+    pack = load_pack()
+    results = _full_ten_cell_results(pack)
+    extra = copy.deepcopy(results[0])
+    extra["cell_id"] = "P9-COMPLETE"
+    results.append(extra)
+    run = score_run_results(pack, results)
+    assert run["overall_disposition"] == "INVALID"
+    assert "P9-COMPLETE" in run["catalog"]["extra_cells"]
+
+
+def test_score_run_one_provider_invalid_cell_overall_invalid():
+    pack = load_pack()
+    results = _full_ten_cell_results(pack)
+    invalid_index = CELL_IDS.index("P4-COMPLETE")
+    results[invalid_index]["disposition"] = "INVALID"
+    results[invalid_index]["invalid_reason"] = "provider_parse_error"
+    run = score_run_results(pack, results)
+    assert run["overall_disposition"] == "INVALID"
+    assert "P4-COMPLETE" in run["invalid_cells"]
+
+
+def test_shared_model_identity_all_same_valid():
+    state = RunExecutionState()
+    for model in ["deepseek-chat"] * 10:
+        assert state.check_returned_model_identity(model) is None
+    assert state.model_identity_invalid is False
+
+
+def test_shared_model_identity_drift_invalidates_run():
+    pack = load_pack()
+    state = RunExecutionState()
+    state.check_returned_model_identity("deepseek-chat")
+    state.check_returned_model_identity("deepseek-chat-v2")
+    results = _full_ten_cell_results(pack)
+    run = score_run_results(pack, results, run_state=state)
+    assert state.model_identity_invalid is True
+    assert run["overall_disposition"] == "INVALID"
+
+
+def test_empty_gold_atoms_cannot_semantic_pass():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    live = copy.deepcopy(asset["semantic_fixture"])
+    live["gold_atoms"] = []
+    with pytest.raises(SemanticValidation2DError, match="empty gold_atoms"):
+        evaluate_semantic_oracle(live, template_fixture=asset["semantic_fixture"])
+
+
+def test_malformed_binding_invalid():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    live = copy.deepcopy(asset["semantic_fixture"])
+    live["evidence_bindings"][0]["gold_id"] = "NONEXISTENT"
+    with pytest.raises(SemanticValidation2DError):
+        evaluate_semantic_oracle(live, template_fixture=asset["semantic_fixture"])
+
+
+def test_unknown_semantic_label_invalid():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    live = copy.deepcopy(asset["semantic_fixture"])
+    live["gold_atoms"][0]["gold_semantic_status"] = "hallucinated"
+    with pytest.raises(SemanticValidation2DError):
+        evaluate_semantic_oracle(live, template_fixture=asset["semantic_fixture"])
+
+
+def test_duplicate_semantic_identity_invalid():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    live = copy.deepcopy(asset["semantic_fixture"])
+    duplicate = copy.deepcopy(live["gold_atoms"][0])
+    live["gold_atoms"].append(duplicate)
+    with pytest.raises(SemanticValidation2DError, match="duplicate gold id"):
+        evaluate_semantic_oracle(live, template_fixture=asset["semantic_fixture"])
+
+
+def test_malformed_final_population_invalid():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    live = copy.deepcopy(asset["semantic_fixture"])
+    live["final_atoms"] = []
+    with pytest.raises(SemanticValidation2DError):
+        evaluate_semantic_oracle(live, template_fixture=asset["semantic_fixture"])
+
+
+def test_valid_p1_p4_structures_still_pass():
+    pack = load_pack()
+    for asset_id in ("P1", "P4"):
+        asset = next(item for item in pack["assets"] if item["asset_id"] == asset_id)
+        cell_id = next(cell["cell_id"] for cell in asset["cells"] if cell["exposure_arm"] == "complete")
+        claims = [
+            _verdict(candidate["text"], "verified")
+            for candidate in asset["semantic_fixture"]["candidates"]
+        ]
+        raw = json.dumps(claims)
+        scored = score_mocked_provider_output(pack, cell_id=cell_id, raw_provider_response=raw)
+        assert scored["disposition"] == "PASS"
+
+
+def test_valid_expected_fail_fixtures_remain_fail():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P6")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    scored = score_mocked_provider_output(pack, cell_id="P6-COMPLETE", raw_provider_response=raw)
+    assert scored["disposition"] == "FAIL"
+
+
+def test_semantic_mapping_error_not_labeled_parse_error():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    with pytest.raises(SemanticMapping2DError):
+        map_provider_to_semantic_fixture(asset, [])
+    scored = score_mocked_provider_output(pack, cell_id="P1-COMPLETE", raw_provider_response="[]")
+    assert scored["invalid_reason"] == "semantic_mapping_error"
+
+
+def test_enrich_cell_artifact_telemetry_fields():
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    schedule = load_price_schedule()
+    artifact = {
+        "cell_id": "P1-COMPLETE",
+        "input_tokens": 100,
+        "output_tokens": 50,
+    }
+    enriched = enrich_cell_artifact(
+        request,
+        artifact,
+        schedule,
+        git_sha="abc123",
+        clean_attestation="clean456",
+    )
+    for field in (
+        "execution_git_sha",
+        "clean_state_attestation",
+        "complete_source_text",
+        "exposed_verifier_context",
+        "price_schedule_id",
+        "calculated_cost_usd",
+        "timestamps",
+        "artifact_sha256",
+    ):
+        assert field in enriched
+    assert enriched["execution_git_sha"] == "abc123"
+
+
+def test_execute_stage2d_run_max_ten_calls_no_retry(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    raw = json.dumps([_verdict(asset["draft_text"], "verified")])
+    call_hook = MagicMock(return_value=_mock_response(raw))
+    call_hook.side_effect = [
+        _mock_response(raw),
+        APITimeoutError("timeout"),
+    ]
+    report = execute_stage2d_run(pack, call_hook=call_hook)
+    assert call_hook.call_count == 2
+    assert report["network_calls"] == 2
+    assert report["overall_disposition"] == "INVALID"
+    assert report["unattempted_cells"] == list(CELL_IDS[2:])
+
+
+def test_execute_stage2d_run_all_ten_same_model(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    pack = load_pack()
+    call_index = {"value": 0}
+
+    def _side_effect(**kwargs):
+        cell_id = CELL_IDS[call_index["value"]]
+        call_index["value"] += 1
+        request = build_cell_request(pack, cell_id)
+        asset = next(item for item in pack["assets"] if item["asset_id"] == request["asset_id"])
+        claims = [
+            _verdict(candidate["text"], "unverified")
+            for candidate in asset["semantic_fixture"]["candidates"]
+        ]
+        return _mock_response(json.dumps(claims), model="deepseek-chat")
+
+    call_hook = MagicMock(side_effect=_side_effect)
+    report = execute_stage2d_run(pack, call_hook=call_hook)
+    assert call_hook.call_count == 10
+    assert report["network_calls"] == 10
+    assert report["catalog"]["catalog_valid"] is True
+    assert report["frozen_returned_model_identity"] == "deepseek-chat"
+
+
+def test_validate_run_cell_catalog_exact_ten():
+    pack = load_pack()
+    catalog = validate_run_cell_catalog(_full_ten_cell_results(pack))
+    assert catalog["catalog_valid"] is True
+    assert catalog["cell_count"] == 10
+
+
+def test_astra_p4_nonexistent_prediction_reference_invalid():
+    pack = load_pack()
+    asset = copy.deepcopy(next(item for item in pack["assets"] if item["asset_id"] == "P4"))
+    asset["semantic_fixture"]["final_atoms"][1]["prediction_id"] = "NONEXISTENT"
+    with pytest.raises(EvidenceExposure2DError, match="invalid final_atom prediction_id"):
+        validate_frozen_prediction_references(asset["semantic_fixture"])
+
+
+def test_astra_p4_broken_prediction_reference_no_stale_verified_pass():
+    pack = load_pack()
+    asset = copy.deepcopy(next(item for item in pack["assets"] if item["asset_id"] == "P4"))
+    asset["semantic_fixture"]["final_atoms"][1]["prediction_id"] = "NONEXISTENT"
+    claims = [
+        _verdict(candidate["text"], "verified")
+        for candidate in asset["semantic_fixture"]["candidates"]
+    ]
+    grounding = json.loads(json.dumps(claims))
+    with pytest.raises(SemanticMapping2DError, match="unresolved final_atom prediction_id"):
+        map_provider_to_semantic_fixture(asset, grounding)
+
+
+def test_unknown_prediction_reference_invalid():
+    pack = load_pack()
+    asset = copy.deepcopy(next(item for item in pack["assets"] if item["asset_id"] == "P1"))
+    asset["semantic_fixture"]["fixed_classification_cases"][0]["prediction_id"] = "UNKNOWN"
+    with pytest.raises(EvidenceExposure2DError, match="invalid classification prediction_id"):
+        validate_frozen_prediction_references(asset["semantic_fixture"])
+
+
+def test_live_mapping_missing_required_candidate_invalid():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P4")
+    grounding = [_verdict("There are 10 items in partition A.", "verified")]
+    with pytest.raises(SemanticMapping2DError):
+        map_provider_to_semantic_fixture(asset, grounding)
+
+
+def test_frozen_template_semantic_identity_mutation_invalid():
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P4")
+    live = copy.deepcopy(asset["semantic_fixture"])
+    live["final_atoms"][1]["required_gold_id"] = "g9"
+    with pytest.raises(SemanticValidation2DError):
+        evaluate_semantic_oracle(live, template_fixture=asset["semantic_fixture"])
+
+
+def test_malformed_empty_gold_blocks_execution_preflight():
+    pack = copy.deepcopy(load_pack())
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+    asset["semantic_fixture"]["gold_atoms"] = []
+    with pytest.raises(SemanticValidation2DError):
+        validate_execution_preflight(pack)
+
+
+def test_mutated_max_tokens_rejected_before_provider(monkeypatch):
+    pack = copy.deepcopy(load_pack())
+    pack["model_config"]["max_tokens"] = 40000
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    with pytest.raises(EvidenceExposure2DError, match="max_tokens must be 4000"):
+        issue_stage2d_execution_authorization(pack)
+
+
+def test_approved_max_tokens_is_4000():
+    pack = load_pack()
+    assert pack["model_config"]["max_tokens"] == MAX_OUTPUT_TOKENS == 4000
+    preflight = validate_execution_preflight(pack)
+    assert preflight["execution_preflight_ok"] is True
+
+
+def test_mutated_request_after_preflight_rejected(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    request["model_config"] = dict(request["model_config"], max_tokens=40000)
+    call_hook = MagicMock()
+    with pytest.raises((ExecutionAuthorization2DError, EvidenceExposure2DError)):
+        execute_cell_once(pack, request, call_hook=call_hook, execution_auth=auth)
+    call_hook.assert_not_called()
+
+
+def test_preflight_execution_config_hash_binds_execution(monkeypatch):
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    preflight = validate_execution_preflight(pack)
+    assert preflight["approved_execution_config_hash"] == auth.approved_execution_config_hash
+    assert preflight["approved_execution_config_hash"] == build_approved_execution_config_hash(pack)
+
+
+def test_transport_not_reached_when_authorization_false(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "0")
+    pack = load_pack()
+    request = build_cell_request(pack, "P1-COMPLETE")
+    call_hook = MagicMock()
+    with pytest.raises(ExecutionAuthorization2DError):
+        execute_cell_once(pack, request, call_hook=call_hook)
+    call_hook.assert_not_called()
+
+
+def test_transport_not_reached_for_invalid_prediction_reference_before_execution(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    pack = copy.deepcopy(load_pack())
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P4")
+    asset["semantic_fixture"]["final_atoms"][1]["prediction_id"] = "NONEXISTENT"
+    call_hook = MagicMock()
+    with pytest.raises(EvidenceExposure2DError):
+        issue_stage2d_execution_authorization(pack)
+    call_hook.assert_not_called()
+
+
+def _transport_counting_client(handler):
+    transport = httpx.MockTransport(handler)
+    return build_stage2d_client(api_key="test-key", transport=transport)
+
+
+def test_redirect_produces_one_transport_request_and_invalid(monkeypatch):
+    transport_call_count = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        transport_call_count["n"] += 1
+        return httpx.Response(302, headers={"Location": "https://redirect.example/"}, request=request)
+
+    pack = load_pack()
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    client = _transport_counting_client(handler)
+    result = execute_cell_once(pack, request, client=client, execution_auth=auth)
+    assert transport_call_count["n"] == 1
+    assert result["disposition"] == "INVALID"
+    assert result["invalid_reason"] == "provider_redirect_error"
+
+
+def test_success_uses_one_transport_request(monkeypatch):
+    transport_call_count = {"n": 0}
+    pack = load_pack()
+    asset = next(item for item in pack["assets"] if item["asset_id"] == "P1")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        transport_call_count["n"] += 1
+        payload = {
+            "id": "resp-redirect-test",
+            "object": "chat.completion",
+            "created": 1,
+            "model": "deepseek-chat",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": json.dumps([_verdict(asset["draft_text"], "verified")]),
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        }
+        return httpx.Response(200, json=payload, request=request)
+
+    auth = _issue_auth(pack, monkeypatch)
+    request = _authorized_request(pack, "P1-COMPLETE", auth)
+    client = _transport_counting_client(handler)
+    result = execute_cell_once(pack, request, client=client, execution_auth=auth)
+    assert transport_call_count["n"] == 1
+    assert result["disposition"] == "PASS"
+
+
+def test_ten_cell_run_uses_at_most_ten_transport_requests(monkeypatch):
+    transport_call_count = {"n": 0}
+    pack = load_pack()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        transport_call_count["n"] += 1
+        user = json.loads(request.content.decode())["messages"][1]["content"]
+        for asset in pack["assets"]:
+            if asset["draft_text"] in user:
+                claims = [
+                    _verdict(candidate["text"], "unverified")
+                    for candidate in asset["semantic_fixture"]["candidates"]
+                ]
+                content = json.dumps(claims)
+                break
+        else:
+            content = "[]"
+        payload = {
+            "id": f"resp-{transport_call_count['n']}",
+            "object": "chat.completion",
+            "created": 1,
+            "model": "deepseek-chat",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": content},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        }
+        return httpx.Response(200, json=payload, request=request)
+
+    monkeypatch.setenv("EVIDENCE_EXPOSURE_2D_EXECUTE", "1")
+    client = _transport_counting_client(handler)
+    report = execute_stage2d_run(pack, client=client)
+    assert transport_call_count["n"] == 10
+    assert report["network_calls"] == 10

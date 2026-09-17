@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # DeepSeek
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-flash")
 DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
 
 # DeepSeek pricing as of 2025 (USD per 1M tokens)
@@ -85,6 +85,7 @@ _PROJECT_ROOT = _Path(__file__).resolve().parent
 _PROMPT_FILES = [
     "prompts/draft_system.md",
     "prompts/verify_system.md",
+    "prompts/claim_inventory_system.md",
     "prompts/reflect_system.md",
     "prompts/html_template.md",
 ]

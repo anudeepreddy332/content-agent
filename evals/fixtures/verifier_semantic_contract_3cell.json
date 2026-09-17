@@ -1,0 +1,373 @@
+{
+  "pack_id": "verifier_semantic_contract_3cell",
+  "evaluator_id": "verifier_semantic_contract_3cell_preflight",
+  "schema_version": 1,
+  "stage": "3cell-prompt-contract",
+  "stage2d_reference_artifact": {
+    "path": "outputs/evidence_exposure_2d/stage2d_run_20260905T074337Z.json",
+    "sha256": "7243f2075a06aba3d48c69085e085b7b7b57bf59c7b926b6eafb29991e914ea0"
+  },
+  "model_config": {
+    "model_alias": "deepseek-chat",
+    "temperature": 0.1,
+    "max_tokens": 4000
+  },
+  "prompt_identity": {
+    "original_verify_system_path": "prompts/verify_system.md",
+    "original_prompt_sha256": "e7ac8744409d63a879d4df85b7e4240b1d447a36d91506731f6c7ba00217809a",
+    "candidate_verify_system_path": "prompts/verify_system_semantic_contract_candidate.md",
+    "candidate_prompt_sha256": "adc0200c5e600cc7de98a42c0241dd13df0c049c48a00148dbc0fffa7b741b57",
+    "only_status_paragraph_changed": true
+  },
+  "qualification_gates": {
+    "material_false_verification_rate.v2_numerator": 0
+  },
+  "diagnostic_gates": {
+    "automatic_semantic_false_pass_rate.v2_numerator": "diagnostic_only_not_qualification"
+  },
+  "max_provider_requests": 3,
+  "assets": [
+    {
+      "asset_id": "P6",
+      "cell_id": "C1",
+      "source_cell_id": "P6-COMPLETE",
+      "title": "late contradiction",
+      "source": {
+        "source_id": "SRC-P6-W03",
+        "source_kind": "web",
+        "source_url": "https://example.test/helix/export-gate",
+        "source_rank": 1,
+        "source_text": "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------Helix gate permits export when mode flag HG-ENABLE is set. ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------Unless mode flag HG-ENABLE is cleared, export remains blocked.",
+        "source_sha256": "990352cef0f43cd232da2243460ee54e9b50a5aabb5517dad0b8b483abee8976",
+        "source_character_length": 1562
+      },
+      "draft_text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+      "draft_sha256": "8b36cdccb1a070787d2949ae6f612b492c7c861992af49e0083870ba5722036d",
+      "exposure_arm": "complete",
+      "expected_provider_classification": "weak",
+      "expected_corrected_semantic_pass": false,
+      "semantic_fixture": {
+        "id": "ADV07",
+        "title": "P6 contradiction",
+        "draft_text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+        "draft_sha256": "8b36cdccb1a070787d2949ae6f612b492c7c861992af49e0083870ba5722036d",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+            "span": [
+              0,
+              58
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "weak",
+            "canonical_id": "ADV07.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+            "span": [
+              0,
+              58
+            ],
+            "roles": [],
+            "predicted_semantic_status": "verified",
+            "canonical_id": "ADV07.C.c1"
+          }
+        ],
+        "allowed_matches": [
+          {
+            "candidate_id": "c1",
+            "gold_id": "g1"
+          }
+        ],
+        "evidence_bindings": [
+          {
+            "id": "P6.BIND.g1",
+            "gold_id": "g1",
+            "candidate_id": "c1",
+            "evidence_id": "P6.EV.helix",
+            "valid": true,
+            "fully_entailed": false
+          }
+        ],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+            "span": [
+              0,
+              58
+            ],
+            "material": true,
+            "reference_relationship": "required-equivalent",
+            "required_gold_id": "g1",
+            "independent_semantic_label": "weak",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "verified",
+            "binding": {
+              "id": "P6.FBIND.f1",
+              "target_final_claim_id": "f1",
+              "evidence_id": "P6.EV.helix",
+              "valid": true,
+              "fully_entailed": false
+            }
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P6.VR.c1",
+            "status": "verified"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P6.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "weak",
+            "predicted_semantic_status": "verified",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": "f1"
+          }
+        ]
+      }
+    },
+    {
+      "asset_id": "P7",
+      "cell_id": "C2",
+      "source_cell_id": "P7-COMPLETE",
+      "title": "late qualifier",
+      "source": {
+        "source_id": "SRC-P7-K03",
+        "source_kind": "kb",
+        "source_url": "kb://cache/tier-t3-policy",
+        "source_rank": 1,
+        "source_text": "Cache tier T3 admits writes when isolation level IL-2 holds. -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------unless cache mode is disabled via CM-OFF switch.",
+        "source_sha256": "be5e5dfb409d20428670a19c546b00a744da1c3357831fe57477eddb0294b4ce",
+        "source_character_length": 2048
+      },
+      "draft_text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+      "draft_sha256": "e4245e1b02ce8c35705228d56f68582db85f1c64def1bbe3157a6efb155b3c53",
+      "exposure_arm": "complete",
+      "expected_provider_classification": "weak",
+      "expected_corrected_semantic_pass": false,
+      "semantic_fixture": {
+        "id": "ADV08",
+        "title": "P7 qualifier loss",
+        "draft_text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+        "draft_sha256": "e4245e1b02ce8c35705228d56f68582db85f1c64def1bbe3157a6efb155b3c53",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+            "span": [
+              0,
+              60
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "weak",
+            "canonical_id": "ADV08.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+            "span": [
+              0,
+              60
+            ],
+            "roles": [],
+            "predicted_semantic_status": "verified",
+            "canonical_id": "ADV08.C.c1"
+          }
+        ],
+        "allowed_matches": [
+          {
+            "candidate_id": "c1",
+            "gold_id": "g1"
+          }
+        ],
+        "evidence_bindings": [
+          {
+            "id": "P7.BIND.g1",
+            "gold_id": "g1",
+            "candidate_id": "c1",
+            "evidence_id": "P7.EV.cache",
+            "valid": true,
+            "fully_entailed": false
+          }
+        ],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+            "span": [
+              0,
+              60
+            ],
+            "material": true,
+            "reference_relationship": "required-equivalent",
+            "required_gold_id": "g1",
+            "independent_semantic_label": "weak",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "verified",
+            "binding": {
+              "id": "P7.FBIND.f1",
+              "target_final_claim_id": "f1",
+              "evidence_id": "P7.EV.cache",
+              "valid": true,
+              "fully_entailed": false
+            }
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P7.VR.c1",
+            "status": "verified"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P7.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "weak",
+            "predicted_semantic_status": "verified",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": "f1"
+          }
+        ]
+      }
+    },
+    {
+      "asset_id": "P1",
+      "cell_id": "C3",
+      "source_cell_id": "P1-COMPLETE",
+      "title": "late supported material claim",
+      "source": {
+        "source_id": "SRC-P1-W02",
+        "source_kind": "web",
+        "source_url": "https://example.test/quorum/latch",
+        "source_rank": 1,
+        "source_text": "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------Quorum latch engages only after seven replica acknowledgements.",
+        "source_sha256": "b8d231ed89d8e1849f992dca745c2d96e2fb1becb31a0cafa1fd5c8e839959e2",
+        "source_character_length": 1563
+      },
+      "draft_text": "Quorum latch engages only after seven replica acknowledgements.",
+      "draft_sha256": "a9b449c9e4edd0ff8a464b63efeb5c4858a1353daabcf091af7bf72cc232b316",
+      "exposure_arm": "complete",
+      "expected_provider_classification": "verified",
+      "expected_corrected_semantic_pass": true,
+      "semantic_fixture": {
+        "id": "ADV02",
+        "title": "P1 late supported claim",
+        "draft_text": "Quorum latch engages only after seven replica acknowledgements.",
+        "draft_sha256": "a9b449c9e4edd0ff8a464b63efeb5c4858a1353daabcf091af7bf72cc232b316",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "Quorum latch engages only after seven replica acknowledgements.",
+            "span": [
+              0,
+              63
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "verified",
+            "canonical_id": "ADV02.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "Quorum latch engages only after seven replica acknowledgements.",
+            "span": [
+              0,
+              63
+            ],
+            "roles": [],
+            "predicted_semantic_status": "verified",
+            "canonical_id": "ADV02.C.c1"
+          }
+        ],
+        "allowed_matches": [
+          {
+            "candidate_id": "c1",
+            "gold_id": "g1"
+          }
+        ],
+        "evidence_bindings": [
+          {
+            "id": "P1.BIND.g1",
+            "gold_id": "g1",
+            "candidate_id": "c1",
+            "evidence_id": "P1.EV.quorum",
+            "valid": true,
+            "fully_entailed": true
+          }
+        ],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "Quorum latch engages only after seven replica acknowledgements.",
+            "span": [
+              0,
+              63
+            ],
+            "material": true,
+            "reference_relationship": "required-equivalent",
+            "required_gold_id": "g1",
+            "independent_semantic_label": "verified",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "verified",
+            "binding": {
+              "id": "P1.FBIND.f1",
+              "target_final_claim_id": "f1",
+              "evidence_id": "P1.EV.quorum",
+              "valid": true,
+              "fully_entailed": true
+            }
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P1.VR.c1",
+            "status": "verified"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P1.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "verified",
+            "predicted_semantic_status": "verified",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": "f1"
+          }
+        ]
+      }
+    }
+  ]
+}

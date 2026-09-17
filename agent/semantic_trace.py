@@ -95,6 +95,9 @@ def _slot(trace: dict, iteration: int) -> dict:
         "verifier_input": None,
         "verifier_raw": None,
         "post_processing": None,
+        # Phase 4 Slice 2A: canonical claim inventory for this iteration's exact
+        # draft (draft_sha256-versioned). Persistence/audit only.
+        "claim_inventory": None,
     }
     trace["iterations"].append(slot)
     return slot
@@ -136,8 +139,11 @@ def record_verify(
     dropped_rows: list | None = None,
     post_dedup_rows: list | None = None,
     post_attribution_rows: list | None = None,
+    claim_inventory: dict | None = None,
 ) -> None:
     slot = _slot(trace, iteration)
+    if claim_inventory is not None:
+        slot["claim_inventory"] = json.loads(canonical_json(claim_inventory))
     if consumed:
         identity = source_set_identity(web_sources, kb_results)
         slot["verifier_input"] = {
@@ -148,7 +154,9 @@ def record_verify(
             "source_context_sha256": sha256_utf8(source_context or ""),
             "user_message": user_message,
             "user_message_sha256": sha256_utf8(user_message or ""),
-            "verify_system_hash_12": PROMPT_HASHES.get("verify_system"),
+            # Hash of the system prompt text actually used for this pass (Phase 4
+            # Slice 2A: Call A is claim_inventory_system, not verify_system).
+            "verify_system_hash_12": sha256_utf8(verify_system_text or "")[:12],
             "verify_system_sha256": sha256_utf8(verify_system_text or ""),
             "source_set": identity,
         }
@@ -207,6 +215,38 @@ def record_verify(
                 "unverified": 0,
             },
         }
+    trace["trace_status"] = "in_progress"
+
+
+def record_semantic_analyzer(
+    trace: dict,
+    *,
+    iteration: int,
+    request_id: str,
+    success: bool,
+    failure_kind: str | None = None,
+    failure_detail: str | None = None,
+    returned_model: str | None = None,
+    provider_response_id: str | None = None,
+    usage: dict | None = None,
+    evidence_ids: list[str] | None = None,
+    engine_status_by_claim: dict[str, str | None] | None = None,
+    raw_response: str | None = None,
+) -> None:
+    """Audit trail for quote-based semantic analyzer (production path)."""
+    slot = _slot(trace, iteration)
+    slot["semantic_analyzer"] = {
+        "request_id": request_id,
+        "success": success,
+        "failure_kind": failure_kind,
+        "failure_detail": failure_detail,
+        "returned_model": returned_model,
+        "provider_response_id": provider_response_id,
+        "usage": usage,
+        "evidence_ids": evidence_ids or [],
+        "engine_status_by_claim": engine_status_by_claim or {},
+        "raw_response_sha256": sha256_utf8(raw_response or ""),
+    }
     trace["trace_status"] = "in_progress"
 
 

@@ -1,0 +1,290 @@
+{
+  "schema": "call_a_provider_eval_gold_v2",
+  "version": 2,
+  "description": "Live-provider qualification oracle v2. HARNESS GOLD (claim_inventory_golden_v1) != PROVIDER EVAL GOLD (this file). Harness gold tests deterministic pipeline; provider eval gold scores real provider extraction with reviewer-approved equivalences.",
+  "harness_fixture_path": "evals/fixtures/claim_inventory_golden_v1.json",
+  "harness_fixture_sha256": "112b15ca3b79e16c38d0d9ba94063d60268a4a120414242115a55c5227dae006",
+  "false_nonmaterial_trap_case_id": "G14-false-nonmaterial-trap",
+  "cases": [
+    {
+      "case_id": "G01-simple-factual",
+      "draft_markdown_ref": "G01-simple-factual",
+      "provider_eval_claims": [
+        {
+          "claim_text": "Gradient descent iteratively updates parameters to reduce the loss.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G02-multi-atomic-one-sentence",
+      "draft_markdown_ref": "G02-multi-atomic-one-sentence",
+      "provider_eval_claims": [
+        {
+          "claim_text": "System A improves latency.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        },
+        {
+          "claim_text": "System A reduces storage cost.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G03-repeated-identical-claim",
+      "draft_markdown_ref": "G03-repeated-identical-claim",
+      "provider_eval_claims": [
+        {
+          "claim_text": "T3 caches aggressively.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G04-near-duplicate-claims",
+      "draft_markdown_ref": "G04-near-duplicate-claims",
+      "provider_eval_claims": [
+        {
+          "claim_text": "Batch size 32 trains stably.",
+          "claim_type": "factual",
+          "material": false,
+          "critical": true,
+          "match_rule": "exact"
+        },
+        {
+          "claim_text": "Batch size 32 usually trains stably.",
+          "claim_type": "factual",
+          "material": false,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G05-factual-definition",
+      "draft_markdown_ref": "G05-factual-definition",
+      "provider_eval_claims": [
+        {
+          "claim_text": "A transformer is a neural architecture that uses self-attention to model token interactions.",
+          "claim_type": "definition",
+          "material": true,
+          "critical": true,
+          "match_rule": "atomic_decomposition",
+          "decomposition_parts": [
+            "A transformer is a neural architecture.",
+            "A transformer uses self-attention to model token interactions."
+          ],
+          "approval": "source-of-truth-review-2026-09-16"
+        }
+      ]
+    },
+    {
+      "case_id": "G06-editorial-nonfactual",
+      "draft_markdown_ref": "G06-editorial-nonfactual",
+      "provider_eval_claims": [
+        {
+          "claim_text": "We find this design elegant.",
+          "claim_type": "editorial",
+          "material": false,
+          "critical": false,
+          "match_rule": "inventory_descriptive_only",
+          "approval": "source-of-truth-review-2026-09-16",
+          "note": "Editorial inventory; not factual-recall critical"
+        },
+        {
+          "claim_text": "Dropout randomly zeroes activations during training.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "semantic_equivalent",
+          "equivalent_producer_claims": [
+            "Dropout randomly sets activations to zero during training."
+          ],
+          "approval": "source-of-truth-review-2026-09-16"
+        }
+      ]
+    },
+    {
+      "case_id": "G07-code-factual-assertion",
+      "draft_markdown_ref": "G07-code-factual-assertion",
+      "provider_eval_claims": [
+        {
+          "claim_text": "The search is efficient.",
+          "claim_type": "editorial",
+          "material": false,
+          "critical": true,
+          "match_rule": "exact"
+        },
+        {
+          "claim_text": "Binary search runs in O(log n) time.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G08-cross-section-claims",
+      "draft_markdown_ref": "G08-cross-section-claims",
+      "provider_eval_claims": [
+        {
+          "claim_text": "Models overfit.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        },
+        {
+          "claim_text": "Regularization reduces overfitting.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G09-new-claim-after-revision",
+      "draft_markdown_ref": "G09-new-claim-after-revision",
+      "provider_eval_claims": [
+        {
+          "claim_text": "Dropout reduces overfitting.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        },
+        {
+          "claim_text": "Early stopping also helps.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G10-removed-claim",
+      "draft_markdown_ref": "G10-removed-claim",
+      "provider_eval_claims": [
+        {
+          "claim_text": "Weight decay penalizes large weights.",
+          "claim_type": "factual",
+          "material": false,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G11-material-central-claim",
+      "draft_markdown_ref": "G11-material-central-claim",
+      "provider_eval_claims": [
+        {
+          "claim_text": "Quorum requires seven acknowledgements before commit.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        },
+        {
+          "claim_text": "The simulator's dashboard is blue.",
+          "claim_type": "factual",
+          "material": "unknown",
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G12-incidental-factual",
+      "draft_markdown_ref": "G12-incidental-factual",
+      "provider_eval_claims": [
+        {
+          "claim_text": "The example repository is named after a 19th century workshop.",
+          "claim_type": "factual",
+          "material": false,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G13-required-by-brief-material",
+      "draft_markdown_ref": "G13-required-by-brief-material",
+      "provider_eval_claims": [
+        {
+          "claim_text": "The article includes a failure-modes analysis.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G14-false-nonmaterial-trap",
+      "draft_markdown_ref": "G14-false-nonmaterial-trap",
+      "provider_eval_claims": [
+        {
+          "claim_text": "The scheduler guarantees at-most-once delivery.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G15-anchor-ambiguity",
+      "draft_markdown_ref": "G15-anchor-ambiguity",
+      "provider_eval_claims": [
+        {
+          "claim_text": "Alpha mode permits export.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        },
+        {
+          "claim_text": "Alpha mode logs the event.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact"
+        }
+      ]
+    },
+    {
+      "case_id": "G16-anchor-failure",
+      "draft_markdown_ref": "G16-anchor-failure",
+      "provider_eval_claims": [
+        {
+          "claim_text": "Momentum accelerates convergence.",
+          "claim_type": "factual",
+          "material": true,
+          "critical": true,
+          "match_rule": "exact",
+          "approval": "source-of-truth-review-2026-09-16"
+        }
+      ],
+      "harness_only_trap": {
+        "synthetic_harness_claim": "Momentum always accelerates convergence.",
+        "purpose": "deterministic ANCHOR_FAILED binding test only"
+      }
+    }
+  ]
+}

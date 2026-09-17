@@ -44,7 +44,6 @@ from config import (
     DRAFT_TEMPERATURE,
     MAX_ITERATIONS,
     REFLECTION_THRESHOLD,
-    GROUNDING_FLOOR,
     UVR_THRESHOLD,
     COST_GATE_USD,
     DEEPSEEK_INPUT_COST_PER_M,
@@ -58,7 +57,38 @@ from agent.semantic_trace import (
     copy_trace,
     record_draft,
     record_hitl_event,
+    record_semantic_analyzer,
     record_verify,
+)
+from agent.semantic_analyzer.contract import (
+    engine_compat_grounding_score,
+)
+from agent.semantic_analyzer.provider import analyze_semantic_evidence
+from agent.claim_inventory import (
+    build_claim_inventory,
+    call_b_roster,
+    eligible_claims,
+    inventory_critical_failures,
+    parse_claim_inventory_rows,
+)
+from agent.material_policy import (
+    MATERIAL_HITL,
+    MATERIAL_REVISION,
+    MaterialPolicyResult,
+    evaluate_material_policy,
+    format_required_content_feedback,
+    material_policy_passed,
+    unknown_requirement_obligations,
+)
+from agent.citation_policy import (
+    CitationPolicyResult,
+    apply_inline_clusters_to_html,
+    bibliography_items,
+    build_evidence_registry,
+    citation_policy_passed,
+    evaluate_citation_policy,
+    evidence_numbering,
+    insert_citation_markers,
 )
 import html as html_module
 import re
@@ -66,7 +96,8 @@ import datetime
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text()
+VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text()  # historical; evals only
+CLAIM_INVENTORY_SYSTEM = Path("prompts/claim_inventory_system.md").read_text()
 REFLECT_SYSTEM = Path("prompts/reflect_system.md").read_text()
 
 # DeepSeek client
@@ -219,6 +250,26 @@ def _cost(usage) -> float:
         usage.completion_tokens / 1_000_000 * DEEPSEEK_OUTPUT_COST_PER_M
     )
 
+
+def _cost_from_usage(usage) -> float:
+    """Compute cost from OpenAI usage object or analyzer transport dict."""
+    if usage is None:
+        return 0.0
+    if isinstance(usage, dict):
+        return (
+            int(usage.get("prompt_tokens") or 0) / 1_000_000 * DEEPSEEK_INPUT_COST_PER_M
+            + int(usage.get("completion_tokens") or 0) / 1_000_000 * DEEPSEEK_OUTPUT_COST_PER_M
+        )
+    return _cost(usage)
+
+
+def _usage_total_tokens(usage) -> int:
+    if usage is None:
+        return 0
+    if isinstance(usage, dict):
+        return int(usage.get("total_tokens") or 0)
+    return int(getattr(usage, "total_tokens", 0) or 0)
+
 def _assemble_markdown(topic: str, sections: DraftSections) -> str:
     """
     Combine DraftSections into a single markdown string.
@@ -276,9 +327,14 @@ def draft_node(state: AgentState) -> dict:
     # cache) — Multi-Agent UVR2 0.230 vs control 0.341 with no SV loss; the
     # blind re-roll control regressed UVR on 2/3 topics. Fires on both the
     # reflect-loop and HITL-feedback revision paths (iterations >= 1 in both).
-    # Field name m4_feedback_claims kept deliberately for telemetry continuity.
+    # Field name m4_feedback_claims kept deliberately for telemetry continuity:
+    # it still counts UNVERIFIED claims only. Phase 4 Slice 1 adds a separate
+    # targeted block for blocker-bearing rows (weak OR unverified) carrying the
+    # exact claim, status, blocker kind/explanation, and adverse/supporting
+    # evidence quotes, so the drafter knows WHAT to repair and WHY.
     m4_feedback_claims = 0
     grounding_feedback_block = ""
+    blocker_obligations: list[dict] = []
     if state.get("iterations", 0) >= 1 and state.get("grounding_report"):
         unverified_claims = [
             (r.get("claim") or "").strip()
@@ -302,6 +358,19 @@ def draft_node(state: AgentState) -> dict:
                 "Do NOT invent new specific claims to replace them. Keep all other "
                 "content — especially specific claims that WERE verifiable — intact."
             )
+        blocker_block, blocker_obligations = _format_semantic_blocker_feedback(
+            state["grounding_report"]
+        )
+        grounding_feedback_block += blocker_block
+        # Phase 4 Slice 2B: targeted material / required-content feedback. Only
+        # repairable failures (revision_required) emit a block; UNKNOWN
+        # materiality and integrity failures route to HITL, not revision, so
+        # they do NOT produce draft feedback (no stochastic retry-to-green).
+        material_feedback = format_required_content_feedback(
+            material_policy_result(state)
+        )
+        if material_feedback:
+            grounding_feedback_block += "\n\n" + material_feedback
 
 
     source_block = ""
@@ -345,6 +414,7 @@ def draft_node(state: AgentState) -> dict:
     if grounding_feedback_block:
         log.info("draft.grounding_feedback_injected", run_id=state["run_id"],
                  claims=m4_feedback_claims,
+                 blocker_obligations=len(blocker_obligations),
                  block_chars=len(grounding_feedback_block),
                  in_user_message=grounding_feedback_block in user_message)
 
@@ -410,6 +480,7 @@ def draft_node(state: AgentState) -> dict:
             "source_iteration": state.get("iterations", 0),
             "next_iteration": iteration,
             "targeted_unverified_claims": targeted,
+            "semantic_obligations": blocker_obligations,
             "grounding_feedback_block": grounding_feedback_block,
             "hitl_feedback": state.get("hitl_feedback"),
         }
@@ -623,6 +694,26 @@ def _build_citations(grounding_report: list, web_sources: list, kb_results: list
     return render_citations_html(items)
 
 
+def _citations_html_for_state(state: AgentState) -> str:
+    """Bibliography for the current artifact.
+
+    When a claim inventory is present, Slice 2c cited-only bibliography is
+    authoritative (no retrieved-source stuffing). Pre-2A / hand-built states
+    keep the historical grounding_report path.
+    """
+    if state.get("claim_inventory") is None:
+        return _build_citations(
+            state.get("grounding_report", []),
+            state.get("web_sources", []),
+            state.get("kb_results", []),
+        )
+    result = evaluate_citation_policy(state=state)
+    items = bibliography_items(result.attached_evidence_ids, build_evidence_registry(state))
+    if not items:
+        items = bibliography_items(result.required_evidence_ids, build_evidence_registry(state))
+    return render_citations_html(items)
+
+
 def _capture_remote_main_sha() -> str | None:
     """Read the selected remote's live main parent when remote publish is enabled.
 
@@ -811,158 +902,121 @@ def _resolve_attributions(report: list[dict], web_sources: list, kb_results: lis
 
 # NODE: verify_node
 
-def verify_node(state: AgentState) -> dict:
-    """
-    Extracts factual claims from draft and scores each against retrieved sources.
-    """
-    log = get_logger("verify_node")
-    t_start = time.time()
-    # cost gate
-    if state.get("total_cost_usd", 0) >= COST_GATE_USD:
-        log.warning("verify.cost_gate_hit", run_id=state["run_id"],
-                    cost=state["total_cost_usd"])
-        trace = copy_trace(state)
-        record_verify(
-            trace,
-            iteration=state.get("iterations", 0),
-            consumed=False,
-            skip_reason="skipped_cost_gate",
-            draft_markdown=state.get("draft_markdown") or "",
-        )
-        return {"grounding_report": [], "grounding_score": 0.0,
-                "verification_status": "skipped_cost_gate",
-                "latency_ms": {**state.get("latency_ms", {}), "verify": 0},
-                "semantic_trace": trace}
+def _verify_request_id(state: AgentState) -> str:
+    return f"{state['run_id']}:{state.get('iterations', 0)}:verify"
 
-    client = _get_client()
-    # 1. Extract claims from drafts
-    # Ask llm to pull out every verifiable factual claim as a JSON list
 
-    source_context = _build_source_context(state["web_sources"], state["kb_results"])
-    user_message = f"""
-                            Draft to verify:
-                            {state["draft_markdown"]}
-                            
-                            Available sources:
-                            {source_context}
-                            
-                            Return a JSON array. Each element:
-                            {{"claim": "...", "source_url": "..." or null, "confidence": 0.0-1.0,
-                              "status": "verified" | "weak" | "unverified",
-                              "specificity": "substantive" | "generic"}}
-                            
-                            Return ONLY the JSON array. No preamble.
-                            """
+def _claim_inventory_user_message(state: AgentState, draft_markdown: str) -> str:
+    """Call-A (claim inventory + materiality) user message.
 
-    claim_response = _llm_call(
-        client,
-        model=DEEPSEEK_MODEL,
-        messages=[
-            {"role": "system", "content": VERIFY_SYSTEM},
-            {
-                "role": "user",
-                "content": user_message,
-            }
-        ],
-        temperature=0.1,
-        max_tokens=4000,
-    )
-
-    latency = int((time.time() - t_start) * 1000)
-    run_cost = _cost(claim_response.usage)
-
-    # Parse grounding report
-    raw = claim_response.choices[0].message.content.strip()
-
-    verification_status = "completed"
-    parse_error = None
-    try:
-        grounding_report = _parse_verifier_verdicts(raw)
-        parser_status = "ok"
-    except (json.JSONDecodeError, ValueError, ValidationError) as e:
-        log.error("verify.parse_failed", run_id=state["run_id"], error=str(e),
-                  raw_preview=raw[:300])
-        grounding_report = []
-        verification_status = "parse_failed"
-        parser_status = "parse_failed"
-        parse_error = str(e)
-
-    pre_dedup_rows = copy.deepcopy(grounding_report)
-
-    # Remove near-exact duplicate claims before scoring.
-    # Prompt instruction handles semantic duplicates; this catches string-level dupes.
-    dropped_rows: list[dict] = []
-    grounding_report = _deduplicate_grounding_report(
-        grounding_report, run_id=state["run_id"], dropped_out=dropped_rows,
-    )
-    post_dedup_rows = copy.deepcopy(grounding_report)
-
-    # M5: resolve each claim's source_url against the actual retrieved set.
-    # Pure post-processing — verifier prompt and source context untouched.
-    grounding_report = _resolve_attributions(
-        grounding_report, state.get("web_sources", []), state.get("kb_results", [])
-    )
-    post_attribution_rows = copy.deepcopy(grounding_report)
-
-    trace = copy_trace(state)
-    record_verify(
-        trace,
-        iteration=state.get("iterations", 0),
-        consumed=True,
-        draft_markdown=state.get("draft_markdown") or "",
-        source_context=source_context,
-        user_message=user_message,
-        verify_system_text=VERIFY_SYSTEM,
-        web_sources=state.get("web_sources") or [],
-        kb_results=state.get("kb_results") or [],
-        raw_response=raw,
-        parser_status=parser_status,
-        parse_error=parse_error,
-        pre_dedup_rows=pre_dedup_rows,
-        dropped_rows=dropped_rows,
-        post_dedup_rows=post_dedup_rows,
-        post_attribution_rows=post_attribution_rows,
+    The extractor sees the exact current draft plus topic/brief/card context
+    needed to classify relevance and materiality — and NO evidence/sources, so
+    retrieval cannot influence what is extracted as a claim."""
+    requirements = state.get("brief_requirements") or []
+    req_block = json.dumps(requirements, ensure_ascii=True) if requirements else "none provided"
+    return (
+        f"Topic: {state['topic']}\n"
+        f"Card ID: {state['card_id']}\n"
+        f"Series context: {state.get('series_context', '')}\n"
+        f"Brief requirements (JSON): {req_block}\n\n"
+        f"Draft (exact current version) to inventory:\n{draft_markdown}\n\n"
+        "Return ONLY the JSON array specified in your instructions."
     )
 
 
-    # Compute mean confidence
-    if grounding_report:
-        grounding_score = sum(r.get("confidence", 0) for r in grounding_report) / len(grounding_report)
-    else:
-        grounding_score = 0
+def _specificity_by_claim_id_from_inventory(inventory: dict | None) -> dict[str, str]:
+    """Descriptive metadata from Call A — not semantic authority."""
+    return {
+        claim["claim_id"]: claim.get("specificity", "generic")
+        for claim in (inventory or {}).get("claims", [])
+    }
 
 
-    existing_latency = state.get("latency_ms", {})
-    existing_latency["verify"] = latency
+def _attach_inventory_fields(grounding_report: list[dict], inventory: dict | None) -> None:
+    """Copy descriptive inventory fields onto grounding rows (audit/UI only —
+    no effect on status derivation, which the engine owns)."""
+    by_id = {c["claim_id"]: c for c in (inventory or {}).get("claims", [])}
+    for row in grounding_report:
+        claim = by_id.get(row.get("claim_id"))
+        if not claim:
+            continue
+        row["material"] = claim.get("material")
+        row["claim_type"] = claim.get("claim_type")
+        row["section"] = claim.get("section")
+        row["anchor_quote"] = claim.get("anchor_quote")
+        row["occurrences"] = copy.deepcopy(claim.get("occurrences") or [])
+        row["requires_citation"] = claim.get("requires_citation")
 
+
+def _order_grounding_report_by_draft(grounding_report: list[dict], inventory: dict | None) -> list[dict]:
+    """Restore draft/document order for review output.
+
+    The status engine iterates claim_ids in sorted order; with content-derived
+    hash IDs that is no longer document order. Reordering rows is presentation
+    only — statuses and content are untouched."""
+    order = {c["claim_id"]: i for i, c in enumerate((inventory or {}).get("claims", []))}
+    return sorted(
+        grounding_report,
+        key=lambda r: order.get(r.get("claim_id"), len(order)),
+    )
+
+
+def _attach_specificity(grounding_report: list[dict], specificity_by_id: dict[str, str]) -> None:
+    for row in grounding_report:
+        row["specificity"] = specificity_by_id.get(row.get("claim_id"), "generic")
+
+
+def _make_semantic_llm_transport(client: OpenAI):
+    """Inject production ``_llm_call`` into the Slice-2 analyzer adapter."""
+
+    def transport(
+        *,
+        model: str,
+        messages: list[dict[str, str]],
+        temperature: float,
+        max_tokens: int,
+        response_format: dict[str, str] | None = None,
+    ):
+        kwargs = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if response_format is not None:
+            kwargs["response_format"] = response_format
+        return _llm_call(client, **kwargs)
+
+    return transport
+
+
+def _append_verify_iteration_metrics(
+    state: AgentState,
+    *,
+    grounding_report: list[dict],
+    verification_status: str,
+    grounding_score: float,
+    claim_inventory: dict | None = None,
+) -> list[dict]:
     n_verified = sum(1 for r in grounding_report if r.get("status") == "verified")
     n_weak = sum(1 for r in grounding_report if r.get("status") == "weak")
     n_unverified = sum(1 for r in grounding_report if r.get("status") == "unverified")
-
-    # Grounded-depth signal (M3): SV = Substantive and verified
     n_substantive = sum(1 for r in grounding_report if r.get("specificity") == "substantive")
     n_substantive_verified = sum(
         1 for r in grounding_report
         if r.get("specificity") == "substantive" and r.get("status") == "verified"
     )
-
-
-    log.info("verify.complete",
-             run_id=state["run_id"],
-             grounding_score=round(grounding_score, 3),
-             claims=len(grounding_report),
-             verified=n_verified,
-             weak=n_weak,
-             unverified=n_unverified,
-             substantive=n_substantive,
-             substantive_verified=n_substantive_verified,
-             verification_status=verification_status,
-             latency_ms=latency,
-             cost=round(run_cost, 5),
-             )
-
-    # M4 instrumentation: persist this iteration's metrics. verify runs once per
-    # draft iteration; appending here gives per-iteration SV/UVR in telemetry.
+    # Phase 4 Slice 2B: materiality / requirement metrics, exposed separately
+    # (spec §20). Never combined into one score; the aggregate
+    # material_verified_rate is observability only and is not gate authority.
+    material_state = evaluate_material_policy(
+        state={
+            **state,
+            "claim_inventory": claim_inventory,
+            "grounding_report": grounding_report,
+        },
+        max_iterations=MAX_ITERATIONS,
+    )
     iteration_metrics = list(state.get("iteration_metrics", []) or [])
     iteration_metrics.append({
         "iteration": state.get("iterations", 0),
@@ -980,18 +1034,429 @@ def verify_node(state: AgentState) -> dict:
             (r.get("claim") or "")[:200]
             for r in grounding_report if r.get("status") == "unverified"
         ],
-        # M5: full annotated report per iteration — the final grounding_report
-        # only reflects the LAST iteration; without this, iteration 1 of a
-        # revised run was un-reconstructable.
         "grounding_report": grounding_report,
+        "material_policy": material_state.to_dict(),
+        "citation_policy": evaluate_citation_policy(
+            state={
+                **state,
+                "claim_inventory": claim_inventory,
+                "grounding_report": grounding_report,
+            }
+        ).to_dict(),
     })
+    return iteration_metrics
+
+
+def verify_node(state: AgentState) -> dict:
+    """Phase-4 hybrid verifier: claim inventory + quote-based semantic engine.
+
+    CALL A (claim_inventory_system, NO source context): atomic claim inventory
+    + materiality ONLY. Python then owns schema validation (model IDs/offsets
+    rejected), exact draft anchoring, content-derived claim IDs, duplicate
+    merge, and the required⇒material override. Inventory is rebuilt from
+    scratch on every verify pass and versioned by draft_sha256 — a stale
+    inventory can never certify a revised draft.
+
+    CALL B (full evidence manifest via ``build_evidence_manifest``): semantic
+    analysis ONLY over the canonical current-version factual claims
+    (``claim_text`` propositions) — Python quote binding +
+    ``adjudicate_hybrid_verifier_observations`` is the sole owner of
+    ``grounding_report[].status``. Call-A materiality never influences status.
+
+    Claim inventory completeness (recall vs everything the draft truly says)
+    remains ``CLAIM_COMPLETENESS`` (``unknown``) until separately calibrated.
+    """
+    log = get_logger("verify_node")
+    t_start = time.time()
+    iteration = state.get("iterations", 0)
+    request_id = _verify_request_id(state)
+
+    if state.get("total_cost_usd", 0) >= COST_GATE_USD:
+        log.warning("verify.cost_gate_hit", run_id=state["run_id"],
+                    cost=state["total_cost_usd"])
+        trace = copy_trace(state)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=False,
+            skip_reason="skipped_cost_gate",
+            draft_markdown=state.get("draft_markdown") or "",
+        )
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": "skipped_cost_gate",
+            "latency_ms": {**state.get("latency_ms", {}), "verify": 0},
+            "semantic_trace": trace,
+        }
+
+    client = _get_client()
+    draft_markdown = state.get("draft_markdown") or ""
+    draft_sha256 = sha256_utf8(draft_markdown)
+    # Call A consumes ONLY the draft + topic/brief context. Sources are NOT
+    # shown to the extractor; the traced source_context is empty by design.
+    user_message = _claim_inventory_user_message(state, draft_markdown)
+
+    run_cost = 0.0
+    total_new_tokens = 0
+    raw = ""
+    parser_status = "not_started"
+    parse_error: str | None = None
+    raw_claim_rows: list[dict] = []
+    claim_inventory: dict | None = None
+    verification_status = "completed"
+    claim_response = None
+
+    try:
+        claim_response = _llm_call(
+            client,
+            model=DEEPSEEK_MODEL,
+            messages=[
+                {"role": "system", "content": CLAIM_INVENTORY_SYSTEM},
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0.1,
+            max_tokens=4000,
+        )
+    except (RateLimitError, APIConnectionError, APITimeoutError, InternalServerError) as exc:
+        log.error("verify.inventory_transport_failed", run_id=state["run_id"], error=str(exc))
+        latency = int((time.time() - t_start) * 1000)
+        trace = copy_trace(state)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context="",
+            user_message=user_message,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=None,
+            parser_status="verification_error",
+            parse_error=str(exc),
+            pre_dedup_rows=[],
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+        )
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": "verification_error",
+            "claim_inventory": None,
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=[],
+                verification_status="verification_error",
+                grounding_score=0.0,
+            ),
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
+
+    run_cost += _cost(claim_response.usage)
+    total_new_tokens += claim_response.usage.total_tokens
+    raw = claim_response.choices[0].message.content.strip()
+
+    try:
+        raw_claim_rows = parse_claim_inventory_rows(raw)
+        parser_status = "ok"
+    except (json.JSONDecodeError, ValueError, ValidationError) as exc:
+        log.error("verify.inventory_parse_failed", run_id=state["run_id"], error=str(exc),
+                  raw_preview=raw[:300])
+        verification_status = "parse_failed"
+        parser_status = "parse_failed"
+        parse_error = str(exc)
+        latency = int((time.time() - t_start) * 1000)
+        trace = copy_trace(state)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context="",
+            user_message=user_message,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=raw,
+            parser_status=parser_status,
+            parse_error=parse_error,
+            pre_dedup_rows=[],
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+        )
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": verification_status,
+            "claim_inventory": None,
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=[],
+                verification_status=verification_status,
+                grounding_score=0.0,
+            ),
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
+
+    # Deterministic inventory: exact anchoring, Python claim IDs, duplicate
+    # merge, required⇒material override. Versioned by draft_sha256.
+    claim_inventory = build_claim_inventory(
+        run_id=state["run_id"],
+        iteration=iteration,
+        draft_markdown=draft_markdown,
+        raw_claims=raw_claim_rows,
+        brief_requirements=state.get("brief_requirements"),
+    )
+
+    # Fail closed (§19): no usable inventory, or any inventory claim whose
+    # draft anchor is unresolved (ANCHOR_FAILED / ANCHOR_AMBIGUOUS).
+    # Call B must NOT run and acceptance must NOT proceed as though a complete
+    # inventory was established. The inventory remains present for audit.
+    critical_failures = inventory_critical_failures(claim_inventory)
+    if not eligible_claims(claim_inventory) or critical_failures:
+        verification_status = "inventory_failed"
+        latency = int((time.time() - t_start) * 1000)
+        trace = copy_trace(state)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context="",
+            user_message=user_message,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=raw,
+            parser_status=parser_status,
+            parse_error=None,
+            pre_dedup_rows=copy.deepcopy(raw_claim_rows),
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+            claim_inventory=claim_inventory,
+        )
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        log.error(
+            "verify.inventory_failed",
+            run_id=state["run_id"],
+            eligible=len(eligible_claims(claim_inventory)),
+            anchor_unresolved=[c["claim_id"] for c in critical_failures],
+        )
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": verification_status,
+            "claim_inventory": claim_inventory,
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=[],
+                verification_status=verification_status,
+                grounding_score=0.0,
+                claim_inventory=claim_inventory,
+            ),
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
+
+    claim_roster = call_b_roster(claim_inventory)
+    specificity_by_id = _specificity_by_claim_id_from_inventory(claim_inventory)
+
+    analyzer_result = analyze_semantic_evidence(
+        request_id=request_id,
+        draft_text=draft_markdown,
+        claims=claim_roster,
+        web_sources=state.get("web_sources") or [],
+        kb_results=state.get("kb_results") or [],
+        llm_call=_make_semantic_llm_transport(client),
+        model=DEEPSEEK_MODEL,
+    )
+    run_cost += _cost_from_usage(analyzer_result.usage)
+    total_new_tokens += _usage_total_tokens(analyzer_result.usage)
+
+    engine_status_by_claim = {}
+    if analyzer_result.adjudication is not None:
+        engine_status_by_claim = dict(analyzer_result.adjudication.semantic_status_by_claim)
+
+    trace = copy_trace(state)
+
+    if not analyzer_result.success:
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context="",
+            user_message=user_message,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=raw,
+            parser_status=parser_status,
+            parse_error=parse_error,
+            pre_dedup_rows=copy.deepcopy(raw_claim_rows),
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+            claim_inventory=claim_inventory,
+        )
+        record_semantic_analyzer(
+            trace,
+            iteration=iteration,
+            request_id=request_id,
+            success=False,
+            failure_kind=analyzer_result.failure_kind,
+            failure_detail=analyzer_result.failure_detail,
+            returned_model=analyzer_result.returned_model,
+            provider_response_id=analyzer_result.provider_response_id,
+            usage=analyzer_result.usage,
+            evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
+            engine_status_by_claim=engine_status_by_claim,
+            raw_response=analyzer_result.raw_response,
+        )
+        if analyzer_result.failure_kind == "provider":
+            verification_status = "verification_error"
+        else:
+            verification_status = "parse_failed"
+        grounding_report = list(analyzer_result.grounding_report or [])
+        _attach_specificity(grounding_report, specificity_by_id)
+        _attach_inventory_fields(grounding_report, claim_inventory)
+        grounding_score = engine_compat_grounding_score(grounding_report)
+        latency = int((time.time() - t_start) * 1000)
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        log.error(
+            "verify.analyzer_failed",
+            run_id=state["run_id"],
+            failure_kind=analyzer_result.failure_kind,
+            failure_detail=analyzer_result.failure_detail,
+            verification_status=verification_status,
+        )
+        return {
+            "grounding_report": grounding_report,
+            "grounding_score": grounding_score,
+            "verification_status": verification_status,
+            "claim_inventory": claim_inventory,
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=grounding_report,
+                verification_status=verification_status,
+                grounding_score=grounding_score,
+                claim_inventory=claim_inventory,
+            ),
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
+
+    grounding_report = copy.deepcopy(analyzer_result.grounding_report)
+    _attach_specificity(grounding_report, specificity_by_id)
+    _attach_inventory_fields(grounding_report, claim_inventory)
+    grounding_report = _order_grounding_report_by_draft(grounding_report, claim_inventory)
+
+    # The semantic engine returns exactly one disposition for each roster ID.
+    # Do not apply legacy fuzzy text deduplication here: near textual matches
+    # can be distinct propositions (for example a modal qualifier) and must
+    # never alter the authoritative semantic population or UVR denominator.
+    dropped_rows: list[dict] = []
+    post_dedup_rows = copy.deepcopy(grounding_report)
+    post_attribution_rows = copy.deepcopy(grounding_report)
+
+    record_verify(
+        trace,
+        iteration=iteration,
+        consumed=True,
+        draft_markdown=draft_markdown,
+        source_context="",
+        user_message=user_message,
+        verify_system_text=CLAIM_INVENTORY_SYSTEM,
+        web_sources=state.get("web_sources") or [],
+        kb_results=state.get("kb_results") or [],
+        raw_response=raw,
+        parser_status=parser_status,
+        parse_error=parse_error,
+        pre_dedup_rows=copy.deepcopy(raw_claim_rows),
+        dropped_rows=dropped_rows,
+        post_dedup_rows=post_dedup_rows,
+        post_attribution_rows=post_attribution_rows,
+        claim_inventory=claim_inventory,
+    )
+    record_semantic_analyzer(
+        trace,
+        iteration=iteration,
+        request_id=request_id,
+        success=True,
+        failure_kind=None,
+        failure_detail=None,
+        returned_model=analyzer_result.returned_model,
+        provider_response_id=analyzer_result.provider_response_id,
+        usage=analyzer_result.usage,
+        evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
+        engine_status_by_claim=engine_status_by_claim,
+        raw_response=analyzer_result.raw_response,
+    )
+
+    grounding_score = engine_compat_grounding_score(grounding_report)
+    latency = int((time.time() - t_start) * 1000)
+    existing_latency = state.get("latency_ms", {})
+    existing_latency["verify"] = latency
+
+    n_verified = sum(1 for r in grounding_report if r.get("status") == "verified")
+    n_weak = sum(1 for r in grounding_report if r.get("status") == "weak")
+    n_unverified = sum(1 for r in grounding_report if r.get("status") == "unverified")
+    n_substantive = sum(1 for r in grounding_report if r.get("specificity") == "substantive")
+    n_substantive_verified = sum(
+        1 for r in grounding_report
+        if r.get("specificity") == "substantive" and r.get("status") == "verified"
+    )
+
+    log.info(
+        "verify.complete",
+        run_id=state["run_id"],
+        grounding_score=grounding_score,
+        claims=len(grounding_report),
+        verified=n_verified,
+        weak=n_weak,
+        unverified=n_unverified,
+        substantive=n_substantive,
+        substantive_verified=n_substantive_verified,
+        verification_status=verification_status,
+        claim_completeness=CLAIM_COMPLETENESS,
+        inventory_counts=claim_inventory.get("counts"),
+        draft_sha256=draft_sha256,
+        latency_ms=latency,
+        cost=round(run_cost, 5),
+        analyzer_request_id=request_id,
+    )
 
     return {
         "grounding_report": grounding_report,
-        "grounding_score": round(grounding_score, 3),
+        "grounding_score": grounding_score,
         "verification_status": verification_status,
-        "iteration_metrics": iteration_metrics,
-        "total_tokens": state.get("total_tokens", 0) + claim_response.usage.total_tokens,
+        "claim_inventory": claim_inventory,
+        "iteration_metrics": _append_verify_iteration_metrics(
+            state,
+            grounding_report=grounding_report,
+            verification_status=verification_status,
+            grounding_score=grounding_score,
+            claim_inventory=claim_inventory,
+        ),
+        "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
         "semantic_trace": trace,
@@ -1016,6 +1481,19 @@ def claim_review_summary(rows: list[dict]) -> dict[str, int]:
         if status in ("verified", "weak", "unverified"):
             counts[status] += 1
     return counts
+
+
+def claim_inventory_summary(inventory: dict | None) -> dict | None:
+    """Gate-1 review summary of the current-draft claim inventory (audit aid —
+    NOT an acceptance input by itself)."""
+    if not isinstance(inventory, dict):
+        return None
+    return {
+        "draft_sha256": inventory.get("draft_sha256"),
+        "counts": inventory.get("counts"),
+        "satisfied_req_ids": inventory.get("satisfied_req_ids", []),
+        "critical_failures": len(inventory_critical_failures(inventory)),
+    }
 
 
 def _reflection_provenance(
@@ -1184,7 +1662,24 @@ def hitl_node(state: AgentState) -> dict:
             "review_claims": review_rows,
             "claim_summary": claim_review_summary(review_rows),
             "unverified_rate": unverified_rate(state.get("grounding_report", [])),
+            # Explicit unresolved semantic review obligations (Phase 4 Slice 1):
+            # blocker-bearing rows are categorical; blocker-free unverified rows
+            # are UVR-governed. Not hidden behind aggregate scores.
+            "semantic_obligations": unresolved_semantic_obligations(state.get("grounding_report")),
+            "claim_inventory_summary": claim_inventory_summary(state.get("claim_inventory")),
             "claim_completeness": CLAIM_COMPLETENESS,
+            # Phase 4 Slice 2B: material + required-content obligations exposed
+            # to the human reviewer so auto/API approval cannot bypass them
+            # (spec §16). material_policy_pass is NOT final publication
+            # eligibility — citation safety remains Slice 2c.
+            "material_policy": material_policy_result(state).to_dict(),
+            "unknown_requirement_obligations": unknown_requirement_obligations(
+                material_policy_result(state),
+                state.get("grounding_report"),
+            ),
+            # Phase 4 Slice 2C: citation obligations exposed so auto/API
+            # approval cannot bypass missing/unsupported/misplaced citations.
+            "citation_policy": citation_policy_result(state).to_dict(),
         }) or {}
         action = decision.get("action")
         if action == "approve":
@@ -1291,7 +1786,14 @@ def _render_takeaways(raw: str) -> str:
     return "<ul>\n" + "\n".join(items) + "\n</ul>"
 
 
-def _render_technical_dive_via_llm(topic: str, technical_dive: str, client, run_id: str) -> tuple[str, int, float]:
+def _render_technical_dive_via_llm(
+    topic: str,
+    technical_dive: str,
+    client=None,
+    run_id: str = "",
+) -> tuple[str, int, float]:
+    if client is None:
+        client = _get_client()
     prompt = f"""Convert this technical section into clean HTML for an article about: {topic}
 
 RULES:
@@ -1474,13 +1976,29 @@ def html_gen_node(state: AgentState) -> dict:
                 "approved_html_sha256": None,
                 "latency_ms": existing_latency}
 
-    client = _get_client()
     draft = state.get("draft_sections", {})
     topic = state["topic"]
     run_id = state["run_id"]
     td_tokens, td_cost = 0, 0.0
 
     try:
+        if state.get("claim_inventory") is not None:
+            cite_gate = evaluate_citation_policy(state=state)
+            if not citation_policy_passed(cite_gate):
+                existing_latency["html_gen"] = int((time.time() - t_start) * 1000)
+                error_log.append("[html_gen] citation policy failure; HTML generation blocked")
+                return {
+                    "html_output": None,
+                    "html_filename": None,
+                    "article_body_html": None,
+                    "html_sha256": None,
+                    "html_policy_version": HTML_POLICY_VERSION,
+                    "approved_html_sha256": None,
+                    "latency_ms": existing_latency,
+                    "error_log": error_log,
+                    "policy_diagnostics": policy_diagnostics + [cite_gate.to_dict()],
+                }
+
         framing = sanitize_fragment(_render_problem_framing(
             draft.get("problem_framing", "No problem framing available.")
         ))
@@ -1491,17 +2009,42 @@ def html_gen_node(state: AgentState) -> dict:
         raw_td, td_tokens, td_cost = _render_technical_dive_via_llm(
             topic=topic,
             technical_dive=draft.get("technical_dive", ""),
-            client=client,
             run_id=run_id,
         )
         dive = sanitize_fragment(raw_td)
         del raw_td
 
-        citations_html = _build_citations(
-            state.get("grounding_report", []),
-            state.get("web_sources", []),
-            state.get("kb_results", []),
-        )
+        citations_html = _citations_html_for_state(state)
+        framing_html, dive_html, code_html, takeaways_html = framing.html, dive.html, code.html, takeaways.html
+        if state.get("claim_inventory") is not None:
+            cite = evaluate_citation_policy(state=state)
+            # Local annotated copy only — canonical draft_markdown is untouched.
+            _ = insert_citation_markers(
+                state.get("draft_markdown") or "",
+                cite.anchor_groups,
+            )
+            numbering = evidence_numbering(cite.attached_evidence_ids or cite.required_evidence_ids)
+            draft_md = state.get("draft_markdown") or ""
+            framing_html = apply_inline_clusters_to_html(
+                framing_html, draft_markdown=draft_md,
+                groups=cite.anchor_groups, numbering=numbering,
+            )
+            dive_html = apply_inline_clusters_to_html(
+                dive_html, draft_markdown=draft_md,
+                groups=cite.anchor_groups, numbering=numbering,
+            )
+            code_html = apply_inline_clusters_to_html(
+                code_html, draft_markdown=draft_md,
+                groups=cite.anchor_groups, numbering=numbering,
+            )
+            takeaways_html = apply_inline_clusters_to_html(
+                takeaways_html, draft_markdown=draft_md,
+                groups=cite.anchor_groups, numbering=numbering,
+            )
+            framing = sanitize_fragment(framing_html)
+            dive = sanitize_fragment(dive_html)
+            code = sanitize_fragment(code_html)
+            takeaways = sanitize_fragment(takeaways_html)
         article = assemble_trusted_article(
             **_article_shell_fields(state),
             problem_framing=framing,
@@ -1654,11 +2197,7 @@ def html_revise_node(state: AgentState) -> dict:
     note = state.get("html_feedback") or ""
     errors = list(state.get("error_log") or [])
     policy_diagnostics = list(state.get("policy_diagnostics") or [])
-    citations_html = _build_citations(
-        state.get("grounding_report", []),
-        state.get("web_sources", []),
-        state.get("kb_results", []),
-    )
+    citations_html = _citations_html_for_state(state)
 
     system = Path("prompts/html_revise_system.md").read_text(encoding="utf-8")
     user = (
@@ -2060,6 +2599,52 @@ def git_node(state: AgentState) -> dict:
 CLAIM_COMPLETENESS = "unknown"
 
 
+def material_policy_result(state: AgentState) -> MaterialPolicyResult:
+    """Evaluate the Phase-4 Slice-2b material + required-content policy for the
+    current state. Pure/deterministic; no provider calls. Recomputed on demand
+    from the current claim inventory + grounding report + draft sha, so a stale
+    material result can never certify a revised draft (spec §11, §12)."""
+    return evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+
+
+def material_policy_accepted(state: AgentState) -> bool:
+    """True only when the material + required-content policy passes for the
+    current artifact. Absent inventory (pre-2A/hand-built) passes, preserving
+    Slice-1 behavior; a present-but-stale or failing inventory fails closed."""
+    return material_policy_passed(material_policy_result(state))
+
+
+def citation_policy_result(state: AgentState) -> CitationPolicyResult:
+    """Evaluate Slice-2c citation policy for the current state. Pure; no
+    provider calls. Recomputed on demand from inventory + grounding + draft
+    sha so a stale plan cannot certify a revised draft."""
+    return evaluate_citation_policy(state=state)
+
+
+def citation_policy_accepted(state: AgentState) -> bool:
+    """True only when citation policy passes. Absent inventory (pre-2A) passes,
+    preserving Slice-1 behavior."""
+    return citation_policy_passed(citation_policy_result(state))
+
+
+def publication_safety_accepted(state: AgentState) -> bool:
+    """Deterministic publication-safety conjunction (Slice 2c spec §20).
+
+    Not a composite score. Reflection cannot override any conjunct.
+    This is NOT a human publication decision and does not publish.
+    """
+    return (
+        semantic_verification_accepted(state)
+        and material_policy_accepted(state)
+        and citation_policy_accepted(state)
+    )
+
+
+def publication_safety_pass(state: AgentState) -> bool:
+    """Spec name for the publication-safety conjunction. Does not publish."""
+    return publication_safety_accepted(state)
+
+
 def unverified_rate(grounding_report: list | None) -> float | None:
     """Exact unverified / N, or None when UVR is not deterministically computable."""
     if not grounding_report:
@@ -2077,23 +2662,211 @@ def unverified_claims(grounding_report: list | None) -> list[str]:
     ]
 
 
+# Phase 4 Slice 1 (D-2026-09-14-05): blocker policy generalized across statuses.
+# ANY valid semantic row carrying an applicable structured blocker — contradiction
+# or claim-invalidating limitation — blocks semantic acceptance, whether the row
+# is WEAK or UNVERIFIED. The blocker never changes the row's semantic status;
+# it changes acceptance of the artifact.
+BLOCKING_SEMANTIC_BLOCKER_KINDS = frozenset({"contradiction", "limitation"})
+
+# Future Phase-4 target (documented, NOT implemented): a limitation that is
+# accurately represented inside the claim itself may eventually be considered
+# resolved/non-blocking. That requires a deterministic representation check;
+# until then every emitted applicable limitation is blocking.
+
+
+def _row_is_valid_semantic_row(row: dict) -> bool:
+    """A row's blockers are categorical only when the row's analysis is valid.
+
+    Rows without ``analysis_validity`` (hand-built or pre-engine telemetry rows)
+    are treated as valid. Engine INVALID rows failed structural validation, so
+    their blockers are not categorical authority — those rows already fail
+    closed upstream (invalid adjudication => verification error/parse failure)
+    and still count as unverified rows for UVR.
+    """
+    validity = row.get("analysis_validity")
+    return validity is None or str(validity).upper() != "INVALID"
+
+
+def unresolved_semantic_obligations(grounding_report: list | None) -> list[dict]:
+    """Deterministic inventory of unresolved semantic review obligations.
+
+    One obligation per emitted row that is NOT cleanly resolved under current
+    policy — this makes unresolved verifier findings explicit instead of hiding
+    them behind aggregate scores:
+
+    - VALID weak/unverified row with an applicable structured blocker
+      (contradiction/limitation) -> ``blocking=True`` obligation; blocks
+      semantic acceptance categorically;
+    - blocker-free unverified row -> ``blocking=False`` obligation; governed by
+      the historical UVR policy, not individually categorical.
+
+    Blocker-free weak rows and verified rows are resolved under current policy
+    and produce no obligation. Resolution is always "unresolved" here — no
+    remediation is recorded against the current artifact yet.
+    """
+    obligations: list[dict] = []
+    for row in grounding_report or []:
+        status = row.get("status")
+        if status not in ("weak", "unverified"):
+            continue
+        blockers: list[dict] = []
+        if _row_is_valid_semantic_row(row):
+            blockers = [
+                copy.deepcopy(b)
+                for b in (row.get("blockers") or [])
+                if isinstance(b, dict) and b.get("kind") in BLOCKING_SEMANTIC_BLOCKER_KINDS
+            ]
+        if not blockers and status != "unverified":
+            continue
+        obligations.append({
+            "claim_id": row.get("claim_id"),
+            "claim": row.get("claim"),
+            "status": status,
+            "blocker_kinds": [b.get("kind") for b in blockers],
+            "blockers": blockers,
+            "support_spans": copy.deepcopy(row.get("support_spans") or []),
+            "reason_codes": list(row.get("reason_codes") or []),
+            "source_ref": row.get("source_ref"),
+            "source_url": row.get("source_url"),
+            "blocking": bool(blockers),
+            "resolution": "unresolved",
+        })
+    return obligations
+
+
+def has_blocking_semantic_blockers(grounding_report: list | None) -> bool:
+    """True when any valid semantic row — WEAK or UNVERIFIED — carries an
+    applicable structured blocker (contradiction or claim-invalidating
+    limitation). Only structured blocker ``kind`` is inspected, never free
+    text. ``engine_compat_grounding_score`` cannot override this gate."""
+    return any(o["blocking"] for o in unresolved_semantic_obligations(grounding_report))
+
+
+_BLOCKER_REPAIR_GUIDANCE = {
+    "contradiction": (
+        "The quoted evidence contradicts this claim. Correct or narrow the claim so "
+        "it no longer conflicts with the quoted evidence."
+    ),
+    "limitation": (
+        "The quoted evidence states a limitation/qualifier this claim omits. Add the "
+        "omitted qualifier so the claim matches the evidence exactly."
+    ),
+}
+
+
+def _format_semantic_blocker_feedback(grounding_report: list | None) -> tuple[str, list[dict]]:
+    """Targeted revision feedback for blocker-bearing rows (Phase 4 Slice 1).
+
+    The drafter must know WHAT to repair and WHY: exact claim, semantic status,
+    blocker kind, blocker explanation, exact adverse/supporting evidence quote,
+    source/evidence provenance, and reason codes where available — never a
+    generic 'improve grounding'. Returns ("", []) when no blocking obligations
+    exist.
+    """
+    obligations = [o for o in unresolved_semantic_obligations(grounding_report) if o["blocking"]]
+    if not obligations:
+        return "", []
+    items: list[str] = []
+    for obligation in obligations:
+        lines = [
+            f"- claim_id: {obligation['claim_id'] or 'unknown'}",
+            f"  claim: {obligation['claim']}",
+            f"  semantic_status: {obligation['status']}",
+        ]
+        source = obligation.get("source_ref") or obligation.get("source_url")
+        if source:
+            lines.append(f"  source: {source}")
+        if obligation["reason_codes"]:
+            lines.append(f"  reason_codes: {', '.join(str(c) for c in obligation['reason_codes'])}")
+        for blocker in obligation["blockers"]:
+            lines.append(f"  blocker: {blocker.get('kind')}")
+            explanation = (blocker.get("explanation") or "").strip()
+            if explanation:
+                lines.append(f"  explanation: {explanation}")
+            for span in blocker.get("evidence_spans") or []:
+                quote = (span.get("text") or "").strip()
+                if quote:
+                    lines.append(
+                        f"  adverse evidence ({span.get('evidence_id') or 'unknown'}): \"{quote}\""
+                    )
+            guidance = _BLOCKER_REPAIR_GUIDANCE.get(blocker.get("kind"))
+            if guidance:
+                lines.append(f"  repair: {guidance}")
+        for span in obligation["support_spans"]:
+            quote = (span.get("text") or "").strip()
+            if quote:
+                lines.append(
+                    f"  supporting evidence ({span.get('evidence_id') or 'unknown'}): \"{quote}\""
+                )
+        items.append("\n".join(lines))
+    block = (
+        "\n\nREVISION — TARGETED SEMANTIC BLOCKER FEEDBACK:\n"
+        "Verification found structured semantic blockers on the following claims. "
+        "Repair EACH one specifically; this is NOT a generic request to improve "
+        "grounding.\n"
+        + "\n".join(items)
+        + "\n\nDo NOT resolve a blocker by deleting required substantive content: "
+        "repair, qualify, or ground the claim instead, and keep the required "
+        "deliverable complete (all four sections — problem framing, technical "
+        "deep-dive, code, takeaways — on the assigned topic/card). "
+        "Required-content completeness cannot be determined automatically, so "
+        "treat existing substantive content as required."
+    )
+    return block, obligations
+
+
 def semantic_verification_accepted(state: AgentState) -> bool:
     """True only when every applicable semantic acceptance condition holds.
 
-    Required:
+    Minimum acceptance semantics (Phase 4 Slice 1 — NOT the final production
+    publication policy):
         1. verification_status == "completed"
-        2. verdict set is nonempty
-        3. UVR is deterministically computable
-        4. UVR <= UVR_THRESHOLD (0.15)
+        2. verdict set is nonempty (valid report)
+        3. no unresolved applicable contradiction on any valid row
+        4. no unresolved applicable limitation on any valid row
+        5. UVR_v1 deterministically computable and <= UVR_THRESHOLD (0.15)
 
     Parse failure, skipped verification, empty verdicts, upstream failure,
-    unknown/incomplete status, and UVR above the gate all fail closed.
-    Scalar grounding/confidence cannot convert those states into a pass.
-    Claim-completeness remains CLAIM_COMPLETENESS ("unknown") and is not gated.
+    unknown/incomplete status, blocker-bearing rows (weak OR unverified), and
+    UVR above the gate all fail closed. Scalar grounding/confidence cannot
+    convert those states into a pass, and UVR <= 0.15 cannot override an
+    applicable blocker or an invalid evaluation state. Claim completeness
+    versus everything the draft truly says remains CLAIM_COMPLETENESS
+    ("unknown"). Material and citation safety are separate deterministic
+    layers and are not this function's authority.
     """
     if state.get("verification_status") != "completed":
         return False
+    inventory = state.get("claim_inventory")
+    if inventory is not None:
+        # Phase 4 Slice 2A: a present inventory must belong to THIS exact draft
+        # version (no stale inventory certifies a revised draft) and every
+        # inventory claim must be anchor-resolved. An absent inventory
+        # (pre-2A/hand-built state) keeps Slice-1 behavior only.
+        if inventory.get("draft_sha256") != sha256_utf8(state.get("draft_markdown") or ""):
+            return False
+        if inventory_critical_failures(inventory):
+            return False
     report = state.get("grounding_report") or []
+    if inventory is not None:
+        expected_ids = [claim.get("claim_id") for claim in inventory.get("claims", [])]
+        observed_ids = [row.get("claim_id") for row in report]
+        # Defense in depth for stale/manual grounding splices: the completed
+        # report must remain a one-to-one rendering of the CURRENT Call-B
+        # roster. The status engine enforces this at adjudication time; this
+        # protects the acceptance boundary too.
+        if (
+            not expected_ids
+            or any(not isinstance(claim_id, str) or not claim_id for claim_id in expected_ids)
+            or any(not isinstance(claim_id, str) or not claim_id for claim_id in observed_ids)
+            or len(expected_ids) != len(set(expected_ids))
+            or len(observed_ids) != len(set(observed_ids))
+            or set(expected_ids) != set(observed_ids)
+        ):
+            return False
+    if has_blocking_semantic_blockers(report):
+        return False
     uvr = unverified_rate(report)
     if uvr is None:
         return False
@@ -2109,15 +2882,30 @@ def _hitl_traced(state: AgentState, payload: dict) -> dict:
 
 
 def hitl_approve_update(state: AgentState) -> dict:
-    """Ordinary approve grants HTML eligibility only if semantic verification passed.
+    """Ordinary approve grants HTML eligibility only if ALL hard gates pass:
+    semantic verification (Slice 1), material + required-content (Slice 2b),
+    and citation safety (Slice 2c).
 
-    Semantic failure uses the existing reject payload so route_after_hitl → END.
-    Feedback and explicit reject are unchanged.
+    Any failure uses the existing reject payload so route_after_hitl → END.
+    This is what prevents HITL_AUTO_APPROVE=1 and API approve from bypassing
+    unresolved material claims, UNKNOWN materiality, missing/unresolved
+    mandatory requirements, or citation correctness/completeness/placement
+    failures. Feedback and explicit reject unchanged.
     """
-    if semantic_verification_accepted(state):
+    material = material_policy_result(state)
+    citation = citation_policy_result(state)
+    if (
+        semantic_verification_accepted(state)
+        and material_policy_passed(material)
+        and citation_policy_passed(citation)
+    ):
         payload = {"hitl_status": "approved", "hitl_feedback": None}
     else:
         payload = {"hitl_status": "rejected", "hitl_feedback": None}
+        payload["policy_diagnostics"] = {
+            "material_policy": material.to_dict(),
+            "citation_policy": citation.to_dict(),
+        }
     return _hitl_traced(state, payload)
 
 
@@ -2125,18 +2913,27 @@ def route_after_reflect(state: AgentState) -> str:
     """
         Decide whether to revise the draft or proceed to HITL.
 
-        Composite gate (NOT reflection score alone — LLMs inflate self-scores):
+        Routing authority (Phase 4 Slice 1, D-2026-09-14-05):
             Force rewrite if:
-                - semantic verification is not accepted (status, nonempty
-                  verdicts, computable UVR, UVR <= 0.15), when iteration
-                  capacity remains
-                - grounding_score < GROUNDING_FLOOR (hard floor, regardless of reflection)
-                - OR reflection_score < REFLECTION_THRESHOLD AND grounding_score < 0.75
+                - semantic verification is not accepted (completed status,
+                  nonempty verdicts, no applicable contradiction/limitation
+                  blocker on any valid row, computable UVR <= 0.15), when
+                  iteration capacity remains
+                - OR reflection_score < REFLECTION_THRESHOLD (quality gate;
+                  threshold unchanged)
             Proceed if:
                 - max iterations reached (HITL; auto-approve cannot launder a
                   semantic failure — see hitl_node)
                 - cost gate trips (same HITL / fail-closed auto-approve rule)
-                - composite gate passes AND semantic verification is accepted
+                - semantic verification is accepted AND reflection gate passes
+
+        grounding_score is DEPRECATED as routing authority: it is
+        compatibility/observability only (state/API/telemetry/benchmark/UI)
+        and is logged here for observability, but it cannot determine semantic
+        acceptance or revision routing. The old GROUNDING_FLOOR hard floor and
+        the grounding<0.75 soft-gate conjunct were already unreachable whenever
+        the semantic gate passed (UVR<=0.15 implies score >= 0.6375) and are
+        removed, not retuned; no replacement composite is introduced.
 
         Returns:
             "draft" — loop back and revise
@@ -2145,7 +2942,7 @@ def route_after_reflect(state: AgentState) -> str:
     log = get_logger("router")
     iterations = state.get("iterations", 0)
     reflection_score = state.get("reflection_score", 8)
-    grounding_score = state.get("grounding_score", 0.75)
+    grounding_score = state.get("grounding_score", 0.75)  # observability only
     uvr = unverified_rate(state.get("grounding_report"))
     semantic_ok = semantic_verification_accepted(state)
 
@@ -2168,44 +2965,86 @@ def route_after_reflect(state: AgentState) -> str:
                  claim_completeness=CLAIM_COMPLETENESS)
         return "draft"
 
-    # Composite gate
-    hard_floor_fail = grounding_score < GROUNDING_FLOOR
-    soft_fail = reflection_score < REFLECTION_THRESHOLD and grounding_score < 0.75
+    # Phase 4 Slice 2B: material + required-content policy (spec §14).
+    # Applied AFTER the semantic gate. A material factual claim that is only
+    # WEAK/UNVERIFIED/INVALID, or a missing/unresolved mandatory requirement,
+    # is repairable -> targeted revision while budget remains. UNKNOWN
+    # materiality and integrity/version failures go straight to HITL/HOLD
+    # (never a stochastic revision retry). material_policy_pass does NOT yet
+    # imply final publication eligibility (citation safety is Slice 2c).
+    material = material_policy_result(state)
+    if material.decision == MATERIAL_REVISION:
+        log.info("route.revise", run_id=state["run_id"], reason="material/required-content policy",
+                 material_safety_state=material.material_safety_state,
+                 unresolved_material=material.unresolved_material_claim_count,
+                 unknown_materiality=material.unknown_materiality_count,
+                 missing_reqs=len(material.missing_requirement_ids),
+                 unresolved_reqs=len(material.unresolved_requirement_ids),
+                 material_verified_rate=material.material_verified_rate)
+        return "draft"
+    if material.decision == MATERIAL_HITL:
+        log.info("route.material_hold", run_id=state["run_id"],
+                 material_safety_state=material.material_safety_state,
+                 reason_codes=material.reason_codes)
+        return "hitl"
 
-    if hard_floor_fail or soft_fail:
-        reason = "grounding below floor" if hard_floor_fail else "reflection + grounding both weak"
-        log.info("route.revise", run_id=state["run_id"], reason=reason, reflection=reflection_score, grounding=round(grounding_score, 2))
+    # Phase 4 Slice 2C: citation safety AFTER semantic + material. Failures
+    # HOLD/HITL — citations are derived from already-qualified Call-B
+    # support, so we do not ask the drafter to hallucinate references.
+    # A high reflection score cannot override a citation failure.
+    citation = citation_policy_result(state)
+    if not citation_policy_passed(citation):
+        log.info("route.citation_hold", run_id=state["run_id"],
+                 citation_safety_state=citation.citation_safety_state,
+                 reason_codes=citation.reason_codes,
+                 missing=citation.missing_required_citation_count,
+                 invalid=citation.invalid_citation_count,
+                 placement=citation.citation_placement_failure_count)
+        return "hitl"
+
+    # Quality gate (reflection only; grounding_score is not consulted)
+    if reflection_score < REFLECTION_THRESHOLD:
+        log.info("route.revise", run_id=state["run_id"], reason="reflection below threshold",
+                 reflection=reflection_score, grounding=round(grounding_score, 2))
         return "draft"
 
     log.info("route.proceed", run_id=state["run_id"], reflection=reflection_score, grounding=round(grounding_score, 2),
-             uvr=uvr, claim_completeness=CLAIM_COMPLETENESS)
+             uvr=uvr, claim_completeness=CLAIM_COMPLETENESS,
+             material_safety_state=material.material_safety_state)
     return "hitl"
 
 def route_after_hitl(state: AgentState) -> str:
     """
     Route based on HITL decision.
 
-    Ordinary approve may proceed to HTML only when semantic verification is
-    accepted. A semantically failed/incomplete state cannot become HTML-eligible
-    through approve (auto, interactive, or API). Existing destinations only:
-        "html_gen" — approved AND semantically accepted
+    Ordinary approve may proceed to HTML only when ALL hard gates pass:
+    semantic verification (Slice 1), material + required-content (Slice 2b),
+    and citation safety (Slice 2c). Existing destinations only:
+        "html_gen" — approved AND publication_safety_accepted
         "draft"    — explicit feedback (existing remediation path)
-        END        — reject, unknown, or approve blocked by semantic failure
+        END        — reject, unknown, or approve blocked by a gate failure
+    publication_safety_pass does not publish by itself.
     """
     from langgraph.graph import END
     log = get_logger("router")
     status = state.get("hitl_status", "pending")
     semantic_ok = semantic_verification_accepted(state)
-    log.info("hitl.decision", run_id=state["run_id"], status=status, semantic_ok=semantic_ok)
+    material_ok = material_policy_accepted(state)
+    citation_ok = citation_policy_accepted(state)
+    safety_ok = semantic_ok and material_ok and citation_ok
+    log.info("hitl.decision", run_id=state["run_id"], status=status,
+             semantic_ok=semantic_ok, material_ok=material_ok, citation_ok=citation_ok)
 
     if status == "feedback":
         return "draft"
-    if status == "approved" and semantic_ok:
+    if status == "approved" and safety_ok:
         return "html_gen"
     if status == "approved":
-        log.info("hitl.approve_blocked_semantic_failure",
+        log.info("hitl.approve_blocked_gate_failure",
                  run_id=state["run_id"],
                  verification_status=state.get("verification_status"),
+                 semantic_ok=semantic_ok, material_ok=material_ok,
+                 citation_ok=citation_ok,
                  claim_completeness=CLAIM_COMPLETENESS)
         return END
     return END

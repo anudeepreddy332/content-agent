@@ -1,0 +1,900 @@
+{
+  "pack_id": "evidence_exposure_2d",
+  "schema_version": 1,
+  "evaluator_id": "evidence_exposure_2d_preflight",
+  "stage": "2d",
+  "description": "Frozen Stage 2D provider preflight pack",
+  "provider_execution_default": "disabled",
+  "hard_spend_ceiling_usd": 0.08,
+  "max_attempts_per_cell": 1,
+  "provider_retries_disabled": true,
+  "model_config": {
+    "model_alias": "deepseek-chat",
+    "temperature": 0.1,
+    "max_tokens": 4000
+  },
+  "prompt_identity": {
+    "verify_system_path": "prompts/verify_system.md",
+    "verify_system_sha256": "e7ac8744409d63a879d4df85b7e4240b1d447a36d91506731f6c7ba00217809a"
+  },
+  "zero_tolerance_gates": {
+    "material_false_verification_rate.v2_numerator": 0,
+    "automatic_semantic_false_pass_rate.v2_numerator": 0
+  },
+  "assets": [
+    {
+      "asset_id": "P1",
+      "title": "late supported material claim",
+      "source": {
+        "source_id": "SRC-P1-W02",
+        "source_kind": "web",
+        "source_url": "https://example.test/quorum/latch",
+        "source_rank": 1,
+        "source_text": "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------Quorum latch engages only after seven replica acknowledgements.",
+        "source_sha256": "b8d231ed89d8e1849f992dca745c2d96e2fb1becb31a0cafa1fd5c8e839959e2",
+        "source_character_length": 1563
+      },
+      "draft_text": "Quorum latch engages only after seven replica acknowledgements.",
+      "draft_sha256": "a9b449c9e4edd0ff8a464b63efeb5c4858a1353daabcf091af7bf72cc232b316",
+      "cells": [
+        {
+          "cell_id": "P1-PREFIX",
+          "exposure_arm": "prefix"
+        },
+        {
+          "cell_id": "P1-COMPLETE",
+          "exposure_arm": "complete"
+        }
+      ],
+      "expected_corrected_semantic_pass": {
+        "P1-PREFIX": false,
+        "P1-COMPLETE": true
+      },
+      "expected_primary_label_complete": "verified",
+      "semantic_fixture": {
+        "id": "ADV02",
+        "title": "P1 late supported claim",
+        "draft_text": "Quorum latch engages only after seven replica acknowledgements.",
+        "draft_sha256": "a9b449c9e4edd0ff8a464b63efeb5c4858a1353daabcf091af7bf72cc232b316",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "Quorum latch engages only after seven replica acknowledgements.",
+            "span": [
+              0,
+              63
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "verified",
+            "canonical_id": "ADV02.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "Quorum latch engages only after seven replica acknowledgements.",
+            "span": [
+              0,
+              63
+            ],
+            "roles": [],
+            "predicted_semantic_status": "verified",
+            "canonical_id": "ADV02.C.c1"
+          }
+        ],
+        "allowed_matches": [
+          {
+            "candidate_id": "c1",
+            "gold_id": "g1"
+          }
+        ],
+        "evidence_bindings": [
+          {
+            "id": "P1.BIND.g1",
+            "gold_id": "g1",
+            "candidate_id": "c1",
+            "evidence_id": "P1.EV.quorum",
+            "valid": true,
+            "fully_entailed": true
+          }
+        ],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "Quorum latch engages only after seven replica acknowledgements.",
+            "span": [
+              0,
+              63
+            ],
+            "material": true,
+            "reference_relationship": "required-equivalent",
+            "required_gold_id": "g1",
+            "independent_semantic_label": "verified",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "verified",
+            "binding": {
+              "id": "P1.FBIND.f1",
+              "target_final_claim_id": "f1",
+              "evidence_id": "P1.EV.quorum",
+              "valid": true,
+              "fully_entailed": true
+            }
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P1.VR.c1",
+            "status": "verified"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P1.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "verified",
+            "predicted_semantic_status": "verified",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": "f1"
+          }
+        ]
+      }
+    },
+    {
+      "asset_id": "P2",
+      "title": "unsupported material claim",
+      "source": {
+        "source_id": "SRC-P2",
+        "source_kind": "kb",
+        "source_url": "kb://fluxcap/array-fc881",
+        "source_rank": 1,
+        "source_text": "FluxCap array service note FC-881. FluxCap array stores at most 4096 records per shard under nominal load.",
+        "source_sha256": "2c6c2b3a725ba541269deee89c0c495d2e387ad438145e5a80a72bd5874bd177",
+        "source_character_length": 106
+      },
+      "draft_text": "FluxCap array stores 8192 records per shard under nominal load.",
+      "draft_sha256": "877b42403b16d6a34442a4f6b5d15d2c3abc151d043229529e0a1050c7a6edda",
+      "cells": [
+        {
+          "cell_id": "P2-COMPLETE",
+          "exposure_arm": "complete"
+        }
+      ],
+      "expected_corrected_semantic_pass": {
+        "P2-COMPLETE": false
+      },
+      "expected_primary_label_complete": "unverified",
+      "semantic_fixture": {
+        "id": "ADV03",
+        "title": "P2 unsupported claim",
+        "draft_text": "FluxCap array stores 8192 records per shard under nominal load.",
+        "draft_sha256": "877b42403b16d6a34442a4f6b5d15d2c3abc151d043229529e0a1050c7a6edda",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "FluxCap array stores 8192 records per shard under nominal load.",
+            "span": [
+              0,
+              63
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "unverified",
+            "canonical_id": "ADV03.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "FluxCap array stores 8192 records per shard under nominal load.",
+            "span": [
+              0,
+              63
+            ],
+            "roles": [],
+            "predicted_semantic_status": "unverified",
+            "canonical_id": "ADV03.C.c1"
+          }
+        ],
+        "allowed_matches": [
+          {
+            "candidate_id": "c1",
+            "gold_id": "g1"
+          }
+        ],
+        "evidence_bindings": [
+          {
+            "id": "P2.BIND.g1",
+            "gold_id": "g1",
+            "candidate_id": "c1",
+            "evidence_id": "P2.EV.fluxcap",
+            "valid": false,
+            "fully_entailed": false
+          }
+        ],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "FluxCap array stores 8192 records per shard under nominal load.",
+            "span": [
+              0,
+              63
+            ],
+            "material": true,
+            "reference_relationship": "required-equivalent",
+            "required_gold_id": "g1",
+            "independent_semantic_label": "unverified",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "unverified",
+            "binding": {
+              "id": "P2.FBIND.f1",
+              "target_final_claim_id": "f1",
+              "evidence_id": "P2.EV.fluxcap",
+              "valid": false,
+              "fully_entailed": false
+            }
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P2.VR.c1",
+            "status": "unverified"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P2.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "unverified",
+            "predicted_semantic_status": "unverified",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": "f1"
+          }
+        ]
+      }
+    },
+    {
+      "asset_id": "P3",
+      "title": "partial weak material claim",
+      "source": {
+        "source_id": "SRC-P3",
+        "source_kind": "web",
+        "source_url": "https://example.test/nexus-7/manual",
+        "source_rank": 1,
+        "source_text": "Project NEXUS-7 internal field manual. NEXUS-7 bounded replay retains exactly 512 events per shard.",
+        "source_sha256": "5e0c9b25bf284fe54b1985d70db3d7232cb857015354b8c22e9274c761af7528",
+        "source_character_length": 99
+      },
+      "draft_text": "NEXUS-7 bounded replay retains thousands of events per shard.",
+      "draft_sha256": "0e951d64638d44059b29c260f2059ac5fd8b606c13f9436d1090b3f644b5eb87",
+      "cells": [
+        {
+          "cell_id": "P3-COMPLETE",
+          "exposure_arm": "complete"
+        }
+      ],
+      "expected_corrected_semantic_pass": {
+        "P3-COMPLETE": false
+      },
+      "expected_primary_label_complete": "weak",
+      "semantic_fixture": {
+        "id": "ADV04",
+        "title": "P3 partial weak claim",
+        "draft_text": "NEXUS-7 bounded replay retains thousands of events per shard.",
+        "draft_sha256": "0e951d64638d44059b29c260f2059ac5fd8b606c13f9436d1090b3f644b5eb87",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "NEXUS-7 bounded replay retains thousands of events per shard.",
+            "span": [
+              0,
+              61
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "weak",
+            "canonical_id": "ADV04.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "NEXUS-7 bounded replay retains thousands of events per shard.",
+            "span": [
+              0,
+              61
+            ],
+            "roles": [],
+            "predicted_semantic_status": "weak",
+            "canonical_id": "ADV04.C.c1"
+          }
+        ],
+        "allowed_matches": [
+          {
+            "candidate_id": "c1",
+            "gold_id": "g1"
+          }
+        ],
+        "evidence_bindings": [
+          {
+            "id": "P3.BIND.g1",
+            "gold_id": "g1",
+            "candidate_id": "c1",
+            "evidence_id": "P3.EV.nexus",
+            "valid": true,
+            "fully_entailed": false
+          }
+        ],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "NEXUS-7 bounded replay retains thousands of events per shard.",
+            "span": [
+              0,
+              61
+            ],
+            "material": true,
+            "reference_relationship": "required-equivalent",
+            "required_gold_id": "g1",
+            "independent_semantic_label": "weak",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "weak",
+            "binding": {
+              "id": "P3.FBIND.f1",
+              "target_final_claim_id": "f1",
+              "evidence_id": "P3.EV.nexus",
+              "valid": true,
+              "fully_entailed": false
+            }
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P3.VR.c1",
+            "status": "weak"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P3.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "weak",
+            "predicted_semantic_status": "weak",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": "f1"
+          }
+        ]
+      }
+    },
+    {
+      "asset_id": "P4",
+      "title": "supported-new material claim",
+      "source": {
+        "source_id": "SRC-P4",
+        "source_kind": "kb",
+        "source_url": "kb://inventory/ledger-il44",
+        "source_rank": 1,
+        "source_text": "Inventory ledger IL-44. There are 10 items in partition A. There are 15 items in partition B.",
+        "source_sha256": "1abdb9af7757936406659343ba19dea31175f58e41f7823a0c7d053e94689c57",
+        "source_character_length": 93
+      },
+      "draft_text": "There are 10 items in partition A. There are 15 items in partition B.",
+      "draft_sha256": "24376e7b69c6f868f7eb3a98e8825444bf82cc091ec978a0194636b84c25e71b",
+      "cells": [
+        {
+          "cell_id": "P4-COMPLETE",
+          "exposure_arm": "complete"
+        }
+      ],
+      "expected_corrected_semantic_pass": {
+        "P4-COMPLETE": true
+      },
+      "expected_primary_label_complete": "verified",
+      "semantic_fixture": {
+        "id": "ADV05",
+        "title": "P4 supported-new claim",
+        "draft_text": "There are 10 items in partition A. There are 15 items in partition B.",
+        "draft_sha256": "24376e7b69c6f868f7eb3a98e8825444bf82cc091ec978a0194636b84c25e71b",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "There are 10 items in partition A.",
+            "span": [
+              0,
+              34
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "verified",
+            "canonical_id": "ADV05.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "There are 10 items in partition A.",
+            "span": [
+              0,
+              34
+            ],
+            "roles": [],
+            "predicted_semantic_status": "verified",
+            "canonical_id": "ADV05.C.c1"
+          },
+          {
+            "id": "c2",
+            "text": "There are 15 items in partition B.",
+            "span": [
+              35,
+              69
+            ],
+            "roles": [],
+            "predicted_semantic_status": "verified",
+            "canonical_id": "ADV05.C.c2"
+          }
+        ],
+        "allowed_matches": [
+          {
+            "candidate_id": "c1",
+            "gold_id": "g1"
+          }
+        ],
+        "evidence_bindings": [
+          {
+            "id": "P4.BIND.g1",
+            "gold_id": "g1",
+            "candidate_id": "c1",
+            "evidence_id": "P4.EV.ledger",
+            "valid": true,
+            "fully_entailed": true
+          }
+        ],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "There are 10 items in partition A.",
+            "span": [
+              0,
+              34
+            ],
+            "material": true,
+            "reference_relationship": "required-equivalent",
+            "required_gold_id": "g1",
+            "independent_semantic_label": "verified",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "verified",
+            "binding": {
+              "id": "P4.FBIND.f1",
+              "target_final_claim_id": "f1",
+              "evidence_id": "P4.EV.ledger",
+              "valid": true,
+              "fully_entailed": true
+            }
+          },
+          {
+            "id": "f2",
+            "text": "There are 15 items in partition B.",
+            "span": [
+              35,
+              69
+            ],
+            "material": true,
+            "reference_relationship": "unmatched",
+            "required_gold_id": null,
+            "independent_semantic_label": "verified",
+            "prediction_id": "c2",
+            "predicted_semantic_status": "verified",
+            "binding": {
+              "id": "P4.FBIND.f2",
+              "target_final_claim_id": "f2",
+              "evidence_id": "P4.EV.ledger",
+              "valid": true,
+              "fully_entailed": true
+            }
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P4.VR.c1",
+            "status": "verified"
+          },
+          {
+            "id": "P4.VR.c2",
+            "status": "verified"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P4.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "verified",
+            "predicted_semantic_status": "verified",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": "f1"
+          },
+          {
+            "id": "P4.CLASS.f2",
+            "source": "unmatched-final",
+            "material": true,
+            "independent_semantic_label": "verified",
+            "predicted_semantic_status": "verified",
+            "prediction_id": "c2",
+            "required_gold_id": null,
+            "final_atom_id": "f2"
+          }
+        ]
+      }
+    },
+    {
+      "asset_id": "P5",
+      "title": "required material omission",
+      "source": {
+        "source_id": "SRC-P5",
+        "source_kind": "web",
+        "source_url": "https://example.test/warehouse/wc12",
+        "source_rank": 1,
+        "source_text": "Warehouse count sheet WC-12. There are 10 items in the active bin.",
+        "source_sha256": "42474b4ab388f11adc52b03027469d03c390054e74f0491b75a00b208c14fb00",
+        "source_character_length": 66
+      },
+      "draft_text": "The active bin is labeled WC-12.",
+      "draft_sha256": "c75749607b2623ef988c74b445b428f576e2f4007c47f271c91772a270cc27eb",
+      "cells": [
+        {
+          "cell_id": "P5-COMPLETE",
+          "exposure_arm": "complete"
+        }
+      ],
+      "expected_corrected_semantic_pass": {
+        "P5-COMPLETE": false
+      },
+      "expected_primary_label_complete": "verified",
+      "semantic_fixture": {
+        "id": "ADV06",
+        "title": "P5 omission",
+        "draft_text": "The active bin is labeled WC-12.",
+        "draft_sha256": "c75749607b2623ef988c74b445b428f576e2f4007c47f271c91772a270cc27eb",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "There are 10 items in the active bin.",
+            "span": [
+              0,
+              37
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "verified",
+            "canonical_id": "ADV06.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "The active bin is labeled WC-12.",
+            "span": [
+              0,
+              32
+            ],
+            "roles": [],
+            "predicted_semantic_status": "verified",
+            "canonical_id": "ADV06.C.c1"
+          }
+        ],
+        "allowed_matches": [],
+        "evidence_bindings": [],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "The active bin is labeled WC-12.",
+            "span": [
+              0,
+              32
+            ],
+            "material": false,
+            "reference_relationship": "unmatched",
+            "required_gold_id": null,
+            "independent_semantic_label": "verified",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "verified",
+            "binding": null
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P5.VR.c1",
+            "status": "verified"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P5.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "verified",
+            "predicted_semantic_status": "verified",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": null
+          }
+        ]
+      }
+    },
+    {
+      "asset_id": "P6",
+      "title": "late contradiction",
+      "source": {
+        "source_id": "SRC-P6-W03",
+        "source_kind": "web",
+        "source_url": "https://example.test/helix/export-gate",
+        "source_rank": 1,
+        "source_text": "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------Helix gate permits export when mode flag HG-ENABLE is set. ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------Unless mode flag HG-ENABLE is cleared, export remains blocked.",
+        "source_sha256": "990352cef0f43cd232da2243460ee54e9b50a5aabb5517dad0b8b483abee8976",
+        "source_character_length": 1562
+      },
+      "draft_text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+      "draft_sha256": "8b36cdccb1a070787d2949ae6f612b492c7c861992af49e0083870ba5722036d",
+      "cells": [
+        {
+          "cell_id": "P6-PREFIX",
+          "exposure_arm": "prefix"
+        },
+        {
+          "cell_id": "P6-COMPLETE",
+          "exposure_arm": "complete"
+        }
+      ],
+      "expected_corrected_semantic_pass": {
+        "P6-PREFIX": false,
+        "P6-COMPLETE": false
+      },
+      "expected_primary_label_complete": "weak",
+      "semantic_fixture": {
+        "id": "ADV07",
+        "title": "P6 contradiction",
+        "draft_text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+        "draft_sha256": "8b36cdccb1a070787d2949ae6f612b492c7c861992af49e0083870ba5722036d",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+            "span": [
+              0,
+              58
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "weak",
+            "canonical_id": "ADV07.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+            "span": [
+              0,
+              58
+            ],
+            "roles": [],
+            "predicted_semantic_status": "verified",
+            "canonical_id": "ADV07.C.c1"
+          }
+        ],
+        "allowed_matches": [
+          {
+            "candidate_id": "c1",
+            "gold_id": "g1"
+          }
+        ],
+        "evidence_bindings": [
+          {
+            "id": "P6.BIND.g1",
+            "gold_id": "g1",
+            "candidate_id": "c1",
+            "evidence_id": "P6.EV.helix",
+            "valid": true,
+            "fully_entailed": false
+          }
+        ],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "Helix gate permits export when mode flag HG-ENABLE is set.",
+            "span": [
+              0,
+              58
+            ],
+            "material": true,
+            "reference_relationship": "required-equivalent",
+            "required_gold_id": "g1",
+            "independent_semantic_label": "weak",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "verified",
+            "binding": {
+              "id": "P6.FBIND.f1",
+              "target_final_claim_id": "f1",
+              "evidence_id": "P6.EV.helix",
+              "valid": true,
+              "fully_entailed": false
+            }
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P6.VR.c1",
+            "status": "verified"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P6.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "weak",
+            "predicted_semantic_status": "verified",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": "f1"
+          }
+        ]
+      }
+    },
+    {
+      "asset_id": "P7",
+      "title": "late qualifier",
+      "source": {
+        "source_id": "SRC-P7-K03",
+        "source_kind": "kb",
+        "source_url": "kb://cache/tier-t3-policy",
+        "source_rank": 1,
+        "source_text": "Cache tier T3 admits writes when isolation level IL-2 holds. -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------unless cache mode is disabled via CM-OFF switch.",
+        "source_sha256": "be5e5dfb409d20428670a19c546b00a744da1c3357831fe57477eddb0294b4ce",
+        "source_character_length": 2048
+      },
+      "draft_text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+      "draft_sha256": "e4245e1b02ce8c35705228d56f68582db85f1c64def1bbe3157a6efb155b3c53",
+      "cells": [
+        {
+          "cell_id": "P7-PREFIX",
+          "exposure_arm": "prefix"
+        },
+        {
+          "cell_id": "P7-COMPLETE",
+          "exposure_arm": "complete"
+        }
+      ],
+      "expected_corrected_semantic_pass": {
+        "P7-PREFIX": false,
+        "P7-COMPLETE": false
+      },
+      "expected_primary_label_complete": "weak",
+      "semantic_fixture": {
+        "id": "ADV08",
+        "title": "P7 qualifier loss",
+        "draft_text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+        "draft_sha256": "e4245e1b02ce8c35705228d56f68582db85f1c64def1bbe3157a6efb155b3c53",
+        "gold_atoms": [
+          {
+            "id": "g1",
+            "text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+            "span": [
+              0,
+              60
+            ],
+            "factual": true,
+            "material": true,
+            "gold_semantic_status": "weak",
+            "canonical_id": "ADV08.ATOM.g1"
+          }
+        ],
+        "exclusions": [],
+        "candidates": [
+          {
+            "id": "c1",
+            "text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+            "span": [
+              0,
+              60
+            ],
+            "roles": [],
+            "predicted_semantic_status": "verified",
+            "canonical_id": "ADV08.C.c1"
+          }
+        ],
+        "allowed_matches": [
+          {
+            "candidate_id": "c1",
+            "gold_id": "g1"
+          }
+        ],
+        "evidence_bindings": [
+          {
+            "id": "P7.BIND.g1",
+            "gold_id": "g1",
+            "candidate_id": "c1",
+            "evidence_id": "P7.EV.cache",
+            "valid": true,
+            "fully_entailed": false
+          }
+        ],
+        "final_atoms": [
+          {
+            "id": "f1",
+            "text": "Cache tier T3 admits writes when isolation level IL-2 holds.",
+            "span": [
+              0,
+              60
+            ],
+            "material": true,
+            "reference_relationship": "required-equivalent",
+            "required_gold_id": "g1",
+            "independent_semantic_label": "weak",
+            "prediction_id": "c1",
+            "predicted_semantic_status": "verified",
+            "binding": {
+              "id": "P7.FBIND.f1",
+              "target_final_claim_id": "f1",
+              "evidence_id": "P7.EV.cache",
+              "valid": true,
+              "fully_entailed": false
+            }
+          }
+        ],
+        "verifier_rows": [
+          {
+            "id": "P7.VR.c1",
+            "status": "verified"
+          }
+        ],
+        "automatic_route": {
+          "decision": "PASS"
+        },
+        "fixed_classification_cases": [
+          {
+            "id": "P7.CLASS.g1",
+            "source": "required",
+            "material": true,
+            "independent_semantic_label": "weak",
+            "predicted_semantic_status": "verified",
+            "prediction_id": "c1",
+            "required_gold_id": "g1",
+            "final_atom_id": "f1"
+          }
+        ]
+      }
+    }
+  ]
+}

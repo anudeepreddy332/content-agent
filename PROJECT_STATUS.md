@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-04._
+_Canonical current-state snapshot. Last synchronized: 2026-09-16 (Phase 4 live-wiring seal)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -92,22 +92,103 @@ remain preserved below as evidence; they are not reopened here.
 
 1. **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED** at exact canonical
    integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
-2. **Minimal exact evidence-exposure completion + small real provider 2C/2D
-   qualification using the corrected semantic ruler** — **current authorized
-   engineering mission.**
-3. **Retrieval redesign — major product-quality program:**
+2. **Stage 2C deterministic evidence-exposure qualification — PASS (deterministic
+   only)** on `experiment/evidence-exposure-2c` at SHA
+   `bdbd4c3abc3a6b33529b11203b7393b899805739`. Independent qualification:
+   `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`. Current prefix exposure lost
+   required evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval.
+   Provider consequence remains **UNKNOWN**.
+3. **Phase 4 — CLOSED / QUALIFIED / LIVE-WIRED** at HEAD
+   `0139ef891c4e8bd7b5c96f1d94de9676b16e5553` (D-2026-09-16-10). Slice 2b
+   required-content denominator now populated from CLI/API brief input;
+   demonstrated P0/P1 none; ready for Phase 5 YES.
+   Branch `experiment/hybrid-verifier-status-engine` carries the qualified
+   implementation. See **Phase 4 closure** section below.
+   - **Phase 4 Slice 1 (acceptance/remediation foundation) — CLOSED**
+     (D-2026-09-14-05): blocker policy
+     generalized to WEAK **and** UNVERIFIED valid rows; targeted blocker revision
+     feedback reaches the drafter; `grounding_score` removed from revision/semantic
+     routing authority (compatibility/observability only); UVR_v1 unchanged and
+     non-overriding; unresolved semantic obligations explicit in Gate-1 payload and
+     trace. Claim completeness, materiality, and citation completeness remain
+     UNKNOWN — later Phase-4 slices. Not pushed, not merged, zero provider calls.
+   - **Phase 4 Slice 2A — CLOSED** (D-2026-09-15-02, D-2026-09-16-05): Call A
+     extracts atomic claim inventory + materiality
+     with no evidence context; deterministic exact-string draft anchoring
+     (ANCHOR_FAILED/ANCHOR_AMBIGUOUS fail closed); Python content-derived claim
+     IDs; `draft_sha256`-versioned inventory rebuilt every verify pass;
+     required⇒material override; UNKNOWN materiality preserved; material factual
+     ⇒ requires citation (preparation only, no gate); full Call-B support set
+     preserved. Every successfully anchored inventory claim reaches Call B;
+     `claim_type`, materiality, specificity, and `requires_citation` cannot
+     suppress verification. The authoritative engine path bypasses fuzzy
+     grounding-report dedup; acceptance requires exact, duplicate-free current
+     claim-ID roster identity. Call B semantic authority and topology remain
+     unchanged; zero provider calls. **PROMPT_VERSION re-baselined** (new Call-A
+     prompt; numbers not comparable with the sha-6687240c8cd8 era). Frozen golden
+     Call-A outputs remain simulated and do not qualify real-provider extraction
+     quality.
+   - **Phase 4 real Call-A provider qualification — model-mismatch run EXECUTED /
+     INVALID** (run `call_a_run_20260915T160540Z_4135c531`, digest
+     `36807aa205b3f1bd45fdf891330df22037a1416ce98279dde8436e07fcc17121`):
+     G01 stopped on `returned_model_mismatch`. Artifact preserved immutable.
+   - **Phase 4 real Call-A provider qualification — flash run EXECUTED / FAIL v1**
+     (run `call_a_run_20260915T161944Z_1c1d81ac`, digest
+     `56873347a00a7473c491cea856de9e7188f6b0af86dbd7841157d33d600dfcf5`): 16/16
+     fixtures, $0.022657, FAIL under v1 oracle (G05/G06/G16 defects). Artifact
+     immutable.
+   - **Phase 4 real Call-A provider qualification — v2 oracle RESCORE / PASS**
+     (D-2026-09-15-05): offline rescore of same immutable flash run under
+     `call_a_provider_eval_gold_v2` (SHA
+     `4591914638478bd1531da2929b9cff3f8f70e2654f194fbdb1d566f914848314`).
+     Bounded qualification PASS; factual recall 21/21; genuine imperfections
+     retained (G03 invented claim, G06 UNKNOWN materiality). Harness gold v1
+     unchanged. **Call A qualified for bounded provider challenge set = YES.**
+     No API rerun. Not population-level accuracy.
+   - **Phase 4 Slice 2B — CLOSED** (D-2026-09-16-06, D-2026-09-16-07):
+     material-claim safety; required-content denominator preservation;
+     `satisfies_req_ids` advisory only; UNKNOWN semantic requirement coverage
+     → HITL; independent qualification PASS.
+   - **Phase 4 real Call-B provider qualification — current-model LIVE / PASS**
+     (D-2026-09-16-10, HEAD `0139ef8`): run
+     `semantic_analyzer_run_8f554fa3eb62`, digest
+     `0ed38fc378c5106b551fd2442ce8fef534f83db1756a6b2073c8bef6533899c5`,
+     model `deepseek-flash` (exact match), 3 requests, $0.001344, P6/P7/P1 PASS.
+     No population-level reliability claim.
+   - **Phase 4 brief_requirements live wiring — CLOSED** (D-2026-09-16-10):
+     `_build_initial_state` + CLI `--brief-requirements-json` + API
+     `CreateRun.brief_requirements`; production path tests in
+     `tests/test_brief_requirements_live_wiring.py`.
+   - **Phase 4 Slice 2C — CLOSED** (D-2026-09-16-08): Call-B bound support
+     is citation authority; complete citation support set;
+     correctness/completeness/exact-occurrence placement; sidecar rendering;
+     canonical draft unchanged; final hard publication-safety conjunction;
+     independent qualification PASS.
+4. **Verifier semantic-contract 3-cell prompt-only experiment — EXECUTED / FAIL
+   (valid):** run 2 artifact
+   `outputs/verifier_semantic_contract_3cell/verifier_semantic_contract_run_20260905T130342Z.json`
+   (SHA-256 `85f9d576c5b424523bc2e5ecd14070bfe80a16b697c032c70b09d5402d608975`);
+   pattern `verified / weak / verified`; P7 qualifier fixed, P1 control preserved,
+   P6 contradiction still false-verified; run 1 remains immutable **INVALID**
+   (sandbox network block). Prompt-only contract change alone is insufficient for
+   P6; motivates hybrid observation + Python status architecture.
+5. **Stage 2D bounded provider qualification — EXECUTED / FAIL:** ten cells,
+   ten HTTP requests, $0.003355 spend; FV=4 on P6/P7 cells; P1 exposure
+   consequence proven; forensic diagnosis points to permissive verifier
+   semantic-status contract.
+6. **Retrieval redesign — major product-quality program:**
    - resolve MiniLM truncation / embedding-input mismatch;
    - production-shaped chunking/embedding strategy;
    - exact evidence recall/exposure;
    - deterministic fusion/ranking;
    - evaluate real query transformation only if it causally improves final
      verifier-visible evidence.
-4. **Revision safety qualification:**
+7. **Revision safety qualification:**
    - targeted bad claims resolved;
    - previously verified material claims retained;
    - no new unresolved material claims introduced.
-5. **Wire qualified semantic policy into production runtime routing.**
-6. **Enterprise capabilities:**
+8. **Wire qualified semantic policy into production runtime routing.**
+9. **Enterprise capabilities:**
    - identity / ACL / tenancy;
    - durability / recovery / observability;
    - production/cloud deployment hardening.
@@ -198,10 +279,45 @@ priority.
 
 ## Current status
 
+- **Phase 4 — CLOSED / QUALIFIED / LIVE-WIRED** at HEAD
+  `0139ef891c4e8bd7b5c96f1d94de9676b16e5553` (D-2026-09-16-10). Brief
+  requirements wired through CLI/API → state → material policy; Call-A oracle v2
+  PASS; Call-B current-model PASS; demonstrated P0/P1 **none**; ready for
+  Phase 5 **YES**.
+- **Phase 4 Slice 2A — CLOSED:** authoritative claim inventory/materiality;
+  real Call-A provider qualification PASS under provider oracle v2.
+- **Phase 4 Slice 2B — CLOSED:** material-claim safety; required-content
+  denominator preservation; `satisfies_req_ids` advisory only; UNKNOWN semantic
+  requirement coverage → HITL; independent qualification PASS.
+- **Phase 4 Slice 2C — CLOSED:** Call-B bound support is citation authority;
+  complete citation support set; correctness/completeness/exact-occurrence
+  placement; sidecar rendering; canonical draft unchanged; final hard
+  publication-safety conjunction; independent qualification PASS.
 - **Client-demo hardening:** CLOSED / LIVE-DEMO-REHEARSED.
-- **Overall P0-2b:** OPEN.
+- **Overall P0-2b:** OPEN (historical P0-2b program boundary; Phase 4 slices
+  above are independently qualified and closed).
 - **Semantic P0 Slice 1 — VALIDATED AND INTEGRATED — CLOSED:** exact canonical
   integration merge `5f4163f2aa53155216342d20e627abd88fb60a1e` (PR #7).
+- **Stage 2C evidence-exposure qualification — PASS (deterministic):**
+  branch `experiment/evidence-exposure-2c`; SHA
+  `bdbd4c3abc3a6b33529b11203b7393b899805739`; independent qualification
+  `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`; prefix exposure lost required
+  evidence in **5/8** frozen cases despite **8/8** rank-1 retrieval; provider
+  consequence **UNKNOWN**.
+- **Stage 2D bounded provider qualification — EXECUTED / FAIL:** ten cells,
+  ten HTTP requests, $0.003355 spend; FV=4 (P6-PREFIX, P6-COMPLETE, P7-PREFIX,
+  P7-COMPLETE); AFP=5 (+ P5); P1 exposure consequence proven; P6/P7 COMPLETE
+  false-verified with contradiction/qualifier visible; tag
+  `EVIDENCE-EXPOSURE-2D-EXECUTION-FAILED`; forensics tag
+  `STAGE-2D-FAILURE-FORENSICS-COMPLETE`.
+- **Verifier semantic-contract 3-cell — EXECUTED / FAIL (valid):** run 2 at
+  `b4074fd`; P7 fixed (`weak`), P1 preserved (`verified`), P6 still
+  false-verified (`verified`); immutable run 1 INVALID retained.
+- **Hybrid verifier status engine — ACTIVE (offline only):**
+  `scripts/hybrid_verifier_status_engine.py`; fixtures
+  `evals/fixtures/hybrid_verifier_status_offline.json`; Python derives final
+  status from structured observations; zero provider calls; production runtime
+  unchanged.
 - **F-01 callable validation-boundary defect:** CLOSED at
   `8530b078837b1a8669433777c1f8d9a1add25a8a`.
 - **F-02 required-vs-final semantic contract:** validated; approved qualification
@@ -215,10 +331,88 @@ priority.
 
 ## Current authorized mission
 
-**Minimal exact evidence-exposure completion + small real provider 2C/2D
-qualification using the corrected semantic ruler** is the current authorized
-engineering mission. Retrieval redesign remains the next major engineering program
-(frozen six-step roadmap priority 3).
+**Phase 5 — retrieval/chunking/evidence exposure** is the next authorized
+engineering direction. Phase 4 is CLOSED; do not reopen without new material
+P0/P1 evidence. A separate Sol architecture audit is in progress and will be
+reviewed before Phase-5 implementation. Do not define Phase-5 architecture here.
+
+Historical context on `experiment/hybrid-verifier-status-engine` (Phase 4
+implementation branch):
+
+- Pre-provider harness independently qualified at
+  `47e7f0458e31b2eca0d24ac4f0b791edd20faa89`
+  (`SEMANTIC-ANALYZER-PREPROVIDER-QUALIFICATION-PASS`).
+- Provider preflight architecture review found historical model-contract drift
+  (`deepseek-chat`, `max_tokens=4000`); current frozen contract uses
+  `deepseek-v4-flash`, `max_tokens=2000`, temperature `0.1`, non-thinking
+  mode, JSON-object response, zero retries.
+- Dedicated provider runner implemented offline with durable write-ahead
+  attempt ledger, single frozen experiment registry across restarts, direct
+  HTTPS transport (`retries=0`), fail-closed execution gate
+  (`SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1`), outbound non-thinking request
+  `"thinking": {"type": "disabled"}`, hard spend ceiling `$0.02`, max future
+  provider requests `3`.
+- **First authorized live provider experiment EXECUTED / INVALID**
+  (`semantic_analyzer_run_ed35656b9a7c`): 1 request (P6), retries 0, P7/P1
+  NOT_RUN; invalid reason returned-model identity mismatch (requested
+  `deepseek-v4-flash`, observed `deepseek-flash`); raw P6 semantic output
+  diagnostic only (oracle NOT_RUN); ~$0.000427 incurred; prior runner failed
+  to record cost before disposition — corrected offline.
+- **Next experiment identity correction ready:** requested model remains
+  `deepseek-v4-flash`; accepted returned model frozen as `deepseek-flash`
+  (exact pair only); outbound P6/P7/P1 request hashes unchanged; consumed
+  authorization terminal; append-preserving registry history preserves first
+  INVALID experiment; successor requires explicit identity-bound owner token
+  via `SEMANTIC_ANALYZER_OWNER_AUTHORIZATION` (execute env flag alone is
+  insufficient); terminal on-disk evidence must map to exactly one TERMINAL
+  `history[]` row and cannot be satisfied by `successor` or a colliding
+  `successor.run_id`; **no second live experiment authorized or executed**.
+- **Second live provider experiment EXECUTED / FAIL**
+  (`semantic_analyzer_run_342076d6f2e6`): 1 request (P6), P7/P1 NOT_RUN;
+  model identity PASS; semantic oracle FAIL on P6 raw offset localization
+  (P6-LLM-OFFSET-LOCALIZATION-FAILURE). Experiment #1 INVALID preserved.
+- **Quote-binding analyzer contract implemented offline** (no provider calls):
+  LLM emits exact verbatim quotes; Python derives canonical spans via exact
+  string matching; hybrid status engine unchanged; gold oracle spans unchanged;
+  new P6/P7/P1 request hashes for quote-era prompt/schema; historical offset-era
+  hashes and terminal experiments preserved; LangGraph integration deferred.
+- **Provider experiment #3 EXECUTED / PASS**
+  (`semantic_analyzer_run_712c564531e2`): quote-binding contract; 3/3 PASS;
+  identity `72023be84f508f1203d05fa8858da6b4cf3d7437a7bc46eb24bb915434381c23`.
+  Experiments #1 INVALID and #2 FAIL preserved.
+- **Production Slice 1 complete:** qualified quote binding, status engine, and
+  response contract canonicalized under `agent/semantic_analyzer/`; scripts are
+  thin re-exports; LangGraph/`verify_node` unchanged.
+- **Production Slice 2 complete:** `contract.py` + `provider.py` bridge
+  retrieved evidence→manifest (full text, 5+5 count policy), claim roster,
+  injected LLM adapter, grounding_report mapping; offline P6/P7/P1 adapter
+  proofs PASS.
+- **Production Slice 3 complete:** live `verify_node` wired to two-call Phase-3
+  path (legacy claim extraction + quote-based analyzer); P6/P7/P1 proofs through
+  actual `verify_node` with mocked transport; provider calls 0.
+- **Blocker-routing correction:** `semantic_verification_accepted` now rejects
+  WEAK rows with contradiction/limitation blockers (UVR=0 false-green closed);
+  status engine unchanged; 1032 tests green.
+- **Provider execution is NOT AUTHORIZED** for further experiments without new
+  owner authorization. UVR/routing, retrieval, materiality, and production
+  runtime remain **unchanged**.
+
+Engine baseline remains `1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`.
+
+**Prior 3-cell context (closed for now):** Stage 2D bounded provider qualification
+**EXECUTED / FAIL**: exposure-only changes proved P1 consequence but P6/P7
+COMPLETE still false-verified under the original prompt; prompt-only contract
+change improved P7 only. Transport runner
+`execute_verifier_semantic_contract_run()` remains on
+`experiment/verifier-semantic-contract` at `b4074fd`; not promoted to production.
+
+**Next after independent runner review:** authorized provider observation
+qualification for the hybrid engine (not yet authorized).
+
+**Do not:** run additional provider experiments or change UVR/routing/retrieval
+without explicit authorization. Slice 3 modified `verify_node` only (hybrid cutover).
+Retrieval redesign remains the next major engineering program (frozen roadmap
+priority 5).
 
 Immutable BEFORE baseline remains GitHub Actions run `32480353168` (unchanged).
 Claim completeness remains unresolved and is not an acceptance condition.
@@ -412,6 +606,105 @@ redesign program (priority 3). No runtime change authorized by this record.
   bind a verified Git/code SHA; crash telemetry may lack complete mid-run evidence;
   verifier source_context is already truncated before trace capture; claim completeness
   remains unknown; Slice-2A claim-semantics oracle is not yet production-connected.
+
+## Phase 4 Slice 2B material + required-content policy boundary
+
+- Isolated variable: deterministic material-claim + required-content
+  acceptance policy only. No new LLM calls, no LangGraph topology change,
+  no retrieval/chunking change, no new materiality model call.
+- Scope: `agent/material_policy.py` (new), `agent/nodes.py` (routing +
+  approval gates + HITL payload + revision feedback + iteration metrics),
+  `tests/test_material_policy.py` (new), `DECISIONS.md`, `PROJECT_STATUS.md`.
+- Authority split preserved: `semantic_verification_accepted()` remains the
+  sole semantic authority; `agent/material_policy.py` owns material /
+  required-content safety; citation safety remains Slice 2c.
+- `material_policy_pass` is one conjunct of `publication_safety_pass`
+  (Slice 2c); it is still not a human publication decision.
+- Hard authority: `unresolved_material_claim_count == 0` AND
+  `unknown_materiality_count == 0` AND mandatory requirements
+  missing/unresolved/unknown == 0. `material_verified_rate` is observability
+  only (no tolerance). Aggregate rate cannot override a single critical failure.
+- Version integrity: consumes only artifacts tied to current `draft_sha256`;
+  stale inventory / mismatched grounding roster / unresolved anchor fail closed
+  (reuses existing guards; no new versioning framework).
+- P1 authority correction (D-2026-09-16-07): `satisfies_req_ids` is
+  candidate/advisory only; semantic requirements with linked VERIFIED claims
+  remain `unknown` until HITL; deterministic `section_presence` may still
+  auto-satisfy. Sonnet false-green attack blocked.
+- Validation: `tests/test_material_policy.py` 43 tests (spec §19 A–Q +
+  P1 matrix + Sonnet attack + structural positive control). Provider calls: zero.
+
+## Phase 4 Slice 2C citation safety + publication-safety conjunction
+
+- Isolated variable: deterministic citation correctness / completeness /
+  placement plus the publication-safety conjunction. No new LLM calls, no
+  LangGraph topology change, no retrieval/chunking change, no citation judge.
+- Scope: `agent/citation_policy.py` (new), `agent/nodes.py` (HITL/routing/
+  html_gen bibliography + in-body clusters), `tests/test_citation_policy.py`
+  (new), `DECISIONS.md`, `PROJECT_STATUS.md`.
+- Citation-support authority: current VALID Call-B `support_spans` evidence
+  IDs (complete set). Model-declared citation IDs are untrusted unless they
+  reconcile exactly with the sidecar plan.
+- Hard authority: `invalid_citation_count == 0` AND
+  `missing_required_citation_count == 0` AND
+  `citation_placement_failure_count == 0` AND no dangling / stale-plan /
+  overlapping-placement integrity failures. `citation_coverage_rate` is
+  observability only.
+- `publication_safety_pass` = semantic AND material AND citation AND current
+  version/integrity. Not a composite score. Does not autonomously publish.
+- Canonical `draft_markdown` is never mutated for citations.
+- Validation: `tests/test_citation_policy.py` spec matrix A–U. Provider calls:
+  zero.
+- **Independent qualification:** PASS (final Sonnet review at HEAD
+  `1a972502ff0a9944fac44529095ecfe0e3e883cf`).
+
+## Phase 4 closure (final qualification + live wiring)
+
+**Status:** CLOSED / QUALIFIED / LIVE-WIRED at HEAD `0139ef891c4e8bd7b5c96f1d94de9676b16e5553`.
+
+| Slice | Status | Summary |
+|-------|--------|---------|
+| 2a | CLOSED | Authoritative claim inventory/materiality; real Call-A provider qualification PASS under provider oracle v2 |
+| 2b | CLOSED | Material-claim safety; required-content denominator; `satisfies_req_ids` advisory only; UNKNOWN semantic requirement coverage → HITL |
+| 2c | CLOSED | Call-B bound citation authority; complete support set; correctness/completeness/placement; sidecar rendering; publication-safety conjunction |
+
+**Final publication-safety conjunction** (no composite score; reflection remains
+soft quality only):
+
+1. `semantic_verification_accepted()`;
+2. `material_policy_passed()`;
+3. `citation_policy_passed()`;
+4. current version/integrity valid;
+5. existing HITL/human publication authority remains.
+
+**Carry-forward design lesson:** model-produced relationships/tags/IDs are
+candidate/advisory metadata unless independently validated (examples:
+`satisfies_req_ids`, citation/source mappings, future document/retrieval metadata
+links). Do not trust model-declared relationships as hard proof by themselves.
+
+**Non-blocking P2/P3 log** (preserved, not fixed in Phase 4):
+
+- unused/dead `insert_citation_markers` computation;
+- legacy pre-upgrade checkpoint compatibility;
+- no explicit informed-human override for UNKNOWN semantic requirements.
+
+**Live wiring (D-2026-09-16-10):** caller-supplied brief requirements reach
+`state["brief_requirements"]` via `_build_initial_state` (CLI
+`--brief-requirements-json`, API `CreateRun.brief_requirements`); persist through
+revision; drive material-policy denominator and publication-safety conjunction.
+
+**Provider qualification (current model, HEAD `0139ef8`):**
+
+| Call | Status | Evidence |
+|------|--------|----------|
+| Call A | PASS (oracle v2) | `call_a_provider_eval_gold_v2` rescore |
+| Call B | PASS | run `semantic_analyzer_run_8f554fa3eb62`, digest `0ed38fc3…899c5` |
+
+**Next:** Phase 5 — retrieval/chunking/evidence exposure. Sol architecture audit
+in progress; review before implementation.
+
+**Final qualification evidence:** `tests/test_brief_requirements_live_wiring.py`
+(7/7); full regression suite; provider calls zero; demonstrated P0/P1 none.
 
 ## Parallel retrieval research
 

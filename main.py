@@ -78,6 +78,15 @@ def _write_telemetry(state: dict):
         # Unknown is deliberate for historical or partial states. Benchmark code
         # must not infer a completed verification from a missing status.
         "verification_status": state.get("verification_status", "unknown"),
+        # Phase 4 Slice 2A audit: draft-versioned claim inventory (summary).
+        "claim_inventory_summary": (
+            {
+                "draft_sha256": state["claim_inventory"].get("draft_sha256"),
+                "counts": state["claim_inventory"].get("counts"),
+                "satisfied_req_ids": state["claim_inventory"].get("satisfied_req_ids", []),
+            }
+            if isinstance(state.get("claim_inventory"), dict) else None
+        ),
         "hitl_status": state.get("hitl_status"),
         "html_review_status": state.get("html_review_status"),
         "git_status": state.get("git_status"),
@@ -181,10 +190,25 @@ def _make_slug(topic: str) -> str:
 
 
 
-def _build_initial_state(topic, slug, card_id, series, run_id, category="concept-exploration"):
+def _build_initial_state(
+    topic,
+    slug,
+    card_id,
+    series,
+    run_id,
+    category="concept-exploration",
+    brief_requirements=None,
+):
     """Canonical AgentState seed. Used by the CLI and the API server so the
     state shape is defined in exactly one place (LangGraph merges silently on
-    key drift — see graph.py docstring)."""
+    key drift — see graph.py docstring).
+
+    ``brief_requirements`` is the persistent required-content denominator (Slice
+    2b). When omitted or empty, behavior matches the pre-wiring default. When
+    supplied, requirements are normalized once at seed time and never silently
+    discarded."""
+    from agent.claim_inventory import normalize_brief_requirements
+
     return {
         "topic": topic,
         "slug": slug,
@@ -198,6 +222,8 @@ def _build_initial_state(topic, slug, card_id, series, run_id, category="concept
         "grounding_report": [],
         "grounding_score": 0.0,
         "verification_status": "not_started",
+        "claim_inventory": None,
+        "brief_requirements": normalize_brief_requirements(brief_requirements),
         "reflection_score": 0,
         "reflection_notes": "",
         "reflection_provenance": {
@@ -255,8 +281,14 @@ def cli():
 
 @click.option("--auto", is_flag=True, default=False,
               help="Auto-approve HITL (benchmark mode only)")
+@click.option(
+    "--brief-requirements-json",
+    default=None,
+    type=click.Path(exists=True, dir_okay=False, readable=True),
+    help="Optional JSON file: array of brief requirement objects (req_id, kind, mandatory, description).",
+)
 
-def run(topic, card_id, series, auto):
+def run(topic, card_id, series, auto, brief_requirements_json):
     # Validate required credentials before doing any work.
     # Fail here instead of mid-pipeline with a cryptic API error.
     missing = [v for v in ("DEEPSEEK_API_KEY", "TAVILY_API_KEY") if not os.getenv(v)]
@@ -277,7 +309,13 @@ def run(topic, card_id, series, auto):
         raise click.UsageError(f"Topic {topic!r} produces an empty slug.")
     run_id = str(uuid.uuid4())
 
-    initial_state = _build_initial_state(topic, slug, card_id, series, run_id)
+    brief_reqs = None
+    if brief_requirements_json:
+        brief_reqs = json.loads(Path(brief_requirements_json).read_text(encoding="utf-8"))
+
+    initial_state = _build_initial_state(
+        topic, slug, card_id, series, run_id, brief_requirements=brief_reqs,
+    )
 
     # KB warmup (M5): pay the one-time encoder load + BM25 build BEFORE the graph
     # runs, so latency_ms.retrieve_kb measures steady-state query cost only.

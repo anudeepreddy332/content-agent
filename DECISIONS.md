@@ -9,6 +9,1158 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-17-01
+Date: 2026-09-17
+
+Decision: **PR `eval-gate` rebinding — current semantic contract, zero provider.**
+
+Reason: `evals/verifier_golden_test.py` is a legacy non-authoritative oracle (LLM emits
+status/confidence directly; stochastic; not Call-B quote binding + Python status engine).
+It produced different merge eligibility for unchanged semantic code (10/12 vs 11/12).
+
+PR merge gate (`eval-gate` job, unchanged name):
+
+- **Deterministic**, **zero provider**, **no secret** required.
+- Runs `scripts/run_current_contract_eval_gate.sh` (122 focused pytest cases): hybrid
+  status engine, quote binding, analyzer contract/adapter, verify_node cutover,
+  blocker-aware acceptance, Phase-4 legacy-authority regressions.
+- Reproducible per commit.
+
+Live provider qualification (separate, not PR merge authority):
+
+- Bounded Call-A oracle v2 rescore; Call-B run `semantic_analyzer_run_8f554fa3eb62`
+  (deepseek-flash exact match, P6/P7/P1 PASS).
+- Immutable identity/fixture artifacts; actual provider; not random PR eligibility.
+
+Legacy `evals/verifier_golden_test.py` retained for provenance; available via manual
+`eval.yml` only — **not** PR merge-blocking.
+
+P2 logged (not fixed): `PROMPT_VERSION` may still hash historical `verify_system.md`
+instead of current `semantic_analyzer_system.md`.
+
+Status: **PR-EVAL-GATE-CURRENT-CONTRACT.**
+
+Confidence: 0.95
+
+---
+Decision ID: D-2026-09-16-10
+Date: 2026-09-16
+
+Decision: **Phase 4 — CLOSED / QUALIFIED / LIVE-WIRED (final integration seal).**
+
+Reason: independent review at HEAD `0139ef891c4e8bd7b5c96f1d94de9676b16e5553`
+established that production entry paths hardcoded `brief_requirements=[]`, leaving
+Slice-2b required-content policy qualified but unpopulated. This decision closes
+that integration gap only — no graph, Call-A/B contract, status-engine, or provider
+qualification artifact changes.
+
+Live wiring:
+
+- `_build_initial_state()` (CLI + API canonical seed) accepts optional
+  `brief_requirements`; normalizes via `normalize_brief_requirements()`; never
+  silently discards a non-empty supplied list.
+- CLI: `--brief-requirements-json <path>` (JSON array of requirement objects).
+- API: `CreateRun.brief_requirements` (list of `{req_id, kind, mandatory, description}`).
+- `verify_node` already consumed `state["brief_requirements"]`; wiring completes
+  the input → state → inventory → material-policy → publication-safety path.
+
+Call-B current-model qualification (execution HEAD `0139ef891c4e8bd7b5c96f1d94de9676b16e5553`):
+
+- Run: `semantic_analyzer_run_8f554fa3eb62`
+- Artifact digest: `0ed38fc378c5106b551fd2442ce8fef534f83db1756a6b2073c8bef6533899c5`
+- Requested/returned model: `deepseek-flash` (exact match)
+- Requests: 3; retries: 0; cost: `$0.001344`
+- P6 contradiction → WEAK → PASS; P7 limitation → WEAK → PASS; P1 full support → VERIFIED → PASS
+- Overall: **PASS** (no population-level reliability claim)
+
+Call-A current-provider qualification: **PASS** under provider oracle v2 (retained).
+
+Evidence: `tests/test_brief_requirements_live_wiring.py` (7 tests) — production
+`_build_initial_state` → graph → verify → inventory/Call-A context/material
+policy/publication-safety; denominator-gaming; advisory-link regression;
+structural positive control. Provider calls: zero.
+
+Status: **PHASE-4-FULLY-CLOSED-QUALIFIED-LIVE-WIRED.** Demonstrated P0/P1: none.
+
+Next: **Phase 5 — retrieval/chunking/evidence exposure.**
+
+Supersedes: the P2/P3 item “real `brief_requirements` population remains future
+integration work” in D-2026-09-16-09.
+
+Confidence: 0.94
+
+---
+Decision ID: D-2026-09-16-09
+Date: 2026-09-16
+
+Decision: **Phase 4 — CLOSED / QUALIFIED (final independent closure checkpoint).**
+
+Reason: final Sonnet review at implementation HEAD
+`1a972502ff0a9944fac44529095ecfe0e3e883cf` concluded all Phase-4 slices
+independently qualified; demonstrated P0/P1 none; ready for Phase 5.
+
+Slice closure:
+
+- **Slice 2a — CLOSED:** authoritative claim inventory/materiality; real Call-A
+  provider qualification PASS under provider oracle v2.
+- **Slice 2b — CLOSED:** material-claim safety; required-content denominator
+  preservation; ``satisfies_req_ids`` advisory only; UNKNOWN semantic
+  requirement coverage → HITL; independent qualification PASS.
+- **Slice 2c — CLOSED:** Call-B bound support is citation authority; complete
+  citation support set; correctness/completeness/exact-occurrence placement;
+  sidecar rendering; canonical draft unchanged; final hard
+  publication-safety conjunction; independent qualification PASS.
+
+Final publication-safety conjunction (no composite score; reflection soft only):
+
+1. semantic verification accepted;
+2. material/required-content policy passed;
+3. citation policy passed;
+4. current version/integrity valid;
+5. existing HITL/human publication authority remains.
+
+Carry-forward principle: model-produced relationships/tags/IDs are
+candidate/advisory metadata unless independently validated (e.g.
+``satisfies_req_ids``, citation/source mappings, future document/retrieval
+metadata links). Do not trust model-declared relationships as hard proof.
+
+Non-blocking P2/P3 (logged, not fixed): unused/dead
+``insert_citation_markers`` computation; legacy pre-upgrade checkpoint
+compatibility; no explicit informed-human override for UNKNOWN semantic
+requirements. (``brief_requirements`` live wiring closed in D-2026-09-16-10.)
+
+Next: **Phase 5 — retrieval/chunking/evidence exposure.** Sol architecture
+audit in progress; review before implementation. Do not define Phase-5
+architecture in this decision.
+
+Evidence: final Sonnet review at HEAD `1a972502ff0a9944fac44529095ecfe0e3e883cf`;
+focused tests 191/191; full tests 1226/1226. Provider calls: zero.
+
+Status: **PHASE-4-CLOSED-QUALIFIED.** Demonstrated P0/P1: none.
+
+Confidence: 0.92
+
+---
+Decision ID: D-2026-09-16-08
+Date: 2026-09-16
+
+Decision: **Phase 4 Slice 2C — citation correctness, completeness, placement,
+plus the final publication-safety conjunction.**
+
+Reason: Slice 2a (inventory/anchors) and Slice 2b (material/required-content)
+are CLOSED. Publication still lacked a deterministic citation gate: the HTML
+path used first-`source_ref` plus retrieved-source fallback, which is exactly
+the undercitation / stuffing loophole Slice 2c forbids. Call B already binds
+the complete support set (`support_spans` × `evidence_id` × exact quotes).
+
+Rules:
+
+- Citation-support authority = current VALID Call-B bound support (complete
+  distinct `evidence_id` set). Model-declared citation IDs / claim↔source tags
+  are untrusted unless they reconcile exactly with the authoritative plan.
+- Applicability: `material is True` AND current VALID semantic `verified`.
+  `claim_type` cannot exempt a material verified claim.
+- Sidecar citation plan bound to `draft_sha256` + claim/grounding roster +
+  exact `(anchor_start, anchor_end)`. Canonical `draft_markdown` is never
+  mutated to insert citations.
+- Completeness: rendered attachments at an applicable exact-anchor group must
+  equal the UNION of required support IDs. Subset (`{E1,E2}` required, `{E1}`
+  rendered) FAILS. No coverage-rate threshold.
+- Correctness: every rendered ID must belong to that group's support union.
+  Extra/unsupported IDs FAIL. Dangling IDs FAIL.
+- Placement: a correct source cited elsewhere does not satisfy the occurrence.
+  Shared identical anchors → one group, union support, one cluster. Overlapping
+  non-identical applicable anchors → fail closed (HITL), no guess.
+- Non-material claims: no completeness obligation; any actually-rendered
+  citation must still be valid.
+- Failures HOLD/HITL; no stochastic citation retry; no citation LLM judge.
+- `publication_safety_pass` = semantic_verification_accepted AND
+  material_policy_passed AND citation_policy_passed AND current
+  version/integrity. Not a composite score. Reflection cannot override.
+  `publication_safety_pass` ≠ human publication decision; HITL still required.
+  Auto/API approve cannot bypass citation failure; no `html_gen` on failure.
+- Bibliography is cited-canonical-evidence only (no retrieved-source stuffing)
+  when an inventory is present. Pre-2A absent-inventory states keep Slice-1
+  citation HTML.
+
+Evidence: `agent/citation_policy.py`, routing/HITL/html_gen wiring in
+`agent/nodes.py`, `tests/test_citation_policy.py` (spec matrix A–U).
+Provider calls: zero.
+
+Status: Accepted (locked). Slice 2c independently qualified PASS; Phase 4
+closure recorded in D-2026-09-16-09.
+
+Confidence: 0.88
+
+---
+Decision ID: D-2026-09-16-07
+Date: 2026-09-16
+
+Decision: **Phase 4 Slice 2B P1 — requirement-linkage authority correction.**
+
+Reason: independent review demonstrated Call-A ``satisfies_req_ids`` was
+treated as sufficient proof of mandatory semantic requirement fulfillment,
+enabling a reachable false-green (unrelated VERIFIED claim linked to
+``REQ-QUORUM`` → auto ``satisfied`` → ``material_policy_pass`` → approve →
+``html_gen``).
+
+Rules:
+
+- ``satisfies_req_ids`` = candidate/advisory linkage only; NOT hard
+  requirement-fulfillment authority.
+- Deterministically checkable requirements (``section_presence`` today) MAY
+  reach ``satisfied`` via structural evidence.
+- Semantic/content requirements with linked VERIFIED/material/current claims
+  remain ``unknown`` until HITL explicitly approves coverage — no keyword,
+  entity, embedding, or LLM judge added.
+- ``missing`` / ``unresolved`` / ``unknown`` distinction preserved; UNKNOWN
+  routes to HITL and does NOT trigger stochastic draft retry.
+- Candidate linkage MAY still force ``required⇒material`` (fail-safe scrutiny);
+  it must NOT grant requirement ``satisfied``.
+- HITL payload exposes ``unknown_requirement_obligations`` with candidate
+  claim IDs/text, semantic status, materiality, and reason
+  ``semantic_requirement_coverage_unqualified``.
+
+Evidence: `tests/test_material_policy.py` (43 tests incl. exact Sonnet attack,
+strong-candidate uncertainty control, structural positive control, matrix A–O).
+Provider calls: zero.
+
+Status: Accepted (locked). Does NOT claim full automated brief-completeness.
+
+Confidence: 0.91
+
+---
+Decision ID: D-2026-09-16-06
+Date: 2026-09-16
+
+Decision: **Phase 4 Slice 2B — material-claim + required-content acceptance
+policy (deterministic layer around existing semantic output).**
+
+Reason: Slice 2a is CLOSED and real-Call-A provider-qualified (PASS under
+provider oracle `call_a_provider_eval_gold_v2`, 21/21 factual recall, 0
+genuine critical misses). Known imperfections remain (false positives,
+materiality UNKNOWN, imperfect claim_type metadata), so 2b MUST fail safely
+rather than pretending metadata is perfect. Publication safety must not be
+achieved by leaving a material factual claim unresolved, deleting required
+content, allowing UNKNOWN materiality to auto-pass, using aggregate scores
+to hide a critical failure, or allowing stale draft/inventory/semantic
+results to certify the current artifact.
+
+Rules:
+
+- Authority split preserved: `semantic_verification_accepted()` (nodes)
+  remains the sole semantic-correctness authority; THIS slice
+  (`agent/material_policy.py`) owns material / required-content safety;
+  citation safety remains Slice 2c and is NOT consulted here.
+- Material factual claim RESOLVED iff current draft version, valid anchor,
+  current semantic disposition, `analysis_validity == VALID`,
+  `status == VERIFIED`, and no unresolved applicable
+  contradiction/limitation. Anything else (WEAK/UNVERIFIED/INVALID/blocker/
+  stale/missing disposition) is unresolved.
+- UNKNOWN materiality (`material == "unknown"`) is never converted to false,
+  never auto-passes, and never triggers a stochastic revision retry — it
+  routes to `HITL_REQUIRED` with the exact claims exposed.
+- Material INVALID rows are fail-closed (HITL, not revision).
+- `material_verified_rate = resolved material / all material` is
+  observability ONLY; hard authority is `unresolved_material_claim_count == 0`
+  AND `unknown_materiality_count == 0` (no tolerance).
+- Required-content denominator is the persistent `brief_requirements`.
+  **Superseded for semantic fulfillment by D-2026-09-16-07:** linked
+  ``satisfies_req_ids`` no longer auto-satisfies semantic requirements;
+  structural checks still satisfy deterministic kinds. Deleting a required
+  claim makes its requirement missing — the artifact does NOT become safer.
+- Version integrity: material/requirement policy consumes only artifacts tied
+  to the current `draft_sha256`; stale inventory or mismatched grounding
+  roster fails closed (reuses existing version/roster guards; no new
+  versioning framework).
+- Routing: semantic gate first, then 2b policy. Repairable material/requirement
+  failures with budget remaining → targeted revision; UNKNOWN materiality,
+  integrity/version failure, or unresolved-after-exhaustion → HITL/HOLD;
+  `material_policy_pass` continues toward reflect/HITL (NOT final publication
+  eligibility).
+- Reflection remains relevance/usefulness/audience-fit/qualitative; a high
+  reflection score cannot override a material failure.
+- HITL auto-approval (`HITL_AUTO_APPROVE=1`) and API approve cannot bypass
+  unresolved material claims, UNKNOWN materiality, or missing/unresolved
+  mandatory requirements; obligations are exposed in the HITL payload.
+- `material_policy_pass` is NOT `publication_eligible`; citation safety is
+  pending Slice 2c.
+
+Evidence: `tests/test_material_policy.py` (30 tests, spec §19 matrix A–Q +
+denominator-gaming, version integrity, routing, HITL/API-approval bypass,
+UNKNOWN no-stochastic-retry, false-positive participation, new-claim-after-
+revision). Full `tests/` suite green (1181 non-browser; 6 browser errors are
+environmental Playwright-binary-missing, unrelated). Ruff fatal-tier
+(`--select E9,F63,F7,F82`) clean. Provider calls: zero.
+
+Tradeoffs: The layer is authoritative only when a current claim inventory is
+present (production verify always sets one); absent inventory (pre-2A /
+hand-built states) keeps Slice-1 behavior, preserving the qualified fail-safe
+behavior. Structural requirement checks are limited to `section_presence`;
+richer deterministic coverage is deferred.
+
+Status: Accepted (locked). Slice 2c (citation safety) pending.
+
+Confidence: 0.88
+
+---
+Decision ID: D-2026-09-16-05
+Date: 2026-09-16
+
+Decision: **Phase 4 Slice 2A — CLOSED and real-Call-A provider-qualified.**
+
+Reason: Slice 2a (deterministic claim inventory + draft anchoring +
+materiality + required⇒material override) is complete and qualified
+against the live provider.
+
+Rules:
+
+- Slice 2a status: COMPLETE.
+- Real Call-A provider qualification: PASS under provider oracle
+  `call_a_provider_eval_gold_v2` (provider `deepseek-flash`).
+- Bounded challenge set: factual recall 21/21; genuine critical misses 0;
+  critical false-nonmaterial 0; API rerun required: NO.
+- Known imperfections preserved: false positives exist; materiality UNKNOWN
+  exists; claim_type metadata may be imperfect. Slice 2b therefore fails
+  safe rather than assuming metadata is perfect.
+
+Status: **SLICE-2A-COMPLETE-AND-PROVIDER-QUALIFIED-V2**.
+
+Confidence: 0.90
+
+---
+Decision ID: D-2026-09-15-05
+Date: 2026-09-16
+
+Decision: **Provider-eval oracle v2 for live Call-A qualification rescoring.**
+
+Reason: independent review found v1 oracle defects on G05/G06/G16; the immutable
+live run `call_a_run_20260915T161944Z_1c1d81ac` remains FAIL under v1 but is
+re-scored offline under corrected provider-eval gold.
+
+Rules:
+
+- `claim_inventory_golden_v1` = deterministic harness gold (unchanged).
+- `call_a_provider_eval_gold_v2` = live-provider qualification oracle (separate).
+- Matching: exact canonical, pre-adjudicated semantic equivalence, pre-adjudicated
+  atomic decomposition only — no LLM judge, no open-ended paraphrase.
+- Editorial rows excluded from factual-recall critical gate.
+- G16 harness synthetic `"always"` trap remains harness-only; provider eval expects
+  draft proposition `Momentum accelerates convergence.`
+- Genuine imperfections preserved (e.g. G06 materiality UNKNOWN, G03 invented claim).
+- Immutable live artifact preserved; derived rescore written separately.
+
+Evidence: `evals/fixtures/call_a_provider_eval_gold_v2.json` (SHA
+`4591914638478bd1531da2929b9cff3f8f70e2654f194fbdb1d566f914848314`),
+`scripts/call_a_provider_eval_v2.py`, rescored disposition PASS under v2.
+Provider calls: zero.
+
+Status: **REAL-CALL-A-PROVIDER-QUALIFIED-V2** (bounded challenge set only).
+
+Confidence: 0.90
+
+---
+Decision ID: D-2026-09-15-04
+Date: 2026-09-15
+
+Decision: **Production `DEEPSEEK_MODEL` corrected to `deepseek-flash`; Call-A
+qualification re-frozen (owner-v2).**
+
+Reason: live Call-A qualification run `call_a_run_20260915T160540Z_4135c531`
+correctly INVALID-stopped on G01 when requesting `deepseek-chat` while DeepSeek
+returned `deepseek-flash`. Official API model name is `deepseek-flash`; no alias
+whitelist.
+
+Rules:
+
+- `config.DEEPSEEK_MODEL` default is now `deepseek-flash` (Call A, Call B, draft,
+  reflect, and all nodes consuming `DEEPSEEK_MODEL`).
+- New Call-A qualification identity: request `deepseek-flash`, accept returned
+  `deepseek-flash` only (exact match). `OWNER_AUTHORIZATION_VERSION =
+  call-a-owner-v2`. Prior v1 token is NOT reusable.
+- Prior run artifact remains immutable: INVALID — `returned_model_mismatch`.
+- Fixture/gold/prompt/claim-inventory semantics unchanged.
+
+Evidence: config + runner/harness updates; mocked tests; preflight recomputed.
+Provider calls: zero.
+
+Status: **DEEPSEEK-FLASH-CALL-A-REFREEZE-READY** (local commit; not pushed).
+
+Confidence: 0.93
+
+---
+Decision ID: D-2026-09-15-03
+Date: 2026-09-15
+
+Decision: **Phase 4 real Call-A provider qualification — offline freeze + runner
+preparation only (new experiment class).**
+
+Reason: frozen golden `call_a_response` entries qualify the deterministic harness
+only; production Call-A extraction/materiality against the real provider requires a
+separately authorized bounded qualification with immutable artifacts.
+
+Rules:
+
+- Reuse production Call-A path only: `prompts/claim_inventory_system.md`,
+  `parse_claim_inventory_rows`, `build_claim_inventory`, and
+  `_claim_inventory_user_message` from `agent/nodes.py`. No duplicated inventory
+  semantics in the runner.
+- Call B remains out of scope. Flow: frozen fixture → real/mock Call A → strict
+  parse → deterministic inventory → gold comparison.
+- Fixture population frozen at `evals/fixtures/claim_inventory_golden_v1.json`
+  (SHA-256 `112b15ca3b79e16c38d0d9ba94063d60268a4a120414242115a55c5227dae006`,
+  16 cases, 24 gold claims). Gold labels are not rewritten for provider tuning.
+- One provider request per fixture (16 max); qualification transport uses
+  retry-free direct HTTPS (`transport_retries=0`, `max_attempts_per_case=1`).
+  Production `_llm_call` tenacity (up to 3 transient retries) is NOT used;
+  worst-case production-path bound reported as 48 requests if ever invoked via
+  `_llm_call`.
+- Provider identity rule: returned `model` must exactly equal configured
+  `DEEPSEEK_MODEL` (default `deepseek-chat`). Drift fails visibly.
+- Production Call-A config mirrored: temperature `0.1`, `max_tokens=4000`, no
+  `response_format`, timeout `LLM_TIMEOUT_S` (120s).
+- Bounded challenge PASS gate (not population accuracy): no contract failures,
+  no silently dropped emitted claims, no missed critical/required gold claims,
+  no critical false-nonmaterial after final policy (required⇒material override
+  reported separately from raw model materiality), explicit anchor disposition
+  for every emitted claim, no identity/fixture drift.
+- Immutable append-only run artifacts under
+  `outputs/call_a_provider_qualification/runs/`. Owner authorization required
+  via `CALL_A_OWNER_AUTHORIZATION` + `CALL_A_PROVIDER_EXECUTE=1`.
+- Does NOT mutate prior semantic-analyzer provider experiments, Slice 2A golden
+  fixtures/results, or historical prompt identities.
+
+Evidence: `scripts/call_a_preprovider_harness.py`,
+`scripts/call_a_provider_qualification_runner.py`,
+`tests/test_call_a_provider_qualification_runner.py` (18 mocked tests);
+preflight/conservative cost bound ≤ `$0.12` recommended owner ceiling.
+Provider calls: zero.
+
+Status: **REAL-CALL-A-QUALIFICATION-READY-FOR-OWNER-AUTHORIZATION** (local commit
+from parent `190360086fe8da3b001ca82dcee890edef9d971f`; not pushed, not merged).
+
+Confidence: 0.91
+
+---
+Decision ID: D-2026-09-15-02
+Date: 2026-09-15
+
+Decision: **Phase 4 Slice 2A final Call-B roster policy is independently qualified
+at `981ee54c868fc26c7082a575316ef3fabac80ef5`.**
+
+Reason: independent qualification closed the demonstrated claim-type omission and
+post-adjudication fuzzy-dedup false-green paths without changing the status engine,
+Call-A/Call-B contracts, topology, routing, evidence binding, or provider call count.
+
+Rules:
+
+- Every successfully anchored inventory claim reaches Call B. `claim_type`,
+  materiality, specificity, and `requires_citation` are metadata/policy inputs
+  only; model-produced metadata cannot suppress semantic verification.
+- `ANCHOR_FAILED` and unresolved `ANCHOR_AMBIGUOUS` remain fail-closed inventory
+  failures. They do not silently disappear because Call B cannot run.
+- The authoritative inventory → Call-B → engine path bypasses fuzzy
+  post-verification grounding-report deduplication. One semantic disposition is
+  retained for each current canonical `claim_id`.
+- Acceptance requires exact current-roster identity and cardinality: no missing,
+  extra, or duplicate grounding-report claim IDs.
+- The frozen golden metrics use simulated Call-A outputs. They do **not** qualify
+  real-provider Call-A extraction or materiality quality.
+
+Evidence: independent Sonnet qualification
+`PHASE-4-SLICE-2A-CLAIM-INVENTORY-QUALIFIED` at the exact SHA above; deterministic
+metadata-mislabel, qualifier, roster-integrity, stale-draft, Slice-1 routing,
+P6/P7/P1, and mocked E2E regressions. Provider calls: zero.
+
+Next step: bounded real-provider Call-A extraction/materiality qualification under
+a separately authorized frozen protocol. No production-quality claim is made until
+that qualification is complete.
+
+Supersedes: the Call-B eligibility and eligible-anchor clauses in
+`D-2026-09-15-01` only. Its historical implementation record remains unchanged.
+
+Status: `PHASE-4-SLICE-2A-CLAIM-INVENTORY-QUALIFIED` (local branch; not pushed or
+merged).
+
+Confidence: 0.97
+
+---
+Decision ID: D-2026-09-15-01
+Date: 2026-09-15
+
+Decision: **Phase 4 Slice 2A — Call A upgraded to claim inventory + materiality
+with deterministic draft anchoring and draft-versioned identity.**
+
+Reason: prevent omitted-claim false-greens. Establish draft version → complete
+supplied claim inventory → exact claim occurrence anchors → materiality → Call-B
+semantic verification. Call A owns INVENTORY only; Call B / the deterministic
+status engine remains the ONLY semantic verification authority.
+
+Rules:
+
+- **claim_text ≠ anchor_quote.** `claim_text` is the atomic semantic proposition
+  adjudicated by Call B; `anchor_quote` is an exact verbatim draft substring used
+  only for deterministic location binding. Compound sentences may anchor several
+  atomic claims (both keep the full-sentence anchor).
+- **Anchoring is deterministic Python exact-string binding** (zero-based
+  half-open spans, all occurrences). Model-generated IDs and start/end offsets
+  are rejected at schema level (`extra="forbid"`). 0 matches → `ANCHOR_FAILED`
+  (claim retained; fails closed). >1 matches with canonical claim_text ==
+  anchor_quote → `bound_multiple` (all occurrences preserved). >1 matches with a
+  normalized/derived proposition → `ANCHOR_AMBIGUOUS` (unresolved; fails closed).
+- **Claim IDs are Python-assigned**: `clm-` + sha256(canonical claim_text)[:16]
+  (~64-bit). Repeated instances of one logical proposition merge into one
+  claim_id with multiple occurrence anchors. A changed proposition gets a changed
+  identity. Cross-version identity is diagnostic only — artifacts are versioned
+  by `draft_sha256`, and an inventory from draft N never certifies draft N+1
+  (acceptance fails closed on sha mismatch; inventory rebuilt from scratch every
+  verify pass).
+- **Claim types**: factual / editorial / code / definition. Only factual claims
+  enter Call B by default; a definition classified material=true or
+  material=unknown is Call-B-eligible so checkable content cannot evade
+  verification behind the label.
+- **Materiality** (same Call A; no new model call): true / false / unknown.
+  Never derived from specificity, length, confidence, or semantic status.
+  UNKNOWN is preserved (never converted to false). Deterministic override with
+  precedence: a claim linked (`satisfies_req_ids`) to a mandatory
+  `brief_requirements` entry becomes material=true (`materiality_override =
+  "required_by_brief"`). Requirement identities live in STATE, external to any
+  draft — deleting a linked claim cannot delete the requirement.
+- **Citation preparation (not a gate)**: MATERIAL + FACTUAL ⇒
+  `requires_citation=true`, period; unknown-material factual fails toward true;
+  nonmaterial factual preserves the model's explicit classification (not policy
+  authority). The FULL bound support evidence set (`support_spans`) is the
+  canonical future citation input; `source_ref`/`source_url` remain
+  primary-source compatibility fields only. Slice 2c must not define citation
+  correctness as mere subset-of-support; favor over-citation until support-set
+  minimality is modeled.
+- **Fail closed (§19)**: Call-A provider failure → `verification_error`;
+  malformed/schema-invalid output → `parse_failed`; zero Call-B-eligible factual
+  claims, or any eligible claim with ANCHOR_FAILED/ANCHOR_AMBIGUOUS →
+  `verification_status = "inventory_failed"` (new), Call B does NOT run, the
+  inventory remains in state/trace for audit, and acceptance fails closed.
+- **Routing unchanged from Slice 1**; inventory/materiality fields do NOT loosen
+  acceptance. Grounding rows are re-ordered to draft/document order in the
+  production mapping layer (engine iterates sorted claim-ids; with hash IDs that
+  is not document order). Presentation only — statuses untouched.
+- **verify_node stays narrow**: no evaluators for correctness/completeness/
+  relevance/citation/retrieval added.
+
+**METRIC RE-BASELINE (explicit)**: Call A no longer sees source context and runs
+a new prompt (`prompts/claim_inventory_system.md`, added to `PROMPT_FILES`), so
+`PROMPT_VERSION` changes at import. Grounding/SV/UVR numbers from this slice
+onward are NOT comparable with the sha-6687240c8cd8-era baseline. This is a
+mandated Call-A contract upgrade, not a silent drift.
+
+Golden set: `evals/fixtures/claim_inventory_golden_v1.json` (16 frozen cases,
+hand-authored simulated Call-A outputs + independent gold labels; the extractor
+never grades itself) + `scripts/evaluate_claim_inventory.py` computing factual
+recall/precision, material-claim recall, split/merge counts, duplicate handling,
+anchor-binding accuracy, materiality confusion matrix, and false-nonmaterial
+count/rate with denominators preserved. NO production extraction threshold is
+invented — none is calibrated. Frozen harness results: factual recall/precision
+1.0 (21/21), material recall 16/17, false-nonmaterial 1/17 (deliberate G14
+trap), split/merge 0, anchor accuracy 24/24, duplicate collapse 1/1.
+
+Deferred: Slice 2b (required-content coverage policy/gate), Slice 2c (citation
+completeness/placement gate), extraction-quality calibration.
+
+Does NOT change: quote-based analyzer contract, quote→span binding, status
+engine, blocker derivation, retrieval/chunking/embeddings, LangGraph topology,
+call count (Call A + Call B only). Provider calls: zero.
+
+Evidence: `tests/test_claim_inventory.py` (spec cases A–O + contract + mocked
+E2E), `tests/test_claim_inventory_golden.py`, updated cutover/trace/failure
+suites; full suite 1110 passed; ruff fatal-tier clean.
+
+Status: **PHASE-4 SLICE 2A COMPLETE ON `experiment/hybrid-verifier-status-engine`
+— AWAITING INDEPENDENT REVIEW** (single local commit; not pushed, not merged).
+
+Confidence: 0.88
+
+---
+Decision ID: D-2026-09-14-05
+Date: 2026-09-14
+
+Decision: **Phase 4 Slice 1 — acceptance/remediation foundation: blocker policy
+generalized across statuses, targeted revision feedback, grounding_score
+deprecated from routing authority.**
+
+Reason: Astra architecture audit — hybrid verifier architecture is KEEP;
+`grounding_score` must not be a routing authority; UVR<=0.15 alone is NOT
+sufficient publication acceptance; structured semantic blockers are categorical
+policy inputs; unresolved verifier findings must be explicit review obligations.
+
+Rules:
+
+- Blocker policy generalized: ANY valid semantic row (WEAK **or** UNVERIFIED)
+  carrying an applicable structured blocker (`contradiction` or claim-invalidating
+  `limitation`) blocks semantic acceptance (`has_blocking_semantic_blockers`,
+  superseding WEAK-only `has_blocking_semantic_weakness`). Blockers never change a
+  row's semantic status — only acceptance of the artifact. Rows with
+  `analysis_validity == "INVALID"` are not categorical blocker authority (they fail
+  closed upstream via `verification_status` and still count in UVR); rows lacking
+  the field (pre-engine/hand-built) are treated as valid.
+- Limitation applicability: every emitted applicable limitation is blocking in this
+  slice. Future Phase-4 target (documented, NOT implemented): a limitation
+  accurately represented inside the claim may eventually be considered
+  resolved/non-blocking once a deterministic representation check exists.
+- `unresolved_semantic_obligations()` is the minimal deterministic obligation
+  inventory: claim_id, claim, status, blocker_kinds, blockers (with exact evidence
+  quotes), support_spans, reason_codes, source provenance, `blocking` flag,
+  `resolution="unresolved"`. Blocker-bearing rows are blocking obligations;
+  blocker-free unverified rows are non-blocking UVR-governed obligations. Exposed
+  in the Gate-1 API interrupt payload as `semantic_obligations` and in
+  semantic_trace `revision_linkage.semantic_obligations`.
+- Revision feedback: `draft_node` injects a TARGETED SEMANTIC BLOCKER FEEDBACK
+  block per blocking obligation — exact claim, semantic status, blocker kind,
+  blocker explanation, adverse/supporting evidence quotes with evidence IDs,
+  source, reason codes, and kind-specific repair guidance — never a generic
+  "improve grounding". The M4 unverified-claims block is unchanged and
+  `m4_feedback_claims` stays unverified-only for telemetry comparability. Feedback
+  forbids resolving failures by deleting required substantive content. State
+  carries no explicit required-content/brief field, so required-content
+  completeness remains UNKNOWN (Phase 4 owns it).
+- `grounding_score` deprecated as routing authority: removed from
+  `route_after_reflect` (GROUNDING_FLOOR hard floor and the grounding<0.75 soft-gate
+  conjunct). No thresholds tuned (0.60 / 0.75 / UVR 0.15 unchanged in config); no
+  replacement composite introduced. The floor was already unreachable whenever the
+  semantic gate passed (UVR<=0.15 implies score >= 0.6375). The reflection quality
+  gate (`reflection_score < REFLECTION_THRESHOLD`) is unchanged. `grounding_score`
+  remains in state, API payloads, telemetry, benchmark historical output, and UI as
+  **compatibility/observability only** — it cannot determine semantic acceptance or
+  revision routing.
+
+Metric policy (canonical definitions):
+
+- `UVR_v1` = UNVERIFIED / emitted valid semantic rows (post-dedup), i.e.
+  UNVERIFIED / (VERIFIED + WEAK + UNVERIFIED). Historical/diagnostic only;
+  unchanged; 0.15 retained for historical comparison; cannot override an
+  applicable blocker or an invalid evaluation state. A future materiality-aware
+  metric will be separately versioned.
+- `extracted_claim_verified_rate` = VERIFIED / (VERIFIED + WEAK + UNVERIFIED) —
+  OBSERVABILITY ONLY.
+- `claim_completeness` = UNKNOWN until Phase 4 qualifies the final claim inventory.
+- Neither rate is labeled whole-draft factual accuracy.
+
+`verify_node` stays narrow (semantic analysis -> evidence binding -> dispositions
+-> blockers/provenance); acceptance/remediation consumes those outputs. No inline
+evaluators for answer correctness, task completeness, relevance, citation
+completeness, or retrieval quality were added.
+
+Deferred (later Phase-4 slices): final complete claim inventory, materiality
+classifier/policy, material_verified_rate, citation completeness, final claim
+occurrence anchors, citation placement gate, complete mandatory-deliverable
+policy, relevance redesign.
+
+Does NOT change: quote-based analyzer contract, quote->span binding,
+VERIFIED/WEAK/UNVERIFIED status derivation, retrieval/chunking/embeddings,
+LangGraph topology, prompt baselines, thresholds. Provider calls: zero.
+
+Evidence: `tests/test_phase4_acceptance_remediation.py` (causal cases A-J, P6/P7
+targeted feedback, grounding_score sweep invariance, auto-approve/API bypass
+prevention, mocked E2E hold-at-HITL); `tests/test_blocker_aware_semantic_acceptance.py`
+updated to the generalized policy; full suite 1072 passed; ruff fatal-tier clean.
+
+Status: **PHASE-4 SLICE 1 COMPLETE ON `experiment/hybrid-verifier-status-engine`
+— AWAITING BOUNDED REVIEW** (single local commit; not pushed, not merged).
+
+Confidence: 0.90
+
+---
+Decision ID: D-2026-09-14-04
+Date: 2026-09-14
+
+Decision: **Blocker-aware semantic acceptance gate for WEAK + contradiction/limitation.**
+
+Reason: Independent review showed P6/P7-style WEAK rows (UVR=0, grounding_score=0.75)
+could pass `semantic_verification_accepted` and proceed without revision. The status
+engine correctly emits WEAK for contradiction/limitation; acceptance must not treat
+that as semantically clean.
+
+Rule: `has_blocking_semantic_weakness()` returns True when any engine-produced row has
+`status=="weak"` and a blocker with `kind` in `{contradiction, limitation}`. When True,
+`semantic_verification_accepted()` is False regardless of UVR or grounding_score.
+
+Does NOT change: status engine, quote binding, UVR formula, grounding_score weights,
+LangGraph topology, or other WEAK cases without those blockers.
+
+Status: **BLOCKER-ROUTING CORRECTION COMPLETE**.
+
+Confidence: 0.94
+
+---
+Decision ID: D-2026-09-14-03
+Date: 2026-09-14
+
+Decision: **Live `verify_node` cut over to hybrid semantic analyzer (Slice 3).**
+
+Reason: Slice 2 adapter qualified offline; production path must use engine-owned
+status without changing LangGraph topology.
+
+Phase-3 temporary two-call design inside `verify_node`:
+
+- **Call A (legacy, clipped `_build_source_context`):** claim extraction only;
+  legacy `status`/`confidence` ignored for semantic truth.
+- **Call B (`analyze_semantic_evidence` + full `build_evidence_manifest`):**
+  quote-based semantic analysis; Python binding + status engine is sole owner of
+  `grounding_report[].status`.
+
+Compatibility:
+
+- `grounding_score` = deterministic `engine_compat_grounding_score` (verified=1.0,
+  weak=0.75, unverified=0.0) — NOT legacy LLM confidence.
+- `specificity` preserved from Call A as descriptive SV metadata only.
+- `verification_error` added for provider/transport failures on Call A or B.
+- Claim inventory completeness remains `CLAIM_COMPLETENESS = unknown` (Phase 4).
+- `_resolve_attributions` skipped on engine path (manifest provenance authoritative).
+
+Does NOT change: LangGraph edges, UVR formula, HITL, retrieval breadth, provider
+experiments #1–#3 artifacts.
+
+Status: **SLICE 3 COMPLETE — PRODUCTION VERIFIER CUTOVER READY FOR REVIEW**.
+
+Confidence: 0.93
+
+---
+Decision ID: D-2026-09-14-02
+Date: 2026-09-14
+
+Decision: **Production semantic-analyzer contract + provider adapter implemented
+offline (Slice 2). Runtime verify_node remains unwired.**
+
+Reason: Slice 1 canonicalized quote binding, status engine, and response contract.
+Slice 2 adds production bridge modules without changing LangGraph behavior.
+
+New modules:
+
+- `agent/semantic_analyzer/contract.py` — evidence manifest (full text, no char
+  clip), claim roster, legacy verdict bridge, analyzer input/messages,
+  adjudication→grounding_report mapping
+- `agent/semantic_analyzer/provider.py` — injected LLM transport adapter;
+  response→bind→adjudicate pipeline
+
+Policy: source-count preserved (first 5 web + first 5 KB); character clipping
+removed from analyzer path. Legacy verifier status/confidence are NOT semantic
+authority. No fabricated confidence in grounding_report mapper.
+
+Does NOT change: verify_node, UVR, HITL, retrieval breadth, provider experiments.
+
+Status: **SLICE 2 COMPLETE — READY FOR SLICE 3 verify_node WIRING**.
+
+Confidence: 0.95
+
+---
+Decision ID: D-2026-09-14-01
+Date: 2026-09-14
+
+Decision: **Qualified semantic-analyzer pure logic graduated into production package
+`agent/semantic_analyzer/` (Slice 1). Scripts remain thin compatibility re-exports.**
+
+Reason: Quote-binding provider experiment #3 PASS at identity
+`72023be84f508f1203d05fa8858da6b4cf3d7437a7bc46eb24bb915434381c23`.
+Production integration requires a single canonical source of truth before
+`verify_node` wiring (Slice 2).
+
+Canonical modules:
+
+- `agent/semantic_analyzer/quote_binding.py`
+- `agent/semantic_analyzer/status_engine.py`
+- `agent/semantic_analyzer/response_contract.py`
+
+Compatibility: `scripts/hybrid_verifier_status_engine.py` and
+`scripts/semantic_analyzer_quote_binding.py` re-export only; harness imports
+canonical modules directly.
+
+Does NOT change: LangGraph topology, `verify_node`, UVR, HITL, routing,
+retrieval, or historical provider experiment artifacts.
+
+Status: **PRODUCTION SLICE 1 COMPLETE — RUNTIME UNCHANGED**.
+
+Confidence: 0.95
+
+---
+Decision ID: D-2026-09-10-04
+Date: 2026-09-10
+
+Decision: **Semantic analyzer external contract retires raw LLM character offsets.
+The LLM emits exact verbatim evidence quotes; Python performs deterministic
+exact-quote → canonical span binding before the unchanged hybrid status engine.**
+
+Reason: Provider experiment #2 at `2c9643a29b6f31aa1c0b8c2d38ba00da101e0ecf`
+(FAIL, P6-LLM-OFFSET-LOCALIZATION-FAILURE) showed plausible semantic reasoning
+with wrong raw offsets ([512:570], [1096:1156] vs gold [400:458], [1500:1562]).
+Python status was coincidentally `weak`; semantic oracle correctly FAILed.
+
+New analyzer output contract (external):
+
+- `support_quotes[]` and blocker `evidence_quotes[]` with `{evidence_id, quote}`
+- no `start`/`end`, `support_spans`, `evidence_spans`, status, materiality, or routing
+
+Deterministic binding (`scripts/semantic_analyzer_quote_binding.py`):
+
+- exact Python `str.find` against bound `source_text`; no fuzzy/normalized matching
+- zero matches → `quote_not_found` (INVALID; never VERIFIED)
+- multiple matches → `ambiguous_quote` (INVALID; never VERIFIED)
+- success → canonical internal `{support_spans, evidence_spans}` unchanged
+
+Gold oracle spans unchanged. Historical provider experiments preserved:
+
+- experiment #1 INVALID (`semantic_analyzer_run_ed35656b9a7c`)
+- experiment #2 FAIL (`semantic_analyzer_run_342076d6f2e6`, offset-era contract)
+
+Quote-binding contract is a **new experiment version** requiring new implementation
+identity, prompt/schema/request hashes, experiment identity, independent
+qualification, and explicit owner authorization. **No new provider execution
+authorized in this offline task.**
+
+Status: **QUOTE-BINDING CONTRACT IMPLEMENTED OFFLINE — PROVIDER NOT AUTHORIZED**.
+
+Confidence: 0.94
+
+Supersedes: offset-based analyzer response contract for future qualification only.
+Does NOT rewrite historical INVALID/FAIL experiments or consumed authorizations.
+
+---
+Decision ID: D-2026-09-10-03
+Date: 2026-09-10
+
+Decision: **Registry-vs-disk matching is role-invariant: a terminal on-disk
+governed experiment is represented only by exactly one TERMINAL history row.
+A successor slot cannot alias a terminal historical run_id.**
+
+Reason: History completeness at `6257a5cd492813f217580a0ff57cf9d90283317c`
+treated a `run_id` as registered if it appeared anywhere in registry state,
+including `successor`. That let a forged registry with `history=[]` and
+`successor.run_id` equal to terminal INVALID
+`semantic_analyzer_run_ed35656b9a7c` count the historical disk evidence as
+accounted for, skip owner-authorization derivation, and allow leftover
+`SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1` to grant unauthorized execution.
+
+Invariant:
+
+- TERMINAL HISTORICAL RUN: on-disk PASS/FAIL/INVALID evidence must appear
+  exactly once in `history[]` with lifecycle TERMINAL, matching `run_id`,
+  matching frozen experiment identity, and required ledger/artifact linkage.
+  It must never be represented by `successor`, SUCCESSOR_PROPOSED,
+  AUTHORIZED, ACTIVE, or another run_id alias.
+- CURRENT SUCCESSOR RUN: `successor` may represent only the current
+  non-terminal successor. Its `run_id` must not collide with any terminal
+  historical run_id. Collision fails closed as
+  `successor_run_id_collides_with_terminal_history` before execution
+  authorization or network eligibility.
+- Role mismatch fails closed as `registry_history_role_mismatch`.
+- Owner authorization is derived from on-disk terminal evidence, not from
+  `history[]` being empty. Prior governed terminal disk evidence plus a new
+  successor identity always requires a new identity-bound owner token.
+
+Does NOT change: P6/P7/P1 request hashes, provider/model identity contract,
+prompt, fixture, gold oracle, semantic PASS/FAIL, pricing, LangGraph, or
+retrieval. Does NOT authorize a second live provider experiment.
+
+Status: **REGISTRY ROLE INVARIANT APPLIED — EXECUTION NOT AUTHORIZED**.
+
+Confidence: 0.93
+
+Supersedes / superseded by: Tightens D-2026-09-10-02 successor authorization
+and the history-completeness correction at
+`6257a5cd492813f217580a0ff57cf9d90283317c`. Does not supersede the frozen
+request hashes or model-identity pair.
+
+---
+Decision ID: D-2026-09-10-02
+Date: 2026-09-10
+
+Decision: **Semantic-analyzer provider qualification runner is implemented
+offline with durable write-ahead attempt ledger and fail-closed execution gate.
+Provider execution remains NOT AUTHORIZED.**
+
+Reason: Independent pre-provider harness qualification passed at
+`47e7f0458e31b2eca0d24ac4f0b791edd20faa89`. Provider preflight architecture
+review found historical model-contract drift (`deepseek-chat`, `max_tokens=4000`).
+The current frozen experiment contract targets `deepseek-v4-flash` with
+`max_tokens=2000`, temperature `0.1`, non-thinking mode, JSON-object response,
+and zero retries.
+
+Frozen provider-runner contract:
+
+- dedicated direct HTTPS transport (`httpx==0.28.1` compatible;
+  `HTTPTransport(retries=0)`, `follow_redirects=False`, `trust_env=False`)
+- durable write-ahead attempt ledger: persist CONSUMED before network; no
+  restart retry
+- case order P6 → P7 → P1; max 3 requests; one attempt per case; stop on
+  FAIL/INVALID; remaining cases `NOT_RUN`
+- execution authorization: `SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1` required;
+  default DISABLED
+- hard spend ceiling: `$0.02` USD; conservative three-case bound must pass
+  before authorization
+- analyzer prompt frozen at `prompts/semantic_analyzer_system.md`; observations
+  only; no status/routing fields
+- immutable run artifacts under
+  `outputs/semantic_analyzer_provider_qualification/runs/`
+
+Status: **FIRST LIVE PROVIDER EXPERIMENT INVALID — IDENTITY/COST CORRECTION
+APPLIED — EXECUTION NOT AUTHORIZED**.
+
+First authorized live provider experiment (2026-09-10):
+
+- run `semantic_analyzer_run_ed35656b9a7c`; disposition **INVALID** forever
+- exactly 1 provider request (P6); retries 0; P7/P1 **NOT_RUN**
+- invalid reason: `returned_model_mismatch` (requested `deepseek-v4-flash`,
+  observed response `model` field `deepseek-flash`)
+- raw P6 semantic observations preserved as diagnostic only; oracle **NOT_RUN**
+- estimated incurred cost ~$0.000427 (599 prompt + 124 completion tokens);
+  runner audit defect recorded $0.000000 — corrected in next runner identity
+- historical `system_fingerprint` observed: `aeb56401ca74e127821c4f9126dcb669`
+  (diagnostic only; not a validation requirement)
+- consumed authorization/registry terminal; no reopen permitted
+
+Correction scope (runner-only, post-first-live):
+
+- outbound request model remains exactly `deepseek-v4-flash`; P6/P7/P1 request
+  body hashes unchanged
+- next experiment freezes exact provider identity pair: requested
+  `deepseek-v4-flash`, accepted returned `deepseek-flash` only (no broad alias)
+- cost accounting: structurally readable usage/cost recorded before
+  qualification disposition; INVALID/FAIL do not erase incurred cost
+- `system_fingerprint`: capture first observed per run; report drift; no
+  hardcoded fingerprint gate
+- new frozen experiment identity + new explicit owner authorization required;
+  old authorization consumed
+- successor authorization correction: append-preserving registry history;
+  `SEMANTIC_ANALYZER_OWNER_AUTHORIZATION` identity-bound owner token required
+  for any successor after a terminal predecessor; `SEMANTIC_ANALYZER_PROVIDER_EXECUTE=1`
+  remains execution-enable only and is never owner authorization; registry
+  deletion with remaining terminal artifacts fails closed
+
+Prior correction (still in force):
+
+- outbound request uses DeepSeek `"thinking": {"type": "disabled"}`; obsolete
+  `thinking_mode` removed
+- single frozen experiment identity enforced via durable registry; restart cannot
+  allocate fresh three-call allowance; orphaned ledger without registry fails
+  closed
+
+Does NOT authorize: another live DeepSeek call, provider experiment PASS,
+production integration, UVR/routing changes, retrieval redesign, or
+EXPERIMENT_LEDGER entry.
+
+Confidence: 0.92
+
+Supersedes / superseded by: Builds on D-2026-09-10-01 qualified harness;
+supersedes prior “no live calls” clause of this entry only. Does not supersede
+production verifier prompt or Stage 2D exposure contract.
+
+---
+Decision ID: D-2026-09-10-01
+Date: 2026-09-10
+
+Decision: **Semantic-analyzer pre-provider qualification harness is frozen and
+implemented offline. Provider execution remains NOT AUTHORIZED.**
+
+Reason: The hybrid verifier status engine baseline
+(`1aa4acc7e0ccdb4cb769b8617667d6a505cc2671`) independently passed offline
+engine qualification. The next gate requires a deterministic harness that
+qualifies future analyzer *observations* — not Python-derived status alone —
+before any provider call.
+
+Frozen pre-provider harness contract:
+
+- analyzer response top-level field: `observations` only; observation fields
+  limited to `claim_id`, `support_spans`, `full_entailment`, `blockers`
+- trusted ingress: recomputed draft/evidence hashes, claim-text draft-slice
+  binding, request ownership, exposure identity, visibility, unique IDs
+- whole-envelope INVALID dominance via `adjudicate_hybrid_verifier_observations`
+- independent semantic oracle for frozen P6/P7/P1 gold spans (evaluator-only)
+- attempt order P6 → P7 → P1; max 3 requests; one attempt per case; stop on
+  FAIL/INVALID; remaining cases `NOT_RUN`
+- mock-only offline qualification; `SEMANTIC_ANALYZER_EXECUTE=1` reserved for
+  future authorized provider slice
+- artifact bundle preserves identity hashes, attempt ledger, oracle/adjudication
+  outputs, and digest integrity checks
+
+Status: **PRE-PROVIDER HARNESS — INDEPENDENTLY QUALIFIED AT `47e7f04`;
+PROVIDER EXECUTION NOT AUTHORIZED**.
+
+Prior review findings (six holes) addressed at `d25730d`. Final review found
+three remaining false-green paths: optional `frozen_truth`; caller pack defining
+qualification truth; missing `artifact_digest` not failing closed.
+
+Final correction scope (harness-only): mandatory `frozen_truth`; verified
+canonical fixture bytes only for truth construction; required artifact digest
+with stable repeat verification.
+
+Does NOT authorize: provider observation qualification, production integration,
+UVR/routing changes, retrieval redesign, or EXPERIMENT_LEDGER entry.
+
+Confidence: 0.92
+
+Supersedes / superseded by: Accepts D-2026-09-05-02 offline engine baseline;
+does not supersede production verifier prompt or Stage 2D exposure contract.
+
+---
+Decision ID: D-2026-09-05-02
+Date: 2026-09-05
+
+Decision: **Hybrid verifier status engine architecture is frozen for offline
+qualification. Semantic observations and deterministic final status are
+separated. Python alone emits verified/weak/unverified.**
+
+Reason: Valid 3-cell prompt-only experiment **FAILED** with pattern
+`verified / weak / verified` (artifact SHA-256
+`85f9d576c5b424523bc2e5ecd14070bfe80a16b697c032c70b09d5402d608975`): strict
+status paragraph fixed P7 qualifier case and preserved P1 control but P6
+contradiction remained false-verified. Prompt-only contract change is
+insufficient for contradiction reconciliation; next architecture separates
+natural-language semantic observation from deterministic status derivation.
+
+Frozen offline contract:
+
+- analyzer output schema: `claim_id`, `support_spans`, `full_entailment`,
+  `blockers` only; blocker kinds limited to `contradiction` and `limitation`
+- envelope-owned fields: schema version, exact claim text/span, draft hash,
+  evidence manifest, evidence hashes, exposure/request identity
+- span contract: zero-based half-open Unicode code-point offsets; UTF-8 hashes
+- Python derives `meaningful_positive_support = len(valid support_spans) > 0`
+- blockers always veto optimistic `full_entailment=true` → `weak` plus
+  consistency diagnostic
+- `INVALID` is analysis validity, not a fourth semantic status
+- materiality excluded from analyzer schema and status derivation
+- claim extraction excluded; engine adjudicates frozen claim roster exactly once
+- deterministic exact-fact veto interface defined; no regex NL parsing in slice 1
+- zero provider calls in offline slice; no production runtime integration
+
+Status: **OFFLINE IMPLEMENTATION — PROVIDER OBSERVATION QUALIFICATION BLOCKED
+PENDING INDEPENDENT OFFLINE REVIEW**.
+
+Does NOT authorize: production routing/UVR changes, retrieval redesign, provider
+analyzer prompts, or EXPERIMENT_LEDGER entry until offline qualification passes
+independent review.
+
+Confidence: 0.93
+
+Supersedes / superseded by: Accepts 3-cell valid FAIL evidence; does not
+supersede Stage 2D exposure contract or production verifier prompt.
+
+---
+Decision ID: D-2026-09-05-01
+Date: 2026-09-05
+
+Decision: **Verifier semantic-contract 3-cell prompt-only experiment design is
+frozen. Provider execution requires independent preflight review and explicit
+authorization. Automatic shadow false-pass is diagnostic only for this
+experiment.**
+
+Reason: Stage 2D bounded provider qualification **FAILED** with FV=4 on P6/P7
+cells despite COMPLETE exposure making contradiction/qualifier visible. P1 proved
+exposure consequence (PREFIX unverified → COMPLETE verified). Forensic diagnosis
+points to the permissive semantic-status paragraph in `prompts/verify_system.md`
+("verified if any source supports"). Next causal test isolates prompt-contract
+change only.
+
+Frozen 3-cell contract:
+
+- cells: exactly three COMPLETE arms — C1=P6-COMPLETE, C2=P7-COMPLETE,
+  C3=P1-COMPLETE (positive control)
+- causal variable: **only** the verifier semantic-status paragraph replaced with
+  strict full-entailment contract in
+  `prompts/verify_system_semantic_contract_candidate.md`
+- frozen from Stage 2D: draft/source/context hashes, model config, parser,
+  mapper, Semantic P0 evaluator, evidence bindings, gold labels, no-retry,
+  redirect-disabled transport, price schedule
+- expected provider classifications: C1=weak, C2=weak, C3=verified
+- qualification gate: material false-verification numerator = 0
+- **NOT** a qualification gate: automatic_semantic_false_pass (shadow UVR may
+  still ACCEPT all-weak reports; routing unchanged and evaluated separately)
+- one accepted attempt per cell; max **3** HTTP requests; hard ceiling **$0.02 USD**
+- production routing, UVR logic, retrieval, exposure limits unchanged
+
+Status: **3-CELL PRE-PROVIDER IMPLEMENTATION — PROVIDER EXECUTION NOT
+AUTHORIZED**.
+
+Does NOT authorize: production prompt swap, routing changes, retrieval redesign,
+paid 20-topic benchmark, or EXPERIMENT_LEDGER entry until the experiment runs.
+
+Confidence: 0.95
+
+Supersedes / superseded by: Accepts Stage 2D execution-fail forensics; does not
+supersede Stage 2D exposure contract or production verifier prompt.
+
+---
+Decision ID: D-2026-09-04-06
+Date: 2026-09-04
+
+Decision: **Stage 2C deterministic qualification PASS is accepted. Stage 2D
+exact 7-asset / 10-cell provider preflight contract is frozen. Provider
+execution requires independent preflight review and explicit authorization.**
+
+Reason: Stage 2C proved mechanical prefix truncation removes required
+truth-relevant evidence in 5/8 frozen cases despite 8/8 rank-1 retrieval.
+Provider consequence remains unknown until bounded Stage 2D qualification.
+
+Frozen Stage 2D contract:
+
+- assets: P1–P7 (seven fixed drafts; no drafting node)
+- provider cells: exactly ten (`P1-PREFIX`, `P1-COMPLETE`, `P2-COMPLETE`,
+  `P3-COMPLETE`, `P4-COMPLETE`, `P5-COMPLETE`, `P6-PREFIX`, `P6-COMPLETE`,
+  `P7-PREFIX`, `P7-COMPLETE`)
+- causal isolation: paired P1/P6/P7 differ **only** in exposure arm
+- one accepted attempt per cell; provider SDK retries disabled; no
+  retry-until-green
+- hard spend ceiling: **$0.08 USD** (preflight budget calculator must refuse
+  above ceiling)
+- production verifier prompt/model/settings unchanged
+- shadow current-runtime acceptance computed alongside corrected Semantic P0
+  oracle; production routing unchanged
+- duplicate Stage 2D cell/asset/semantic identities reject before execution
+- telemetry contract frozen in `scripts/evidence_exposure_2d_preflight.py`
+
+Status: **STAGE 2D PRE-PROVIDER IMPLEMENTATION — PROVIDER EXECUTION NOT
+AUTHORIZED**.
+
+Does NOT authorize: production exposure changes, retrieval redesign, paid
+20-topic benchmark, verifier prompt/model changes, or automatic semantic routing
+wiring.
+
+Confidence: 0.96
+
+Supersedes / superseded by: Accepts Stage 2C closeout under D-2026-09-04-05;
+does not supersede production prefix limits.
+
+---
+Decision ID: D-2026-09-04-05
+Date: 2026-09-04
+
+Decision: **Stage 2C deterministic evidence-exposure qualification design is frozen.
+Implementation/qualification only on branch `experiment/evidence-exposure-2c`.
+Provider execution (Stage 2D) is NOT authorized.**
+
+Reason: Canonical main mission after Semantic P0 Slice 1 integration is bounded
+evidence-exposure qualification. Stage 2C isolates the causal chain
+`retrieved source → model-visible evidence → verifier-visible evidence` with
+retrieval frozen at rank 1 and three deterministic arms (current prefix,
+complete source, gold relevant context).
+
+Frozen scope:
+
+- fixtures: `evals/fixtures/evidence_exposure_2c.json` (eight ASCII cases)
+- evaluator: `scripts/evaluate_evidence_exposure_2c.py`
+- contract: `docs/EVIDENCE_EXPOSURE_2C2D_CONTRACT.md`
+- metrics: six Stage 2C metrics with raw numerators/denominators
+- production `_build_source_context()` limits unchanged (web 1500, KB 2000)
+
+Status: **DESIGN FROZEN — STAGE 2C IMPLEMENTATION/QUALIFICATION ONLY — PROVIDER
+EXECUTION NOT AUTHORIZED**.
+
+Does NOT authorize: Stage 2D provider calls, production exposure changes,
+retrieval redesign, paid 20-topic benchmark, or runtime semantic wiring.
+
+Confidence: 0.96
+
+Supersedes / superseded by: Complements D-2026-09-04-02 and D-2026-09-04-04.
+Does not close overall P0-2b or enterprise production readiness.
+
+---
 Decision ID: D-2026-09-04-04
 Date: 2026-09-04
 

@@ -1,0 +1,8 @@
+{
+  "identity_version": 1,
+  "required_engine_baseline_sha": "1aa4acc7e0ccdb4cb769b8617667d6a505cc2671",
+  "failed_harness_checkpoint_sha": "5f325cb871ed9889a1058a510ca3983306b0c7dc",
+  "failed_harness_checkpoint_parent_sha": "1aa4acc7e0ccdb4cb769b8617667d6a505cc2671",
+  "fixture_sha256": "72c1bd4dd8a3d39acec01300dd1a9b03021634cfbc49433f0881ee2c2b796d1d",
+  "notes": "Harness implementation SHA is runtime git HEAD on the correction branch. Engine baseline remains immutable at required_engine_baseline_sha."
+}

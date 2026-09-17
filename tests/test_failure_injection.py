@@ -132,17 +132,27 @@ def test_verify_malformed_output_degrades_gracefully(base_state, monkeypatch):
     assert result["iteration_metrics"][-1]["uvr"] is None
 
 
-def test_verify_node_preserves_the_model_extracted_verdict_set(base_state, monkeypatch):
-    verdicts = [
-        {"claim": claim, "source_url": "https://example.com/gd",
-         "confidence": 0.9, "status": "verified", "specificity": "substantive"}
-        for claim in ("gradient descent updates parameters", "support vectors define a margin", "trees split feature space")
+def test_verify_node_preserves_the_model_extracted_claim_inventory(base_state, monkeypatch):
+    """Phase 4 Slice 2A: Call A emits the inventory schema; claims pass through
+    to the grounding report in order (Call B autofill marks all unverified)."""
+    claims = (
+        "Gradient descent updates parameters.",
+        "Support vectors define a margin.",
+        "Trees split feature space.",
+    )
+    base_state["draft_markdown"] = "\n\n".join(claims)
+    rows = [
+        {"claim_text": c, "anchor_quote": c, "section": "technical_dive",
+         "claim_type": "factual", "material": True, "materiality_reason_code": None,
+         "materiality_rationale": None, "satisfies_req_ids": [],
+         "specificity": "substantive", "requires_citation": None}
+        for c in claims
     ]
-    monkeypatch.setattr(nodes, "_get_client", lambda: FakeLLMClient(response=fake_response(json.dumps(verdicts))))
+    monkeypatch.setattr(nodes, "_get_client", lambda: FakeLLMClient(response=fake_response(json.dumps(rows))))
     result = nodes.verify_node(base_state)
-    assert [item["claim"] for item in result["grounding_report"]] == [
-        "gradient descent updates parameters", "support vectors define a margin", "trees split feature space",
-    ]
+    assert result["verification_status"] == "completed"
+    assert [item["claim"] for item in result["grounding_report"]] == list(claims)
+    assert result["claim_inventory"]["counts"]["total"] == 3
     assert result["iteration_metrics"][-1]["N"] == 3
 
 

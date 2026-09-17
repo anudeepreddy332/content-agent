@@ -298,3 +298,23 @@ For every applicable change:
 | Evidence | Exact validated SHA above; canonical merge SHA `5f4163f2aa53155216342d20e627abd88fb60a1e`; PR #7; decisions `D-2026-09-04-03`, `D-2026-09-04-04`. |
 | Decision enabled | Semantic P0 Slice 1 is closed on canonical main. Current authorized mission is bounded evidence-exposure + small provider 2C/2D qualification. Do not reopen without new material P0/P1 evidence. |
 | Confidence | 0.97 |
+
+### EXP-2026-09-04-02 — Stage 2C deterministic evidence-exposure qualification
+
+| Field | Record |
+| --- | --- |
+| Question | Under frozen rank-1 retrieval, does the current prefix exposure policy retain required truth-relevant evidence for draft and verifier consumers? |
+| Isolated variable | Evidence exposure arm only: current prefix (A), complete source (B), gold relevant context (C). Retrieval frozen at rank 1. |
+| Control / candidate | Arm A current production prefix (web 1500 / KB 2000) / diagnostic Arms B and C. |
+| Frozen gate | Eight-case qualification pack; retrieval requirement recall@1 = 8/8; Arms B/C retention = 8/8 with 0 truncation violations; Arm A loss measured exactly on late cases. |
+| Base / branch / environment | Canonical base `c20425a904dfe6014f561e1c016027abab7e051a`; implementation/qualification SHA `bdbd4c3abc3a6b33529b11203b7393b899805739`; branch `experiment/evidence-exposure-2c`. |
+| Validation | Independent qualification `EVIDENCE-EXPOSURE-2C-QUALIFICATION-PASS`; focused Stage 2C tests; production `_build_source_context()` unchanged. |
+| Paid/live providers | None. Provider calls/spend: zero. |
+| Result | retrieval requirement recall@1 = **8/8**; Arm A draft/verifier retention = **3/8**; Arm A truncation violations = **5/8**; Arms B/C draft/verifier retention = **8/8**, violations **0/8**. Cases losing evidence in Arm A: `E2C-W02`, `E2C-K02`, `E2C-W03`, `E2C-K03`, `E2C-W04`. Controls retained: `E2C-W01`, `E2C-K01`, `E2C-K04`. |
+| Stage 2C finding | In the frozen eight-case qualification, the current 1500/2000-character prefix policy mechanically removes required truth-relevant evidence from five cases despite rank-1 retrieval. |
+| Non-claims | Does **NOT** establish real corpus prevalence, provider consequence, full-source production superiority, production span-selector quality, general retrieval quality, or MiniLM/chunking quality. Provider consequence remains **UNKNOWN**. |
+| Residual (deferred non-blocking) | Duplicate requirement IDs inside one case are not currently rejected by Stage 2C `validate_pack`; the frozen Stage 2C pack contains unique requirement IDs, so this did not affect the qualified 5/8 result. Deferred harness hardening unless required for Stage 2D integrity. |
+| Classification | `STAGE 2C — DETERMINISTIC QUALIFICATION PASS`. Not provider authorization; not production exposure change. |
+| Evidence | SHA `bdbd4c3abc3a6b33529b11203b7393b899805739`; fixtures `evals/fixtures/evidence_exposure_2c.json`; evaluator `scripts/evaluate_evidence_exposure_2c.py`; decision `D-2026-09-04-05`. |
+| Decision enabled | Stage 2D pre-provider implementation and independent preflight review. Provider execution **NOT** authorized from this result alone. |
+| Confidence | 0.97 |

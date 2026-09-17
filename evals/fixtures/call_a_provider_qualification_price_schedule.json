@@ -1,0 +1,15 @@
+{
+  "schedule_id": "call_a_provider_qualification_deepseek_flash_2026-09-15",
+  "recorded_at": "2026-09-15T16:30:00Z",
+  "pricing_basis": "config.DEEPSEEK pricing (deepseek-flash; same rates as config.py 2025 table)",
+  "requested_model": "deepseek-flash",
+  "accepted_returned_model": "deepseek-flash",
+  "input_cost_per_million_tokens_usd": 0.27,
+  "output_cost_per_million_tokens_usd": 1.10,
+  "typical_output_tokens_per_case": 800,
+  "max_output_tokens_per_case": 4000,
+  "max_cases": 16,
+  "recommended_owner_ceiling_usd": 0.12,
+  "hard_spend_ceiling_usd": 0.15,
+  "notes": "Re-frozen after production DEEPSEEK_MODEL correction to deepseek-flash. Conservative bound assumes max output tokens (4000) per fixture."
+}

@@ -32,9 +32,37 @@ class AgentState(TypedDict):
 
     # Verification
     grounding_report: list      # [{claim, source_url, confidence, status, specificity,
-    #   source_kind, source_ref, kb_chunk_candidates?}]
-    grounding_score: float      # mean confidence across all claims
-    verification_status: Literal["not_started", "completed", "parse_failed", "skipped_cost_gate", "upstream_failed"]
+    #   source_kind, source_ref, kb_chunk_candidates?, material, claim_type,
+    #   section, anchor_quote, occurrences, requires_citation}]
+    grounding_score: float      # DEPRECATED as routing authority (Phase 4 Slice 1):
+    #   compatibility/observability only (API/telemetry/benchmark/UI). Derived from
+    #   engine statuses (not LLM confidence); cannot determine semantic acceptance
+    #   or revision routing.
+    verification_status: Literal[
+        "not_started",
+        "completed",
+        "parse_failed",
+        "verification_error",
+        "skipped_cost_gate",
+        "upstream_failed",
+        "inventory_failed",     # Phase 4 Slice 2A: Call-A inventory/anchor failure
+    ]
+
+    # Phase 4 Slice 2A: canonical claim inventory for the CURRENT draft version.
+    # {schema_version, run_id, iteration, draft_sha256, brief_requirements,
+    #  claims[{claim_id, claim_text, anchor_quote, occurrences, anchor_validity,
+    #  section, claim_type, material, materiality_reason_code,
+    #  materiality_rationale, materiality_override, requires_citation,
+    #  satisfies_req_ids, specificity, call_b_eligible}], satisfied_req_ids,
+    #  counts}. Rebuilt from scratch on every verify pass; never reused across
+    #  draft versions. Completeness vs the true draft content remains UNKNOWN.
+    claim_inventory: dict | None
+
+    # Phase 4 Slice 2A/2b schema foundation: fixed brief-derived requirements,
+    # external to any single draft's claims: [{req_id, kind, mandatory,
+    # description}]. A mandatory req linked to a claim forces material=true
+    # (deterministic override). Full coverage gating is Slice 2b.
+    brief_requirements: list
 
     # Reflection
     reflection_score: int       # 1–10
@@ -81,6 +109,10 @@ class AgentState(TypedDict):
     # M4: count of unverified claims injected into the current draft call
     # (0 on iteration 1 and in the control arm). Records injection REALITY,
     # not intent — guard against the M2 interpolation-bug class.
+    # Phase 4 Slice 1: blocker-bearing rows (weak/unverified) are injected via a
+    # separate targeted block and recorded in
+    # semantic_trace revision_linkage.semantic_obligations; this count stays
+    # unverified-only for M4 telemetry comparability.
     m4_feedback_claims: int
 
     # Error log

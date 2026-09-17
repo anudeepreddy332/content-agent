@@ -1,5 +1,6 @@
 """Shared fixtures for the B2 failure-injection suite. All LLM/Tavily/Qdrant
 interactions are mocked — this suite costs $0 and must stay that way."""
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -28,6 +29,8 @@ def base_state():
                         "chunk_index": 0, "distance": 0.1, "rrf_score": 0.03}],
         "grounding_report": [],
         "grounding_score": 0.0,
+        "claim_inventory": None,
+        "brief_requirements": [],
         "reflection_score": 0,
         "reflection_notes": "",
         "reflection_provenance": {
@@ -73,13 +76,56 @@ def fake_response(content: str, tokens: int = 100):
                               total_tokens=tokens),
     )
 
+def default_analyzer_payload(call_a_content: str) -> str:
+    """Phase-4 verify_node Call B autofill: all eligible claims unverified, no quotes.
+
+    Parses the Call-A claim-inventory output (new schema) and mirrors the
+    production roster: every inventory claim, with Python content-derived
+    claim IDs (never positional, never model-generated)."""
+    from agent.claim_inventory import (
+        compute_claim_id,
+        parse_claim_inventory_rows,
+    )
+
+    try:
+        rows = parse_claim_inventory_rows(call_a_content)
+    except Exception:
+        return json.dumps({"observations": []})
+    observations = [
+        {
+            "claim_id": compute_claim_id(row["claim_text"]),
+            "support_quotes": [],
+            "full_entailment": False,
+            "blockers": [],
+        }
+        for row in rows
+    ]
+    return json.dumps({"observations": observations})
+
+
+def verify_llm_client(legacy_content: str, analyzer_content: str | None = None) -> "FakeLLMClient":
+    """Two-call verify_node mock: legacy extraction + semantic analyzer."""
+    if analyzer_content is None:
+        analyzer_content = default_analyzer_payload(legacy_content)
+    return FakeLLMClient(
+        responses=[
+            fake_response(legacy_content),
+            fake_response(analyzer_content),
+        ]
+    )
+
+
 class FakeLLMClient:
     """Stands in for the OpenAI client. Raises from `errors` in order, then
-    returns `response`. Counts attempts so retry semantics are assertable."""
-    def __init__(self, response=None, errors=None):
+    returns queued `responses` (or reuses a single `response` with optional
+    analyzer autofill on subsequent calls). Counts attempts for retry tests."""
+    def __init__(self, response=None, responses=None, errors=None, analyzer_autofill=True):
         self.calls = 0
         self._response = response
+        self._responses = list(responses or [])
         self._errors = list(errors or [])
+        self._analyzer_autofill = analyzer_autofill
+        self._first_legacy_content: str | None = None
         c = self
 
         class _Completions:
@@ -87,9 +133,17 @@ class FakeLLMClient:
                 c.calls += 1
                 if c._errors:
                     raise c._errors.pop(0)
+                if c._responses:
+                    return c._responses.pop(0)
                 if c._response is None:
                     raise AssertionError("LLM was called but no response configured "
                                          "(sentinel for cost-gate tests)")
+                content = c._response.choices[0].message.content
+                if c.calls == 1:
+                    c._first_legacy_content = content
+                    return c._response
+                if c._analyzer_autofill and c._first_legacy_content is not None:
+                    return fake_response(default_analyzer_payload(c._first_legacy_content))
                 return c._response
 
         self.chat = SimpleNamespace(completions=_Completions())
@@ -103,4 +157,3 @@ def openai_error(cls, status: int):
         return cls(request=req)
     resp = httpx.Response(status, request=req)
     return cls("injected", response=resp, body=None)
-
