@@ -9,6 +9,40 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-17-01
+Date: 2026-09-17
+
+Decision: **PR `eval-gate` rebinding — current semantic contract, zero provider.**
+
+Reason: `evals/verifier_golden_test.py` is a legacy non-authoritative oracle (LLM emits
+status/confidence directly; stochastic; not Call-B quote binding + Python status engine).
+It produced different merge eligibility for unchanged semantic code (10/12 vs 11/12).
+
+PR merge gate (`eval-gate` job, unchanged name):
+
+- **Deterministic**, **zero provider**, **no secret** required.
+- Runs `scripts/run_current_contract_eval_gate.sh` (122 focused pytest cases): hybrid
+  status engine, quote binding, analyzer contract/adapter, verify_node cutover,
+  blocker-aware acceptance, Phase-4 legacy-authority regressions.
+- Reproducible per commit.
+
+Live provider qualification (separate, not PR merge authority):
+
+- Bounded Call-A oracle v2 rescore; Call-B run `semantic_analyzer_run_8f554fa3eb62`
+  (deepseek-flash exact match, P6/P7/P1 PASS).
+- Immutable identity/fixture artifacts; actual provider; not random PR eligibility.
+
+Legacy `evals/verifier_golden_test.py` retained for provenance; available via manual
+`eval.yml` only — **not** PR merge-blocking.
+
+P2 logged (not fixed): `PROMPT_VERSION` may still hash historical `verify_system.md`
+instead of current `semantic_analyzer_system.md`.
+
+Status: **PR-EVAL-GATE-CURRENT-CONTRACT.**
+
+Confidence: 0.95
+
+---
 Decision ID: D-2026-09-16-10
 Date: 2026-09-16
 
