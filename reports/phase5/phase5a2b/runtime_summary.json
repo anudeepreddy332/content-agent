@@ -1,0 +1,173 @@
+{
+  "deterministic_rerun_equal": true,
+  "repetitions": [
+    {
+      "deterministic_result_sha256": "771970611646c0d52d4f59f9c330179e2400639097b0f0d7f7aa10b723791944",
+      "embedding_ms": {
+        "A": 658.360083,
+        "B": 1857.610875,
+        "B-PACKED": 1977.867792
+      },
+      "query_embedding_ms": 38.970666,
+      "repetition": 1,
+      "retrieval": {
+        "A": {
+          "arm": "A",
+          "bm25_index_build_ms": 2.830625,
+          "retrieval_latency": {
+            "bm25": {
+              "mean_ms": 0.110644,
+              "p50_ms": 0.085125,
+              "p95_ms": 0.222459,
+              "total_ms": 3.87254
+            },
+            "dense": {
+              "mean_ms": 0.051944,
+              "p50_ms": 0.042333,
+              "p95_ms": 0.090334,
+              "total_ms": 1.818046
+            },
+            "hybrid": {
+              "mean_ms": 0.019651,
+              "p50_ms": 0.019,
+              "p95_ms": 0.027875,
+              "total_ms": 0.68779
+            }
+          }
+        },
+        "B": {
+          "arm": "B",
+          "bm25_index_build_ms": 3.087041,
+          "retrieval_latency": {
+            "bm25": {
+              "mean_ms": 0.446983,
+              "p50_ms": 0.341667,
+              "p95_ms": 0.914916,
+              "total_ms": 15.644417
+            },
+            "dense": {
+              "mean_ms": 0.27694,
+              "p50_ms": 0.268208,
+              "p95_ms": 0.368958,
+              "total_ms": 9.692915
+            },
+            "hybrid": {
+              "mean_ms": 0.020399,
+              "p50_ms": 0.021166,
+              "p95_ms": 0.02525,
+              "total_ms": 0.713961
+            }
+          }
+        },
+        "B-PACKED": {
+          "arm": "B-PACKED",
+          "bm25_index_build_ms": 2.871541,
+          "retrieval_latency": {
+            "bm25": {
+              "mean_ms": 0.403679,
+              "p50_ms": 0.307583,
+              "p95_ms": 0.825542,
+              "total_ms": 14.128749
+            },
+            "dense": {
+              "mean_ms": 0.248099,
+              "p50_ms": 0.236375,
+              "p95_ms": 0.377083,
+              "total_ms": 8.683454
+            },
+            "hybrid": {
+              "mean_ms": 0.019505,
+              "p50_ms": 0.020125,
+              "p95_ms": 0.023417,
+              "total_ms": 0.682665
+            }
+          }
+        }
+      }
+    },
+    {
+      "deterministic_result_sha256": "771970611646c0d52d4f59f9c330179e2400639097b0f0d7f7aa10b723791944",
+      "embedding_ms": {
+        "A": 632.320209,
+        "B": 1844.169834,
+        "B-PACKED": 1969.633375
+      },
+      "query_embedding_ms": 38.819792,
+      "repetition": 2,
+      "retrieval": {
+        "A": {
+          "arm": "A",
+          "bm25_index_build_ms": 2.59825,
+          "retrieval_latency": {
+            "bm25": {
+              "mean_ms": 0.110249,
+              "p50_ms": 0.084334,
+              "p95_ms": 0.229167,
+              "total_ms": 3.858708
+            },
+            "dense": {
+              "mean_ms": 0.045693,
+              "p50_ms": 0.042375,
+              "p95_ms": 0.065958,
+              "total_ms": 1.599248
+            },
+            "hybrid": {
+              "mean_ms": 0.020122,
+              "p50_ms": 0.019584,
+              "p95_ms": 0.027584,
+              "total_ms": 0.704255
+            }
+          }
+        },
+        "B": {
+          "arm": "B",
+          "bm25_index_build_ms": 3.089625,
+          "retrieval_latency": {
+            "bm25": {
+              "mean_ms": 0.455538,
+              "p50_ms": 0.336834,
+              "p95_ms": 0.953291,
+              "total_ms": 15.943833
+            },
+            "dense": {
+              "mean_ms": 0.278884,
+              "p50_ms": 0.26925,
+              "p95_ms": 0.387959,
+              "total_ms": 9.760955
+            },
+            "hybrid": {
+              "mean_ms": 0.020239,
+              "p50_ms": 0.02075,
+              "p95_ms": 0.025,
+              "total_ms": 0.708374
+            }
+          }
+        },
+        "B-PACKED": {
+          "arm": "B-PACKED",
+          "bm25_index_build_ms": 2.988875,
+          "retrieval_latency": {
+            "bm25": {
+              "mean_ms": 0.413739,
+              "p50_ms": 0.320875,
+              "p95_ms": 0.866958,
+              "total_ms": 14.480874
+            },
+            "dense": {
+              "mean_ms": 0.251855,
+              "p50_ms": 0.242625,
+              "p95_ms": 0.369834,
+              "total_ms": 8.814918
+            },
+            "hybrid": {
+              "mean_ms": 0.019849,
+              "p50_ms": 0.020167,
+              "p95_ms": 0.023417,
+              "total_ms": 0.694713
+            }
+          }
+        }
+      }
+    }
+  ]
+}

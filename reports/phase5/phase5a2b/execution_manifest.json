@@ -1,0 +1,184 @@
+{
+  "candidate": "B-PACKED",
+  "control_arms": {
+    "A": {
+      "arm": "A",
+      "chunker_version": "legacy-cl100k-400-50-v1",
+      "document_embedding_count_per_run": 73,
+      "identity_payload": {
+        "bm25_config": {
+          "implementation": "rank_bm25.BM25Okapi defaults",
+          "tie_break": "np.argsort(scores)[::-1] over frozen corpus order",
+          "tokenization": "text.lower().split()",
+          "zero_score_candidates_excluded": true
+        },
+        "chunker_version": "legacy-cl100k-400-50-v1",
+        "dense_index_config": {
+          "implementation": "exhaustive float32 cosine over normalized vectors",
+          "tie_break": "native score descending, chunk_id ascending"
+        },
+        "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+        "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "embedding_tokenizer_fingerprint": "3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+        "fusion_config": {
+          "algorithm": "reciprocal rank fusion over chunk_id",
+          "candidate_k": 20,
+          "final_k": 10,
+          "rank_origin": 0,
+          "rrf_constant": 60,
+          "tie_break": "rrf_score descending, chunk_id ascending"
+        },
+        "ordered_corpus_manifest_digest": "724a8c3486cb482eadbd592a93918a6e2954bebdbdfa12a39753556b1c3d7c02",
+        "parser_name": "direct UTF-8 read + str.strip",
+        "parser_version": "legacy-direct-text-strip-v1",
+        "retrieval_serialization_version": "legacy-raw-chunk-v1"
+      },
+      "index_id": "ca:index:a2fc6fc8d54cde862b450b289cc18cdb1112bd6d63608cb71a13e810ffecb031",
+      "index_type": "isolated in-memory exact reference",
+      "parser_version": "legacy-direct-text-strip-v1",
+      "qdrant_collection": null,
+      "representation_fingerprint": "c3976d83cc478d5f4352e680b59aac98ed314c5bbeb9f9ffee56e0ea51fbecbb",
+      "retrieval_serialization_version": "legacy-raw-chunk-v1",
+      "vector_count": 73
+    },
+    "B": {
+      "arm": "B",
+      "chunker_version": "structural-source-spans-v1",
+      "document_embedding_count_per_run": 510,
+      "identity_payload": {
+        "bm25_config": {
+          "implementation": "rank_bm25.BM25Okapi defaults",
+          "tie_break": "np.argsort(scores)[::-1] over frozen corpus order",
+          "tokenization": "text.lower().split()",
+          "zero_score_candidates_excluded": true
+        },
+        "chunker_version": "structural-source-spans-v1",
+        "dense_index_config": {
+          "implementation": "exhaustive float32 cosine over normalized vectors",
+          "tie_break": "native score descending, chunk_id ascending"
+        },
+        "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+        "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "embedding_tokenizer_fingerprint": "3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+        "fusion_config": {
+          "algorithm": "reciprocal rank fusion over chunk_id",
+          "candidate_k": 20,
+          "final_k": 10,
+          "rank_origin": 0,
+          "rrf_constant": 60,
+          "tie_break": "rrf_score descending, chunk_id ascending"
+        },
+        "ordered_corpus_manifest_digest": "724a8c3486cb482eadbd592a93918a6e2954bebdbdfa12a39753556b1c3d7c02",
+        "parser_name": "markdown-it-py",
+        "parser_version": "4.2.0",
+        "retrieval_serialization_version": "title-breadcrumb-exact-child-v1"
+      },
+      "index_id": "ca:index:efd5a61039327d98f77b07d8325c3a25ccc4ff86f5d6a9becd7018a57acdfccb",
+      "index_type": "isolated in-memory exact reference",
+      "parser_version": "4.2.0",
+      "qdrant_collection": null,
+      "representation_fingerprint": "a9402fea0c4fbbae6613346370c0759b0239d3d870a386526980e1c40815e852",
+      "retrieval_serialization_version": "title-breadcrumb-exact-child-v1",
+      "vector_count": 510
+    }
+  },
+  "correction_sha256": "30711e28d0ce9c8c0c5b95c8f49625cd25aa49304efbd9501f7e9550a69e0496",
+  "external_network_calls": 0,
+  "file_sha256": {
+    "evals/fixtures/phase5a2b_packing_contract.json": "d3ffa72e789a6f3b333d335d72bcf99a9d546da5312e4305090cf9332ffc859e",
+    "evals/fixtures/retrieval_golden_v2.json": "a5a671507516b2b061623c201469af87377d66beb0870d9c78d6179b9993e268",
+    "reports/phase5/phase5a0/baseline_a_manifest.json": "b8e518ce67c85f158273dd7b983938223ac0661ccf13fbf608120a5158dee4b2",
+    "reports/phase5/phase5a1/candidate_b_manifest.json": "bbea98a77a7cd67e744b596f0809379d067021850a91e6dac390aa8af11c9a65",
+    "scripts/phase5a0_baseline.py": "df3f96e41b9c345bfedef8bbf8f13f666fe129baf79da13e5f88c9c6e23dade5",
+    "scripts/phase5a1_shadow.py": "de071d380f51e84532080c56f694c533f55d519647ab76dfc4f9e123184ce8c8",
+    "scripts/phase5a2_shadow_ab.py": "8ef09b4bcf2d0595de98ff2644e96ed3f40a46e26172227d9ee4a5e0276ee349",
+    "scripts/phase5a2b_packed.py": "cee3b1db41ee0962fe7bc0a29c3651b964f9f07d9d9b933165fd65ade5a3989d"
+  },
+  "frozen_at_utc": "2026-09-18T09:40:12.749337+00:00",
+  "held_constant": {
+    "bm25_config": {
+      "implementation": "rank_bm25.BM25Okapi defaults",
+      "tie_break": "np.argsort(scores)[::-1] over frozen corpus order",
+      "tokenization": "text.lower().split()",
+      "zero_score_candidates_excluded": true
+    },
+    "dense_index_config": {
+      "implementation": "exhaustive float32 cosine over normalized vectors",
+      "tie_break": "native score descending, chunk_id ascending"
+    },
+    "embedding_dimension": 384,
+    "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "embedding_model_sha256": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+    "embedding_normalization": "model Normalize module; evaluator also requests normalize_embeddings=True",
+    "embedding_tokenizer_fingerprint": "3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+    "fusion_config": {
+      "algorithm": "reciprocal rank fusion over chunk_id",
+      "candidate_k": 20,
+      "final_k": 10,
+      "rank_origin": 0,
+      "rrf_constant": 60,
+      "tie_break": "rrf_score descending, chunk_id ascending"
+    },
+    "golden_v2_sha256": "a5a671507516b2b061623c201469af87377d66beb0870d9c78d6179b9993e268",
+    "metric_implementation": "phase5a0_baseline metric functions reused",
+    "query_set_sha256": "5240539808b9a49f9f96b9358afb0b421e55b69d7d72b3b702bef02c816aa96c"
+  },
+  "manifest_sha256": "59ff73f4c9a183e2722e2e9dadd5787ebde93b352789d23481cdbebdab931694",
+  "original_manifest_sha256": "fbcb9da160b5fc43e772697706e6fbae76242cafcc3f51cf998609e2d08adbc3",
+  "packing_contract": {
+    "absence_metrics": null,
+    "advance_gate": {
+      "deterministic_build_and_retrieval_repetitions": 2,
+      "gating_query_regressions_vs_A": 0,
+      "hybrid_evidence_recall_at_5_at_least_A": true,
+      "minimum_absolute_hybrid_evidence_recall_at_5_gain_over_B": 0.1,
+      "representation_invariant_failures": 0
+    },
+    "algorithm": "One left-to-right greedy pass over frozen B children; append the next child only if every constraint passes and the complete serialized retrieval text is at most 254 content tokens. No backtracking or tuning.",
+    "candidate": "B-PACKED",
+    "candidate_C_implemented": false,
+    "classification": "Reuse frozen 5A2 hybrid QUALITY_KEYS and regression-precedence classification against both A and B; also report each channel separately",
+    "compatible_types": [
+      "paragraph",
+      "list"
+    ],
+    "constraints": [
+      "Identical document version, source path, structural parent and heading path",
+      "Consecutive B children; source blocks identical or consecutive in parser source order",
+      "Only content spans, internally contiguous; no repeated fence or table context in merged groups",
+      "Source interval endpoints touch, or the intervening source is exclusively whitespace and is included verbatim in the merged interval",
+      "No omitted source bytes, reordered children, overlapping spans, heading crossings or protected-block crossings",
+      "Singletons retain B retrieval text and source spans exactly; every output gets a distinct B-PACKED identity",
+      "Merged serialization uses the unchanged B title/breadcrumb grammar followed by the exact contiguous source slice"
+    ],
+    "content_token_limit": 254,
+    "diagnostic_non_gating_queries": [
+      "Q25",
+      "Q26"
+    ],
+    "external_network_calls_during_evaluation": 0,
+    "held_constant_from": "reports/phase5/phase5a2/experiment_manifest.json",
+    "hypothesis": "B's 510 retrieval children are overly fragmented and cause top-K crowding. Packing compatible adjacent blocks from the same structural parent may restore retrieval signal while preserving structure and zero truncation.",
+    "metric_implementation": "scripts.phase5a2_shadow_ab.evaluate_arm reused unchanged",
+    "packing_version": "same-parent-greedy-prose-list-v1",
+    "protected_singletons": [
+      "heading",
+      "fenced_code",
+      "code",
+      "table",
+      "blockquote",
+      "html",
+      "thematic_break",
+      "source_gap",
+      "all other types"
+    ],
+    "provider_calls": 0,
+    "required_parent": "a37b402227c8095cca2f3558c3cf60bbc52e2813",
+    "schema_version": "phase5a2b_packing_contract_v1",
+    "total_token_limit": 256,
+    "tuning_after_results": false
+  },
+  "provider_calls": 0,
+  "required_parent": "a37b402227c8095cca2f3558c3cf60bbc52e2813"
+}

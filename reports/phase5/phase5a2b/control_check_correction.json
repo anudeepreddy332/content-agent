@@ -1,0 +1,22 @@
+{
+  "additional_diagnostic_execution": "A-only; zero provider/network calls",
+  "after_runner_sha256": "cee3b1db41ee0962fe7bc0a29c3651b964f9f07d9d9b933165fd65ade5a3989d",
+  "before_runner_sha256": "4c32880f26ae437d93b872bc8b604df2632d9c662feb001b0521d9c2cc43ca67",
+  "change": "Historical ranks and metrics remain exact gates; native-score drift is reported separately. Both new full A/B/B-PACKED runs still require exact deterministic-result equality including native scores.",
+  "embedding_or_retrieval_or_metrics_changed": false,
+  "first_attempt": "Stopped before writing accepted retrieval results; initial runner, preregistration and A-only diagnosis retained.",
+  "original_manifest_sha256": "fbcb9da160b5fc43e772697706e6fbae76242cafcc3f51cf998609e2d08adbc3",
+  "packing_contract_changed": false,
+  "reason": "Initial execution failed an overly strict historical native-score equality check. A-only diagnosis found 929 scalar score differences, maximum 4.8e-7, with exact rankings, per-query metrics and crowding diagnostics. This is a harness control-check correction, not packing or retrieval tuning.",
+  "recorded_at_utc": "2026-09-18T09:42:44.861440+00:00",
+  "unchanged_packing_and_comparison_function_ast_sha256": {
+    "comparisons": "9c6038dcfc5b0cbf9225c2228e91efa38b4df4e2f5c5f2636b07a6c07ea9bc53",
+    "compatible": "60b1f4f505c053183bf9ee61905119f0599db4eee890a28b63cb915eeca5d346",
+    "content_interval": "7e51676d334e51f03b629d299eaf8e6835780f03686c6cefca1fc19e633717e6",
+    "diversity": "8cec9568b6c26981112f39f02d2bd49337a7083a30b5f7b74dbac21f2b7f7fdc",
+    "eval_chunks": "5481d105b1f068a7c59281af8473814c2afa6875659ec4fa59821cc0e6420d9b",
+    "make_unit": "b45a16606d77dfd4a60d9b23237483886322353395389bbf72b5638b918f27bb",
+    "pack": "727d429430ce86b9b4f63ceb7217c19bfbb78545dd506a712646299d45e9fe70",
+    "validate_packed": "6a660f432a117438208969bf005157b972c5659f06f74e1f929220d9c5f12768"
+  }
+}

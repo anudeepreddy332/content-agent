@@ -1,0 +1,5805 @@
+{
+  "queries": [
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 855,
+            "char_start": 681,
+            "grade": 2,
+            "line_end": 14,
+            "line_start": 12,
+            "query_id": "Q01",
+            "source": "gradient-descent",
+            "span_id": "gradient-descent:12-14"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:8c3cc379fe6843f0981b05b3e211178319a79a5981ae72ad792fa8063aa5916b",
+            "chunk_index": 25,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:be39bb1a8ffee0068695f9cd620853801a88b3b65a5bd6f83c3a4a5f2f76e97a",
+            "chunk_index": 10,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03174603,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:def60c50443a37758e22f66e18fb35e1b98bb39ca9b73e704c9f6dc572d72c01",
+            "chunk_index": 27,
+            "dense_rank": 10,
+            "rank": 3,
+            "rrf_score": 0.03115942,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:372526f98cf9ca145147588d2bf49943a5f8bb755da7b5e14f65c753e098d8f2",
+            "chunk_index": 28,
+            "dense_rank": 7,
+            "rank": 4,
+            "rrf_score": 0.03077652,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:6a5cecf48f0d3ac1ec079befd07386f1fab40c1a6a63b67d93db641a11cf16d0",
+            "chunk_index": 70,
+            "dense_rank": 11,
+            "rank": 5,
+            "rrf_score": 0.03041475,
+            "source": "xgboost"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:5905ac4b94ce92bfd808b651dd9c11574093ba96b55815dee0f692b3659d358e",
+            "chunk_index": 183,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:65b41d51f6adfd3fe16d339318baeb5725322d0234e35dea8e8df40863c87130",
+            "chunk_index": 209,
+            "dense_rank": 7,
+            "rank": 2,
+            "rrf_score": 0.03181818,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:e03d2533e768e9b9351dfb486d97334541bba3f4c8cc5273f4c73d69fa530af5",
+            "chunk_index": 186,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03177806,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:7522bc3d5a47b7efc79e05dc218c320358e2e0d90716867c62d16ac173d7ebc4",
+            "chunk_index": 196,
+            "dense_rank": 17,
+            "rank": 4,
+            "rrf_score": 0.02928693,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:274d32d4a854db6025885add9acd27c3ebf5286f2f78b38ac6057ea61ebd8c32",
+            "chunk_index": 184,
+            "dense_rank": 16,
+            "rank": 5,
+            "rrf_score": 0.02895833,
+            "source": "gradient-descent"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:c70e6b56dac96a64fcce3970276a2f43423065377db8a9ffbb3efeb04678364e",
+            "chunk_index": 162,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:47f7744a1db4b2786ebe26060e286bf0ed8f58239580c5de5ccdf2cbfce7ae0d",
+            "chunk_index": 180,
+            "dense_rank": 6,
+            "rank": 2,
+            "rrf_score": 0.03205128,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:77fccb7ff0016aa1c01fa98a57e812b6d18031f4cee168b589b0ce894a94d646",
+            "chunk_index": 165,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03151365,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:8d0a5d5f662183bc290ac03a1c29aab2bd7a033abd85e05a2a6805dbdd1f3e31",
+            "chunk_index": 163,
+            "dense_rank": 11,
+            "rank": 4,
+            "rrf_score": 0.03015873,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 15,
+            "chunk_id": "ca:b-packed:c72418abdbea01528247408d71e932284c9dd03581201b07b46120186c385d03",
+            "chunk_index": 166,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.02913851,
+            "source": "gradient-descent"
+          }
+        ]
+      },
+      "query_id": "Q01",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 912,
+            "char_start": 773,
+            "grade": 2,
+            "line_end": 12,
+            "line_start": 10,
+            "query_id": "Q02",
+            "source": "attention-transformers",
+            "span_id": "attention-transformers:10-12"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:a0721290b545a92a8e725161c18fcbb8c068e1d44ac2355f9c44d796edf1a5b3",
+            "chunk_index": 4,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:d489a9f0f599bfd2fb75a4acc35341cd8c305404dee7db439200ccf6d6482c1d",
+            "chunk_index": 5,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 12,
+            "chunk_id": "ca:chunk:40807b8059d8140592ab050c94bc3f15835efb02f54913d21b240a816d0750ef",
+            "chunk_index": 62,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03021354,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:5a3347d1b26feaab7595c4574022d0852242776fa4955fea4269ab6646b344a2",
+            "chunk_index": 18,
+            "dense_rank": 11,
+            "rank": 4,
+            "rrf_score": 0.03015873,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 11,
+            "chunk_id": "ca:chunk:9c44e49d31c554ab392647cbedabf33750ba51c4b39b22c7e64cdddb81d763b1",
+            "chunk_index": 59,
+            "dense_rank": 4,
+            "rank": 5,
+            "rrf_score": 0.03015873,
+            "source": "retrieval-augmented-generation"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:77d28ef93c377576e680dc12333675af0c1909a92760425887a25d85bd0fc352",
+            "chunk_index": 40,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03278689,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 20,
+            "chunk_id": "ca:chunk:2554af24e149cc71ea565b667b9bde929abe6ff35450386563f0866fc80b2b8c",
+            "chunk_index": 39,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.02932489,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 18,
+            "chunk_id": "ca:chunk:d1dcfaa4147e761658dbc77296f3704bcce9c32cd2ab070534cc8cefcd0f8caa",
+            "chunk_index": 421,
+            "dense_rank": 7,
+            "rank": 3,
+            "rrf_score": 0.02813853,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 14,
+            "chunk_id": "ca:chunk:8abc154d8fe4963ebeeca1ad8f9032917c93c55940139520567d68621002ff4f",
+            "chunk_index": 172,
+            "dense_rank": 12,
+            "rank": 4,
+            "rrf_score": 0.02778314,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:ae7042dd991bb3fd4b1b224234ab9dacb12f5db2cd566963a04bff99709364e7",
+            "chunk_index": 11,
+            "dense_rank": null,
+            "rank": 5,
+            "rrf_score": 0.01666667,
+            "source": "agentic-ai-production"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:d1045e6012ef397a09dff57451da5bf26b7d431350bcee33af511772896cc891",
+            "chunk_index": 37,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03278689,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 12,
+            "chunk_id": "ca:b-packed:80a5a0a48e198f891c6e75cfe31c3bd95cae42babbdc67f787a5af0086925c30",
+            "chunk_index": 31,
+            "dense_rank": 5,
+            "rank": 2,
+            "rrf_score": 0.02970951,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 18,
+            "chunk_id": "ca:b-packed:3da81c2fa2127926d05ccbbd12a9db0b2ed61d5dbefd34dbdc943c793fe3347d",
+            "chunk_index": 36,
+            "dense_rank": 1,
+            "rank": 3,
+            "rrf_score": 0.02965368,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 15,
+            "chunk_id": "ca:b-packed:9dd95520eab2890ed0f0dc3ee59127cd6da8642cd3a15db9e85d273ac767fcc2",
+            "chunk_index": 152,
+            "dense_rank": 11,
+            "rank": 4,
+            "rrf_score": 0.02779923,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:f633d2d9b4f6458f2f529ec83b6e805ca4d2a2d84cd5b48801a7a77861f01d11",
+            "chunk_index": 11,
+            "dense_rank": null,
+            "rank": 5,
+            "rrf_score": 0.01666667,
+            "source": "agentic-ai-production"
+          }
+        ]
+      },
+      "query_id": "Q02",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 964,
+            "char_start": 815,
+            "grade": 2,
+            "line_end": 13,
+            "line_start": 10,
+            "query_id": "Q03",
+            "source": "ridge-lasso-elasticnet",
+            "span_id": "ridge-lasso-elasticnet:10-13"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:fd6a22b74a336f3562727568ac55cfee852a28fea05602e251695073fd13285e",
+            "chunk_index": 63,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:39be143b19b03d961a6646a09a463d144dfc593f1979bf13aae7e660aaaec925",
+            "chunk_index": 64,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:e72e2444e17dc9c092779f52055184aeed3c862d4ff375f775bc8467b1a32f65",
+            "chunk_index": 65,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03252247,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:ff2197f2cb507bfee1fb94fe3d456e68f0de3a98364aaa30299b5d47977ac82f",
+            "chunk_index": 66,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03149802,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 12,
+            "chunk_id": "ca:chunk:2e23fee03f76b121da495f0e91477d4698fbf601c068d9d033ddd66632861221",
+            "chunk_index": 36,
+            "dense_rank": 6,
+            "rank": 5,
+            "rrf_score": 0.02946912,
+            "source": "linear-logistic-regression"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:4107cf94a792c15b577b29cfac76079ce796bb8538189ab67942b94de7bb487c",
+            "chunk_index": 437,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:ecd1322a1bef314cd34ac66e2af16f8e5f551a7bd1afb827371a9afdc011cc74",
+            "chunk_index": 444,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:48e08e3b18e669710de6f995e4388a603edeb9c7874f5f2bbd068a1efc9e8b19",
+            "chunk_index": 452,
+            "dense_rank": 6,
+            "rank": 3,
+            "rrf_score": 0.03076923,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:3597dfe2b2931b6b63dab6a6ae8dbff49be7440ee04ceb36c6e4eebee3dc3e55",
+            "chunk_index": 448,
+            "dense_rank": 7,
+            "rank": 4,
+            "rrf_score": 0.03030303,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 13,
+            "chunk_id": "ca:chunk:e2f6c0e90b7f22c0b0ca2a561b11a2084e8cb07151b8b985ecf9166578bc479a",
+            "chunk_index": 436,
+            "dense_rank": 3,
+            "rank": 5,
+            "rrf_score": 0.03001792,
+            "source": "ridge-lasso-elasticnet"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:19fcb417dd556846cb9e75ee19ec186a4a3889e94a9f314e73240cd503892b6d",
+            "chunk_index": 396,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:27badfaec2f0035217f9a5c5f50dabc65367bc02a8edc523078f4ac1c4d54030",
+            "chunk_index": 402,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03226646,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:0625ede9db15aa8ed197d6790a11ba79e34e651ab9436a86960968919ff1dd5c",
+            "chunk_index": 410,
+            "dense_rank": 5,
+            "rank": 3,
+            "rrf_score": 0.03100962,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:b-packed:d320b54ac682acf043c7657be3933dbc4679057993eab143b1f404c46141ab8e",
+            "chunk_index": 406,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.03053613,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:888ae82b094e5fb74f1b39b7a1ddbd527705b11d8e629b414bd3445912299236",
+            "chunk_index": 414,
+            "dense_rank": 11,
+            "rank": 5,
+            "rrf_score": 0.03041475,
+            "source": "ridge-lasso-elasticnet"
+          }
+        ]
+      },
+      "query_id": "Q03",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 351,
+            "char_start": 26,
+            "grade": 2,
+            "line_end": 4,
+            "line_start": 4,
+            "query_id": "Q04",
+            "source": "catboost",
+            "span_id": "catboost:4"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 1751,
+            "char_start": 1296,
+            "grade": 2,
+            "line_end": 14,
+            "line_start": 12,
+            "query_id": "Q04",
+            "source": "catboost",
+            "span_id": "catboost:12-14"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:57a97de537f61880e9767808c98f979dd62f04ffaeaab50a12750799872dd42c",
+            "chunk_index": 11,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:5ab1bf25e2212cbfdb0f10c83305c79109d694ad171450d2309b55e2e1a5f6eb",
+            "chunk_index": 12,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:70704bed2bb2cc7ac365164c6c8db93719d0ac603c17699f4f3c29e9d3531166",
+            "chunk_index": 13,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03252247,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:2d1eaf35c6750c723ff3b95a3ba6732189b703e7ec467a7858aaef083661b0f7",
+            "chunk_index": 47,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03125763,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:46f0f6728d836e3f4bdcf7c9d8f862c5f5db55b42e9e6f48799068fd10fe6acd",
+            "chunk_index": 72,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03125,
+            "source": "xgboost"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:bc4b68aaf144b0dca409d967f7c62de091c2bc7bcddd9a214172e96d0ba4fdc7",
+            "chunk_index": 94,
+            "dense_rank": 4,
+            "rank": 1,
+            "rrf_score": 0.03253968,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:f9c2db209e15e3d282f47ac3dbb3cdf1b028bfe91022c6215d1dc04a1a112399",
+            "chunk_index": 87,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.03253968,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:9e5bb62c2dba78a7e585cfe13865a1ed0f4e6281bac9dc5e7ca33ce6e345a1ef",
+            "chunk_index": 82,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03252247,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:734efb5eab58e2b39abe51e327998599ae8f867a8a9650cee4f3fb5f6ae39b9a",
+            "chunk_index": 84,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.03201844,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:04aeac4cdde50fc7d2629b20a141cdc6652e7f2c08a09d1d418db2fbb6bd9d9f",
+            "chunk_index": 92,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03175403,
+            "source": "catboost"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:5f4463cf7670cfd3c67fad54e330e0693c7de2f7d8d0671cea54b65f6cd96be0",
+            "chunk_index": 83,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.0327957,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:c513431a796aa1728e114321f7b892c2fbdc0186a0d0b3750b4cfa5ee8f8ce01",
+            "chunk_index": 73,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:806a98aa21b3d5345a416efc894493f65035d2bb58fccadd970af384d0c203a2",
+            "chunk_index": 75,
+            "dense_rank": 1,
+            "rank": 3,
+            "rrf_score": 0.03253968,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:c50b1e474a39a50be1927fd06dd243cf2c587e61ba38b18061bfeb29ef61dca0",
+            "chunk_index": 81,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03200205,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:b-packed:d6557a79bd322b989777bf9ef0ad2c47f0a53d8f5e8f922e0dff6cef36dcec74",
+            "chunk_index": 87,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03077652,
+            "source": "catboost"
+          }
+        ]
+      },
+      "query_id": "Q04",
+      "vs_A": "REGRESSED",
+      "vs_B": "REGRESSED"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 422,
+            "char_start": 37,
+            "grade": 2,
+            "line_end": 4,
+            "line_start": 4,
+            "query_id": "Q05",
+            "source": "react-agent-pattern",
+            "span_id": "react-agent-pattern:4-4"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:b03be782fa204067148d735e5571d3f7bdb87b5db113fb86ca69f40111471d0a",
+            "chunk_index": 56,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:2e5972e7339f37398849f3604750fc5c06c1e05ba8f71c26a5197a67401c7c0f",
+            "chunk_index": 58,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:72e10af1b476fa4efcafc859b8a003945fb14b3c1557556878379c004ee0050f",
+            "chunk_index": 57,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03174603,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:499a36dd0fd021d30c26fa992c751616abdc8fd247abd35c317a73906fd153fe",
+            "chunk_index": 41,
+            "dense_rank": 3,
+            "rank": 4,
+            "rrf_score": 0.03105441,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:563a316a97d27cacc18885df7e94bfd52d4e01abadcc89bac3b61dc53dc5d8a2",
+            "chunk_index": 42,
+            "dense_rank": 8,
+            "rank": 5,
+            "rrf_score": 0.03105441,
+            "source": "multi-agent-systems"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:c0995efbefcc454b5a7359ae5e9bfcdc05a208e7e24025683eab9b8ab1f20f2f",
+            "chunk_index": 385,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03278689,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:720215f5270cf59b883ace4f2ddb66f0e87711713d04d99721f22b5e9958067f",
+            "chunk_index": 386,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03200205,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:656844488b3fdf4f8bd2af8b3f2c6607c7b8408f9b2937e017ed5463c5e59631",
+            "chunk_index": 388,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03151365,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:de57e0a5998ab46ebb50676d31ff8adc85003973d750ad24c0ab9ad2580609e0",
+            "chunk_index": 389,
+            "dense_rank": 9,
+            "rank": 4,
+            "rrf_score": 0.03137255,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 11,
+            "chunk_id": "ca:chunk:88ba5f00d47ddc2cbe683e5bb0c0727011d3088ac83345e513af8321e9f90e7b",
+            "chunk_index": 387,
+            "dense_rank": 1,
+            "rank": 5,
+            "rrf_score": 0.03095238,
+            "source": "react-agent-pattern"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:aa0eb14f39f014db84d90790574ab058d1c8120a6607a48a22158a2c22acf50e",
+            "chunk_index": 348,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03278689,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:aab58010716b2146089805c1f6256fb3d3ffd7b343f6edd360c03fa61c65183e",
+            "chunk_index": 351,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03225806,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:df7e5fc1ef3aa124af9e7a2ec42c7d3742aa390c4b13cf6a7d84f62256adcabb",
+            "chunk_index": 349,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03174603,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:b-packed:47c4f77adce278f6aa96d72cadfb052740b7a13d9d3461f5c1e3fa05d8efa7e3",
+            "chunk_index": 350,
+            "dense_rank": 1,
+            "rank": 4,
+            "rrf_score": 0.03159204,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:51d38609893252f573b3e8d38c94c2285b4f9ce1cb8eea25eab5ce7dad6f2c84",
+            "chunk_index": 352,
+            "dense_rank": 8,
+            "rank": 5,
+            "rrf_score": 0.03159204,
+            "source": "react-agent-pattern"
+          }
+        ]
+      },
+      "query_id": "Q05",
+      "vs_A": "SAME",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 434,
+            "char_start": 37,
+            "grade": 2,
+            "line_end": 4,
+            "line_start": 4,
+            "query_id": "Q06",
+            "source": "k-nearest-neighbors",
+            "span_id": "k-nearest-neighbors:4"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 876,
+            "char_start": 849,
+            "grade": 2,
+            "line_end": 9,
+            "line_start": 9,
+            "query_id": "Q06",
+            "source": "k-nearest-neighbors",
+            "span_id": "k-nearest-neighbors:9"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:7e32b78cc28e55d8f4ac0f92b817c6aeb1a087cdb0f5cfb46f45d35dad386441",
+            "chunk_index": 29,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:404f659360b7217d27e51e2eb515b7a3a56263d027131aa02b42b7e5aa440cb3",
+            "chunk_index": 31,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.0327957,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:614669e54874723640c9ca31871fdb1d2b5f4d21e1fbea3f48c594661b2aa249",
+            "chunk_index": 32,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03201844,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:5a3347d1b26feaab7595c4574022d0852242776fa4955fea4269ab6646b344a2",
+            "chunk_index": 18,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03174603,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:90fae2c4c9f9b021aff301515a4fce9a047618f583d3925e3ed3d9a6f3e14542",
+            "chunk_index": 14,
+            "dense_rank": 9,
+            "rank": 5,
+            "rrf_score": 0.03083491,
+            "source": "decision-trees"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:2758e58a9f7b77ec95a449baf033b0899c97d4eea3e3ec19f01790e63fa9b83e",
+            "chunk_index": 221,
+            "dense_rank": 5,
+            "rank": 1,
+            "rrf_score": 0.03175403,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:bc3465eb8a6148e9492858b08388e1336b1970e0b52e271a6f17b19bce35a11b",
+            "chunk_index": 215,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03154496,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:cc888c1c68b7d002f03d9b47bb5e131564e9020805936990a3e8b4f166c81454",
+            "chunk_index": 234,
+            "dense_rank": 11,
+            "rank": 3,
+            "rrf_score": 0.03067916,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 13,
+            "chunk_id": "ca:chunk:015d48b9e54650893dd1768d7c95a77c26ef65cd21655ab3b3dfacdab653657e",
+            "chunk_index": 220,
+            "dense_rank": 1,
+            "rank": 4,
+            "rrf_score": 0.03055556,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:1879649608f2ec6cf50e06a24352a6ba732bfd195d51fe740892bcd025155c6f",
+            "chunk_index": 217,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.03053613,
+            "source": "k-nearest-neighbors"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:73b005d3a2aed97ef66785d4bc2ec7565ef5c75ae09544866d0846b123a68ebd",
+            "chunk_index": 186,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03177806,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:b-packed:7920a9ea091f46f51c76adfd2e8697af3e8075c963c3bf7b816e722b9ba78181",
+            "chunk_index": 188,
+            "dense_rank": 6,
+            "rank": 2,
+            "rrf_score": 0.03100962,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:4fc2ae3fd0f0afb69d9aa95faada48e753ec7006ec09a921212937c4478ef006",
+            "chunk_index": 204,
+            "dense_rank": 10,
+            "rank": 3,
+            "rrf_score": 0.0308862,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:3757bb576d2ec8a80db116844c22e3c25b55424d7a7ea1937e62e296fff91dc5",
+            "chunk_index": 194,
+            "dense_rank": 9,
+            "rank": 4,
+            "rrf_score": 0.03083491,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 12,
+            "chunk_id": "ca:b-packed:bc0b91296ea7a9c64a6a9a85421c82904aa3cd297d39867542ec868b9cc57f8d",
+            "chunk_index": 191,
+            "dense_rank": 1,
+            "rank": 5,
+            "rrf_score": 0.03075117,
+            "source": "k-nearest-neighbors"
+          }
+        ]
+      },
+      "query_id": "Q06",
+      "vs_A": "SAME",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 1601,
+            "char_start": 1053,
+            "grade": 2,
+            "line_end": 28,
+            "line_start": 18,
+            "query_id": "Q07",
+            "source": "xgboost",
+            "span_id": "xgboost:18-28"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:6a5cecf48f0d3ac1ec079befd07386f1fab40c1a6a63b67d93db641a11cf16d0",
+            "chunk_index": 70,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:46f0f6728d836e3f4bdcf7c9d8f862c5f5db55b42e9e6f48799068fd10fe6acd",
+            "chunk_index": 72,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:70704bed2bb2cc7ac365164c6c8db93719d0ac603c17699f4f3c29e9d3531166",
+            "chunk_index": 13,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03200205,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:82093314f833f0934e7a57ba9e5eec8153925cfb94f65539443c0086b4f6be71",
+            "chunk_index": 23,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.03151365,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:38a383c673d50c8368d317904adbc1a4a8f6fdfea16a5f774178fbe6913fd9fa",
+            "chunk_index": 71,
+            "dense_rank": 8,
+            "rank": 5,
+            "rrf_score": 0.03007689,
+            "source": "xgboost"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:5245f7d1b016535815550c7b9920507c7512712ea176fc0e11e46dff0f4ff9b7",
+            "chunk_index": 490,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:e95497fea67955e50e8993ef27420ac96e597ca794444cfafe27c4fffc54c3d3",
+            "chunk_index": 501,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:be834218008b2d3d37f3f59955bfc0f849f35e7cc355782eec643cbcdc679bb7",
+            "chunk_index": 480,
+            "dense_rank": 5,
+            "rank": 3,
+            "rrf_score": 0.03149802,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:32ede031a4e6ee67964bd016f3e47d98ec1769502c4c81aa7d43023dc932b049",
+            "chunk_index": 481,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.03053613,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:4f8af9dfaa96450dab5eae6488fe8cbc79702d9ebdcfa732378b5d248f6aea8f",
+            "chunk_index": 485,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.0298574,
+            "source": "xgboost"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:90f3d689aa6f8e2a143d8785e18a537dad9eef20f2d82b2c6b630923d27abf1a",
+            "chunk_index": 450,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:131cac78d0262e1a83fe3b669234a1ab603241ddcb34e58638114fb961b38232",
+            "chunk_index": 437,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03225806,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:811951c8fb5241313add8f6f157be639f8358548e06316ce3bf9de074cb631ab",
+            "chunk_index": 438,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03125763,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:d8e0303435f7dd3a359ee97e07d0dbba990d0ab5bb602d8e3f40669212c8e8ad",
+            "chunk_index": 443,
+            "dense_rank": 8,
+            "rank": 4,
+            "rrf_score": 0.03079839,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:b-packed:0261c3f2a875b299a638582eac9da04c890f354c12c274f445d23acebe752b1e",
+            "chunk_index": 442,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03033088,
+            "source": "xgboost"
+          }
+        ]
+      },
+      "query_id": "Q07",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 395,
+            "char_start": 45,
+            "grade": 2,
+            "line_end": 4,
+            "line_start": 4,
+            "query_id": "Q08",
+            "source": "feedforward-neural-networks",
+            "span_id": "feedforward-neural-networks:4"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 1034,
+            "char_start": 809,
+            "grade": 2,
+            "line_end": 17,
+            "line_start": 12,
+            "query_id": "Q08",
+            "source": "feedforward-neural-networks",
+            "span_id": "feedforward-neural-networks:12-17"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:45a17d2a45ae84ab819e17cc7a8aac0a67a1d3f34c8a2d33a120a6280c4f6dd1",
+            "chunk_index": 22,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:ba1c54f1fd8dd5cffa21e73327651ce2e834a194a844b4b5ae17f2a97d75a760",
+            "chunk_index": 7,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:a9ff099baa6fa9473024e5a2e383668208fe2a8dae1547922e944aa3333d3826",
+            "chunk_index": 24,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03174603,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:82093314f833f0934e7a57ba9e5eec8153925cfb94f65539443c0086b4f6be71",
+            "chunk_index": 23,
+            "dense_rank": 3,
+            "rank": 4,
+            "rrf_score": 0.03151365,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:a0721290b545a92a8e725161c18fcbb8c068e1d44ac2355f9c44d796edf1a5b3",
+            "chunk_index": 4,
+            "dense_rank": 8,
+            "rank": 5,
+            "rrf_score": 0.03131882,
+            "source": "attention-transformers"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:c6166706fe91dd6c1e5143b4a51f85e59d96ff82b92e732f1f5661fea4d1d37d",
+            "chunk_index": 159,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:b39028749f8fe3cd4a677a3265d067b6ff82cccabae0a30826034f9808002376",
+            "chunk_index": 161,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03200205,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:b31005f9ce755abc2f199246fa176897b2de50f3482fa8b639ba800e9e775acb",
+            "chunk_index": 157,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03151365,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:4450dfd17c27479c768966f72b163a35e613e4d9b8150eb789b95f31478c8baf",
+            "chunk_index": 173,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03149802,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:86ba9203b743a63194efbf333c13dddba9f8a053b3b413530278d1c9104400e5",
+            "chunk_index": 158,
+            "dense_rank": 1,
+            "rank": 5,
+            "rrf_score": 0.03137255,
+            "source": "feedforward-neural-networks"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:92173875956c75df985af3c4caa3f8f19dcf3cbea30a64229a93eeae3b9cae2c",
+            "chunk_index": 143,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:0a0fd39ca71f3e1e20447fc9f0940516d8f563d8bcd8d29b7e3c4aa33faf074d",
+            "chunk_index": 145,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03226646,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:4ceda9d403bb939413c92a8599b3f7955db4b30f7349db9e252d308ae649d4bf",
+            "chunk_index": 153,
+            "dense_rank": 5,
+            "rank": 3,
+            "rrf_score": 0.03175403,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:b-packed:ecc5c80c4e979f568b0c2c7c414c05cc8919616a23831b556634cb446c24b628",
+            "chunk_index": 141,
+            "dense_rank": 3,
+            "rank": 4,
+            "rrf_score": 0.03175403,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:b-packed:79200bdd2acecc0bab47988168db92b0d68c71d552fa9738846de6f4a82225c3",
+            "chunk_index": 142,
+            "dense_rank": 1,
+            "rank": 5,
+            "rrf_score": 0.03159204,
+            "source": "feedforward-neural-networks"
+          }
+        ]
+      },
+      "query_id": "Q08",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 1556,
+            "char_start": 875,
+            "grade": 2,
+            "line_end": 12,
+            "line_start": 8,
+            "query_id": "Q09",
+            "source": "support-vector-machines",
+            "span_id": "support-vector-machines:8-12"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:ff2197f2cb507bfee1fb94fe3d456e68f0de3a98364aaa30299b5d47977ac82f",
+            "chunk_index": 66,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:5a95a0ae83942405864d00ae30455b4bd1b318d09aaf43d9ba71f383ffe9364f",
+            "chunk_index": 67,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:cc444e66a92d0cd88ae91e9a4ff35fd29ccfd95afa28fdcaf095d9bac1fef5c9",
+            "chunk_index": 68,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03225806,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:5a3347d1b26feaab7595c4574022d0852242776fa4955fea4269ab6646b344a2",
+            "chunk_index": 18,
+            "dense_rank": 7,
+            "rank": 4,
+            "rrf_score": 0.03102453,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:6a5cecf48f0d3ac1ec079befd07386f1fab40c1a6a63b67d93db641a11cf16d0",
+            "chunk_index": 70,
+            "dense_rank": 13,
+            "rank": 5,
+            "rrf_score": 0.0292735,
+            "source": "xgboost"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:ac92fe2a7d285d134884f0866c3c9d94fe6d23587082ba671a14c4cec7dc487e",
+            "chunk_index": 471,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:4afa7472ed7f6f9200ae5f2ab861fa85f6bdf732fd0e649d8bc9b8de65320a3b",
+            "chunk_index": 461,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:02a8495d646c5e82762dbef51ffe02e2e7455d0da38b414c134f79e805f7bde8",
+            "chunk_index": 459,
+            "dense_rank": 6,
+            "rank": 3,
+            "rrf_score": 0.03205128,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:b00b163038fccc1346fe424d72df80bdf39247ad3a8c3ce412fdf041965e8609",
+            "chunk_index": 457,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03174603,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:962fa402e3a5f7d227f0a9f7295861a28626e1c4ff29b5e51449d694ca89fe5e",
+            "chunk_index": 466,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.03007689,
+            "source": "support-vector-machines"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:c085c5b63139d8db15975b888b20d8cedeea182028076d6e6f6cf554f6058d74",
+            "chunk_index": 428,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:c78a3c080b805c679d090c94288b3fd9c4c521ad34e36d2a8719ee61e2671412",
+            "chunk_index": 419,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:daf4c7265f7bd76db323424e9671f6597c1868ab379838e37a5386748e1ed102",
+            "chunk_index": 417,
+            "dense_rank": 6,
+            "rank": 3,
+            "rrf_score": 0.03205128,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:b-packed:8e13a2be3252d7c8f44c59d6f8a271dfbca262adef9b02a3f3cd224f373af0e6",
+            "chunk_index": 415,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03149802,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 11,
+            "chunk_id": "ca:b-packed:f7d4a2d040f56fdef3eae1d382505fb89ff521d83e181bba9667b5c705e38520",
+            "chunk_index": 420,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.02991071,
+            "source": "support-vector-machines"
+          }
+        ]
+      },
+      "query_id": "Q09",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 997,
+            "char_start": 750,
+            "grade": 2,
+            "line_end": 10,
+            "line_start": 10,
+            "query_id": "Q10",
+            "source": "naive-bayes",
+            "span_id": "naive-bayes:10-10"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:578bcb7b20dc11ccf7e0bfe725820ad31ded09eaf219c1c7d5a91198fea2e740",
+            "chunk_index": 45,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:3d5d859a9720c0afdf42c1ac81ad322593f0a31a83fef34763ad213e96ad8011",
+            "chunk_index": 46,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:2d1eaf35c6750c723ff3b95a3ba6732189b703e7ec467a7858aaef083661b0f7",
+            "chunk_index": 47,
+            "dense_rank": 7,
+            "rank": 3,
+            "rrf_score": 0.03128055,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:5720d8382e88f993ae72137d2b8d60b84c7dbf97b9c4aebb036eb3800acd2c67",
+            "chunk_index": 54,
+            "dense_rank": 12,
+            "rank": 4,
+            "rrf_score": 0.02946912,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:faa5cb73d2c35f1e7fe04eccc013a9e5689d4bb0950446bb1e090e480ba06113",
+            "chunk_index": 30,
+            "dense_rank": 15,
+            "rank": 5,
+            "rrf_score": 0.02938653,
+            "source": "k-nearest-neighbors"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:30bccba9bdd9c986bd3245648cff295db855ebc6be296413c3811801884dff37",
+            "chunk_index": 318,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.0327957,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:6d42461a95c7e2d9cfa34cd69172a055b11efc3829e06917a9d6424b9cc83b78",
+            "chunk_index": 316,
+            "dense_rank": 6,
+            "rank": 2,
+            "rrf_score": 0.03177806,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:f5423b8875951fe5b2d8ab3914ac3242d48886ec444d44fc4649ee28afc93204",
+            "chunk_index": 324,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03154496,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:d3e7bff7bbfca2cfb29114616c718611774e56270aa3a3cd0a6ea9548eb17bcb",
+            "chunk_index": 314,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03149802,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:d4a4f31dfe17e7fbf7722d62f987f3fb6819bdfe52db550a2d1a13244c911e16",
+            "chunk_index": 320,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03100962,
+            "source": "naive-bayes"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:e957ceb79920efb9d55ce846ccb616958746ebe5fa59c27afd8ad708839e1e11",
+            "chunk_index": 285,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.0327957,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:b-packed:c9f23000806dad36a2f85b5a93ecf74f355ab44dfac2ca6629854619b47f3508",
+            "chunk_index": 291,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03154496,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:d759570f3c73f394e62a19e4c308677a9845354ded3aa8c55809e2f75333edeb",
+            "chunk_index": 283,
+            "dense_rank": 6,
+            "rank": 3,
+            "rrf_score": 0.03151365,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:b-packed:3cbe054ca21112b70b114056f42dd83884891a1843ae046cb26892590b4f7762",
+            "chunk_index": 281,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03149802,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:5216fe4be7f2e8d718ed5b788714b5f1bb02fafdac8a3db9dab009b7fb95b4b3",
+            "chunk_index": 287,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03100962,
+            "source": "naive-bayes"
+          }
+        ]
+      },
+      "query_id": "Q10",
+      "vs_A": "SAME",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 5234,
+            "char_start": 5019,
+            "grade": 2,
+            "line_end": 77,
+            "line_start": 76,
+            "query_id": "Q11",
+            "source": "backpropagation",
+            "span_id": "backpropagation:76-77"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 3049,
+            "char_start": 2953,
+            "grade": 1,
+            "line_end": 49,
+            "line_start": 49,
+            "query_id": "Q11",
+            "source": "gradient-descent",
+            "span_id": "gradient-descent:49"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:be39bb1a8ffee0068695f9cd620853801a88b3b65a5bd6f83c3a4a5f2f76e97a",
+            "chunk_index": 10,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.0327957,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:ba1c54f1fd8dd5cffa21e73327651ce2e834a194a844b4b5ae17f2a97d75a760",
+            "chunk_index": 7,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.03205128,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:def60c50443a37758e22f66e18fb35e1b98bb39ca9b73e704c9f6dc572d72c01",
+            "chunk_index": 27,
+            "dense_rank": 6,
+            "rank": 3,
+            "rrf_score": 0.03177806,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:169312f7e5d747cdcc2be1173bcf62780a5da512b9389b7a8fb0925e0c5bba0a",
+            "chunk_index": 9,
+            "dense_rank": 8,
+            "rank": 4,
+            "rrf_score": 0.03079839,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:250ecf72285d18723b109f2a2ae76d6c6118f04e7faa17cbd20c371533b7c8ff",
+            "chunk_index": 26,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.03077652,
+            "source": "gradient-descent"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:4210aeff357d9afc641910e6d49046185738f6564018d32389add848881c8a71",
+            "chunk_index": 204,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.0327957,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:c03a9991652c27bbe68cb6aaab2dd6db3c5c2815c17803f85e77b24c5211c3f1",
+            "chunk_index": 78,
+            "dense_rank": 7,
+            "rank": 2,
+            "rrf_score": 0.03154496,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:cde37784c11e0065cc8e42cc6ac59bfd82c9c5ab0f0ba28e7d30753a955199d3",
+            "chunk_index": 175,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03154496,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:bd8022b07a6789fda148cd1627c60b4998ed3876d7ce099518c7daa7c4e01975",
+            "chunk_index": 54,
+            "dense_rank": 13,
+            "rank": 4,
+            "rrf_score": 0.02881426,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:3df1d8b112d873341b76bebc6719206400928009e7c9a95afb33e858796ce387",
+            "chunk_index": 166,
+            "dense_rank": 18,
+            "rank": 5,
+            "rrf_score": 0.02861201,
+            "source": "feedforward-neural-networks"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:6ce8439a7e9a4d8a8a48aa22a17540f767d916f7c1b8e66552bfc0d3c6614156",
+            "chunk_index": 176,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.0327957,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:00d725a84375e244e794af1c8f1d52b84a367a2eaedc49e97527d2fd315664b1",
+            "chunk_index": 155,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03226646,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:4e2c6f98a94cb286724af78e229999e6c4295afd7a9d43223b9bdb2d8ed7bd50",
+            "chunk_index": 69,
+            "dense_rank": 6,
+            "rank": 3,
+            "rrf_score": 0.03177806,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:1f20c5750f96a41fc46edd43e77725cf3192167d3c819664bcc0763bc7ef27be",
+            "chunk_index": 50,
+            "dense_rank": 11,
+            "rank": 4,
+            "rrf_score": 0.02967033,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:b-packed:c72418abdbea01528247408d71e932284c9dd03581201b07b46120186c385d03",
+            "chunk_index": 166,
+            "dense_rank": 14,
+            "rank": 5,
+            "rrf_score": 0.028624,
+            "source": "gradient-descent"
+          }
+        ]
+      },
+      "query_id": "Q11",
+      "vs_A": "REGRESSED",
+      "vs_B": "REGRESSED"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 678,
+            "char_start": 362,
+            "grade": 2,
+            "line_end": 7,
+            "line_start": 7,
+            "query_id": "Q12",
+            "source": "random-forest",
+            "span_id": "random-forest:7-7"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 2850,
+            "char_start": 2454,
+            "grade": 1,
+            "line_end": 31,
+            "line_start": 31,
+            "query_id": "Q12",
+            "source": "decision-trees",
+            "span_id": "decision-trees:31"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:c4fbc8efb52b9770326319efe67eead10525c219eddbc510358149906762383b",
+            "chunk_index": 52,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03253968,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:5720d8382e88f993ae72137d2b8d60b84c7dbf97b9c4aebb036eb3800acd2c67",
+            "chunk_index": 54,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03225806,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:927a328b29a2039faa55b31d1c5051d1ff2f2187d05238486b9cedab61089360",
+            "chunk_index": 16,
+            "dense_rank": 9,
+            "rank": 3,
+            "rrf_score": 0.03137255,
+            "source": "decision-trees"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:ff6646f798cd58af0a6d179ef0c07800e57c7a809cce2184a4ed738b7f22404c",
+            "chunk_index": 55,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.03131882,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:5ab1bf25e2212cbfdb0f10c83305c79109d694ad171450d2309b55e2e1a5f6eb",
+            "chunk_index": 12,
+            "dense_rank": 6,
+            "rank": 5,
+            "rrf_score": 0.03076923,
+            "source": "catboost"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:e0b95db53041503cf49cd9fdde8da5fb9351dc049d6b3d42bd5a3331c02abfdc",
+            "chunk_index": 362,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:a2a46b82a366782401eb4459b8f9ff48a79a77f372c83b3e286d33d27a63398e",
+            "chunk_index": 373,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03225806,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:117293cb2ec8f9148094c4b77d114440d64bef18f3fbfea65f6f1262491dacba",
+            "chunk_index": 383,
+            "dense_rank": 7,
+            "rank": 3,
+            "rrf_score": 0.03030303,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 11,
+            "chunk_id": "ca:chunk:97855deeb87dd95fd9e7a91a90fb17483476f5838e7e061fec66763218a6d669",
+            "chunk_index": 122,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03015873,
+            "source": "decision-trees"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:f2b6bc8174b740978d616a39d2e855274425a428066ee5633bdc57f552127e04",
+            "chunk_index": 379,
+            "dense_rank": 13,
+            "rank": 5,
+            "rrf_score": 0.02881426,
+            "source": "random-forest"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:d8bb13cdedacc259e0a9fb23a199659c0db9ba5e5384ab1ceea72f25cfbcfd67",
+            "chunk_index": 328,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:9e6c467607c5cbde0593308b74e122c4f01a243a23a575311d03a153f7c7060c",
+            "chunk_index": 336,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03225806,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:b-packed:df75acc5b1fbfcf4f2856f2d6cd782969dee3c50d47246cd6a4e5c5f9d624a42",
+            "chunk_index": 107,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03036577,
+            "source": "decision-trees"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:b-packed:6af073b2174a87721359325b5d9bfc97ac5c922ec13eac651e0fa5998a504b58",
+            "chunk_index": 346,
+            "dense_rank": 7,
+            "rank": 4,
+            "rrf_score": 0.03030303,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:b-packed:241ad4b971098de7cf56c974617cba10558c5238619eac2db0e2b270fe337d6a",
+            "chunk_index": 342,
+            "dense_rank": 13,
+            "rank": 5,
+            "rrf_score": 0.02881426,
+            "source": "random-forest"
+          }
+        ]
+      },
+      "query_id": "Q12",
+      "vs_A": "SAME",
+      "vs_B": "IMPROVED"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 1350,
+            "char_start": 772,
+            "grade": 2,
+            "line_end": 10,
+            "line_start": 10,
+            "query_id": "Q13",
+            "source": "agentic-ai-production",
+            "span_id": "agentic-ai-production:10-10"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:2e3d4d3fd39dfbe93968d6aa413cf971ae13082407133c20fa4b1b230029dfa6",
+            "chunk_index": 0,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.0327957,
+            "source": "agentic-ai-production"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:563a316a97d27cacc18885df7e94bfd52d4e01abadcc89bac3b61dc53dc5d8a2",
+            "chunk_index": 42,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.03205128,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:9365abfd7051c0c4b1b50dd69eb73a2ca4b6a77b6e6a1cdbe1b094d7bb2e4f9a",
+            "chunk_index": 1,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03154496,
+            "source": "agentic-ai-production"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:39732ec7ca87f486c8a637fd9f603e11a3fa21f09dfb5fba357c0822f1715f3b",
+            "chunk_index": 43,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.03151365,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:0dc7b9a45096be25fbc8ea0256303453506d2cb0526d0ef69a7bcb7adebf9839",
+            "chunk_index": 50,
+            "dense_rank": 9,
+            "rank": 5,
+            "rrf_score": 0.03109932,
+            "source": "prompt-engineering-production"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:3894b8958625d09347816b2838cb9d09a7d299ef1a45165ee617363b2f5c0890",
+            "chunk_index": 303,
+            "dense_rank": 6,
+            "rank": 1,
+            "rrf_score": 0.03100962,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 14,
+            "chunk_id": "ca:chunk:5d96263af55900da7431732ee71d54deceaa9d4b1e7af8571ce0197a24e553b1",
+            "chunk_index": 8,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.0303653,
+            "source": "agentic-ai-production"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:a2516cbfd6186167f01b9942c62974c3a7f92dab903145a8cd0d68e59403909c",
+            "chunk_index": 2,
+            "dense_rank": 12,
+            "rank": 3,
+            "rrf_score": 0.03021354,
+            "source": "agentic-ai-production"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:37a062bd854c40c1fdfef78695545a3698157acfa51e2b869e5386e9e0418061",
+            "chunk_index": 312,
+            "dense_rank": 18,
+            "rank": 4,
+            "rrf_score": 0.02886003,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 18,
+            "chunk_id": "ca:chunk:96c2f9d27e9feb5019270145e4820d19696db27ecaaca942269413b59b9bbd9e",
+            "chunk_index": 308,
+            "dense_rank": 13,
+            "rank": 5,
+            "rrf_score": 0.0268759,
+            "source": "multi-agent-systems"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:b-packed:b9668e59e7302fb709bdd76725deb62616d7898426beb2ee9b4b5340767cc3a5",
+            "chunk_index": 271,
+            "dense_rank": 6,
+            "rank": 1,
+            "rrf_score": 0.03100962,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 13,
+            "chunk_id": "ca:b-packed:4c1f3fe2c52f546d96bfd40d2713246d578edf0a783421cb055f203045d9494a",
+            "chunk_index": 8,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.03055556,
+            "source": "agentic-ai-production"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:f3dac4e100bac48e40b1ba25c8312defea1aaf2e3210b9cdddc89ebb12b0478e",
+            "chunk_index": 2,
+            "dense_rank": 12,
+            "rank": 3,
+            "rrf_score": 0.03021354,
+            "source": "agentic-ai-production"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:c38cfff5ba07783781c0443adb2b5eb86056018f1ab23f1ec174c7f83f24dadc",
+            "chunk_index": 279,
+            "dense_rank": 18,
+            "rank": 4,
+            "rrf_score": 0.02837163,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 20,
+            "chunk_id": "ca:b-packed:63b7f1e8dea5874eb8bebf92e83f412b57a126a02e161e8b8fe64da827635680",
+            "chunk_index": 275,
+            "dense_rank": 13,
+            "rank": 5,
+            "rrf_score": 0.02654712,
+            "source": "multi-agent-systems"
+          }
+        ]
+      },
+      "query_id": "Q13",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 1004,
+            "char_start": 645,
+            "grade": 2,
+            "line_end": 15,
+            "line_start": 11,
+            "query_id": "Q14",
+            "source": "linear-logistic-regression",
+            "span_id": "linear-logistic-regression:11-15"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:2e23fee03f76b121da495f0e91477d4698fbf601c068d9d033ddd66632861221",
+            "chunk_index": 36,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:802433b97f464aba74b3fac919488751d16c79bcb05802fe54119bdb788ccb7f",
+            "chunk_index": 39,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:30fb1c31e6ae9ccbb62d2145f08d0b6601bab389fe3d0bf832435401e22571fc",
+            "chunk_index": 38,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03201844,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:0f969194ca4d06f5faaabc1a0f66040b794490173250c9bedfa5f53602d057b5",
+            "chunk_index": 40,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03174603,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:cc6df988a36de4a00e4cc7fc6b3f9ce9bb5ae29e5174cdbfb845b1d880696a71",
+            "chunk_index": 37,
+            "dense_rank": 6,
+            "rank": 5,
+            "rrf_score": 0.03151365,
+            "source": "linear-logistic-regression"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:1f979403db93ca637957cfefbf8a6b083c9ce411baacd608eb94f89ca65cab89",
+            "chunk_index": 270,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:617069409fed09a8cba168288135c9e95babf5cba869e3299c6606eb323d1ad0",
+            "chunk_index": 268,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03154496,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:1f29f381c6a0737a76192370c1806b23a260a24c380fc546612f992c6a02d5c0",
+            "chunk_index": 263,
+            "dense_rank": 7,
+            "rank": 3,
+            "rrf_score": 0.03128055,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:370617d865f47a6c99b2fa3a0c63315a28e30b8bdaf8f407c2bb7170be4ff7ea",
+            "chunk_index": 264,
+            "dense_rank": 11,
+            "rank": 4,
+            "rrf_score": 0.03015873,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:8ec66cd49592d1b7f98f203462583f759ae64a17b5ed0672ed2a95013c03f70c",
+            "chunk_index": 266,
+            "dense_rank": 13,
+            "rank": 5,
+            "rrf_score": 0.02951389,
+            "source": "linear-logistic-regression"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:c7034a754e35d63c40d11c1aff12047706b17d4810c9a072e9e7cbd5247958db",
+            "chunk_index": 238,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:405f7e5488122194eaba32cdd62f9692a791ef83906cb4c37779bc90bc1f741e",
+            "chunk_index": 231,
+            "dense_rank": 7,
+            "rank": 2,
+            "rrf_score": 0.03128055,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:b-packed:8ecf6ffae6e4c4e0d79492965d23a70e7f708e828fc2587af6bcb471e9d331af",
+            "chunk_index": 236,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.0308862,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:b-packed:b7b81264216a5520e21be1af9b366a76259027429a7d39a70f1d3eb6eb388ffc",
+            "chunk_index": 239,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03077652,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:3ab61a870d75f561c460eca2ae2a6cffb3849a9655d301a03266ad426aa0d354",
+            "chunk_index": 232,
+            "dense_rank": 11,
+            "rank": 5,
+            "rrf_score": 0.02967033,
+            "source": "linear-logistic-regression"
+          }
+        ]
+      },
+      "query_id": "Q14",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 1423,
+            "char_start": 1196,
+            "grade": 2,
+            "line_end": 16,
+            "line_start": 16,
+            "query_id": "Q15",
+            "source": "langgraph-state-machines",
+            "span_id": "langgraph-state-machines:16"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": false,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 2330,
+            "char_start": 2045,
+            "grade": 2,
+            "line_end": 30,
+            "line_start": 28,
+            "query_id": "Q15",
+            "source": "langgraph-state-machines",
+            "span_id": "langgraph-state-machines:28-30"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:e7fe20f9e19456724c5ba272a7383727f4c7c50b52d17225b88845ffc8ee6acb",
+            "chunk_index": 33,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "langgraph-state-machines"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:90d3a8cca127de81b7a1218835a55cd549e773fb73d6aa0d002fea90f1b27432",
+            "chunk_index": 44,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:39732ec7ca87f486c8a637fd9f603e11a3fa21f09dfb5fba357c0822f1715f3b",
+            "chunk_index": 43,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03200205,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:d436414694abe001d756f37215ff88cfb72de7cd5210dd5e7e269a7cbd135248",
+            "chunk_index": 3,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.03177806,
+            "source": "agentic-ai-production"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:9365abfd7051c0c4b1b50dd69eb73a2ca4b6a77b6e6a1cdbe1b094d7bb2e4f9a",
+            "chunk_index": 1,
+            "dense_rank": 11,
+            "rank": 5,
+            "rrf_score": 0.03015873,
+            "source": "agentic-ai-production"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:6a4ccc8c5ab4bf3b6cdefdfa11ea3fe8f0cc8baa42cb13d072476d90422d6064",
+            "chunk_index": 242,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "langgraph-state-machines"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:680278aa9273e97906cf7cec9ebc5bc7cb83f30b16c828cee6388d4451ccadd3",
+            "chunk_index": 244,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "langgraph-state-machines"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:a7052593c010f9bd232284207b50550c731eda8cb814b97fa281bd87f4682d19",
+            "chunk_index": 257,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03225806,
+            "source": "langgraph-state-machines"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:129a7b4c2122d902b4994630915bd54c0df645b3e7fa79a950333756d1bcf276",
+            "chunk_index": 247,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03149802,
+            "source": "langgraph-state-machines"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:667865261eea1c3f06958f32aa0373a066e18e229b3e07cc986121fe10401f37",
+            "chunk_index": 246,
+            "dense_rank": 8,
+            "rank": 5,
+            "rrf_score": 0.03030999,
+            "source": "langgraph-state-machines"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:aa868bb1b00d9c29c0cfe6451d115903882fc2a557f0e2b0515c145fe3cbf522",
+            "chunk_index": 212,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "langgraph-state-machines"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:a65cfe7b055d7cad7b3b1284b4d914ad56cd5b3a53a5ace3933480c2917de489",
+            "chunk_index": 216,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "langgraph-state-machines"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:ba5be0389b7df5ed6acf7664b265fd3fbc0f689a315660ae8f88d0c61eb48c44",
+            "chunk_index": 214,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03252247,
+            "source": "langgraph-state-machines"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:cec375590fd8511104453a2fec7ae845f0676f5120f9126edbad4442498c66df",
+            "chunk_index": 210,
+            "dense_rank": 15,
+            "rank": 4,
+            "rrf_score": 0.02938653,
+            "source": "langgraph-state-machines"
+          },
+          {
+            "bm25_rank": 16,
+            "chunk_id": "ca:b-packed:ccc8efa92cb04de2860ccfa00edd0b3b6d3dc9b8a403587c71bce337be47d89b",
+            "chunk_index": 222,
+            "dense_rank": 4,
+            "rank": 5,
+            "rrf_score": 0.02920635,
+            "source": "langgraph-state-machines"
+          }
+        ]
+      },
+      "query_id": "Q15",
+      "vs_A": "IMPROVED",
+      "vs_B": "IMPROVED"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 2547,
+            "char_start": 2047,
+            "grade": 2,
+            "line_end": 27,
+            "line_start": 22,
+            "query_id": "Q16",
+            "source": "prompt-engineering-production",
+            "span_id": "prompt-engineering-production:22-27"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:c3e3adffab329b860adcf48e3b3e43f7ec2cef9e29178f9cf4fb752e8b30eb48",
+            "chunk_index": 49,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:0dc7b9a45096be25fbc8ea0256303453506d2cb0526d0ef69a7bcb7adebf9839",
+            "chunk_index": 50,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:edd9fa8abe42858bd6b74742c3b0ebd9e53e703d1199b828b25370ca33118131",
+            "chunk_index": 51,
+            "dense_rank": 5,
+            "rank": 3,
+            "rrf_score": 0.03175403,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:72e10af1b476fa4efcafc859b8a003945fb14b3c1557556878379c004ee0050f",
+            "chunk_index": 57,
+            "dense_rank": 7,
+            "rank": 4,
+            "rrf_score": 0.0298574,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:d436414694abe001d756f37215ff88cfb72de7cd5210dd5e7e269a7cbd135248",
+            "chunk_index": 3,
+            "dense_rank": 8,
+            "rank": 5,
+            "rrf_score": 0.02985075,
+            "source": "agentic-ai-production"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:6535178d28cf38dc6ef682f882902f9768d7b9e4ec25fc788f42ba25b2a0370a",
+            "chunk_index": 336,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:120f78df32c3e6f0bfdbd7b64c02836263a1785483a03959757f2811d125ebe8",
+            "chunk_index": 337,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:5267da45b4babc0f5d54a704b2bab30ad042b284690562b38ac9ffbe995e5033",
+            "chunk_index": 345,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03175403,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:16ac7e8792b29b0afda36b73bfeae4567ac7c297b3083ad0aff0a7c5e4bd9507",
+            "chunk_index": 339,
+            "dense_rank": 7,
+            "rank": 4,
+            "rrf_score": 0.03128055,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:074fa1defbf43094222f96f603b4b38761e7b8c9c2999f1d805814a1d035296f",
+            "chunk_index": 349,
+            "dense_rank": 8,
+            "rank": 5,
+            "rrf_score": 0.02985075,
+            "source": "prompt-engineering-production"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:1d3b2a7fdc9fe8201767d2d0a442328dc7aaaa2f9076f88bc52f4dc823d49866",
+            "chunk_index": 303,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:80a9fec1eec379fba8a39a26d3d35910e7f9da209dcdcd88a00d817db88ca2b2",
+            "chunk_index": 304,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:dda46321a713e014db54eeb92e33e09c0a358ecf57e185353f6c5ee6f0025088",
+            "chunk_index": 312,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03200205,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:259b91aa1e9631902c78f67d1a35a3b4b2b8913d6bceb5794af73cdf100d51d0",
+            "chunk_index": 306,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.03151365,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:81cde3e5bafd17b4dcc0e402cbabd24b48a3a03170cb8d9262ef3d11b1dee324",
+            "chunk_index": 316,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.03053613,
+            "source": "prompt-engineering-production"
+          }
+        ]
+      },
+      "query_id": "Q16",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 3494,
+            "char_start": 3032,
+            "grade": 2,
+            "line_end": 37,
+            "line_start": 35,
+            "query_id": "Q17",
+            "source": "multi-agent-systems",
+            "span_id": "multi-agent-systems:35-37"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 3494,
+            "char_start": 3298,
+            "grade": 2,
+            "line_end": 37,
+            "line_start": 37,
+            "query_id": "Q17",
+            "source": "multi-agent-systems",
+            "span_id": "multi-agent-systems:37"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:499a36dd0fd021d30c26fa992c751616abdc8fd247abd35c317a73906fd153fe",
+            "chunk_index": 41,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:39732ec7ca87f486c8a637fd9f603e11a3fa21f09dfb5fba357c0822f1715f3b",
+            "chunk_index": 43,
+            "dense_rank": 5,
+            "rank": 2,
+            "rrf_score": 0.03229167,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:563a316a97d27cacc18885df7e94bfd52d4e01abadcc89bac3b61dc53dc5d8a2",
+            "chunk_index": 42,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03226646,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:90d3a8cca127de81b7a1218835a55cd549e773fb73d6aa0d002fea90f1b27432",
+            "chunk_index": 44,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03200205,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:9365abfd7051c0c4b1b50dd69eb73a2ca4b6a77b6e6a1cdbe1b094d7bb2e4f9a",
+            "chunk_index": 1,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.03077652,
+            "source": "agentic-ai-production"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:16941feb4a7fb7085093e24e5683c9ac49a30439814f2b2eef544340c4e56261",
+            "chunk_index": 289,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.0327957,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:4af816b9e7b2dd5a19b57ec49eb4409ee41b8cbf758b2c75a1c4c35bb6c6a113",
+            "chunk_index": 304,
+            "dense_rank": 7,
+            "rank": 2,
+            "rrf_score": 0.03181818,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:e1230bd37a9dcc25dfe2da5aadad210271e1192ae99c3c8cbe08dc1c5845730c",
+            "chunk_index": 292,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03125763,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:30d8d6bfa134a8d67b09e225053a20e157639a668216e07ef414abc8e8b8e2f3",
+            "chunk_index": 290,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.03109932,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:46a26b13689fbb59cd96b22fa1b480eb162b2263836617f82989ad4a253974d5",
+            "chunk_index": 306,
+            "dense_rank": 10,
+            "rank": 5,
+            "rrf_score": 0.0308862,
+            "source": "multi-agent-systems"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:4ed9e3c97be49850cf4b57e06c86c09b4e967411d0335458f9c1f846e0c12968",
+            "chunk_index": 257,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:33fb8f84264b5a617b85042a22365bc691af32766ca13901dcda027ef379ae85",
+            "chunk_index": 272,
+            "dense_rank": 7,
+            "rank": 2,
+            "rrf_score": 0.03181818,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:b-packed:306cbcdfc22c388af7a9063b0eb12138879bfbb918c673dd68dd59baf103b791",
+            "chunk_index": 258,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03131882,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:b-packed:d33e000843231a4d5d77982f469b26a32779d2bf393dab0f2aeb4880f8af262c",
+            "chunk_index": 260,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03102453,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:f4ecb3dece78162bb8be2d930b07706eef2f74d7def27917c1ac8f39659591a2",
+            "chunk_index": 266,
+            "dense_rank": 6,
+            "rank": 5,
+            "rrf_score": 0.03076923,
+            "source": "multi-agent-systems"
+          }
+        ]
+      },
+      "query_id": "Q17",
+      "vs_A": "REGRESSED",
+      "vs_B": "REGRESSED"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 964,
+            "char_start": 901,
+            "grade": 2,
+            "line_end": 13,
+            "line_start": 13,
+            "query_id": "Q18",
+            "source": "ridge-lasso-elasticnet",
+            "span_id": "ridge-lasso-elasticnet:13-13"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:fd6a22b74a336f3562727568ac55cfee852a28fea05602e251695073fd13285e",
+            "chunk_index": 63,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:e72e2444e17dc9c092779f52055184aeed3c862d4ff375f775bc8467b1a32f65",
+            "chunk_index": 65,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:802433b97f464aba74b3fac919488751d16c79bcb05802fe54119bdb788ccb7f",
+            "chunk_index": 39,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03102453,
+            "source": "linear-logistic-regression"
+          },
+          {
+            "bm25_rank": 14,
+            "chunk_id": "ca:chunk:39be143b19b03d961a6646a09a463d144dfc593f1979bf13aae7e660aaaec925",
+            "chunk_index": 64,
+            "dense_rank": 3,
+            "rank": 4,
+            "rrf_score": 0.02982766,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:cc6df988a36de4a00e4cc7fc6b3f9ce9bb5ae29e5174cdbfb845b1d880696a71",
+            "chunk_index": 37,
+            "dense_rank": 14,
+            "rank": 5,
+            "rrf_score": 0.02957165,
+            "source": "linear-logistic-regression"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:1d64f868e731d302304f4e089e7c58f4cf041bd1f4b2ed4d1589c24d7471c58e",
+            "chunk_index": 439,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:2ce6dca0d3ad50629c8b57c23f56bc601faba40858e3881df5dd401904159f55",
+            "chunk_index": 442,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.03253968,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:4107cf94a792c15b577b29cfac76079ce796bb8538189ab67942b94de7bb487c",
+            "chunk_index": 437,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03200205,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:534035f10b9e3df8441080df113b2562015af9e4892e492056e39f4a3eb785fe",
+            "chunk_index": 454,
+            "dense_rank": 13,
+            "rank": 4,
+            "rrf_score": 0.03028233,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:chunk:fedba95aec3444464f9386561a5fa9c153f75b78967a5d787546c61aa7f2da35",
+            "chunk_index": 449,
+            "dense_rank": 3,
+            "rank": 5,
+            "rrf_score": 0.01612903,
+            "source": "ridge-lasso-elasticnet"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:4baae57a00437d405a73a2e527e0e885326916b92d7f2b4d3bdebdb583ae5002",
+            "chunk_index": 398,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:fd7abadcb9c3348c2bdc01e210c7c72bb4ad522525db42681ec03cfc3de07275",
+            "chunk_index": 400,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.03253968,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:19fcb417dd556846cb9e75ee19ec186a4a3889e94a9f314e73240cd503892b6d",
+            "chunk_index": 396,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03200205,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:c64ef8d1b0bad0f582768b0111c4c1d326fd0370007afc5929919876c4e4cfac",
+            "chunk_index": 412,
+            "dense_rank": 12,
+            "rank": 4,
+            "rrf_score": 0.03047795,
+            "source": "ridge-lasso-elasticnet"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:b-packed:4e1c80de34fbbc1902882c571f1028fa77fa135b0189715f6b4407133952b330",
+            "chunk_index": 407,
+            "dense_rank": 3,
+            "rank": 5,
+            "rrf_score": 0.01612903,
+            "source": "ridge-lasso-elasticnet"
+          }
+        ]
+      },
+      "query_id": "Q18",
+      "vs_A": "SAME",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 487,
+            "char_start": 54,
+            "grade": 2,
+            "line_end": 4,
+            "line_start": 4,
+            "query_id": "Q19",
+            "source": "retrieval-augmented-generation",
+            "span_id": "retrieval-augmented-generation:4"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 2822,
+            "char_start": 2720,
+            "grade": 2,
+            "line_end": 32,
+            "line_start": 32,
+            "query_id": "Q19",
+            "source": "retrieval-augmented-generation",
+            "span_id": "retrieval-augmented-generation:32"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:40807b8059d8140592ab050c94bc3f15835efb02f54913d21b240a816d0750ef",
+            "chunk_index": 62,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:9c44e49d31c554ab392647cbedabf33750ba51c4b39b22c7e64cdddb81d763b1",
+            "chunk_index": 59,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:be39bb1a8ffee0068695f9cd620853801a88b3b65a5bd6f83c3a4a5f2f76e97a",
+            "chunk_index": 10,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03174603,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:7b77db41f4265eace3bbd4addb4c0730e5dddcf53ade34be38d64b53c6514bee",
+            "chunk_index": 61,
+            "dense_rank": 11,
+            "rank": 4,
+            "rrf_score": 0.03067916,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 12,
+            "chunk_id": "ca:chunk:d436414694abe001d756f37215ff88cfb72de7cd5210dd5e7e269a7cbd135248",
+            "chunk_index": 3,
+            "dense_rank": 9,
+            "rank": 5,
+            "rrf_score": 0.02879039,
+            "source": "agentic-ai-production"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:f194efac0f9beaf4fd6d2bf1b659514f134bf7ce77e61d7e58cab1eff9e10919",
+            "chunk_index": 411,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.03252247,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:10bcb90a3cbed4557dea3fae7dd580f70502fe895f0953a76cec8bb234cd6af0",
+            "chunk_index": 433,
+            "dense_rank": 10,
+            "rank": 2,
+            "rrf_score": 0.03115942,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:chunk:0365c4d8abbf102b486d5ce80175da2be607de9d5fdc01335a2e0475104df81d",
+            "chunk_index": 425,
+            "dense_rank": 1,
+            "rank": 3,
+            "rrf_score": 0.01666667,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:chunk:6af5003e857a7806debdc7bc04f22b5674dbeb93225551eaae40b9fecf3651fd",
+            "chunk_index": 408,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.01639344,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:30bccba9bdd9c986bd3245648cff295db855ebc6be296413c3811801884dff37",
+            "chunk_index": 318,
+            "dense_rank": null,
+            "rank": 5,
+            "rrf_score": 0.01612903,
+            "source": "naive-bayes"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:6ec787e5066a7f4f672163919016c68de66244e2c2f115c8cc318cc68cbdcfc4",
+            "chunk_index": 373,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.03252247,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:108d6aca16c42b2ac6b3620b8a296b3302e873fafbade72a103cd29db1af76d2",
+            "chunk_index": 392,
+            "dense_rank": 9,
+            "rank": 2,
+            "rrf_score": 0.03137255,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:b-packed:9dd890df04aec9053e386a6964321cc8d243ffd7696126c3946e00c77b8a3654",
+            "chunk_index": 385,
+            "dense_rank": 1,
+            "rank": 3,
+            "rrf_score": 0.01666667,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:b-packed:4c4834644d42201a93a67112a1287e0091f45132710e55f4110f710c94b98424",
+            "chunk_index": 370,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.01639344,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:e957ceb79920efb9d55ce846ccb616958746ebe5fa59c27afd8ad708839e1e11",
+            "chunk_index": 285,
+            "dense_rank": null,
+            "rank": 5,
+            "rrf_score": 0.01612903,
+            "source": "naive-bayes"
+          }
+        ]
+      },
+      "query_id": "Q19",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 479,
+            "char_start": 50,
+            "grade": 2,
+            "line_end": 4,
+            "line_start": 4,
+            "query_id": "Q20",
+            "source": "embedding-models-vector-search",
+            "span_id": "embedding-models-vector-search:4"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 1158,
+            "char_start": 781,
+            "grade": 2,
+            "line_end": 10,
+            "line_start": 10,
+            "query_id": "Q20",
+            "source": "embedding-models-vector-search",
+            "span_id": "embedding-models-vector-search:10"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:5a3347d1b26feaab7595c4574022d0852242776fa4955fea4269ab6646b344a2",
+            "chunk_index": 18,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:8bd9277145c3a31a057b51818cf5ae2b625b04ccdd2ac3c11ba0a52faa17df01",
+            "chunk_index": 19,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:a34a4147f699229a088d8feeb67769595b2dbf1fe58244b176d649a8feb66ef6",
+            "chunk_index": 21,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03225806,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:e88b16abcd9dc4bc46e5148f32667fb659b2209d833c5a61716d19abfac4125c",
+            "chunk_index": 20,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03174603,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:9795a16570f55771bfcb1b0fe95d5e6abbe95913994e772d8957d0a8e6beaecf",
+            "chunk_index": 60,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03055037,
+            "source": "retrieval-augmented-generation"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:95222e73ca9fbb685df033f7aa629c7cd74bbbcb26ceac8672708e904ce6e678",
+            "chunk_index": 136,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:4d92b683ed01e1afe8117d416008268b6943ca28f1433806f045aaceb5a4d51c",
+            "chunk_index": 142,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:f074f877a3352a2cf3465f87ab718fcf7243ab2b8432aea7f831c16f9a192bc7",
+            "chunk_index": 148,
+            "dense_rank": 8,
+            "rank": 3,
+            "rrf_score": 0.03159204,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:7ab997bcd27278b8d9b73e71c9049c5e22ad61757b6224890c6ff5338e52bd70",
+            "chunk_index": 132,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.03125763,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:fa4769e97063fd40a3b5e71653320e13f28a7e8f1ff2c511f870b744a9bda9a8",
+            "chunk_index": 134,
+            "dense_rank": 4,
+            "rank": 5,
+            "rrf_score": 0.03125763,
+            "source": "embedding-models-vector-search"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:530e45ecf867e21f90a1b6344b460dd5f33c48771a9f6f54bbebc0635dbb48c9",
+            "chunk_index": 121,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:4ac1b022051d4f419361681418cf0beb567e2da650293fbd9ae179ecbd1e8ab8",
+            "chunk_index": 127,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03278689,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:1b4a6ca50129664b6bfea575ec94eb4f0a45fab998c2dcb6d9ca2893c035a225",
+            "chunk_index": 133,
+            "dense_rank": 7,
+            "rank": 3,
+            "rrf_score": 0.03128055,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:0b6bc5b16c51932656e8afcdff524e7db49a5d19aac1bdb7becb4bfc08be1413",
+            "chunk_index": 117,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.03125763,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:ceea4341acb0a5d67aeea8f8d28dc2d960b4202db412632396e4c9718045e709",
+            "chunk_index": 119,
+            "dense_rank": 4,
+            "rank": 5,
+            "rrf_score": 0.03125763,
+            "source": "embedding-models-vector-search"
+          }
+        ]
+      },
+      "query_id": "Q20",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 314,
+            "char_start": 33,
+            "grade": 2,
+            "line_end": 4,
+            "line_start": 4,
+            "query_id": "Q21",
+            "source": "backpropagation",
+            "span_id": "backpropagation:4"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 5234,
+            "char_start": 5019,
+            "grade": 2,
+            "line_end": 77,
+            "line_start": 76,
+            "query_id": "Q21",
+            "source": "backpropagation",
+            "span_id": "backpropagation:76-77"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:ba1c54f1fd8dd5cffa21e73327651ce2e834a194a844b4b5ae17f2a97d75a760",
+            "chunk_index": 7,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:169312f7e5d747cdcc2be1173bcf62780a5da512b9389b7a8fb0925e0c5bba0a",
+            "chunk_index": 9,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03200205,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:5171e508b2adc50145c4dcd17c78f915e8ce3f71a355f641a819262a0b3245aa",
+            "chunk_index": 8,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03200205,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:45a17d2a45ae84ab819e17cc7a8aac0a67a1d3f34c8a2d33a120a6280c4f6dd1",
+            "chunk_index": 22,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.03053613,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 12,
+            "chunk_id": "ca:chunk:82093314f833f0934e7a57ba9e5eec8153925cfb94f65539443c0086b4f6be71",
+            "chunk_index": 23,
+            "dense_rank": 2,
+            "rank": 5,
+            "rrf_score": 0.03047795,
+            "source": "feedforward-neural-networks"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:bd8022b07a6789fda148cd1627c60b4998ed3876d7ce099518c7daa7c4e01975",
+            "chunk_index": 54,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:cde37784c11e0065cc8e42cc6ac59bfd82c9c5ab0f0ba28e7d30753a955199d3",
+            "chunk_index": 175,
+            "dense_rank": 5,
+            "rank": 2,
+            "rrf_score": 0.03125,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 20,
+            "chunk_id": "ca:chunk:b8f8e5d3154f1d053c5e3121e5eed82c8a3618d8d4c84fdab07c9fc9742b0a7c",
+            "chunk_index": 169,
+            "dense_rank": 12,
+            "rank": 3,
+            "rrf_score": 0.02674273,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:e8b32893d4c261f4bfb100ba5053a67a0c3e9e762a7b785fe76858c3ba72fa26",
+            "chunk_index": 67,
+            "dense_rank": null,
+            "rank": 4,
+            "rrf_score": 0.01639344,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:chunk:ea6e53dc170629a56cfdeaef873ec8333b670bbdf49402426b4e345407886509",
+            "chunk_index": 194,
+            "dense_rank": 2,
+            "rank": 5,
+            "rrf_score": 0.01639344,
+            "source": "gradient-descent"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:1f20c5750f96a41fc46edd43e77725cf3192167d3c819664bcc0763bc7ef27be",
+            "chunk_index": 50,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:00d725a84375e244e794af1c8f1d52b84a367a2eaedc49e97527d2fd315664b1",
+            "chunk_index": 155,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03174603,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:65786e7283c222822e663fa02ecd4ea80dc3bf9d30aad3d36ca715c90bb3043e",
+            "chunk_index": 59,
+            "dense_rank": 19,
+            "rank": 3,
+            "rrf_score": 0.02894955,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 20,
+            "chunk_id": "ca:b-packed:48bafc7934d6dd4e976cb2be12b2f4832391e60373688f4370c02b34adf00d9b",
+            "chunk_index": 149,
+            "dense_rank": 11,
+            "rank": 4,
+            "rrf_score": 0.02694394,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:b-packed:6ce8439a7e9a4d8a8a48aa22a17540f767d916f7c1b8e66552bfc0d3c6614156",
+            "chunk_index": 176,
+            "dense_rank": 2,
+            "rank": 5,
+            "rrf_score": 0.01639344,
+            "source": "gradient-descent"
+          }
+        ]
+      },
+      "query_id": "Q21",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 1051,
+            "char_start": 888,
+            "grade": 2,
+            "line_end": 16,
+            "line_start": 14,
+            "query_id": "Q22",
+            "source": "xgboost",
+            "span_id": "xgboost:14-16"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 2240,
+            "char_start": 1985,
+            "grade": 2,
+            "line_end": 34,
+            "line_start": 34,
+            "query_id": "Q22",
+            "source": "xgboost",
+            "span_id": "xgboost:34"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:38a383c673d50c8368d317904adbc1a4a8f6fdfea16a5f774178fbe6913fd9fa",
+            "chunk_index": 71,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:6a5cecf48f0d3ac1ec079befd07386f1fab40c1a6a63b67d93db641a11cf16d0",
+            "chunk_index": 70,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:927a328b29a2039faa55b31d1c5051d1ff2f2187d05238486b9cedab61089360",
+            "chunk_index": 16,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03252247,
+            "source": "decision-trees"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:5ab1bf25e2212cbfdb0f10c83305c79109d694ad171450d2309b55e2e1a5f6eb",
+            "chunk_index": 12,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03100962,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:c4fbc8efb52b9770326319efe67eead10525c219eddbc510358149906762383b",
+            "chunk_index": 52,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.03007689,
+            "source": "random-forest"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:e95497fea67955e50e8993ef27420ac96e597ca794444cfafe27c4fffc54c3d3",
+            "chunk_index": 501,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:e6126bda86248723de737a25da82c132284b2f5e0f7d31b7e10b4ba9a1e83826",
+            "chunk_index": 86,
+            "dense_rank": 11,
+            "rank": 2,
+            "rrf_score": 0.02991071,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:chunk:8efe37ecae729b38e8813db10b6f1e81ba8ebd51dce43a08863089aaf4fd6f89",
+            "chunk_index": 499,
+            "dense_rank": 8,
+            "rank": 3,
+            "rrf_score": 0.02941813,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 13,
+            "chunk_id": "ca:chunk:9a8cbc64447ba3870f7e721bcb544d53d8a45b7589c08e0f690d7f13a0bf156c",
+            "chunk_index": 384,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.0292735,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:04aeac4cdde50fc7d2629b20a141cdc6652e7f2c08a09d1d418db2fbb6bd9d9f",
+            "chunk_index": 92,
+            "dense_rank": 19,
+            "rank": 5,
+            "rrf_score": 0.02797203,
+            "source": "catboost"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:90f3d689aa6f8e2a143d8785e18a537dad9eef20f2d82b2c6b630923d27abf1a",
+            "chunk_index": 450,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:b-packed:6e4144ae43dcd5f6d5ca5705c9675899fe81db968f98953406fa98ad22b71f03",
+            "chunk_index": 347,
+            "dense_rank": 6,
+            "rank": 2,
+            "rrf_score": 0.02987737,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:b-packed:399911a12c03ea53f3420e9e765bc6f9d60bc9c7f383161cf3f01450f5a2afc2",
+            "chunk_index": 448,
+            "dense_rank": 8,
+            "rank": 3,
+            "rrf_score": 0.02963126,
+            "source": "xgboost"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:c50b1e474a39a50be1927fd06dd243cf2c587e61ba38b18061bfeb29ef61dca0",
+            "chunk_index": 81,
+            "dense_rank": 15,
+            "rank": 4,
+            "rrf_score": 0.02889813,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 12,
+            "chunk_id": "ca:b-packed:9e6c467607c5cbde0593308b74e122c4f01a243a23a575311d03a153f7c7060c",
+            "chunk_index": 336,
+            "dense_rank": 14,
+            "rank": 5,
+            "rrf_score": 0.02778314,
+            "source": "random-forest"
+          }
+        ]
+      },
+      "query_id": "Q22",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 3205,
+            "char_start": 2174,
+            "grade": 2,
+            "line_end": 25,
+            "line_start": 22,
+            "query_id": "Q23",
+            "source": "naive-bayes",
+            "span_id": "naive-bayes:22-25"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:578bcb7b20dc11ccf7e0bfe725820ad31ded09eaf219c1c7d5a91198fea2e740",
+            "chunk_index": 45,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03226646,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:2d1eaf35c6750c723ff3b95a3ba6732189b703e7ec467a7858aaef083661b0f7",
+            "chunk_index": 47,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.03205128,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:5ab1bf25e2212cbfdb0f10c83305c79109d694ad171450d2309b55e2e1a5f6eb",
+            "chunk_index": 12,
+            "dense_rank": 16,
+            "rank": 3,
+            "rrf_score": 0.03,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:cc444e66a92d0cd88ae91e9a4ff35fd29ccfd95afa28fdcaf095d9bac1fef5c9",
+            "chunk_index": 68,
+            "dense_rank": 9,
+            "rank": 4,
+            "rrf_score": 0.02963126,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:3d5d859a9720c0afdf42c1ac81ad322593f0a31a83fef34763ad213e96ad8011",
+            "chunk_index": 46,
+            "dense_rank": 17,
+            "rank": 5,
+            "rrf_score": 0.02830941,
+            "source": "naive-bayes"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:30bccba9bdd9c986bd3245648cff295db855ebc6be296413c3811801884dff37",
+            "chunk_index": 318,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03253968,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:4c0d92444954ec5d75a5eb9025cf620812c777f4f4c9de374446230828933178",
+            "chunk_index": 331,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03225806,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:6d42461a95c7e2d9cfa34cd69172a055b11efc3829e06917a9d6424b9cc83b78",
+            "chunk_index": 316,
+            "dense_rank": 6,
+            "rank": 3,
+            "rrf_score": 0.03205128,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:9298d95cf39739841560ab6ec3149636dc0fc8c311471365d86631bd242a07a4",
+            "chunk_index": 325,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03125,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:bc4b68aaf144b0dca409d967f7c62de091c2bc7bcddd9a214172e96d0ba4fdc7",
+            "chunk_index": 94,
+            "dense_rank": 10,
+            "rank": 5,
+            "rrf_score": 0.02987737,
+            "source": "catboost"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:e957ceb79920efb9d55ce846ccb616958746ebe5fa59c27afd8ad708839e1e11",
+            "chunk_index": 285,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03253968,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:05721fe8e7dcb7221a05852b2dc31fe6372fa6e6a67417cbb05a2d44c9ed1318",
+            "chunk_index": 298,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03225806,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:d759570f3c73f394e62a19e4c308677a9845354ded3aa8c55809e2f75333edeb",
+            "chunk_index": 283,
+            "dense_rank": 6,
+            "rank": 3,
+            "rrf_score": 0.03205128,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:ac2b64fa800fd00454bc6fe4350678fb22296da7199bce5c1a546ad222877b9a",
+            "chunk_index": 292,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03100962,
+            "source": "naive-bayes"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:b-packed:5f4463cf7670cfd3c67fad54e330e0693c7de2f7d8d0671cea54b65f6cd96be0",
+            "chunk_index": 83,
+            "dense_rank": 10,
+            "rank": 5,
+            "rrf_score": 0.03011775,
+            "source": "catboost"
+          }
+        ]
+      },
+      "query_id": "Q23",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 847,
+            "char_start": 449,
+            "grade": 2,
+            "line_end": 7,
+            "line_start": 7,
+            "query_id": "Q24",
+            "source": "k-nearest-neighbors",
+            "span_id": "k-nearest-neighbors:7"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 2583,
+            "char_start": 2087,
+            "grade": 2,
+            "line_end": 23,
+            "line_start": 23,
+            "query_id": "Q24",
+            "source": "k-nearest-neighbors",
+            "span_id": "k-nearest-neighbors:23"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:7e32b78cc28e55d8f4ac0f92b817c6aeb1a087cdb0f5cfb46f45d35dad386441",
+            "chunk_index": 29,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:faa5cb73d2c35f1e7fe04eccc013a9e5689d4bb0950446bb1e090e480ba06113",
+            "chunk_index": 30,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03253968,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:90fae2c4c9f9b021aff301515a4fce9a047618f583d3925e3ed3d9a6f3e14542",
+            "chunk_index": 14,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03151365,
+            "source": "decision-trees"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:614669e54874723640c9ca31871fdb1d2b5f4d21e1fbea3f48c594661b2aa249",
+            "chunk_index": 32,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.03109932,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:ff2197f2cb507bfee1fb94fe3d456e68f0de3a98364aaa30299b5d47977ac82f",
+            "chunk_index": 66,
+            "dense_rank": 8,
+            "rank": 5,
+            "rrf_score": 0.03079839,
+            "source": "support-vector-machines"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:8fd25ae1b10fc790801f9528f3370cd1ac165d3e10192e233edf9e6ea8a5fbaa",
+            "chunk_index": 219,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:2915316be7d5da65cf198903547af6f00e64127f5bff7eb93909df643aeb09fe",
+            "chunk_index": 109,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.0327957,
+            "source": "decision-trees"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:4677e9d51ede593255c761b9e44dc6b50b46fd5e6977f3636f8b5b2a397a8bc0",
+            "chunk_index": 228,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03200205,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:3df58a55998f262444060c42a6285f33e55c540fa0bda96463d2bc989adeda65",
+            "chunk_index": 238,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03100962,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:bc2c0a1dd6c3c16714a0a9468b1cf197cd243a26b36c3cf71178ad2f04908656",
+            "chunk_index": 224,
+            "dense_rank": 8,
+            "rank": 5,
+            "rrf_score": 0.03055037,
+            "source": "k-nearest-neighbors"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:3be39e0eb80f3ad17ceb5dde4bf5eff526f39d48393a97bd23a7b4fec07f71a0",
+            "chunk_index": 190,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:f7ddd48798a3236fb9b2b036738e8f679da5838f03ae7e0999060a7493e31851",
+            "chunk_index": 198,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03226646,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:e31ebe87b5450906a9da10c29295a9bf73d7412cd07182bd281f977ba5979b6b",
+            "chunk_index": 98,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03225806,
+            "source": "decision-trees"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:2d35ef42bcfd7985575a127f650630cc06b2192cdebf25dda747914805490494",
+            "chunk_index": 208,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03149802,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:3757bb576d2ec8a80db116844c22e3c25b55424d7a7ea1937e62e296fff91dc5",
+            "chunk_index": 194,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.03053613,
+            "source": "k-nearest-neighbors"
+          }
+        ]
+      },
+      "query_id": "Q24",
+      "vs_A": "SAME",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 1751,
+            "char_start": 1296,
+            "grade": 2,
+            "line_end": 14,
+            "line_start": 12,
+            "query_id": "Q27",
+            "source": "catboost",
+            "span_id": "catboost:12-14"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:57a97de537f61880e9767808c98f979dd62f04ffaeaab50a12750799872dd42c",
+            "chunk_index": 11,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:5ab1bf25e2212cbfdb0f10c83305c79109d694ad171450d2309b55e2e1a5f6eb",
+            "chunk_index": 12,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03226646,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:70704bed2bb2cc7ac365164c6c8db93719d0ac603c17699f4f3c29e9d3531166",
+            "chunk_index": 13,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03109932,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:9c44e49d31c554ab392647cbedabf33750ba51c4b39b22c7e64cdddb81d763b1",
+            "chunk_index": 59,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03077652,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 17,
+            "chunk_id": "ca:chunk:6a5cecf48f0d3ac1ec079befd07386f1fab40c1a6a63b67d93db641a11cf16d0",
+            "chunk_index": 70,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.02830941,
+            "source": "xgboost"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:734efb5eab58e2b39abe51e327998599ae8f867a8a9650cee4f3fb5f6ae39b9a",
+            "chunk_index": 84,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:0df3812880c0a158671fd393576e3e01a4bcb2fbfa45f99ce5e1dd1b58c9b5a9",
+            "chunk_index": 96,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03225806,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:9e5bb62c2dba78a7e585cfe13865a1ed0f4e6281bac9dc5e7ca33ce6e345a1ef",
+            "chunk_index": 82,
+            "dense_rank": 5,
+            "rank": 3,
+            "rrf_score": 0.03201844,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:f9c2db209e15e3d282f47ac3dbb3cdf1b028bfe91022c6215d1dc04a1a112399",
+            "chunk_index": 87,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.03154496,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:bc4b68aaf144b0dca409d967f7c62de091c2bc7bcddd9a214172e96d0ba4fdc7",
+            "chunk_index": 94,
+            "dense_rank": 6,
+            "rank": 5,
+            "rrf_score": 0.03125763,
+            "source": "catboost"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:806a98aa21b3d5345a416efc894493f65035d2bb58fccadd970af384d0c203a2",
+            "chunk_index": 75,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:0da4ece5590ff4ca33e18dafe574f66b85417937e68f27812d38971b1bcec650",
+            "chunk_index": 85,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:c513431a796aa1728e114321f7b892c2fbdc0186a0d0b3750b4cfa5ee8f8ce01",
+            "chunk_index": 73,
+            "dense_rank": 4,
+            "rank": 3,
+            "rrf_score": 0.03226646,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:5f4463cf7670cfd3c67fad54e330e0693c7de2f7d8d0671cea54b65f6cd96be0",
+            "chunk_index": 83,
+            "dense_rank": 5,
+            "rank": 4,
+            "rrf_score": 0.03149802,
+            "source": "catboost"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:b-packed:c06d1da82fc5b5faff028d7c20fb2169232efa02070012f402a6ebd0dd5a426f",
+            "chunk_index": 77,
+            "dense_rank": 6,
+            "rank": 5,
+            "rrf_score": 0.03053613,
+            "source": "catboost"
+          }
+        ]
+      },
+      "query_id": "Q27",
+      "vs_A": "SAME",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 3095,
+            "char_start": 2973,
+            "grade": 2,
+            "line_end": 32,
+            "line_start": 32,
+            "query_id": "Q28",
+            "source": "react-agent-pattern",
+            "span_id": "react-agent-pattern:32-32"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:b03be782fa204067148d735e5571d3f7bdb87b5db113fb86ca69f40111471d0a",
+            "chunk_index": 56,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:72e10af1b476fa4efcafc859b8a003945fb14b3c1557556878379c004ee0050f",
+            "chunk_index": 57,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03200205,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:2e5972e7339f37398849f3604750fc5c06c1e05ba8f71c26a5197a67401c7c0f",
+            "chunk_index": 58,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03154496,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:499a36dd0fd021d30c26fa992c751616abdc8fd247abd35c317a73906fd153fe",
+            "chunk_index": 41,
+            "dense_rank": 10,
+            "rank": 4,
+            "rrf_score": 0.03062179,
+            "source": "multi-agent-systems"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:2e3d4d3fd39dfbe93968d6aa413cf971ae13082407133c20fa4b1b230029dfa6",
+            "chunk_index": 0,
+            "dense_rank": 11,
+            "rank": 5,
+            "rrf_score": 0.02921109,
+            "source": "agentic-ai-production"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:de57e0a5998ab46ebb50676d31ff8adc85003973d750ad24c0ab9ad2580609e0",
+            "chunk_index": 389,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03229167,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:d5550507719b4c48d45f348152060b11b7f7d5ba327aeaa9f7516aaf6aaeafab",
+            "chunk_index": 399,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03226646,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:88ba5f00d47ddc2cbe683e5bb0c0727011d3088ac83345e513af8321e9f90e7b",
+            "chunk_index": 387,
+            "dense_rank": 7,
+            "rank": 3,
+            "rrf_score": 0.03181818,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:85f9eb57b9b884802bd7faceffa65b210f42475d00074008b959d86f57967e85",
+            "chunk_index": 397,
+            "dense_rank": 3,
+            "rank": 4,
+            "rrf_score": 0.03151365,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:chunk:635c60c700fc0eade2de65870bfd27c88aa41171ada30373dace529fb219b2c4",
+            "chunk_index": 395,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03011775,
+            "source": "react-agent-pattern"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:51d38609893252f573b3e8d38c94c2285b4f9ce1cb8eea25eab5ce7dad6f2c84",
+            "chunk_index": 352,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03253968,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:c82eacb67b1c759ad85f6fc98f85121482f2822b66d6d16a0392cca8dff85331",
+            "chunk_index": 362,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:47c4f77adce278f6aa96d72cadfb052740b7a13d9d3461f5c1e3fa05d8efa7e3",
+            "chunk_index": 350,
+            "dense_rank": 7,
+            "rank": 3,
+            "rrf_score": 0.03181818,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:3bfe78df314d2c351d571d939a75c392a5a79d2f40c9452c8d2715dd9340b02e",
+            "chunk_index": 360,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.03177806,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:b-packed:905768995c16ff2c976b50c23a438d629c8ae167937d0d307f691a0568bc062e",
+            "chunk_index": 358,
+            "dense_rank": 4,
+            "rank": 5,
+            "rrf_score": 0.03036577,
+            "source": "react-agent-pattern"
+          }
+        ]
+      },
+      "query_id": "Q28",
+      "vs_A": "SAME",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 2661,
+            "char_start": 2549,
+            "grade": 2,
+            "line_end": 30,
+            "line_start": 29,
+            "query_id": "Q29",
+            "source": "prompt-engineering-production",
+            "span_id": "prompt-engineering-production:29-30"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 4426,
+            "char_start": 4146,
+            "grade": 2,
+            "line_end": 58,
+            "line_start": 52,
+            "query_id": "Q29",
+            "source": "prompt-engineering-production",
+            "span_id": "prompt-engineering-production:52-58"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:0dc7b9a45096be25fbc8ea0256303453506d2cb0526d0ef69a7bcb7adebf9839",
+            "chunk_index": 50,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:c3e3adffab329b860adcf48e3b3e43f7ec2cef9e29178f9cf4fb752e8b30eb48",
+            "chunk_index": 49,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.0327957,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:edd9fa8abe42858bd6b74742c3b0ebd9e53e703d1199b828b25370ca33118131",
+            "chunk_index": 51,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03201844,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:72e10af1b476fa4efcafc859b8a003945fb14b3c1557556878379c004ee0050f",
+            "chunk_index": 57,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.0305789,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:9365abfd7051c0c4b1b50dd69eb73a2ca4b6a77b6e6a1cdbe1b094d7bb2e4f9a",
+            "chunk_index": 1,
+            "dense_rank": 6,
+            "rank": 5,
+            "rrf_score": 0.03030999,
+            "source": "agentic-ai-production"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:a68a9c5dfbea7a0014590e491e8d30ecc3099bc1778a8e68f4431f7213724772",
+            "chunk_index": 346,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03229167,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:f49a68442c3da1da7f6abaf36bb027664fd6c1e104533fc2894b49147fb1e341",
+            "chunk_index": 357,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03177806,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:c7baf18aa9d0354d3ea1e9524b7300130ef53ce10539104ee1deea727f12a103",
+            "chunk_index": 340,
+            "dense_rank": 5,
+            "rank": 3,
+            "rrf_score": 0.03149802,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:6535178d28cf38dc6ef682f882902f9768d7b9e4ec25fc788f42ba25b2a0370a",
+            "chunk_index": 336,
+            "dense_rank": 8,
+            "rank": 4,
+            "rrf_score": 0.03105441,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:437b53d6b81ab92ac715dd655ce8290a82960d6e743d3934b2d3ac03e8764bb9",
+            "chunk_index": 353,
+            "dense_rank": 10,
+            "rank": 5,
+            "rrf_score": 0.0308862,
+            "source": "prompt-engineering-production"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:d01a8198b97dd67ea73915f85d41ba10fadd5b00635b9b8b9f67eb03e6c8fe76",
+            "chunk_index": 313,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:b-packed:11ee9f31d8128f0018f54bd8456f3fda16f4f94ea52101dd77f561c19af0a6ea",
+            "chunk_index": 323,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03201844,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:f8e6e44208038ba486f0a9da011ff2fae45b61c8fcc822199629556484257519",
+            "chunk_index": 307,
+            "dense_rank": 5,
+            "rank": 3,
+            "rrf_score": 0.03149802,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:1d3b2a7fdc9fe8201767d2d0a442328dc7aaaa2f9076f88bc52f4dc823d49866",
+            "chunk_index": 303,
+            "dense_rank": 8,
+            "rank": 4,
+            "rrf_score": 0.03105441,
+            "source": "prompt-engineering-production"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:b688b31d1e408533a86a22cbc90546467e7c6ccc1ca4e9c85dc65c0f172d0810",
+            "chunk_index": 319,
+            "dense_rank": 7,
+            "rank": 5,
+            "rrf_score": 0.03053613,
+            "source": "prompt-engineering-production"
+          }
+        ]
+      },
+      "query_id": "Q29",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 2311,
+            "char_start": 2124,
+            "grade": 1,
+            "line_end": 30,
+            "line_start": 30,
+            "query_id": "Q30",
+            "source": "linear-logistic-regression",
+            "span_id": "linear-logistic-regression:30"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 3666,
+            "char_start": 3236,
+            "grade": 1,
+            "line_end": 32,
+            "line_start": 32,
+            "query_id": "Q30",
+            "source": "random-forest",
+            "span_id": "random-forest:32"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:c4fbc8efb52b9770326319efe67eead10525c219eddbc510358149906762383b",
+            "chunk_index": 52,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.0327957,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:ff6646f798cd58af0a6d179ef0c07800e57c7a809cce2184a4ed738b7f22404c",
+            "chunk_index": 55,
+            "dense_rank": 1,
+            "rank": 2,
+            "rrf_score": 0.0327957,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:5720d8382e88f993ae72137d2b8d60b84c7dbf97b9c4aebb036eb3800acd2c67",
+            "chunk_index": 54,
+            "dense_rank": 2,
+            "rank": 3,
+            "rrf_score": 0.03278689,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:927a328b29a2039faa55b31d1c5051d1ff2f2187d05238486b9cedab61089360",
+            "chunk_index": 16,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03102453,
+            "source": "decision-trees"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:5ab1bf25e2212cbfdb0f10c83305c79109d694ad171450d2309b55e2e1a5f6eb",
+            "chunk_index": 12,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03055037,
+            "source": "catboost"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:6a48506bc12e951bb4d260d8ba8afb3f1a1813b891fc165850af7ca24938f3a9",
+            "chunk_index": 376,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.03225806,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:4b58a30aa134403a1623049db19cca80dcb5d19e9effb3ae18bef6e1435f25db",
+            "chunk_index": 358,
+            "dense_rank": 7,
+            "rank": 2,
+            "rrf_score": 0.03181818,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:e0b95db53041503cf49cd9fdde8da5fb9351dc049d6b3d42bd5a3331c02abfdc",
+            "chunk_index": 362,
+            "dense_rank": 11,
+            "rank": 3,
+            "rrf_score": 0.03067916,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 16,
+            "chunk_id": "ca:chunk:4add733e3087d425c5d818352489e608030f34d4ce777165deba090d9284aa92",
+            "chunk_index": 377,
+            "dense_rank": 1,
+            "rank": 4,
+            "rrf_score": 0.03,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:8dcbde7b3382109030244254d5081a6f185d521c021b8875f4e03b15624f4b49",
+            "chunk_index": 361,
+            "dense_rank": 13,
+            "rank": 5,
+            "rrf_score": 0.02951389,
+            "source": "random-forest"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:41b3f46d9ae83a424a88326d7f3f4afc226a412f60566c5bf94f2d678e4efa4c",
+            "chunk_index": 339,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.03225806,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:48ddaf1f0ac4f62d45927320c84d24081d9e2b3dc619e64cdbe493f9f5c193e3",
+            "chunk_index": 324,
+            "dense_rank": 7,
+            "rank": 2,
+            "rrf_score": 0.03181818,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:d8bb13cdedacc259e0a9fb23a199659c0db9ba5e5384ab1ceea72f25cfbcfd67",
+            "chunk_index": 328,
+            "dense_rank": 10,
+            "rank": 3,
+            "rrf_score": 0.0308862,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 14,
+            "chunk_id": "ca:b-packed:17df3a3d3397c35404a269be0c934a8fe891e60c4c480cf90b778f232d5cae4a",
+            "chunk_index": 340,
+            "dense_rank": 1,
+            "rank": 4,
+            "rrf_score": 0.0303653,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:0a1c186c1956ceb39d4a876a100510bafb3c46b242b492f93783d11a0df7554d",
+            "chunk_index": 325,
+            "dense_rank": 15,
+            "rank": 5,
+            "rrf_score": 0.02938653,
+            "source": "random-forest"
+          }
+        ]
+      },
+      "query_id": "Q30",
+      "vs_A": "IMPROVED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 1966,
+            "char_start": 1551,
+            "grade": 1,
+            "line_end": 26,
+            "line_start": 26,
+            "query_id": "Q31",
+            "source": "attention-transformers",
+            "span_id": "attention-transformers:26"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 3980,
+            "char_start": 3904,
+            "grade": 1,
+            "line_end": 55,
+            "line_start": 55,
+            "query_id": "Q31",
+            "source": "attention-transformers",
+            "span_id": "attention-transformers:55"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:a0721290b545a92a8e725161c18fcbb8c068e1d44ac2355f9c44d796edf1a5b3",
+            "chunk_index": 4,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.03225806,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:d489a9f0f599bfd2fb75a4acc35341cd8c305404dee7db439200ccf6d6482c1d",
+            "chunk_index": 5,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03109932,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 16,
+            "chunk_id": "ca:chunk:5a3347d1b26feaab7595c4574022d0852242776fa4955fea4269ab6646b344a2",
+            "chunk_index": 18,
+            "dense_rank": 9,
+            "rank": 3,
+            "rrf_score": 0.02803922,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:chunk:9795a16570f55771bfcb1b0fe95d5e6abbe95913994e772d8957d0a8e6beaecf",
+            "chunk_index": 60,
+            "dense_rank": 15,
+            "rank": 4,
+            "rrf_score": 0.02800627,
+            "source": "retrieval-augmented-generation"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:5ab1bf25e2212cbfdb0f10c83305c79109d694ad171450d2309b55e2e1a5f6eb",
+            "chunk_index": 12,
+            "dense_rank": 20,
+            "rank": 5,
+            "rrf_score": 0.02780974,
+            "source": "catboost"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:9fe7b7f01ffee6421aa53fb3b6b176961de08dc5830067515410a5252c6ce184",
+            "chunk_index": 36,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03154496,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:fee4aafdf9d757c9699f4719a538b4b98bc307b8a223fcf3c93575080be0d03d",
+            "chunk_index": 27,
+            "dense_rank": 14,
+            "rank": 2,
+            "rrf_score": 0.03009207,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:chunk:3ceb7a5204f48178b7d06c488577dfebd07a83683dc7c275fba75e6e152e0d20",
+            "chunk_index": 47,
+            "dense_rank": 1,
+            "rank": 3,
+            "rrf_score": 0.01666667,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:88ba5f00d47ddc2cbe683e5bb0c0727011d3088ac83345e513af8321e9f90e7b",
+            "chunk_index": 387,
+            "dense_rank": null,
+            "rank": 4,
+            "rrf_score": 0.01666667,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:chunk:6804770836780e653d94075b7a960e2e2c7b0cf1a27e0916e8db24e7ea0df9e0",
+            "chunk_index": 49,
+            "dense_rank": 3,
+            "rank": 5,
+            "rrf_score": 0.01612903,
+            "source": "attention-transformers"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:b-packed:ebc24520e980b6f8a096f7b008ebd4d07c3b6fb37eabee587c30d20ba2f178a9",
+            "chunk_index": 33,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03154496,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:4184ce65320f8434a5f4d1353b0d66815aa0088eebfc4e6c9dbce93c5ff26dd5",
+            "chunk_index": 26,
+            "dense_rank": 10,
+            "rank": 2,
+            "rrf_score": 0.0308862,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:b-packed:19313b368bc10f0bbe686565eddcb87ed4f643e89b9221d15c02354e74b43594",
+            "chunk_index": 43,
+            "dense_rank": 1,
+            "rank": 3,
+            "rrf_score": 0.01666667,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:47c4f77adce278f6aa96d72cadfb052740b7a13d9d3461f5c1e3fa05d8efa7e3",
+            "chunk_index": 350,
+            "dense_rank": null,
+            "rank": 4,
+            "rrf_score": 0.01666667,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:3757bb576d2ec8a80db116844c22e3c25b55424d7a7ea1937e62e296fff91dc5",
+            "chunk_index": 194,
+            "dense_rank": null,
+            "rank": 5,
+            "rrf_score": 0.01612903,
+            "source": "k-nearest-neighbors"
+          }
+        ]
+      },
+      "query_id": "Q31",
+      "vs_A": "IMPROVED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 3792,
+            "char_start": 3678,
+            "grade": 1,
+            "line_end": 56,
+            "line_start": 56,
+            "query_id": "Q32",
+            "source": "feedforward-neural-networks",
+            "span_id": "feedforward-neural-networks:56-56"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:45a17d2a45ae84ab819e17cc7a8aac0a67a1d3f34c8a2d33a120a6280c4f6dd1",
+            "chunk_index": 22,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03306011,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:a9ff099baa6fa9473024e5a2e383668208fe2a8dae1547922e944aa3333d3826",
+            "chunk_index": 24,
+            "dense_rank": 3,
+            "rank": 2,
+            "rrf_score": 0.0327957,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:ba1c54f1fd8dd5cffa21e73327651ce2e834a194a844b4b5ae17f2a97d75a760",
+            "chunk_index": 7,
+            "dense_rank": 5,
+            "rank": 3,
+            "rrf_score": 0.03175403,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:a0721290b545a92a8e725161c18fcbb8c068e1d44ac2355f9c44d796edf1a5b3",
+            "chunk_index": 4,
+            "dense_rank": 4,
+            "rank": 4,
+            "rrf_score": 0.03174603,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:82093314f833f0934e7a57ba9e5eec8153925cfb94f65539443c0086b4f6be71",
+            "chunk_index": 23,
+            "dense_rank": 2,
+            "rank": 5,
+            "rrf_score": 0.03154496,
+            "source": "feedforward-neural-networks"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:chunk:41f25e09bf47a68ce1bd4e95a7595d1e11458a6a896c246aed45ecd032d94bc4",
+            "chunk_index": 160,
+            "dense_rank": 5,
+            "rank": 1,
+            "rrf_score": 0.03100962,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:c6166706fe91dd6c1e5143b4a51f85e59d96ff82b92e732f1f5661fea4d1d37d",
+            "chunk_index": 159,
+            "dense_rank": 11,
+            "rank": 2,
+            "rrf_score": 0.03095238,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:4450dfd17c27479c768966f72b163a35e613e4d9b8150eb789b95f31478c8baf",
+            "chunk_index": 173,
+            "dense_rank": 7,
+            "rank": 3,
+            "rrf_score": 0.03030303,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 16,
+            "chunk_id": "ca:chunk:49fac097bb8fcb635249bbf3817b16f5ab3371c985127470455fcec9cce83842",
+            "chunk_index": 180,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.02972678,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 18,
+            "chunk_id": "ca:chunk:b51368833cae9ec24d61350186432f619781ab73c4237813b2d215fb3a6f7412",
+            "chunk_index": 163,
+            "dense_rank": 14,
+            "rank": 5,
+            "rrf_score": 0.02668564,
+            "source": "feedforward-neural-networks"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:b-packed:a9b57cbf41bfc88652bf262361cd8ad12683ff2ebee092a927a026337b3e67a1",
+            "chunk_index": 144,
+            "dense_rank": 5,
+            "rank": 1,
+            "rrf_score": 0.03125,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:92173875956c75df985af3c4caa3f8f19dcf3cbea30a64229a93eeae3b9cae2c",
+            "chunk_index": 143,
+            "dense_rank": 11,
+            "rank": 2,
+            "rrf_score": 0.03095238,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:b-packed:4ceda9d403bb939413c92a8599b3f7955db4b30f7349db9e252d308ae649d4bf",
+            "chunk_index": 153,
+            "dense_rank": 7,
+            "rank": 3,
+            "rrf_score": 0.03030303,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 14,
+            "chunk_id": "ca:b-packed:5e48e04a0d652acb692ca3172ee06aa500aee3b5ac1cb476f8e3ed8f206a844b",
+            "chunk_index": 159,
+            "dense_rank": 2,
+            "rank": 4,
+            "rrf_score": 0.03009207,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 16,
+            "chunk_id": "ca:b-packed:0a0fd39ca71f3e1e20447fc9f0940516d8f563d8bcd8d29b7e3c4aa33faf074d",
+            "chunk_index": 145,
+            "dense_rank": 3,
+            "rank": 5,
+            "rrf_score": 0.02946237,
+            "source": "feedforward-neural-networks"
+          }
+        ]
+      },
+      "query_id": "Q32",
+      "vs_A": "SAME",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 2760,
+            "char_start": 2581,
+            "grade": 1,
+            "line_end": 44,
+            "line_start": 44,
+            "query_id": "Q33",
+            "source": "feedforward-neural-networks",
+            "span_id": "feedforward-neural-networks:44-44"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:82093314f833f0934e7a57ba9e5eec8153925cfb94f65539443c0086b4f6be71",
+            "chunk_index": 23,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03278689,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:d489a9f0f599bfd2fb75a4acc35341cd8c305404dee7db439200ccf6d6482c1d",
+            "chunk_index": 5,
+            "dense_rank": 11,
+            "rank": 2,
+            "rrf_score": 0.02991071,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:7e32b78cc28e55d8f4ac0f92b817c6aeb1a087cdb0f5cfb46f45d35dad386441",
+            "chunk_index": 29,
+            "dense_rank": 14,
+            "rank": 3,
+            "rrf_score": 0.02885015,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:a34a4147f699229a088d8feeb67769595b2dbf1fe58244b176d649a8feb66ef6",
+            "chunk_index": 21,
+            "dense_rank": null,
+            "rank": 4,
+            "rrf_score": 0.01666667,
+            "source": "embedding-models-vector-search"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:chunk:be39bb1a8ffee0068695f9cd620853801a88b3b65a5bd6f83c3a4a5f2f76e97a",
+            "chunk_index": 10,
+            "dense_rank": 1,
+            "rank": 5,
+            "rrf_score": 0.01666667,
+            "source": "backpropagation"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:3d6d5d0e55ae528d227b6b6e85436af278d5b99841eb544c20c81662126a7977",
+            "chunk_index": 42,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03226646,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:cde37784c11e0065cc8e42cc6ac59bfd82c9c5ab0f0ba28e7d30753a955199d3",
+            "chunk_index": 175,
+            "dense_rank": 9,
+            "rank": 2,
+            "rrf_score": 0.03083491,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:2303d4eb9fa01bc168dc4508339cf2d31c008748023c308f64e6411db9ab7d59",
+            "chunk_index": 371,
+            "dense_rank": null,
+            "rank": 3,
+            "rrf_score": 0.01666667,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:chunk:420fb1b09378d02508819628106a8800c9c97530e95914ffae99b73b9c568fcf",
+            "chunk_index": 192,
+            "dense_rank": 1,
+            "rank": 4,
+            "rrf_score": 0.01666667,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:c3032cb2de5745c80ad745985ff221c6bba90d8cf7fee3617aa2798005f4a940",
+            "chunk_index": 118,
+            "dense_rank": null,
+            "rank": 5,
+            "rrf_score": 0.01639344,
+            "source": "decision-trees"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:b-packed:db07e8e81165b17304ae226dc79511153467f2c1ce10f86ec3abaf0492eb6455",
+            "chunk_index": 39,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03253968,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:00d725a84375e244e794af1c8f1d52b84a367a2eaedc49e97527d2fd315664b1",
+            "chunk_index": 155,
+            "dense_rank": 7,
+            "rank": 2,
+            "rrf_score": 0.03128055,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:f44d892e80b682ea8ff3ee19e6b4e625daffa20c250a0c1f35d6f6aec1eca1ba",
+            "chunk_index": 334,
+            "dense_rank": null,
+            "rank": 3,
+            "rrf_score": 0.01666667,
+            "source": "random-forest"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:0797b40698df8c3e0a13e23a80187b454a50b8dc80f13e108b985ff44dd4c532",
+            "chunk_index": 103,
+            "dense_rank": null,
+            "rank": 4,
+            "rrf_score": 0.01639344,
+            "source": "decision-trees"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:b-packed:4e2c6f98a94cb286724af78e229999e6c4295afd7a9d43223b9bdb2d8ed7bd50",
+            "chunk_index": 69,
+            "dense_rank": 2,
+            "rank": 5,
+            "rrf_score": 0.01639344,
+            "source": "backpropagation"
+          }
+        ]
+      },
+      "query_id": "Q33",
+      "vs_A": "REGRESSED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 3575,
+            "char_start": 3336,
+            "grade": 1,
+            "line_end": 52,
+            "line_start": 52,
+            "query_id": "Q34",
+            "source": "feedforward-neural-networks",
+            "span_id": "feedforward-neural-networks:52"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 3872,
+            "char_start": 3793,
+            "grade": 1,
+            "line_end": 57,
+            "line_start": 57,
+            "query_id": "Q34",
+            "source": "feedforward-neural-networks",
+            "span_id": "feedforward-neural-networks:57"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 5,
+            "chunk_id": "ca:chunk:be39bb1a8ffee0068695f9cd620853801a88b3b65a5bd6f83c3a4a5f2f76e97a",
+            "chunk_index": 10,
+            "dense_rank": 2,
+            "rank": 1,
+            "rrf_score": 0.03201844,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:a0721290b545a92a8e725161c18fcbb8c068e1d44ac2355f9c44d796edf1a5b3",
+            "chunk_index": 4,
+            "dense_rank": 6,
+            "rank": 2,
+            "rrf_score": 0.03030999,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 17,
+            "chunk_id": "ca:chunk:45a17d2a45ae84ab819e17cc7a8aac0a67a1d3f34c8a2d33a120a6280c4f6dd1",
+            "chunk_index": 22,
+            "dense_rank": 1,
+            "rank": 3,
+            "rrf_score": 0.02982456,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:b03be782fa204067148d735e5571d3f7bdb87b5db113fb86ca69f40111471d0a",
+            "chunk_index": 56,
+            "dense_rank": 18,
+            "rank": 4,
+            "rrf_score": 0.02965368,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:72e10af1b476fa4efcafc859b8a003945fb14b3c1557556878379c004ee0050f",
+            "chunk_index": 57,
+            "dense_rank": 19,
+            "rank": 5,
+            "rrf_score": 0.02869353,
+            "source": "react-agent-pattern"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:c6166706fe91dd6c1e5143b4a51f85e59d96ff82b92e732f1f5661fea4d1d37d",
+            "chunk_index": 159,
+            "dense_rank": 5,
+            "rank": 1,
+            "rrf_score": 0.03055037,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 14,
+            "chunk_id": "ca:chunk:c03a9991652c27bbe68cb6aaab2dd6db3c5c2815c17803f85e77b24c5211c3f1",
+            "chunk_index": 78,
+            "dense_rank": 19,
+            "rank": 2,
+            "rrf_score": 0.02651914,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:88ba5f00d47ddc2cbe683e5bb0c0727011d3088ac83345e513af8321e9f90e7b",
+            "chunk_index": 387,
+            "dense_rank": null,
+            "rank": 3,
+            "rrf_score": 0.01666667,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:chunk:8cc4f1a9fa17447ff6f03c910f58707f83d9c7eecd90e59a1a8a27618a0a8151",
+            "chunk_index": 178,
+            "dense_rank": 1,
+            "rank": 4,
+            "rrf_score": 0.01666667,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:chunk:02a8495d646c5e82762dbef51ffe02e2e7455d0da38b414c134f79e805f7bde8",
+            "chunk_index": 459,
+            "dense_rank": null,
+            "rank": 5,
+            "rrf_score": 0.01639344,
+            "source": "support-vector-machines"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:b-packed:92173875956c75df985af3c4caa3f8f19dcf3cbea30a64229a93eeae3b9cae2c",
+            "chunk_index": 143,
+            "dense_rank": 3,
+            "rank": 1,
+            "rrf_score": 0.03105441,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 11,
+            "chunk_id": "ca:b-packed:4e2c6f98a94cb286724af78e229999e6c4295afd7a9d43223b9bdb2d8ed7bd50",
+            "chunk_index": 69,
+            "dense_rank": 16,
+            "rank": 2,
+            "rrf_score": 0.02761905,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:47c4f77adce278f6aa96d72cadfb052740b7a13d9d3461f5c1e3fa05d8efa7e3",
+            "chunk_index": 350,
+            "dense_rank": null,
+            "rank": 3,
+            "rrf_score": 0.01666667,
+            "source": "react-agent-pattern"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:b-packed:564a33bcd0245c3e8968f2ed902e7ec471135b0d392ab9028672e65abf1dd2b4",
+            "chunk_index": 157,
+            "dense_rank": 1,
+            "rank": 4,
+            "rrf_score": 0.01666667,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": null,
+            "chunk_id": "ca:b-packed:4bd633c39dfd49afc54bc42c5f5bea83e5741ca72dd3c5cf806d69c0643d17af",
+            "chunk_index": 147,
+            "dense_rank": 2,
+            "rank": 5,
+            "rrf_score": 0.01639344,
+            "source": "feedforward-neural-networks"
+          }
+        ]
+      },
+      "query_id": "Q34",
+      "vs_A": "IMPROVED",
+      "vs_B": "SAME"
+    },
+    {
+      "evidence_spans": [
+        {
+          "covered_at_5": {
+            "A": false,
+            "B": false,
+            "B-PACKED": false
+          },
+          "span": {
+            "char_end": 3973,
+            "char_start": 3879,
+            "grade": 1,
+            "line_end": 60,
+            "line_start": 60,
+            "query_id": "Q35",
+            "source": "gradient-descent",
+            "span_id": "gradient-descent:60"
+          }
+        },
+        {
+          "covered_at_5": {
+            "A": true,
+            "B": true,
+            "B-PACKED": true
+          },
+          "span": {
+            "char_end": 4503,
+            "char_start": 4418,
+            "grade": 1,
+            "line_end": 78,
+            "line_start": 78,
+            "query_id": "Q35",
+            "source": "gradient-descent",
+            "span_id": "gradient-descent:78"
+          }
+        }
+      ],
+      "hybrid_top5": {
+        "A": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:372526f98cf9ca145147588d2bf49943a5f8bb755da7b5e14f65c753e098d8f2",
+            "chunk_index": 28,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:chunk:7e32b78cc28e55d8f4ac0f92b817c6aeb1a087cdb0f5cfb46f45d35dad386441",
+            "chunk_index": 29,
+            "dense_rank": 2,
+            "rank": 2,
+            "rrf_score": 0.03252247,
+            "source": "k-nearest-neighbors"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:chunk:82093314f833f0934e7a57ba9e5eec8153925cfb94f65539443c0086b4f6be71",
+            "chunk_index": 23,
+            "dense_rank": 3,
+            "rank": 3,
+            "rrf_score": 0.03062179,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 7,
+            "chunk_id": "ca:chunk:5171e508b2adc50145c4dcd17c78f915e8ce3f71a355f641a819262a0b3245aa",
+            "chunk_index": 8,
+            "dense_rank": 6,
+            "rank": 4,
+            "rrf_score": 0.03053613,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:a0721290b545a92a8e725161c18fcbb8c068e1d44ac2355f9c44d796edf1a5b3",
+            "chunk_index": 4,
+            "dense_rank": 5,
+            "rank": 5,
+            "rrf_score": 0.03033088,
+            "source": "attention-transformers"
+          }
+        ],
+        "B": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:chunk:c8e90cdeca0c171d120b7f72b597213e401cbd38855a69b4e2514cc27ad315b0",
+            "chunk_index": 213,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:chunk:9fe7b7f01ffee6421aa53fb3b6b176961de08dc5830067515410a5252c6ce184",
+            "chunk_index": 36,
+            "dense_rank": 4,
+            "rank": 2,
+            "rrf_score": 0.03036577,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 4,
+            "chunk_id": "ca:chunk:027dcf1319d9398465fa8db4092faa9178e145c0c9f53779fede345dd20978c1",
+            "chunk_index": 467,
+            "dense_rank": 11,
+            "rank": 3,
+            "rrf_score": 0.03015873,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 8,
+            "chunk_id": "ca:chunk:46757c220d5de7f39d8e194d7214444e53612c8bb2da124523d38657792ad4ce",
+            "chunk_index": 182,
+            "dense_rank": 10,
+            "rank": 4,
+            "rrf_score": 0.02941813,
+            "source": "feedforward-neural-networks"
+          },
+          {
+            "bm25_rank": 9,
+            "chunk_id": "ca:chunk:8fd25ae1b10fc790801f9528f3370cd1ac165d3e10192e233edf9e6ea8a5fbaa",
+            "chunk_index": 219,
+            "dense_rank": 9,
+            "rank": 5,
+            "rrf_score": 0.02941176,
+            "source": "k-nearest-neighbors"
+          }
+        ],
+        "B-PACKED": [
+          {
+            "bm25_rank": 1,
+            "chunk_id": "ca:b-packed:876a2312667642e22d59fe67ad444dbd0f5fa04b7036fd765ff07c13ac6100eb",
+            "chunk_index": 184,
+            "dense_rank": 1,
+            "rank": 1,
+            "rrf_score": 0.03333333,
+            "source": "gradient-descent"
+          },
+          {
+            "bm25_rank": 3,
+            "chunk_id": "ca:b-packed:180a9aa3a531b0a5a8bceeb8d1ce48b949aca4cef54f0ef92abc2b2d9bc97dca",
+            "chunk_index": 55,
+            "dense_rank": 6,
+            "rank": 2,
+            "rrf_score": 0.03151365,
+            "source": "backpropagation"
+          },
+          {
+            "bm25_rank": 2,
+            "chunk_id": "ca:b-packed:92e40232c6498f1ba1c84be7c37d66a79cdec0a5e68f07b9e65b3a5e5f8d8b2d",
+            "chunk_index": 424,
+            "dense_rank": 11,
+            "rank": 3,
+            "rrf_score": 0.03067916,
+            "source": "support-vector-machines"
+          },
+          {
+            "bm25_rank": 10,
+            "chunk_id": "ca:b-packed:ebc24520e980b6f8a096f7b008ebd4d07c3b6fb37eabee587c30d20ba2f178a9",
+            "chunk_index": 33,
+            "dense_rank": 3,
+            "rank": 4,
+            "rrf_score": 0.03062179,
+            "source": "attention-transformers"
+          },
+          {
+            "bm25_rank": 6,
+            "chunk_id": "ca:b-packed:3ccf4b495eb0555064d2f86bd0a34307ac98a4df76df8f720fa1175f676fe97b",
+            "chunk_index": 161,
+            "dense_rank": 10,
+            "rank": 5,
+            "rrf_score": 0.02987737,
+            "source": "feedforward-neural-networks"
+          }
+        ]
+      },
+      "query_id": "Q35",
+      "vs_A": "SAME",
+      "vs_B": "SAME"
+    }
+  ],
+  "scope": "all 33 gating queries; exact source intervals, unchanged span metric"
+}

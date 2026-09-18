@@ -1,0 +1,15 @@
+{
+  "arm_sha256": {
+    "A": "0de1ed5a06feab63075d93cd38e8fe9c7e962b6310310f6a46c97e1a9d1c4854",
+    "B": "745cb9b817c7bfb190eff89d9c0dfcabf9dbbba776daae5c0939b69ee333eee7",
+    "B-PACKED": "c93d84740e2364b9c075ba984c772eed3af8dfb9d21db5123f18f69f68d3e89c"
+  },
+  "embedding_sha256": {
+    "A": "0136d2ab695adfc7330e796570b1212faf67e674e43dc602a3b2c0b33b0acfde",
+    "B": "19f47099e0caadeda610d776ea8ec79340c198ea54ab711b07132a0a314e5fc3",
+    "B-PACKED": "5e2de075f30823d4f63c8a48ca2fa6ead58667c50b6274b2d8fc7570a8a27df0"
+  },
+  "packed_fingerprint": "017bcb283683943f30fb18849344ea3b0eac7f3327a22ff306cef5f8d0fd645f",
+  "query_embedding_sha256": "ac2e66399498afb8d11a321e9bd4dedaffe27a44cca3003caa15c8cdf2c05075",
+  "result_sha256": "771970611646c0d52d4f59f9c330179e2400639097b0f0d7f7aa10b723791944"
+}

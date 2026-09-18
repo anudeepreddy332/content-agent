@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5A2 A-vs-B shadow retrieval evaluation)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5A2B same-parent packing ablation)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -390,11 +390,37 @@ observed on 26/35 queries. B's higher Precision@5 is repeated-source-slot
 inflation, not a promotion result. Exact evidence, per-query, failure, runtime,
 and immutable configuration artifacts are under `reports/phase5/phase5a2/`.
 
-**Next recommended experiment:** pre-register one packed-B structural ablation
-that combines adjacent compatible blocks only within one structural parent up
-to the unchanged 254-WordPiece hard limit, with a new chunker/serialization
-identity. Compare A vs frozen B vs packed B under the same retrieval/evaluator
-controls. Do not mutate the frozen 5A2 evidence or production serving.
+**Phase 5A2B — same-parent packing evaluation COMPLETE; B-PACKED NOT READY
+TO ADVANCE.** Clean required parent `a37b402227c8095cca2f3558c3cf60bbc52e2813`
+was verified and pushed before the experiment. The preregistered, unchanged
+greedy paragraph/list packing rule reduced 510 B children to 459 retrieval
+units (28 merged groups; median 31, p95 209, max 254 content tokens).
+Provenance failures, duplicate IDs, boundary violations and overflow were zero.
+Both builds have fingerprint `017bcb283683943f30fb18849344ea3b0eac7f3327a22ff306cef5f8d0fd645f`.
+A, B, their parser/chunker behavior and golden-v2 labels remain unchanged.
+
+On the same 33 gating queries, hybrid exact evidence Recall@5 is
+`A=0.84848485 / B=0.51515152 / B-PACKED=0.50000000`. B-PACKED MRR@10 is
+`0.96969697`, nDCG@5 is `0.95537806`. Versus A: 4 improved, 10 same,
+19 regressed. Q15 improves; Q19/Q21/Q22 and Q07/Q23 remain regressions.
+Versus B: 2 improved, 28 same, 3 regressed (Q04/Q11/Q17). All 230 heading
+children remain singleton units. Packing did not resolve top-K crowding.
+
+Two accepted retrieval repetitions have identical full results and embedding
+hashes. An initial historical-control comparison stopped on sub-micro native
+score differences; the original runner/preregistration and a narrowly recorded
+control-check correction are preserved. Historical A/B rankings, metrics and
+diagnostics match exactly; packing/embedding/retrieval/metric functions were
+not tuned. Full offline suite: `1335 passed`; provider and external evaluation
+network calls: zero. Production serving and Qdrant remain unchanged.
+Full metrics, all query classifications, exact spans, costs, correction evidence
+and validation are in `reports/phase5/phase5a2b/README.md` and adjacent JSON.
+
+**Next recommendation:** stop this failed variant. Retain A as the control
+with its known truncation limitation, and retain frozen B/B-PACKED unchanged.
+The retrieval-design owner should adjudicate the recorded heading occupancy
+and exact-span failures read-only before separately authorizing any new
+representation hypothesis. Do not retune this experiment or implement C here.
 
 Historical context on `experiment/hybrid-verifier-status-engine` (Phase 4
 implementation branch):

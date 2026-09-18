@@ -1,0 +1,37 @@
+{
+  "schema_version": "phase5a2b_packing_contract_v1",
+  "required_parent": "a37b402227c8095cca2f3558c3cf60bbc52e2813",
+  "candidate": "B-PACKED",
+  "hypothesis": "B's 510 retrieval children are overly fragmented and cause top-K crowding. Packing compatible adjacent blocks from the same structural parent may restore retrieval signal while preserving structure and zero truncation.",
+  "packing_version": "same-parent-greedy-prose-list-v1",
+  "algorithm": "One left-to-right greedy pass over frozen B children; append the next child only if every constraint passes and the complete serialized retrieval text is at most 254 content tokens. No backtracking or tuning.",
+  "compatible_types": ["paragraph", "list"],
+  "protected_singletons": ["heading", "fenced_code", "code", "table", "blockquote", "html", "thematic_break", "source_gap", "all other types"],
+  "constraints": [
+    "Identical document version, source path, structural parent and heading path",
+    "Consecutive B children; source blocks identical or consecutive in parser source order",
+    "Only content spans, internally contiguous; no repeated fence or table context in merged groups",
+    "Source interval endpoints touch, or the intervening source is exclusively whitespace and is included verbatim in the merged interval",
+    "No omitted source bytes, reordered children, overlapping spans, heading crossings or protected-block crossings",
+    "Singletons retain B retrieval text and source spans exactly; every output gets a distinct B-PACKED identity",
+    "Merged serialization uses the unchanged B title/breadcrumb grammar followed by the exact contiguous source slice"
+  ],
+  "content_token_limit": 254,
+  "total_token_limit": 256,
+  "held_constant_from": "reports/phase5/phase5a2/experiment_manifest.json",
+  "metric_implementation": "scripts.phase5a2_shadow_ab.evaluate_arm reused unchanged",
+  "classification": "Reuse frozen 5A2 hybrid QUALITY_KEYS and regression-precedence classification against both A and B; also report each channel separately",
+  "advance_gate": {
+    "hybrid_evidence_recall_at_5_at_least_A": true,
+    "minimum_absolute_hybrid_evidence_recall_at_5_gain_over_B": 0.10,
+    "gating_query_regressions_vs_A": 0,
+    "representation_invariant_failures": 0,
+    "deterministic_build_and_retrieval_repetitions": 2
+  },
+  "diagnostic_non_gating_queries": ["Q25", "Q26"],
+  "absence_metrics": null,
+  "candidate_C_implemented": false,
+  "provider_calls": 0,
+  "external_network_calls_during_evaluation": 0,
+  "tuning_after_results": false
+}
