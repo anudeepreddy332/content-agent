@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5A2B same-parent packing ablation)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5A2E CSWP-v1 contiguous packing)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -416,11 +416,39 @@ network calls: zero. Production serving and Qdrant remain unchanged.
 Full metrics, all query classifications, exact spans, costs, correction evidence
 and validation are in `reports/phase5/phase5a2b/README.md` and adjacent JSON.
 
-**Next recommendation:** stop this failed variant. Retain A as the control
-with its known truncation limitation, and retain frozen B/B-PACKED unchanged.
-The retrieval-design owner should adjudicate the recorded heading occupancy
-and exact-span failures read-only before separately authorizing any new
-representation hypothesis. Do not retune this experiment or implement C here.
+**Phase 5A2E — CSWP-v1 contiguous packing evaluation COMPLETE; CSWP-v1 NOT
+READY TO ADVANCE.** Clean required parent
+`fa7eefbc0eeb6eb8570577a8e19497bfbd2a21b8` was verified and pushed before
+the experiment. CSWP-v1 is a new shadow representation: lossless
+source-segment ledger, H2–H6 contiguous packing with labelled left overlap,
+H1/code/table/protected barriers, and 254/256 MiniLM serialization. Frozen
+A, B, and B-PACKED were not modified. Semantic chunking, Candidate C,
+reranker, query rewrite, and embedding changes were not used.
+
+The packer produced 159 retrieval units (median/p95/max 254 content tokens;
+85 left-overlap units; 20 H1 roots). Overflow, coverage gaps, unlabelled
+overlaps, and provenance failures were zero. Both builds share fingerprint
+`439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`. Two
+retrieval repetitions share result hash
+`ad8203ddbbd95fc6f46c0566eef5ab5f83e451350cb27f31704d894df866cfd7`.
+Historical A/B and B-PACKED controls reproduced.
+
+On the same 33 gating queries, hybrid exact evidence Recall@5 is
+`A=0.84848485 / B=0.51515152 / B-PACKED=0.50000000 / CSWP=0.78787879`.
+CSWP MRR@10 is `0.95707071`, nDCG@5 is `0.95478073`. Versus A: 4 improved
+(Q11/Q15/Q30/Q31), 23 same including Q07/Q14/Q23 recovered to 1.0, and 6
+regressed (Q09/Q13/Q16/Q17/Q22/Q34). Q09 is representable and split when
+>254, but hybrid top-5 still misses it. Q02/Q19/Q20/Q21 match A and are
+not representation wins versus A. Vector multiplier versus A is `2.178x`
+(159 vs 73). Hybrid top-5 unique sources are `1.939` versus A `2.970`.
+Descriptive dense latency is `1.37x` A. Provider and external evaluation
+network calls were zero. Production serving and Qdrant remain unchanged.
+
+**Next recommendation:** do not advance CSWP-v1. Retain A as the quality
+reference, retain frozen B/B-PACKED/CSWP-v1 unchanged, and adjudicate the
+remaining split-window misses (Q09/Q16/Q17/Q22) and ranking-only failures
+(Q13/Q19/Q21) read-only. Do not retune overlap, implement C, or change
+the production index.
 
 Historical context on `experiment/hybrid-verifier-status-engine` (Phase 4
 implementation branch):

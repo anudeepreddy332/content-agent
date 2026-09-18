@@ -1,0 +1,194 @@
+{
+  "candidate": "CSWP",
+  "control_arms": {
+    "A": {
+      "arm": "A",
+      "chunker_version": "legacy-cl100k-400-50-v1",
+      "document_embedding_count_per_run": 73,
+      "identity_payload": {
+        "bm25_config": {
+          "implementation": "rank_bm25.BM25Okapi defaults",
+          "tie_break": "np.argsort(scores)[::-1] over frozen corpus order",
+          "tokenization": "text.lower().split()",
+          "zero_score_candidates_excluded": true
+        },
+        "chunker_version": "legacy-cl100k-400-50-v1",
+        "dense_index_config": {
+          "implementation": "exhaustive float32 cosine over normalized vectors",
+          "tie_break": "native score descending, chunk_id ascending"
+        },
+        "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+        "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "embedding_tokenizer_fingerprint": "3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+        "fusion_config": {
+          "algorithm": "reciprocal rank fusion over chunk_id",
+          "candidate_k": 20,
+          "final_k": 10,
+          "rank_origin": 0,
+          "rrf_constant": 60,
+          "tie_break": "rrf_score descending, chunk_id ascending"
+        },
+        "ordered_corpus_manifest_digest": "724a8c3486cb482eadbd592a93918a6e2954bebdbdfa12a39753556b1c3d7c02",
+        "parser_name": "direct UTF-8 read + str.strip",
+        "parser_version": "legacy-direct-text-strip-v1",
+        "retrieval_serialization_version": "legacy-raw-chunk-v1"
+      },
+      "index_id": "ca:index:a2fc6fc8d54cde862b450b289cc18cdb1112bd6d63608cb71a13e810ffecb031",
+      "index_type": "isolated in-memory exact reference",
+      "parser_version": "legacy-direct-text-strip-v1",
+      "qdrant_collection": null,
+      "representation_fingerprint": "c3976d83cc478d5f4352e680b59aac98ed314c5bbeb9f9ffee56e0ea51fbecbb",
+      "retrieval_serialization_version": "legacy-raw-chunk-v1",
+      "vector_count": 73
+    },
+    "B": {
+      "arm": "B",
+      "chunker_version": "structural-source-spans-v1",
+      "document_embedding_count_per_run": 510,
+      "identity_payload": {
+        "bm25_config": {
+          "implementation": "rank_bm25.BM25Okapi defaults",
+          "tie_break": "np.argsort(scores)[::-1] over frozen corpus order",
+          "tokenization": "text.lower().split()",
+          "zero_score_candidates_excluded": true
+        },
+        "chunker_version": "structural-source-spans-v1",
+        "dense_index_config": {
+          "implementation": "exhaustive float32 cosine over normalized vectors",
+          "tie_break": "native score descending, chunk_id ascending"
+        },
+        "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+        "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "embedding_tokenizer_fingerprint": "3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+        "fusion_config": {
+          "algorithm": "reciprocal rank fusion over chunk_id",
+          "candidate_k": 20,
+          "final_k": 10,
+          "rank_origin": 0,
+          "rrf_constant": 60,
+          "tie_break": "rrf_score descending, chunk_id ascending"
+        },
+        "ordered_corpus_manifest_digest": "724a8c3486cb482eadbd592a93918a6e2954bebdbdfa12a39753556b1c3d7c02",
+        "parser_name": "markdown-it-py",
+        "parser_version": "4.2.0",
+        "retrieval_serialization_version": "title-breadcrumb-exact-child-v1"
+      },
+      "index_id": "ca:index:efd5a61039327d98f77b07d8325c3a25ccc4ff86f5d6a9becd7018a57acdfccb",
+      "index_type": "isolated in-memory exact reference",
+      "parser_version": "4.2.0",
+      "qdrant_collection": null,
+      "representation_fingerprint": "a9402fea0c4fbbae6613346370c0759b0239d3d870a386526980e1c40815e852",
+      "retrieval_serialization_version": "title-breadcrumb-exact-child-v1",
+      "vector_count": 510
+    }
+  },
+  "external_network_calls": 0,
+  "file_sha256": {
+    "evals/fixtures/phase5a2e_cswp_contract.json": "92d695bbbd5aa2b1338712c3b91ed0985868ba215666095520234be181c9de64",
+    "evals/fixtures/retrieval_golden_v2.json": "a5a671507516b2b061623c201469af87377d66beb0870d9c78d6179b9993e268",
+    "reports/phase5/phase5a0/baseline_a_manifest.json": "b8e518ce67c85f158273dd7b983938223ac0661ccf13fbf608120a5158dee4b2",
+    "reports/phase5/phase5a1/candidate_b_manifest.json": "bbea98a77a7cd67e744b596f0809379d067021850a91e6dac390aa8af11c9a65",
+    "scripts/phase5a0_baseline.py": "df3f96e41b9c345bfedef8bbf8f13f666fe129baf79da13e5f88c9c6e23dade5",
+    "scripts/phase5a1_shadow.py": "de071d380f51e84532080c56f694c533f55d519647ab76dfc4f9e123184ce8c8",
+    "scripts/phase5a2_shadow_ab.py": "8ef09b4bcf2d0595de98ff2644e96ed3f40a46e26172227d9ee4a5e0276ee349",
+    "scripts/phase5a2b_packed.py": "cee3b1db41ee0962fe7bc0a29c3651b964f9f07d9d9b933165fd65ade5a3989d",
+    "scripts/phase5a2e_cswp.py": "a51ac0e4e8043f49a5d3d0dc28eca42177b2886e97a40a3cede99e20b418209c"
+  },
+  "frozen_at_utc": "2026-09-18T11:05:00.577820+00:00",
+  "held_constant": {
+    "bm25_config": {
+      "implementation": "rank_bm25.BM25Okapi defaults",
+      "tie_break": "np.argsort(scores)[::-1] over frozen corpus order",
+      "tokenization": "text.lower().split()",
+      "zero_score_candidates_excluded": true
+    },
+    "dense_index_config": {
+      "implementation": "exhaustive float32 cosine over normalized vectors",
+      "tie_break": "native score descending, chunk_id ascending"
+    },
+    "embedding_dimension": 384,
+    "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "embedding_model_sha256": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+    "embedding_normalization": "model Normalize module; evaluator also requests normalize_embeddings=True",
+    "embedding_tokenizer_fingerprint": "3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+    "fusion_config": {
+      "algorithm": "reciprocal rank fusion over chunk_id",
+      "candidate_k": 20,
+      "final_k": 10,
+      "rank_origin": 0,
+      "rrf_constant": 60,
+      "tie_break": "rrf_score descending, chunk_id ascending"
+    },
+    "golden_v2_sha256": "a5a671507516b2b061623c201469af87377d66beb0870d9c78d6179b9993e268",
+    "metric_implementation": "phase5a0_baseline metric functions reused",
+    "query_set_sha256": "5240539808b9a49f9f96b9358afb0b421e55b69d7d72b3b702bef02c816aa96c"
+  },
+  "manifest_sha256": "2ab25bd5f3e243b1f4d505dacdea3724f32548ceb88eb41e47e0d70f7c735699",
+  "packing_contract": {
+    "absence_metrics": null,
+    "advance_gate": {
+      "deterministic_build_and_retrieval_repetitions": 2,
+      "gating_query_regressions_vs_A": 0,
+      "hybrid_evidence_recall_at_5_material_recovery_toward_or_exceeding_A": true,
+      "primary_quality_reference": "A",
+      "provenance_gaps": 0,
+      "silent_truncation": 0,
+      "source_coverage_gaps": 0,
+      "unlabelled_overlaps": 0
+    },
+    "algorithm": "Build a lossless source-segment ledger from frozen B children plus whitespace seams. Greedy left-to-right cores from consecutive packable segments (paragraph, complete list unit, H2-H6 heading, whitespace seam) until the complete serialization would exceed 254 content tokens or a hard barrier. After each core, prepend the maximal immediately preceding compatible suffix that still fits. One retrieval unit per core. No backtracking or post-result overlap tuning.",
+    "b_packed_control_from": "reports/phase5/phase5a2b/results.json",
+    "candidate": "CSWP",
+    "candidate_C_implemented": false,
+    "classification": "Reuse frozen 5A2 hybrid QUALITY_KEYS against A as the primary reference and against B and B-PACKED diagnostically",
+    "compatible_types": [
+      "paragraph",
+      "list",
+      "heading_h2_h6",
+      "seam"
+    ],
+    "content_token_limit": 254,
+    "diagnostic_non_gating_queries": [
+      "Q25",
+      "Q26"
+    ],
+    "external_network_calls_during_evaluation": 0,
+    "hard_barriers": [
+      "heading_h1",
+      "fenced_code",
+      "code",
+      "table",
+      "blockquote",
+      "html",
+      "thematic_break",
+      "source_gap",
+      "document_root"
+    ],
+    "held_constant_from": "reports/phase5/phase5a2/experiment_manifest.json",
+    "hypothesis": "Exact-span evidence fails on B because structural children omit inter-block seams and treat H2-H6 headings as retrieval barriers. Lossless contiguous windows that absorb H2-H6 headings and whitespace seams, with deterministic left overlap, should recover evidence toward A without semantic chunking or Candidate C.",
+    "metric_implementation": "scripts.phase5a2_shadow_ab.evaluate_arm reused unchanged",
+    "packing_version": "cswp-v1",
+    "provider_calls": 0,
+    "required_parent": "fa7eefbc0eeb6eb8570577a8e19497bfbd2a21b8",
+    "schema_version": "phase5a2e_cswp_contract_v1",
+    "semantic_chunking": false,
+    "serialization": {
+      "order": [
+        "frozen document title",
+        "entry breadcrumb of the first non-seam segment, excluding headings whose full source text is already in the slice",
+        "blank line",
+        "verbatim contiguous source slice from retrieval_start to retrieval_end"
+      ],
+      "separators": "title + LF + join(breadcrumb, ' > ') + LF + LF + slice"
+    },
+    "total_token_limit": 256,
+    "truncation": false,
+    "tuning_after_results": false
+  },
+  "production_retrieval_changed": false,
+  "provider_calls": 0,
+  "qdrant_mutated": false,
+  "required_parent": "fa7eefbc0eeb6eb8570577a8e19497bfbd2a21b8",
+  "semantic_chunking": false
+}

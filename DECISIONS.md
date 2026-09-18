@@ -9,6 +9,67 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-18-02
+Date: 2026-09-18
+
+Decision: **Phase 5A2E CSWP-v1 contiguous packing evaluation complete;
+CSWP-v1 does not qualify to advance.**
+
+Reason: Exact required parent
+`fa7eefbc0eeb6eb8570577a8e19497bfbd2a21b8` was clean, contained the 5A2B
+checkpoint, and was pushed to `origin/feature/phase5-rag-hardening` before
+implementation. CSWP-v1 is a new shadow representation. Frozen A, B, and
+B-PACKED were not modified. The packer builds a lossless source-segment
+ledger, packs source-adjacent paragraphs/lists/seams/complete H2–H6 headings,
+keeps H1 and protected blocks as barriers, serializes title plus
+in-slice-aware breadcrumb plus verbatim contiguous source, and prepends
+labelled left overlap. MiniLM
+`all-MiniLM-L6-v2@1110a243`, dense cosine, BM25 `lower().split()`, candidate
+K=20, RRF k=60, final K=10, golden-v2, and metric implementation were held
+identical. No reranker, query rewrite, semantic chunking, Candidate C, or
+embedding change. Production retrieval and Qdrant were unused; provider and
+external evaluation network calls were zero.
+
+CSWP reduced 510 B children to 159 retrieval units (median/p95/max 254
+content tokens; 0 units above 254; 0 coverage gaps; 0 unlabelled overlaps;
+0 provenance failures). Both builds share fingerprint
+`439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`. Two
+retrieval repetitions share result SHA-256
+`ad8203ddbbd95fc6f46c0566eef5ab5f83e451350cb27f31704d894df866cfd7`.
+Historical A/B metrics reproduced 5A2; B-PACKED reproduced 5A2B.
+
+On the 33 gating queries, hybrid exact evidence-span Recall@5 is
+`A=0.84848485 / B=0.51515152 / B-PACKED=0.50000000 / CSWP=0.78787879`.
+CSWP MRR@10 is `0.95707071` versus A `0.97979798`; nDCG@5 is `0.95478073`
+versus A `0.97094024`. Versus A: 4 improved (Q11/Q15/Q30/Q31), 23 same
+including recovered Q07/Q14/Q23, and 6 regressed (Q09/Q13/Q16/Q17/Q22/Q34).
+Q09 remains correctly split when the window exceeds 254 but is not retrieved
+at hybrid K=5. Q02/Q19/Q20/Q21 match A and are not claimed as representation
+wins. Vector count is `2.178x` A (159 vs 73), versus B `6.99x`. Hybrid top-5
+unique sources are `1.939` versus A `2.970`; remaining crowding is
+same-document large-window occupancy, not B's small-child occupancy.
+Descriptive dense latency is `1.37x` A.
+
+Beating B is not success. A remains the quality reference. CSWP-v1 does not
+advance: evidence recovery is incomplete, and averages hide gating
+regressions versus A.
+
+Artifacts:
+
+- `evals/fixtures/phase5a2e_cswp_contract.json`
+- `scripts/phase5a2e_cswp.py`
+- `reports/phase5/phase5a2e/`
+- `tests/test_phase5a2e_cswp.py`
+
+Status: **PHASE-5A2E-CSWP-EVALUATION-READY; CSWP-v1 NOT READY TO ADVANCE.**
+Retain A as control, retain frozen B/B-PACKED/CSWP-v1 unchanged, and
+adjudicate remaining split-window misses and ranking-only failures
+read-only. Do not retune overlap, implement C, or change production
+retrieval.
+
+Confidence: 0.97
+
+---
 Decision ID: D-2026-09-18-01
 Date: 2026-09-18
 

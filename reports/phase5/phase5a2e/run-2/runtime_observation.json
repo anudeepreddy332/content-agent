@@ -1,0 +1,109 @@
+{
+  "deterministic_result_sha256": "ad8203ddbbd95fc6f46c0566eef5ab5f83e451350cb27f31704d894df866cfd7",
+  "embedding_ms": {
+    "A": 404.58575,
+    "B": 1167.386,
+    "B-PACKED": 1307.032583,
+    "CSWP": 806.658084
+  },
+  "query_embedding_ms": 28.962416,
+  "repetition": 2,
+  "retrieval": {
+    "A": {
+      "arm": "A",
+      "bm25_index_build_ms": 2.907583,
+      "retrieval_latency": {
+        "bm25": {
+          "mean_ms": 0.140092,
+          "p50_ms": 0.115,
+          "p95_ms": 0.280666,
+          "total_ms": 4.90321
+        },
+        "dense": {
+          "mean_ms": 0.050724,
+          "p50_ms": 0.043208,
+          "p95_ms": 0.10575,
+          "total_ms": 1.775334
+        },
+        "hybrid": {
+          "mean_ms": 0.022349,
+          "p50_ms": 0.020792,
+          "p95_ms": 0.026291,
+          "total_ms": 0.782205
+        }
+      }
+    },
+    "B": {
+      "arm": "B",
+      "bm25_index_build_ms": 3.477209,
+      "retrieval_latency": {
+        "bm25": {
+          "mean_ms": 0.584925,
+          "p50_ms": 0.447708,
+          "p95_ms": 1.339917,
+          "total_ms": 20.472376
+        },
+        "dense": {
+          "mean_ms": 0.325151,
+          "p50_ms": 0.299292,
+          "p95_ms": 0.500167,
+          "total_ms": 11.380293
+        },
+        "hybrid": {
+          "mean_ms": 0.024996,
+          "p50_ms": 0.022958,
+          "p95_ms": 0.0435,
+          "total_ms": 0.874876
+        }
+      }
+    },
+    "B-PACKED": {
+      "arm": "B-PACKED",
+      "bm25_index_build_ms": 3.405917,
+      "retrieval_latency": {
+        "bm25": {
+          "mean_ms": 0.543863,
+          "p50_ms": 0.416625,
+          "p95_ms": 1.198041,
+          "total_ms": 19.035204
+        },
+        "dense": {
+          "mean_ms": 0.297024,
+          "p50_ms": 0.270375,
+          "p95_ms": 0.502,
+          "total_ms": 10.395838
+        },
+        "hybrid": {
+          "mean_ms": 0.026327,
+          "p50_ms": 0.023416,
+          "p95_ms": 0.036042,
+          "total_ms": 0.92146
+        }
+      }
+    },
+    "CSWP": {
+      "arm": "CSWP",
+      "bm25_index_build_ms": 3.079084,
+      "retrieval_latency": {
+        "bm25": {
+          "mean_ms": 0.204981,
+          "p50_ms": 0.151125,
+          "p95_ms": 0.427792,
+          "total_ms": 7.174333
+        },
+        "dense": {
+          "mean_ms": 0.098331,
+          "p50_ms": 0.0855,
+          "p95_ms": 0.166708,
+          "total_ms": 3.441581
+        },
+        "hybrid": {
+          "mean_ms": 0.020343,
+          "p50_ms": 0.019917,
+          "p95_ms": 0.025958,
+          "total_ms": 0.712
+        }
+      }
+    }
+  }
+}
