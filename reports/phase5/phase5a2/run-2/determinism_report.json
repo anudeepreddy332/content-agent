@@ -1,0 +1,10 @@
+{
+  "component_sha256": {
+    "aggregate_comparison": "af691a3dd8ae479b76f26f3c918ff7130f3baedec2b18cd9cbe5b26d0e384426",
+    "failure_analysis": "501752a03e0915098ce15d5463f63f7ed721068d504eb5794199e20f0020e23f",
+    "per_query_comparison": "94c415a3962f8b0d777a150ac6f4d25060683ca25fb2f7589ee9a17f21046f43"
+  },
+  "deterministic_result_sha256": "70b4552f4cc3f908b44030df2fe3439e19486b1bb30d7f9b042fa8a5cbfcab56",
+  "repetition": 2,
+  "schema_version": "phase5a2_run_determinism_report_v1"
+}

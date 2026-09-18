@@ -1,0 +1,175 @@
+{
+  "absence_metrics": null,
+  "absence_metrics_reason": "retrieval golden v2 contains zero ABSENT cases",
+  "arms": {
+    "A": {
+      "arm": "A",
+      "chunker_version": "legacy-cl100k-400-50-v1",
+      "document_embedding_count_per_run": 73,
+      "identity_payload": {
+        "bm25_config": {
+          "implementation": "rank_bm25.BM25Okapi defaults",
+          "tie_break": "np.argsort(scores)[::-1] over frozen corpus order",
+          "tokenization": "text.lower().split()",
+          "zero_score_candidates_excluded": true
+        },
+        "chunker_version": "legacy-cl100k-400-50-v1",
+        "dense_index_config": {
+          "implementation": "exhaustive float32 cosine over normalized vectors",
+          "tie_break": "native score descending, chunk_id ascending"
+        },
+        "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+        "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "embedding_tokenizer_fingerprint": "3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+        "fusion_config": {
+          "algorithm": "reciprocal rank fusion over chunk_id",
+          "candidate_k": 20,
+          "final_k": 10,
+          "rank_origin": 0,
+          "rrf_constant": 60,
+          "tie_break": "rrf_score descending, chunk_id ascending"
+        },
+        "ordered_corpus_manifest_digest": "724a8c3486cb482eadbd592a93918a6e2954bebdbdfa12a39753556b1c3d7c02",
+        "parser_name": "direct UTF-8 read + str.strip",
+        "parser_version": "legacy-direct-text-strip-v1",
+        "retrieval_serialization_version": "legacy-raw-chunk-v1"
+      },
+      "index_id": "ca:index:a2fc6fc8d54cde862b450b289cc18cdb1112bd6d63608cb71a13e810ffecb031",
+      "index_type": "isolated in-memory exact reference",
+      "parser_version": "legacy-direct-text-strip-v1",
+      "qdrant_collection": null,
+      "representation_fingerprint": "c3976d83cc478d5f4352e680b59aac98ed314c5bbeb9f9ffee56e0ea51fbecbb",
+      "retrieval_serialization_version": "legacy-raw-chunk-v1",
+      "vector_count": 73
+    },
+    "B": {
+      "arm": "B",
+      "chunker_version": "structural-source-spans-v1",
+      "document_embedding_count_per_run": 510,
+      "identity_payload": {
+        "bm25_config": {
+          "implementation": "rank_bm25.BM25Okapi defaults",
+          "tie_break": "np.argsort(scores)[::-1] over frozen corpus order",
+          "tokenization": "text.lower().split()",
+          "zero_score_candidates_excluded": true
+        },
+        "chunker_version": "structural-source-spans-v1",
+        "dense_index_config": {
+          "implementation": "exhaustive float32 cosine over normalized vectors",
+          "tie_break": "native score descending, chunk_id ascending"
+        },
+        "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+        "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "embedding_tokenizer_fingerprint": "3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+        "fusion_config": {
+          "algorithm": "reciprocal rank fusion over chunk_id",
+          "candidate_k": 20,
+          "final_k": 10,
+          "rank_origin": 0,
+          "rrf_constant": 60,
+          "tie_break": "rrf_score descending, chunk_id ascending"
+        },
+        "ordered_corpus_manifest_digest": "724a8c3486cb482eadbd592a93918a6e2954bebdbdfa12a39753556b1c3d7c02",
+        "parser_name": "markdown-it-py",
+        "parser_version": "4.2.0",
+        "retrieval_serialization_version": "title-breadcrumb-exact-child-v1"
+      },
+      "index_id": "ca:index:efd5a61039327d98f77b07d8325c3a25ccc4ff86f5d6a9becd7018a57acdfccb",
+      "index_type": "isolated in-memory exact reference",
+      "parser_version": "4.2.0",
+      "qdrant_collection": null,
+      "representation_fingerprint": "a9402fea0c4fbbae6613346370c0759b0239d3d870a386526980e1c40815e852",
+      "retrieval_serialization_version": "title-breadcrumb-exact-child-v1",
+      "vector_count": 510
+    }
+  },
+  "candidate_b_representation_invariants": {
+    "children_above_254": 0,
+    "duplicate_logical_ids": 0,
+    "overflow_count": 0,
+    "provenance_failures": 0,
+    "structural_boundary_violations": 0
+  },
+  "candidate_b_retrieval_text_grammar": "title + LF + join(heading_path, \" > \") + LF + LF + exact_child_content",
+  "causal_variable": "document representation",
+  "contract_index_id_fields": [
+    "ordered_corpus_manifest_digest",
+    "parser_name",
+    "parser_version",
+    "chunker_version",
+    "retrieval_serialization_version",
+    "embedding_model_id",
+    "embedding_model_revision",
+    "embedding_tokenizer_fingerprint",
+    "dense_index_config",
+    "bm25_config",
+    "fusion_config"
+  ],
+  "determinism_gate": "canonical deterministic results must be byte-identical",
+  "diagnostic_non_gating_queries": [
+    "Q25",
+    "Q26"
+  ],
+  "embedding_counts_per_repetition": {
+    "A_document_embeddings": 73,
+    "B_document_embeddings": 510,
+    "shared_query_embeddings": 35,
+    "total_embedding_outputs": 618
+  },
+  "experiment_question": "Does frozen Candidate B improve retrieval over frozen Baseline A when document representation is the only intended variable?",
+  "external_network_calls": 0,
+  "held_constant": {
+    "bm25_config": {
+      "implementation": "rank_bm25.BM25Okapi defaults",
+      "tie_break": "np.argsort(scores)[::-1] over frozen corpus order",
+      "tokenization": "text.lower().split()",
+      "zero_score_candidates_excluded": true
+    },
+    "dense_index_config": {
+      "implementation": "exhaustive float32 cosine over normalized vectors",
+      "tie_break": "native score descending, chunk_id ascending"
+    },
+    "embedding_dimension": 384,
+    "embedding_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "embedding_model_sha256": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+    "embedding_normalization": "model Normalize module; evaluator also requests normalize_embeddings=True",
+    "embedding_tokenizer_fingerprint": "3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+    "fusion_config": {
+      "algorithm": "reciprocal rank fusion over chunk_id",
+      "candidate_k": 20,
+      "final_k": 10,
+      "rank_origin": 0,
+      "rrf_constant": 60,
+      "tie_break": "rrf_score descending, chunk_id ascending"
+    },
+    "golden_v2_sha256": "a5a671507516b2b061623c201469af87377d66beb0870d9c78d6179b9993e268",
+    "metric_implementation": "phase5a0_baseline metric functions reused",
+    "query_set_sha256": "5240539808b9a49f9f96b9358afb0b421e55b69d7d72b3b702bef02c816aa96c"
+  },
+  "manifest_sha256": "ca38f481a83feb95c255923caf8b41bbaca82a3d8475dea879c85e9682adc4d9",
+  "metric_k_values": [
+    1,
+    3,
+    5,
+    10
+  ],
+  "per_query_classification": {
+    "channel": "hybrid",
+    "dimensions": [
+      "evidence_span_recall@5",
+      "source_recall@5",
+      "mrr@10",
+      "ndcg@5"
+    ],
+    "rule": "REGRESSED if any dimension decreases; otherwise IMPROVED if any dimension increases; otherwise SAME. Precision is reported but excluded because redundant same-source children can inflate it."
+  },
+  "planned_repetitions": 2,
+  "production_qdrant_reads": 0,
+  "production_qdrant_writes": 0,
+  "production_retrieval_changed": false,
+  "provider_calls": 0,
+  "required_parent": "4a1567544005eba30c5f679aa66de3dc76b567d3",
+  "schema_version": "phase5a2_shadow_ab_manifest_v1",
+  "shadow_only": true
+}

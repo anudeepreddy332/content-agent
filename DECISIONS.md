@@ -9,6 +9,79 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-18-01
+Date: 2026-09-18
+
+Decision: **Phase 5A2 A-vs-B shadow retrieval evaluation complete; frozen
+Candidate B does not qualify to advance as-is.**
+
+Reason: Exact required parent
+`4a1567544005eba30c5f679aa66de3dc76b567d3` was clean, contained required
+ancestors `260dfd7`, `5823cc8`, and `f269ab7`, and was pushed to
+`origin/feature/phase5-rag-hardening` before 5A2 work. The experiment rebuilt
+isolated local indexes for the 73 legacy chunks and 510 frozen 5A1 children.
+Both arms used the same local `all-MiniLM-L6-v2@1110a243`, encoder call,
+normalized exhaustive cosine search, `rank_bm25.BM25Okapi` with
+`lower().split()`, raw golden-v2 query text, candidate K=20, RRF k=60, final
+K=10, and Phase-5A0 metric functions. Production retrieval and Qdrant were not
+imported, read, or mutated; external network and provider calls were zero.
+
+On the 33 gating queries, hybrid exact evidence-span Recall@1/3/5/10 changed
+from A `0.57575758 / 0.78787879 / 0.84848485 / 0.90909091` to B
+`0.09090909 / 0.28787879 / 0.51515152 / 0.56060606`. Hybrid MRR@10 changed
+`0.97979798 → 0.96969697`; graded nDCG@1/3/5/10 changed
+`0.96969697 / 0.97094024 / 0.97094024 / 0.97094024` to
+`0.91919192 / 0.95448330 / 0.95807764 / 0.95807764`. Hybrid source Recall@5
+held at `0.98484848`, demonstrating again that source presence does not prove
+exact evidence coverage. B's Precision@5 rose `0.56969697 → 0.82424242`, but
+this coincided with average hybrid top-10 source diversity falling
+`5.60 → 2.74285714` and repeated-source slots rising `4.40 → 7.25714286`;
+precision therefore cannot be treated as the winner signal.
+
+Conservative per-query authority classified Q30, Q31, and Q34 improved; Q15
+same; and 19 gating queries regressed, including Q07, Q19, Q21, corrected-gold
+Q22, and Q23. Q19 and Q21 each fell from exact-span Recall@5 `0.5` to `0.0`;
+Q22 fell `1.0 → 0.5`; Q07 and Q23 fell `1.0 → 0.0`. Supported mechanisms
+include evidence split across structural children, RRF interaction, and
+small-child candidate crowding. Narrower claims about serialization or BM25
+lexical dilution remain unproven without separate ablations.
+
+Corpus cost was explicit: vectors and document embedding outputs grew by 437,
+or `6.98630137x`; float32 vector payload grew by 671,232 bytes before metadata
+or index overhead; effective embedded content WordPieces grew
+`17,650 → 31,963`. Small-child crowding met the frozen diagnostic definition
+on 26/35 queries. Across the two local repetitions, mean dense retrieval
+latency was `4.42–5.31x` A and BM25 retrieval latency was `2.43–3.96x` A;
+these are descriptive single-machine observations, not capacity claims.
+
+Artifacts:
+
+- `scripts/phase5a2_shadow_ab.py`
+- `reports/phase5/phase5a2/experiment_manifest.json`
+- `reports/phase5/phase5a2/aggregate_comparison.json`
+- `reports/phase5/phase5a2/per_query_comparison.json`
+- `reports/phase5/phase5a2/failure_analysis.json`
+- `reports/phase5/phase5a2/runtime_summary.json`
+- `tests/test_phase5a2_shadow_ab.py`
+
+Two repeated runs produced identical deterministic result SHA-256
+`70b4552f4cc3f908b44030df2fe3439e19486b1bb30d7f9b042fa8a5cbfcab56`.
+Candidate B still has zero overflows, tokenizer violations, provenance
+failures, structural-boundary violations, and duplicate logical IDs. Those
+representation properties are necessary but did not compensate for retrieval
+regression.
+
+Status: **PHASE-5A2-A-B-EVALUATION-READY; B NOT READY TO ADVANCE AS FROZEN.**
+The next recommended experiment is one pre-registered structural-packing
+ablation: combine adjacent compatible blocks only inside the same structural
+parent up to the unchanged 254-WordPiece hard limit, assign a new
+chunker/serialization identity, then compare A vs frozen B vs packed B under
+the identical model, raw queries, candidate K, fusion, metrics, and per-query
+regression gates. Do not alter the frozen 5A2 evidence.
+
+Confidence: 0.98
+
+---
 Decision ID: D-2026-09-17-04
 Date: 2026-09-17
 

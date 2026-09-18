@@ -1,0 +1,754 @@
+{
+  "causal_caution": "Candidate B jointly changes structural boundaries and its frozen serialization. Narrower causes are reported only when rank/span evidence supports them; otherwise the cause remains unknown.",
+  "meaningful_regression_definition": "gating-query hybrid REGRESSED under the conservative per-query rule",
+  "q22_note": "Q22 uses the corrected golden-v2 span and is not treated as a known Baseline-A miss.",
+  "regression_count": 19,
+  "regressions": [
+    {
+      "likely_causes_supported": [
+        "candidate-pool crowding",
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 2,
+            "minimum_children_to_exactly_cover": null,
+            "only_uncovered_structural_whitespace": true,
+            "uncovered_gaps": [
+              {
+                "char_end": 710,
+                "char_start": 709,
+                "whitespace_only": true
+              }
+            ]
+          },
+          "grade": 2,
+          "source": "gradient-descent",
+          "span_id": "gradient-descent:12-14"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -1.0,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q01",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "gradient-descent:12-14 crosses structural whitespace omitted between B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "RRF interaction"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 1,
+            "minimum_children_to_exactly_cover": 1,
+            "only_uncovered_structural_whitespace": false,
+            "uncovered_gaps": []
+          },
+          "grade": 2,
+          "source": "attention-transformers",
+          "span_id": "attention-transformers:10-12"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -1.0,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q02",
+      "support": [
+        "attention-transformers:10-12 is covered by a B candidate top-20 but not hybrid top-5"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "RRF interaction",
+        "candidate-pool crowding",
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 2,
+            "minimum_children_to_exactly_cover": 2,
+            "only_uncovered_structural_whitespace": false,
+            "uncovered_gaps": []
+          },
+          "grade": 2,
+          "source": "ridge-lasso-elasticnet",
+          "span_id": "ridge-lasso-elasticnet:10-13"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -1.0,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q03",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "ridge-lasso-elasticnet:10-13 is covered by a B candidate top-20 but not hybrid top-5",
+        "ridge-lasso-elasticnet:10-13 requires 2 Candidate-B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "candidate-pool crowding",
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 6,
+            "minimum_children_to_exactly_cover": null,
+            "only_uncovered_structural_whitespace": true,
+            "uncovered_gaps": [
+              {
+                "char_end": 1213,
+                "char_start": 1212,
+                "whitespace_only": true
+              },
+              {
+                "char_end": 1274,
+                "char_start": 1273,
+                "whitespace_only": true
+              },
+              {
+                "char_end": 1343,
+                "char_start": 1342,
+                "whitespace_only": true
+              },
+              {
+                "char_end": 1403,
+                "char_start": 1402,
+                "whitespace_only": true
+              },
+              {
+                "char_end": 1496,
+                "char_start": 1495,
+                "whitespace_only": true
+              }
+            ]
+          },
+          "grade": 2,
+          "source": "xgboost",
+          "span_id": "xgboost:18-28"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -1.0,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q07",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "xgboost:18-28 crosses structural whitespace omitted between B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "candidate-pool crowding",
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 2,
+            "minimum_children_to_exactly_cover": null,
+            "only_uncovered_structural_whitespace": true,
+            "uncovered_gaps": [
+              {
+                "char_end": 847,
+                "char_start": 846,
+                "whitespace_only": true
+              }
+            ]
+          },
+          "grade": 2,
+          "source": "feedforward-neural-networks",
+          "span_id": "feedforward-neural-networks:12-17"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -0.5,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q08",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "feedforward-neural-networks:12-17 crosses structural whitespace omitted between B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "candidate-pool crowding",
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 3,
+            "minimum_children_to_exactly_cover": null,
+            "only_uncovered_structural_whitespace": true,
+            "uncovered_gaps": [
+              {
+                "char_end": 876,
+                "char_start": 875,
+                "whitespace_only": true
+              },
+              {
+                "char_end": 1276,
+                "char_start": 1275,
+                "whitespace_only": true
+              }
+            ]
+          },
+          "grade": 2,
+          "source": "support-vector-machines",
+          "span_id": "support-vector-machines:8-12"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -1.0,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q09",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "support-vector-machines:8-12 crosses structural whitespace omitted between B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "candidate-pool crowding"
+      ],
+      "lost_evidence_spans": [],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@5": -0.16723285,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q11",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "unknown"
+      ],
+      "lost_evidence_spans": [],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@5": -0.01909247,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q12",
+      "support": [
+        "representation changed chunk boundaries and serialization together; this A/B does not isolate a narrower cause"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "candidate-pool crowding"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 1,
+            "minimum_children_to_exactly_cover": 1,
+            "only_uncovered_structural_whitespace": false,
+            "uncovered_gaps": []
+          },
+          "grade": 2,
+          "source": "agentic-ai-production",
+          "span_id": "agentic-ai-production:10-10"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -1.0,
+        "mrr@10": -0.5,
+        "ndcg@5": -0.36907025,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q13",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "candidate-pool crowding",
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 3,
+            "minimum_children_to_exactly_cover": null,
+            "only_uncovered_structural_whitespace": true,
+            "uncovered_gaps": [
+              {
+                "char_end": 725,
+                "char_start": 724,
+                "whitespace_only": true
+              }
+            ]
+          },
+          "grade": 2,
+          "source": "linear-logistic-regression",
+          "span_id": "linear-logistic-regression:11-15"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -1.0,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q14",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "linear-logistic-regression:11-15 crosses structural whitespace omitted between B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "RRF interaction",
+        "candidate-pool crowding",
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 2,
+            "minimum_children_to_exactly_cover": 2,
+            "only_uncovered_structural_whitespace": false,
+            "uncovered_gaps": []
+          },
+          "grade": 2,
+          "source": "prompt-engineering-production",
+          "span_id": "prompt-engineering-production:22-27"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -1.0,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q16",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "prompt-engineering-production:22-27 is covered by a B candidate top-20 but not hybrid top-5",
+        "prompt-engineering-production:22-27 requires 2 Candidate-B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "candidate-pool crowding",
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 2,
+            "minimum_children_to_exactly_cover": null,
+            "only_uncovered_structural_whitespace": true,
+            "uncovered_gaps": [
+              {
+                "char_end": 3298,
+                "char_start": 3297,
+                "whitespace_only": true
+              }
+            ]
+          },
+          "grade": 2,
+          "source": "multi-agent-systems",
+          "span_id": "multi-agent-systems:35-37"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -0.5,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q17",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "multi-agent-systems:35-37 crosses structural whitespace omitted between B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "RRF interaction",
+        "candidate-pool crowding"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 1,
+            "minimum_children_to_exactly_cover": 1,
+            "only_uncovered_structural_whitespace": false,
+            "uncovered_gaps": []
+          },
+          "grade": 2,
+          "source": "retrieval-augmented-generation",
+          "span_id": "retrieval-augmented-generation:4"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -0.5,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q19",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "retrieval-augmented-generation:4 is covered by a B candidate top-20 but not hybrid top-5"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "RRF interaction",
+        "candidate-pool crowding"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 1,
+            "minimum_children_to_exactly_cover": 1,
+            "only_uncovered_structural_whitespace": false,
+            "uncovered_gaps": []
+          },
+          "grade": 2,
+          "source": "embedding-models-vector-search",
+          "span_id": "embedding-models-vector-search:10"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -0.5,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q20",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "embedding-models-vector-search:10 is covered by a B candidate top-20 but not hybrid top-5"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "RRF interaction",
+        "candidate-pool crowding"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 1,
+            "minimum_children_to_exactly_cover": 1,
+            "only_uncovered_structural_whitespace": false,
+            "uncovered_gaps": []
+          },
+          "grade": 2,
+          "source": "backpropagation",
+          "span_id": "backpropagation:4"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -0.5,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q21",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "backpropagation:4 is covered by a B candidate top-20 but not hybrid top-5"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 2,
+            "minimum_children_to_exactly_cover": null,
+            "only_uncovered_structural_whitespace": true,
+            "uncovered_gaps": [
+              {
+                "char_end": 961,
+                "char_start": 960,
+                "whitespace_only": true
+              }
+            ]
+          },
+          "grade": 2,
+          "source": "xgboost",
+          "span_id": "xgboost:14-16"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -0.5,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q22",
+      "support": [
+        "xgboost:14-16 crosses structural whitespace omitted between B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 3,
+            "minimum_children_to_exactly_cover": null,
+            "only_uncovered_structural_whitespace": true,
+            "uncovered_gaps": [
+              {
+                "char_end": 2699,
+                "char_start": 2698,
+                "whitespace_only": true
+              }
+            ]
+          },
+          "grade": 2,
+          "source": "naive-bayes",
+          "span_id": "naive-bayes:22-25"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -1.0,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q23",
+      "support": [
+        "naive-bayes:22-25 crosses structural whitespace omitted between B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "RRF interaction",
+        "candidate-pool crowding",
+        "evidence split across children"
+      ],
+      "lost_evidence_spans": [
+        {
+          "A_hybrid_top5_covered": true,
+          "B_hybrid_top5_covered": false,
+          "B_span_structure": {
+            "corpus_child_count_intersecting_span": 2,
+            "minimum_children_to_exactly_cover": 2,
+            "only_uncovered_structural_whitespace": false,
+            "uncovered_gaps": []
+          },
+          "grade": 2,
+          "source": "prompt-engineering-production",
+          "span_id": "prompt-engineering-production:29-30"
+        }
+      ],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": -0.5,
+        "mrr@10": 0.0,
+        "ndcg@5": 0.0,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q29",
+      "support": [
+        "B top-10 loses source diversity while adding small repeated-source children",
+        "prompt-engineering-production:29-30 is covered by a B candidate top-20 but not hybrid top-5",
+        "prompt-engineering-production:29-30 requires 2 Candidate-B children"
+      ]
+    },
+    {
+      "likely_causes_supported": [
+        "unknown"
+      ],
+      "lost_evidence_spans": [],
+      "not_established_without_separate_ablation": [
+        "chunks became too small",
+        "heading/context serialization altered similarity",
+        "BM25 lexical dilution",
+        "evaluator issue"
+      ],
+      "quality_metric_deltas": {
+        "evidence_span_recall@5": 0.0,
+        "mrr@10": -0.5,
+        "ndcg@5": -0.36907025,
+        "source_recall@5": 0.0
+      },
+      "query_id": "Q33",
+      "support": [
+        "representation changed chunk boundaries and serialization together; this A/B does not isolate a narrower cause"
+      ]
+    }
+  ],
+  "schema_version": "phase5a2_failure_analysis_v1"
+}

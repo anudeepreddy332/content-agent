@@ -1,0 +1,61 @@
+{
+  "deterministic_result_sha256": "70b4552f4cc3f908b44030df2fe3439e19486b1bb30d7f9b042fa8a5cbfcab56",
+  "embedding_ms": {
+    "A_documents": 511.963083,
+    "B_documents": 1540.248333,
+    "shared_queries": 80.293625
+  },
+  "repetition": 1,
+  "retrieval": {
+    "A": {
+      "arm": "A",
+      "bm25_index_build_ms": 2.798791,
+      "retrieval_latency": {
+        "bm25": {
+          "mean_ms": 0.112035,
+          "p50_ms": 0.086291,
+          "p95_ms": 0.240667,
+          "total_ms": 3.921208
+        },
+        "dense": {
+          "mean_ms": 0.052219,
+          "p50_ms": 0.041916,
+          "p95_ms": 0.097125,
+          "total_ms": 1.827668
+        },
+        "hybrid": {
+          "mean_ms": 0.019146,
+          "p50_ms": 0.018833,
+          "p95_ms": 0.026375,
+          "total_ms": 0.670123
+        }
+      }
+    },
+    "B": {
+      "arm": "B",
+      "bm25_index_build_ms": 3.011667,
+      "retrieval_latency": {
+        "bm25": {
+          "mean_ms": 0.44407,
+          "p50_ms": 0.332833,
+          "p95_ms": 0.92,
+          "total_ms": 15.542461
+        },
+        "dense": {
+          "mean_ms": 0.27723,
+          "p50_ms": 0.267541,
+          "p95_ms": 0.357417,
+          "total_ms": 9.703041
+        },
+        "hybrid": {
+          "mean_ms": 0.020068,
+          "p50_ms": 0.020167,
+          "p95_ms": 0.02675,
+          "total_ms": 0.702376
+        }
+      }
+    }
+  },
+  "schema_version": "phase5a2_runtime_observation_v1",
+  "timing_is_excluded_from_deterministic_hash": true
+}

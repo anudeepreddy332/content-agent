@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-17 (Phase 5 PRE-5A0 retrieval gold v2 freeze)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5A2 A-vs-B shadow retrieval evaluation)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -356,11 +356,45 @@ identity, exposure, promotion, and rollback contract at
 `scripts/phase5a0_baseline.py`. Production retrieval behavior unchanged;
 production Qdrant reads/writes 0; provider calls 0.
 
-**Next authorized slice: Phase 5A1 shadow implementation** — Markdown parser,
-exact provenance, deterministic IDs, structural children, tokenizer assertion,
-overflow/protected-block fixtures, and two-run manifest comparison. Stop before
-embeddings, Qdrant writes, serving cutover, model replacement, or conditional
-optimization unless separately authorized.
+**Phase 5A1 — Candidate B shadow representation COMPLETE.** The frozen
+Markdown parser/provenance/identity pipeline produces 498 blocks and 510
+structure-aware children under serialization
+`title-breadcrumb-exact-child-v1`. All children fit the 254-content-WordPiece
+limit; overflows, provenance failures, structural-boundary violations, and
+duplicate logical IDs are zero. Representation fingerprint
+`a9402fea0c4f…`. This qualifies representation integrity, not retrieval
+quality.
+
+**Phase 5A2 — A-vs-B shadow retrieval evaluation COMPLETE; B NOT READY TO
+ADVANCE AS FROZEN.** Required clean parent `4a156754…` and ancestry were
+verified, and that exact checkpoint was pushed before experiment work. Both
+arms used identical local `all-MiniLM-L6-v2@1110a243`, embedding code, exact
+cosine, lowercase-whitespace BM25, raw golden-v2 queries, candidate K=20, RRF
+k=60, final K=10, and metric functions. Production retrieval was unchanged;
+production Qdrant reads/writes and provider/external-network calls were zero.
+
+On 33 gating queries, hybrid exact-span Recall@1/3/5/10 changed from
+`0.57575758 / 0.78787879 / 0.84848485 / 0.90909091` to
+`0.09090909 / 0.28787879 / 0.51515152 / 0.56060606`; MRR@10 changed
+`0.97979798 → 0.96969697`; nDCG@5 changed `0.97094024 → 0.95807764`.
+Source Recall@5 held at `0.98484848`, while exact evidence coverage materially
+regressed. Q30/Q31/Q34 improved; Q15 was same; Q19, Q21, corrected-gold Q22,
+Q07, Q23, and 14 other gating queries regressed under the conservative
+per-query rule. Two repetitions had identical deterministic result hash
+`70b4552f4cc3f908b44030df2fe3439e19486b1bb30d7f9b042fa8a5cbfcab56`.
+
+The 73→510 expansion is `6.98630137x`: +437 vectors, +671,232 raw float32
+vector bytes, effective content WordPieces `17,650 → 31,963`. Hybrid top-10
+unique-source diversity fell `5.60 → 2.74285714`; small-child crowding was
+observed on 26/35 queries. B's higher Precision@5 is repeated-source-slot
+inflation, not a promotion result. Exact evidence, per-query, failure, runtime,
+and immutable configuration artifacts are under `reports/phase5/phase5a2/`.
+
+**Next recommended experiment:** pre-register one packed-B structural ablation
+that combines adjacent compatible blocks only within one structural parent up
+to the unchanged 254-WordPiece hard limit, with a new chunker/serialization
+identity. Compare A vs frozen B vs packed B under the same retrieval/evaluator
+controls. Do not mutate the frozen 5A2 evidence or production serving.
 
 Historical context on `experiment/hybrid-verifier-status-engine` (Phase 4
 implementation branch):
