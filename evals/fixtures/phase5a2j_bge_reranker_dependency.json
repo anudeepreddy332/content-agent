@@ -1,0 +1,78 @@
+{
+  "schema_version": "phase5a2j_bge_reranker_dependency_v1",
+  "repo_head_at_acquisition": "b29ac637ac1b7f162b6da0cf551e7c8ae26c8518",
+  "acquired_at_utc": "2026-09-18T17:27:22+00:00",
+  "canonical_model_id": "BAAI/bge-reranker-base",
+  "revision": "2cfc18c9415c912f9d8155881c133215df768a70",
+  "hub_cache_layout": {
+    "cache_repo_dirname": "models--BAAI--bge-reranker-base",
+    "snapshot_revision_directory": "snapshots/2cfc18c9415c912f9d8155881c133215df768a70",
+    "note": "Resolve via Hugging Face hub cache using canonical model id + revision; do not treat absolute host paths as authoritative identity."
+  },
+  "required_artifacts": [
+    "config.json",
+    "model.safetensors",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "special_tokens_map.json",
+    "sentencepiece.bpe.model"
+  ],
+  "file_sha256": {
+    "config.json": "289adf7ada1eb6b4afa7589a48a032d45a076cf2e46dcdb3b4cabc33be14f708",
+    "model.safetensors": "ced967c45fd1902eb92716c9ceeca7c95a936770ea9db611f5a841b926e33fbd",
+    "tokenizer.json": "9eb652ac4e40cc093272bbbe0f55d521cf67570060227109b5cdc20945a4489e",
+    "tokenizer_config.json": "a1d6bc8734a6f635dc158508bef000f8e2e5a759c7d92f984b2c86e5ff53425b",
+    "special_tokens_map.json": "d5469a60db23249c7f8945013d78df30b44b6bf686c6bb4740f4223f77b1b535",
+    "sentencepiece.bpe.model": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865"
+  },
+  "weights_bytes": 1112206140,
+  "library_versions": {
+    "transformers": "5.7.0",
+    "tokenizers": "0.22.2",
+    "torch": "2.11.0",
+    "huggingface_hub": "1.12.2",
+    "safetensors": "0.7.0",
+    "sentence-transformers": "5.4.1"
+  },
+  "model_identity": {
+    "architectures": [
+      "XLMRobertaForSequenceClassification"
+    ],
+    "model_type": "xlm-roberta",
+    "hidden_size": 768,
+    "num_hidden_layers": 12,
+    "num_attention_heads": 12,
+    "max_position_embeddings": 514,
+    "id2label": {
+      "0": "LABEL_0"
+    },
+    "parameter_count": 278044417,
+    "trainable_parameter_count": 278044417
+  },
+  "tokenizer_identity": {
+    "is_fast": true,
+    "model_max_length": 512,
+    "vocab_size": 250002,
+    "tokenizer_class": "XLMRobertaTokenizer",
+    "special_tokens_map_sha256": "d5469a60db23249c7f8945013d78df30b44b6bf686c6bb4740f4223f77b1b535"
+  },
+  "offline_load_verification": {
+    "local_files_only": true,
+    "network_guard_active": true,
+    "hf_hub_offline": true,
+    "missing_required_files": [],
+    "scoring_output_shape": [
+      1,
+      1
+    ],
+    "sample_score": -0.45129281282424927,
+    "status": "PASS"
+  },
+  "network_policy": {
+    "acquisition_network": "Hugging Face hub only for BAAI/bge-reranker-base",
+    "evaluation_run": false,
+    "provider_calls": 0,
+    "qdrant_reads": 0,
+    "qdrant_writes": 0
+  }
+}
