@@ -1,0 +1,92 @@
+{
+  "candidate_generation_misses": [
+    "Q19",
+    "Q30"
+  ],
+  "candidate_pool_fingerprint": "df00e312a0891fc65befa83b05f59e032809e78f6447f351aea16ca34e6db52c",
+  "exact_next_action": "Keep A and all frozen arms unchanged. Independently review the frozen Q20 regression and Q13/Q21/Q22 remaining exact-evidence ranking misses before authorizing another intervention; treat Q19/Q30 as a separate candidate-generation issue. No promotion, retuning, MMR, new model, push or merge.",
+  "full_result_bytes_identical": true,
+  "h1_top5_gating": {
+    "control_occurrences": 16,
+    "demoted_out_of_top5": 14,
+    "reranked_occurrences": 2
+  },
+  "latency_pooled_70_query_observations": {
+    "mean_ms": 620.657647,
+    "p50_ms": 598.483062,
+    "p95_ms": 787.353208,
+    "total_ms": 43446.035289
+  },
+  "latency_repetitions": [
+    {
+      "mean_ms": 619.650158,
+      "p50_ms": 602.311708,
+      "p95_ms": 787.353208,
+      "total_ms": 21687.755541
+    },
+    {
+      "mean_ms": 621.665136,
+      "p50_ms": 594.654417,
+      "p95_ms": 810.246875,
+      "total_ms": 21758.279748
+    }
+  ],
+  "limitations": [
+    "35 development/diagnostic queries, 33 gating; no holdout",
+    "zero ABSENT queries; abstention/OOS unmeasurable",
+    "single pinned model, one CPU machine, deterministic single-thread eager execution; no production latency SLO",
+    "Two runs establish exact repeatability in the recorded environment, not across hardware/libraries"
+  ],
+  "new_critical_regressions_vs_control": [
+    "Q20"
+  ],
+  "quality_gate": {
+    "critical_evidence_regressions": [
+      "Q13",
+      "Q20",
+      "Q22"
+    ],
+    "material_evidence_improvement": true,
+    "quality_pass": false
+  },
+  "raw_scores_fingerprint": "9c9c1b15e65b0550ba84485d0afaf53f45fcbe41084500c5b627ced6a6df571e",
+  "remaining_critical_deficits_vs_A": [
+    "Q13",
+    "Q20",
+    "Q22"
+  ],
+  "reranker_ready_to_advance": false,
+  "resources_repetitions": [
+    {
+      "device": "cpu",
+      "float32_parameter_bytes": 90854404,
+      "machine": "arm64",
+      "parameters": 22713601,
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "process_peak_rss_after_evaluation_bytes": 1230979072,
+      "process_peak_rss_before_model_bytes": 549322752,
+      "python_version": "3.14.0",
+      "rss_scope": "process lifetime peak, includes Python/torch/transformers/evaluator and model, not isolated model allocation",
+      "threads": 1,
+      "weights_file_bytes": 90870598
+    },
+    {
+      "device": "cpu",
+      "float32_parameter_bytes": 90854404,
+      "machine": "arm64",
+      "parameters": 22713601,
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "process_peak_rss_after_evaluation_bytes": 1232322560,
+      "process_peak_rss_before_model_bytes": 549666816,
+      "python_version": "3.14.0",
+      "rss_scope": "process lifetime peak, includes Python/torch/transformers/evaluator and model, not isolated model allocation",
+      "threads": 1,
+      "weights_file_bytes": 90870598
+    }
+  ],
+  "result_fingerprints": [
+    "9490f45a57392d8a9399e006d01a8215d98e7a25d89406efa807f2729a61def5",
+    "9490f45a57392d8a9399e006d01a8215d98e7a25d89406efa807f2729a61def5"
+  ],
+  "status": "EVALUATION_COMPLETE_DO_NOT_ADVANCE"
+}

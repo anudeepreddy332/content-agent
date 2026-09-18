@@ -1,0 +1,128 @@
+{
+  "absence_metrics": null,
+  "advance_gate": {
+    "critical_regressions": "zero grade-2 spans lost at top-5 versus either CSWP control or A on gating queries",
+    "determinism": "two fresh process runs have byte-identical scores, rankings and metrics",
+    "material_improvement": "reranked gating evidence Recall@5 > CSWP control and >= frozen A; conservative sufficient interpretation of approaches/exceeds A, with no tuned numeric threshold",
+    "resource_bound": "one fixed six-layer CPU float32 model, at most 40 candidates/query, batch size 8, no retries or parameter sweep; measured p50/p95 and peak RSS; no production latency SLO claimed",
+    "token_safety": "zero pairs truncated or above 512"
+  },
+  "candidate_c": false,
+  "candidate_generation": "Replay exact archived CSWP dense-top-20 union BM25-top-20 by canonical chunk_id; preserve native ranks/scores; no new embeddings or candidate filtering",
+  "candidate_pool_sha256": "df00e312a0891fc65befa83b05f59e032809e78f6447f351aea16ca34e6db52c",
+  "classification": {
+    "evidence": "top-5 exact gold-span coverage sets: any lost span => REGRESSED, else any gained => IMPROVED, else SAME; report gains/losses and recall separately",
+    "ranking": "source recall, precision, graded nDCG at 1/3/5/10 and MRR@10; any component decrease => REGRESSED, else any increase => IMPROVED, else SAME; report mixed component changes",
+    "ranking_only_regression": "EVIDENCE SAME and RANKING-METRIC REGRESSED"
+  },
+  "contract_sha256": "4c28667f72fd5234c8e36d3765feeb4363abc291a689e77013b7fd710f95aecc",
+  "cswp_fingerprint": "439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3",
+  "determinism": {
+    "attention_implementation": "eager",
+    "batch_size": 8,
+    "candidate_order": "chunk_id ascending",
+    "deterministic_algorithms": true,
+    "device": "cpu",
+    "dtype": "float32",
+    "eval_mode": true,
+    "final_order": "raw relevance logit descending then chunk_id ascending",
+    "inference_mode": true,
+    "mkldnn_enabled": false,
+    "seed": 0,
+    "torch_interop_threads": 1,
+    "torch_threads": 1
+  },
+  "diagnostic_non_gating": [
+    "Q25",
+    "Q26"
+  ],
+  "external_network_calls": 0,
+  "input_file_sha256": {
+    "evals/fixtures/phase5a2e_cswp_contract.json": "92d695bbbd5aa2b1338712c3b91ed0985868ba215666095520234be181c9de64",
+    "evals/fixtures/retrieval_golden_v2.json": "a5a671507516b2b061623c201469af87377d66beb0870d9c78d6179b9993e268",
+    "kb/seed_docs/agentic-ai-production.md": "8cb15469206d4aefd20e5ef9526168ba4a8937ae3fde468f9ebdf54bd49865c8",
+    "kb/seed_docs/attention-transformers.md": "845faba79fd149a17fd9e1e48abad92c27f836637896bf81405cae3606620a09",
+    "kb/seed_docs/backpropagation.md": "1d7ce30a31388788b45c16ac45cf6c712fcad5d3892a768dae6dce1fc0494350",
+    "kb/seed_docs/catboost.md": "ec183d0f63e6abf0e1398b1ceab470278ef6b2e973c9794a444117db5bad1881",
+    "kb/seed_docs/decision-trees.md": "e84cbc44bf00dc480b7d8425216f1bff6f6a2584c261b4ba8c37419ae42792bc",
+    "kb/seed_docs/embedding-models-vector-search.md": "d8e7b24edcaf322ca493e8ea1adbed358cdbb43788b0bc9ddb5b252175b5a103",
+    "kb/seed_docs/feedforward-neural-networks.md": "40ed610f16ab9b2af36a3833e56edc376ef3ad00d87be260132809d095509efe",
+    "kb/seed_docs/gradient-descent.md": "9bdf5089342e8144568889d57e9027f95b9ead8ef07f76c3d876b09718930b16",
+    "kb/seed_docs/k-nearest-neighbors.md": "ff063c8866b7770fa26db5a980d731671e09ac24790752a3683a75f504b86267",
+    "kb/seed_docs/langgraph-state-machines.md": "8fb948341f125fc32597a7dd994f29e51ce6865e754f93fa972ca59aabd84c62",
+    "kb/seed_docs/linear-logistic-regression.md": "0ddcbe3e1e8ae59f04ace6a287891ead687942b31f39ebea19ad3e1eb3df1dfb",
+    "kb/seed_docs/multi-agent-systems.md": "41fe54bb3a61edc5a139d17abf484bd7b80be033dc98d6091c6a457a07317ec9",
+    "kb/seed_docs/naive-bayes.md": "97fd1a58705aabd0167e7c43a34aa240adaeb3e3a7d0cc870d3741208a0907b7",
+    "kb/seed_docs/prompt-engineering-production.md": "a5f843ada1cee5ddb06ad0f84cdafbb3713a95b04e7088fbe9a5cc62d1b2dd60",
+    "kb/seed_docs/random-forest.md": "7af8c09c1b72e1a45c662c32edef5fcfb9840133b846345762ef31876ec31a9b",
+    "kb/seed_docs/react-agent-pattern.md": "26100038d5e47c5ecf42fd085bca34d1f20789725b84ecdf05ce6c30f1ac064b",
+    "kb/seed_docs/retrieval-augmented-generation.md": "fb358e9ab7273e18688b39ec7473461bab9a9ebb5c71ed29f0da9bceda9f993a",
+    "kb/seed_docs/ridge-lasso-elasticnet.md": "0c883f972f5f4d1874520e6f4a440320183a76fdd9666262ed3a7b9dd64f1500",
+    "kb/seed_docs/support-vector-machines.md": "bbf3e15ff9d232245536949f448567c3cb96626a5d1fc74333c4b885a79e5788",
+    "kb/seed_docs/xgboost.md": "ebeacb3d7f8aba77ceb09d7753dc16142c14dbd5bce32bc3f4f997589df7cd7e",
+    "reports/phase5/phase5a0/baseline_a_manifest.json": "b8e518ce67c85f158273dd7b983938223ac0661ccf13fbf608120a5158dee4b2",
+    "reports/phase5/phase5a2e/candidate_cswp_manifest.json": "f224257583ec1a89d685cb00a224b882d2851b13537a7e3407976d76febc5005",
+    "reports/phase5/phase5a2e/experiment_manifest.json": "b2a9689000b5a8aa9838d961e93dd96d9bc03b437b6b8bcbd3f05daa807735ee",
+    "reports/phase5/phase5a2e/results.json": "8fd1f8cb7a286b3e36f405a78c26a9ee5ba2b85b79958b5c5e104b567a7537ab",
+    "scripts/phase5a0_baseline.py": "df3f96e41b9c345bfedef8bbf8f13f666fe129baf79da13e5f88c9c6e23dade5",
+    "scripts/phase5a1_shadow.py": "de071d380f51e84532080c56f694c533f55d519647ab76dfc4f9e123184ce8c8",
+    "scripts/phase5a2_shadow_ab.py": "8ef09b4bcf2d0595de98ff2644e96ed3f40a46e26172227d9ee4a5e0276ee349",
+    "scripts/phase5a2b_packed.py": "cee3b1db41ee0962fe7bc0a29c3651b964f9f07d9d9b933165fd65ade5a3989d",
+    "scripts/phase5a2e_cswp.py": "a51ac0e4e8043f49a5d3d0dc28eca42177b2886e97a40a3cede99e20b418209c"
+  },
+  "library_versions": {
+    "numpy": "2.4.4",
+    "safetensors": "0.7.0",
+    "sentence-transformers": "5.4.1",
+    "tokenizers": "0.22.2",
+    "torch": "2.11.0",
+    "transformers": "5.7.0"
+  },
+  "metric_implementation": "unchanged phase5a2_shadow_ab._rank_metrics and _span_covered",
+  "mmr": false,
+  "model": {
+    "architecture": "BertForSequenceClassification",
+    "classifier_shape": [
+      1,
+      384
+    ],
+    "config_name_note": "Historical L-12 string retained as metadata; snapshot revision, six weight layers and classifier shape are authoritative. No substitution.",
+    "config_name_or_path": "cross-encoder/ms-marco-MiniLM-L-12-v2",
+    "encoder_layers": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "file_sha256": {
+      "config.json": "380e02c93f431831be65d99a4e7e5f67c133985bf2e77d9d4eba46847190bacc",
+      "model.safetensors": "821d1aa69520101d6e0737f78a042ae25b19e5cb9160701909d10434f4aeb0ae",
+      "special_tokens_map.json": "3c3507f36dff57bce437223db3b3081d1e2b52ec3e56ee55438193ecb2c94dd6",
+      "tokenizer.json": "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66",
+      "tokenizer_config.json": "a5c2e5a7b1a29a0702cd28c08a399b5ecc110c263009d17f7e3b415f25905fd8",
+      "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+    },
+    "max_input_tokens": 512,
+    "model_id": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "revision": "c5ee24cb16019beea0893ab7796b1df96625c6b8",
+    "score": "raw single float32 relevance logit; Identity activation; higher is better; no score fusion",
+    "weights_bytes": 90870598
+  },
+  "production_qdrant_reads": 0,
+  "production_qdrant_writes": 0,
+  "production_retrieval_changed": false,
+  "provider_calls": 0,
+  "remote_check": "local origin/feature/phase5-rag-hardening ref matches required HEAD; no network fetch",
+  "required_parent": "2a87e8e3e756872667c4468d4a52c34ea8917416",
+  "schema_version": "phase5a2h_cross_encoder_contract_v1",
+  "tokenization": {
+    "input": "query and exact CSWP retrieval text as separate pair arguments, without stripping",
+    "max_input_tokens": 512,
+    "overflow": "STOP before any experiment scoring; never invent a truncation policy",
+    "padding": "longest in each fixed batch after length preflight",
+    "special_tokens": 3,
+    "truncation": false
+  }
+}
