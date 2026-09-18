@@ -1,0 +1,293 @@
+{
+  "aggregate_gating_33": {
+    "distinct_sources_packed_mean": 1.84848485,
+    "duplicate_chunk_ids_removed_mean": 4.66666667,
+    "evidence_span_recall": {
+      "drafter_exposed": 0.75757576,
+      "expanded": 0.93939394,
+      "packed": 0.92424242,
+      "retrieved": 0.78787879,
+      "verifier_exposed": 0.92424242
+    },
+    "expansion_multiplier": {
+      "max": 2.68037704,
+      "mean": 1.76740532,
+      "median": 1.69335347,
+      "min": 1.09694794
+    },
+    "legacy_a_top5_cl100k": {
+      "max": 2000,
+      "mean": 1826.545455,
+      "median": 1856,
+      "min": 1495,
+      "p95": 2000
+    },
+    "overlapping_source_chars_expanded_mean": 1188.39393939,
+    "pack_exhausted_queries": [
+      "Q11",
+      "Q12",
+      "Q13",
+      "Q21",
+      "Q22",
+      "Q23",
+      "Q24",
+      "Q31",
+      "Q33",
+      "Q34",
+      "Q35"
+    ],
+    "pack_utilization_mean": 0.78306061,
+    "same_document_fraction_packed_mean": 0.76500284,
+    "source_recall": {
+      "drafter_exposed": 0.95454545,
+      "expanded": 0.98484848,
+      "packed": 0.98484848,
+      "retrieved": 0.98484848,
+      "verifier_exposed": 0.98484848
+    },
+    "tokens_cl100k": {
+      "drafter_exposed": {
+        "max": 1633,
+        "mean": 1028.909091,
+        "median": 993,
+        "min": 630,
+        "p95": 1368
+      },
+      "expanded": {
+        "max": 3128,
+        "mean": 1756.454545,
+        "median": 1578,
+        "min": 1000,
+        "p95": 2832
+      },
+      "packed": {
+        "max": 1988,
+        "mean": 1566.121212,
+        "median": 1578,
+        "min": 1000,
+        "p95": 1985
+      },
+      "retrieved": {
+        "max": 1192,
+        "mean": 981.69697,
+        "median": 986,
+        "min": 662,
+        "p95": 1173
+      },
+      "verifier_exposed": {
+        "max": 1988,
+        "mean": 1566.121212,
+        "median": 1578,
+        "min": 1000,
+        "p95": 1985
+      }
+    }
+  },
+  "deterministic_rerun": true,
+  "external_network_calls": 0,
+  "focus": {
+    "Q09": {
+      "comparisons_vs_retrieved": {
+        "drafter_exposed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "expanded": {
+          "classification": "EVIDENCE IMPROVED",
+          "gained_spans": [
+            "support-vector-machines::support-vector-machines:8-12"
+          ],
+          "lost_spans": []
+        },
+        "packed": {
+          "classification": "EVIDENCE IMPROVED",
+          "gained_spans": [
+            "support-vector-machines::support-vector-machines:8-12"
+          ],
+          "lost_spans": []
+        },
+        "verifier_exposed": {
+          "classification": "EVIDENCE IMPROVED",
+          "gained_spans": [
+            "support-vector-machines::support-vector-machines:8-12"
+          ],
+          "lost_spans": []
+        }
+      },
+      "drafter_exposed": 0.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 0.0,
+      "verifier_exposed": 1.0
+    },
+    "Q13": {
+      "comparisons_vs_retrieved": {
+        "drafter_exposed": {
+          "classification": "EVIDENCE IMPROVED",
+          "gained_spans": [
+            "agentic-ai-production::agentic-ai-production:10-10"
+          ],
+          "lost_spans": []
+        },
+        "expanded": {
+          "classification": "EVIDENCE IMPROVED",
+          "gained_spans": [
+            "agentic-ai-production::agentic-ai-production:10-10"
+          ],
+          "lost_spans": []
+        },
+        "packed": {
+          "classification": "EVIDENCE IMPROVED",
+          "gained_spans": [
+            "agentic-ai-production::agentic-ai-production:10-10"
+          ],
+          "lost_spans": []
+        },
+        "verifier_exposed": {
+          "classification": "EVIDENCE IMPROVED",
+          "gained_spans": [
+            "agentic-ai-production::agentic-ai-production:10-10"
+          ],
+          "lost_spans": []
+        }
+      },
+      "drafter_exposed": 1.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 0.0,
+      "verifier_exposed": 1.0
+    },
+    "Q19": {
+      "comparisons_vs_retrieved": {
+        "drafter_exposed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "expanded": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "packed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "verifier_exposed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        }
+      },
+      "drafter_exposed": 0.5,
+      "expanded": 0.5,
+      "packed": 0.5,
+      "retrieved": 0.5,
+      "verifier_exposed": 0.5
+    },
+    "Q21": {
+      "comparisons_vs_retrieved": {
+        "drafter_exposed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "expanded": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "packed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "verifier_exposed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        }
+      },
+      "drafter_exposed": 0.5,
+      "expanded": 0.5,
+      "packed": 0.5,
+      "retrieved": 0.5,
+      "verifier_exposed": 0.5
+    },
+    "Q22": {
+      "comparisons_vs_retrieved": {
+        "drafter_exposed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "expanded": {
+          "classification": "EVIDENCE IMPROVED",
+          "gained_spans": [
+            "xgboost::xgboost:14-16"
+          ],
+          "lost_spans": []
+        },
+        "packed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "verifier_exposed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        }
+      },
+      "drafter_exposed": 0.5,
+      "expanded": 1.0,
+      "packed": 0.5,
+      "retrieved": 0.5,
+      "verifier_exposed": 0.5
+    },
+    "Q30": {
+      "comparisons_vs_retrieved": {
+        "drafter_exposed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "expanded": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "packed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        },
+        "verifier_exposed": {
+          "classification": "EVIDENCE SAME",
+          "gained_spans": [],
+          "lost_spans": []
+        }
+      },
+      "drafter_exposed": 0.5,
+      "expanded": 0.5,
+      "packed": 0.5,
+      "retrieved": 0.5,
+      "verifier_exposed": 0.5
+    }
+  },
+  "production_qdrant_reads": 0,
+  "production_qdrant_writes": 0,
+  "production_retrieval_changed": false,
+  "provider_calls": 0,
+  "quality_gate": {
+    "candidate_c_ready_to_advance": false,
+    "critical_grade2_packed_losses": [],
+    "expanded_improves_gating_evidence": true,
+    "no_retrieved_evidence_regression_at_packed": true,
+    "packed_within_budget": true,
+    "useful_q13_survives_pack_drafter_verifier": true
+  },
+  "result_sha256": "74b2dac5179630690ecc12741613318ba9c5ec1384569e01425d35f8fe3b08c9"
+}

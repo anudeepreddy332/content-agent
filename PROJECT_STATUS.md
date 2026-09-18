@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5A2E CSWP-v1 contiguous packing)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5B1 Candidate C v1)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -444,11 +444,27 @@ not representation wins versus A. Vector multiplier versus A is `2.178x`
 Descriptive dense latency is `1.37x` A. Provider and external evaluation
 network calls were zero. Production serving and Qdrant remain unchanged.
 
-**Next recommendation:** do not advance CSWP-v1. Retain A as the quality
-reference, retain frozen B/B-PACKED/CSWP-v1 unchanged, and adjudicate the
-remaining split-window misses (Q09/Q16/Q17/Q22) and ranking-only failures
-(Q13/Q19/Q21) read-only. Do not retune overlap, implement C, or change
-the production index.
+**Phase 5B1 — Candidate C v1 bounded adjacent-neighbor expansion COMPLETE;
+C v1 NOT READY TO ADVANCE.** Clean required parent
+`f67b07054a8823ffbc6b3ebc23c3233f9e5e7496` was verified and pushed before
+the experiment. Retrieval ranks stayed frozen at 5A2E CSWP hybrid/RRF
+top-5. The only new variable was ±1 same-document neighbor expansion plus
+a standalone 2000 cl100k whole-unit pack. This is not parent-section
+retrieval and not a production change.
+
+Gating exact-span evidence recall: retrieved `0.78787879`, expanded
+`0.93939394`, packed `0.92424242`, drafter-exposed `0.75757576`,
+verifier-exposed `0.92424242`. Q13 recovers at every layer. Q09 recovers
+except drafter (K=3). Q22 recovers only before pack. Q19/Q21/Q30 remain
+unsolved. Packed max 1988 cl100k. Two runs share
+`74b2dac5179630690ecc12741613318ba9c5ec1384569e01425d35f8fe3b08c9`.
+Provider and evaluation network calls were zero. Production serving and
+Qdrant remain unchanged.
+
+**Next recommendation:** do not advance Candidate C v1. Keep frozen CSWP
+hybrid ranks. Inspect Q22 pack-order complementary-span loss and the Q09
+drafter K=3 miss before any parent dump, third reranker, or candidate-
+generation mix-in.
 
 Historical context on `experiment/hybrid-verifier-status-engine` (Phase 4
 implementation branch):
@@ -814,8 +830,8 @@ revision; drive material-policy denominator and publication-safety conjunction.
 | Call A | PASS (oracle v2) | `call_a_provider_eval_gold_v2` rescore |
 | Call B | PASS | run `semantic_analyzer_run_8f554fa3eb62`, digest `0ed38fc3…899c5` |
 
-**Next:** Phase 5 — retrieval/chunking/evidence exposure. Sol architecture audit
-in progress; review before implementation.
+**Next:** Phase 5B1 Candidate C v1 evaluated and not advanced. Inspect Q22
+pack-order loss and Q09 drafter K=3 before parent-section retrieval.
 
 **Final qualification evidence:** `tests/test_brief_requirements_live_wiring.py`
 (7/7); full regression suite; provider calls zero; demonstrated P0/P1 none.

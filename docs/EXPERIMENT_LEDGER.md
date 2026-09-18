@@ -1,6 +1,6 @@
 # Experiment and Evidence Ledger
 
-_Canonical compact index. Last synchronized: 2026-09-04._
+_Canonical compact index. Last synchronized: 2026-09-18._
 
 This ledger indexes meaningful experiments and release-relevant validation. It does not duplicate
 full reports. Detailed artifacts remain under `docs/archive/`, in the named commit/branch, or in the
@@ -35,6 +35,20 @@ For every applicable change:
 11. merge or cut over only after every applicable frozen gate passes.
 
 ## Evidence index
+
+### EXP-2026-09-18-01 — Candidate C v1 bounded adjacent-neighbor expansion
+
+| Field | Record |
+| --- | --- |
+| Question | Can exact-span evidence exposure improve if CSWP hybrid/RRF top-5 ranks stay frozen and only ±1 same-document neighbors are attached under a 2000 cl100k pack? |
+| Isolated variable | Post-retrieval neighbor expansion and deterministic packing. Retrieval, embeddings, RRF, and gold labels frozen. |
+| Control / candidate | Retrieved CSWP hybrid top-5 / Candidate C v1 expanded, packed, drafter-exposed, verifier-exposed. |
+| Frozen gate | Expanded must beat retrieved; useful gains must survive packed and downstream; no packed grade-2 loss; packed ≤2000 cl100k; two identical runs. |
+| Base / branch / environment | Parent `f67b07054a8823ffbc6b3ebc23c3233f9e5e7496`; branch `feature/phase5-rag-hardening`; offline, no Qdrant. |
+| Result | Gating evidence recall retrieved 0.78787879 / expanded 0.93939394 / packed 0.92424242 / drafter 0.75757576 / verifier 0.92424242. Q13 survives all layers. Q22 expanded-only. Q09 misses drafter. Q19/Q21/Q30 unchanged. |
+| Classification | `EVALUATION COMPLETE — DO NOT ADVANCE`. |
+| Evidence | `reports/phase5/phase5b1/`; decision `D-2026-09-18-03`. |
+| Confidence | 0.96 |
 
 ### EXP-2026-05-30-01 — Legacy ChromaDB/Qdrant retrieval comparison
 

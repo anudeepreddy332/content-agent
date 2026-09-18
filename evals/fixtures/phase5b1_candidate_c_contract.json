@@ -1,0 +1,112 @@
+{
+  "absence_metrics": null,
+  "advance_gate": {
+    "bounded_tokens": "every packed query uses at most 2000 cl100k tokens",
+    "determinism": "two runs have byte-identical results",
+    "expanded_improves_gating_evidence": "expanded exact-span recall > retrieved on the 33 gating queries",
+    "no_critical_retrieved_grade2_loss": "no gating grade-2 span covered at retrieved may be lost at packed",
+    "useful_gains_survive_pack_and_downstream": "focus gains that exist at expanded must be reported at packed, drafter-exposed and verifier-exposed; success is not expanded-only"
+  },
+  "contract_sha256": "f494ca5a47e24db4bff228c67acd7f8e961a0d0f875729d7df8a9be903eafaf0",
+  "cswp_fingerprint": "439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3",
+  "dedup": [
+    "canonical chunk_id first-seen in seed-rank then source order",
+    "exact source interval identity; non-identical intervals are kept"
+  ],
+  "diagnostic_non_gating": [
+    "Q25",
+    "Q26"
+  ],
+  "drafter_contract": {
+    "character_prefix_per_item": 2000,
+    "items": "the frozen retrieved top-3 seeds remain kb_results[:3]; each result exposes its packed PREVIOUS/SEED/NEXT retrieval_text in source order, clipped independently to 2000 characters",
+    "k": 3
+  },
+  "expansion": {
+    "contiguous_source_order": true,
+    "cross_document": false,
+    "distance": 1,
+    "distance_2": false,
+    "full_h1_parent_dump": false,
+    "gold_labels": false,
+    "members": [
+      "PREVIOUS",
+      "SEED",
+      "NEXT"
+    ],
+    "query_specific": false,
+    "reranker_seeds": false,
+    "same_document_id": true,
+    "same_document_version": true,
+    "same_source_path_and_sha": true,
+    "seeds": "frozen CSWP hybrid/RRF top-5 from reports/phase5/phase5a2e/results.json",
+    "semantic_similarity": false
+  },
+  "exposure_layers": [
+    "retrieved",
+    "expanded",
+    "packed",
+    "drafter_exposed",
+    "verifier_exposed"
+  ],
+  "external_network_calls": 0,
+  "input_file_sha256": {
+    "evals/fixtures/phase5a2e_cswp_contract.json": "92d695bbbd5aa2b1338712c3b91ed0985868ba215666095520234be181c9de64",
+    "evals/fixtures/retrieval_golden_v2.json": "a5a671507516b2b061623c201469af87377d66beb0870d9c78d6179b9993e268",
+    "kb/seed_docs/agentic-ai-production.md": "8cb15469206d4aefd20e5ef9526168ba4a8937ae3fde468f9ebdf54bd49865c8",
+    "kb/seed_docs/attention-transformers.md": "845faba79fd149a17fd9e1e48abad92c27f836637896bf81405cae3606620a09",
+    "kb/seed_docs/backpropagation.md": "1d7ce30a31388788b45c16ac45cf6c712fcad5d3892a768dae6dce1fc0494350",
+    "kb/seed_docs/catboost.md": "ec183d0f63e6abf0e1398b1ceab470278ef6b2e973c9794a444117db5bad1881",
+    "kb/seed_docs/decision-trees.md": "e84cbc44bf00dc480b7d8425216f1bff6f6a2584c261b4ba8c37419ae42792bc",
+    "kb/seed_docs/embedding-models-vector-search.md": "d8e7b24edcaf322ca493e8ea1adbed358cdbb43788b0bc9ddb5b252175b5a103",
+    "kb/seed_docs/feedforward-neural-networks.md": "40ed610f16ab9b2af36a3833e56edc376ef3ad00d87be260132809d095509efe",
+    "kb/seed_docs/gradient-descent.md": "9bdf5089342e8144568889d57e9027f95b9ead8ef07f76c3d876b09718930b16",
+    "kb/seed_docs/k-nearest-neighbors.md": "ff063c8866b7770fa26db5a980d731671e09ac24790752a3683a75f504b86267",
+    "kb/seed_docs/langgraph-state-machines.md": "8fb948341f125fc32597a7dd994f29e51ce6865e754f93fa972ca59aabd84c62",
+    "kb/seed_docs/linear-logistic-regression.md": "0ddcbe3e1e8ae59f04ace6a287891ead687942b31f39ebea19ad3e1eb3df1dfb",
+    "kb/seed_docs/multi-agent-systems.md": "41fe54bb3a61edc5a139d17abf484bd7b80be033dc98d6091c6a457a07317ec9",
+    "kb/seed_docs/naive-bayes.md": "97fd1a58705aabd0167e7c43a34aa240adaeb3e3a7d0cc870d3741208a0907b7",
+    "kb/seed_docs/prompt-engineering-production.md": "a5f843ada1cee5ddb06ad0f84cdafbb3713a95b04e7088fbe9a5cc62d1b2dd60",
+    "kb/seed_docs/random-forest.md": "7af8c09c1b72e1a45c662c32edef5fcfb9840133b846345762ef31876ec31a9b",
+    "kb/seed_docs/react-agent-pattern.md": "26100038d5e47c5ecf42fd085bca34d1f20789725b84ecdf05ce6c30f1ac064b",
+    "kb/seed_docs/retrieval-augmented-generation.md": "fb358e9ab7273e18688b39ec7473461bab9a9ebb5c71ed29f0da9bceda9f993a",
+    "kb/seed_docs/ridge-lasso-elasticnet.md": "0c883f972f5f4d1874520e6f4a440320183a76fdd9666262ed3a7b9dd64f1500",
+    "kb/seed_docs/support-vector-machines.md": "bbf3e15ff9d232245536949f448567c3cb96626a5d1fc74333c4b885a79e5788",
+    "kb/seed_docs/xgboost.md": "ebeacb3d7f8aba77ceb09d7753dc16142c14dbd5bce32bc3f4f997589df7cd7e",
+    "reports/phase5/phase5a0/baseline_a_manifest.json": "b8e518ce67c85f158273dd7b983938223ac0661ccf13fbf608120a5158dee4b2",
+    "reports/phase5/phase5a2e/candidate_cswp_manifest.json": "f224257583ec1a89d685cb00a224b882d2851b13537a7e3407976d76febc5005",
+    "reports/phase5/phase5a2e/experiment_manifest.json": "b2a9689000b5a8aa9838d961e93dd96d9bc03b437b6b8bcbd3f05daa807735ee",
+    "reports/phase5/phase5a2e/results.json": "8fd1f8cb7a286b3e36f405a78c26a9ee5ba2b85b79958b5c5e104b567a7537ab",
+    "scripts/phase5a0_baseline.py": "df3f96e41b9c345bfedef8bbf8f13f666fe129baf79da13e5f88c9c6e23dade5",
+    "scripts/phase5a1_shadow.py": "de071d380f51e84532080c56f694c533f55d519647ab76dfc4f9e123184ce8c8",
+    "scripts/phase5a2_shadow_ab.py": "8ef09b4bcf2d0595de98ff2644e96ed3f40a46e26172227d9ee4a5e0276ee349",
+    "scripts/phase5a2b_packed.py": "cee3b1db41ee0962fe7bc0a29c3651b964f9f07d9d9b933165fd65ade5a3989d",
+    "scripts/phase5a2e_cswp.py": "a51ac0e4e8043f49a5d3d0dc28eca42177b2886e97a40a3cede99e20b418209c"
+  },
+  "mmr": false,
+  "name": "Candidate C v1 \u2014 Bounded Adjacent-Neighbor Expansion",
+  "ordering": [
+    "seed rank ascending",
+    "within a seed group source reading order",
+    "chunk_id ascending tie-break",
+    "earliest seed-rank provenance is primary"
+  ],
+  "pack_budget_cl100k": 2000,
+  "pack_policy": "whole CSWP retrieval_text units only; if the next unit exceeds the remaining 2000-token ceiling, skip it and continue in frozen order; record PACK_BUDGET_EXHAUSTED; never split a unit; never use A's per-query token count as execution logic",
+  "pack_tokenizer": "cl100k_base",
+  "parent_child_retrieval": false,
+  "production_qdrant_reads": 0,
+  "production_qdrant_writes": 0,
+  "production_retrieval_changed": false,
+  "provider_calls": 0,
+  "remote_check": "local origin/feature/phase5-rag-hardening ref matches required HEAD; no network fetch",
+  "required_parent": "f67b07054a8823ffbc6b3ebc23c3233f9e5e7496",
+  "reranker": false,
+  "schema_version": "phase5b1_candidate_c_v1_contract",
+  "seed_sha256": "65b9915d508a5d8b8ab7d3d0daa8e275f6613e04651ad835c3e9d561a993c398",
+  "verifier_contract": {
+    "character_clip": null,
+    "items": "the frozen retrieved top-5 seeds remain kb_results[:5]; each result exposes its packed PREVIOUS/SEED/NEXT retrieval_text in source order with no character clip",
+    "k": 5
+  }
+}

@@ -9,6 +9,52 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-18-03
+Date: 2026-09-18
+
+Decision: **Phase 5B1 Candidate C v1 bounded adjacent-neighbor expansion
+evaluation complete; Candidate C v1 does not qualify to advance.**
+
+Reason: Exact required parent
+`f67b07054a8823ffbc6b3ebc23c3233f9e5e7496` was clean and was pushed to
+`origin/feature/phase5-rag-hardening` before implementation. Retrieval
+ranks stayed bit-identical to the frozen 5A2E CSWP hybrid/RRF top-5.
+The only new variable was post-retrieval ±1 same-document neighbor
+expansion plus a standalone 2000 `cl100k_base` whole-unit pack. This is
+not full parent-child retrieval, not a reranker, and not a production
+change. No BGE/MS-MARCO seeds, embeddings, RRF, gold-driven neighbors,
+distance-2, or H1 dumps.
+
+On 33 gating queries, exact-span evidence recall is retrieved
+`0.78787879`, expanded `0.93939394`, packed `0.92424242`,
+drafter-exposed `0.75757576`, verifier-exposed `0.92424242`. Expanded
+is not retrieval Recall@5. Q13 recovers at every layer (0→1). Q09
+recovers at expanded/packed/verifier but not drafter (rank-4 completing
+neighbor). Q22 recovers only at expanded; the 2000-token skip-and-continue
+pack drops a complementary piece. Q19/Q21/Q30 remain unsolved as
+preregistered. Zero grade-2 spans retrieved at top-5 were lost at packed.
+Median retrieved/expanded/packed tokens are 986 / 1578 / 1578 cl100k;
+packed max 1988. Two runs share
+`74b2dac5179630690ecc12741613318ba9c5ec1384569e01425d35f8fe3b08c9`.
+
+Expanded-only gains are not sufficient for promotion. Q13 is a real
+exposure win; Q22 packing and Q09 drafter K=3 remain blocking.
+
+Artifacts:
+
+- `evals/fixtures/phase5b1_candidate_c_contract.json`
+- `scripts/phase5b1_candidate_c.py`
+- `reports/phase5/phase5b1/`
+- `tests/test_phase5b1_candidate_c.py`
+
+Status: **PHASE-5B1-CANDIDATE-C-EVALUATION-READY; CANDIDATE C v1 NOT READY
+TO ADVANCE.** Keep frozen retrieval. Next: inspect Q22 pack-order
+complementary-span loss and Q09 drafter K=3 miss. Do not dump parents,
+change ranking, or mix Q19/Q30 candidate generation into this arm.
+
+Confidence: 0.96
+
+---
 Decision ID: D-2026-09-18-02
 Date: 2026-09-18
 
