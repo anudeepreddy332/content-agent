@@ -64,6 +64,22 @@ def test_q25_q26_answerable_non_gating_ambiguous():
         assert q["v1_label_verdict"] == "AMBIGUOUS"
 
 
+def test_q22_missing_value_span_is_non_empty_line_34():
+    payload = load_oracle()
+    q22 = next(q for q in payload["queries"] if q["query_id"] == "Q22")
+    missing_span = next(
+        span
+        for rel in q22["relevant_sources"]
+        if rel["source"] == "xgboost"
+        for span in rel["evidence"]
+        if span["span_id"] == "xgboost:34"
+    )
+    assert missing_span["line_start"] == 34
+    assert missing_span["line_end"] == 34
+    assert "Missing values are handled" in missing_span["quote"]
+    assert missing_span["quote"] != ""
+
+
 def test_q31_q35_partial_not_absent():
     payload = load_oracle()
     for i in range(31, 36):
@@ -86,7 +102,7 @@ def test_baseline_a_identity_sidecar():
 
 def test_oracle_sha256_frozen():
     observed = sha256_bytes(ORACLE_PATH.read_bytes())
-    assert observed == "133035491d81bcc1e4672c023f8bdbf562a05857dcb0b49a9e7d9d0328561b76"
+    assert observed == "a5a671507516b2b061623c201469af87377d66beb0870d9c78d6179b9993e268"
 
 
 def test_v1_evaluator_file_unchanged():

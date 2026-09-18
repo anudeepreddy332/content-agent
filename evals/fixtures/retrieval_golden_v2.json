@@ -1355,11 +1355,11 @@
               "supports": "Second-order Taylor using gradient and hessian"
             },
             {
-              "span_id": "xgboost:35",
+              "span_id": "xgboost:34",
               "heading": "Assumptions",
-              "line_start": 35,
-              "line_end": 35,
-              "quote": "",
+              "line_start": 34,
+              "line_end": 34,
+              "quote": "Additive expansion of trees; twice-differentiable convex loss for Taylor expansion; base learners are shallow decision trees; no distributional or scaling assumptions on features. Missing values are handled by learning a default direction during training.",
               "supports": "Native missing value handling via default direction"
             }
           ]
@@ -1376,7 +1376,7 @@
         {
           "description": "Handles missing values with learned default split direction",
           "supported_by": [
-            "xgboost:35"
+            "xgboost:34"
           ],
           "status": "supported"
         },

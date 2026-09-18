@@ -223,6 +223,11 @@ def validate_oracle(
                 except RetrievalGoldenV2Error:
                     quote_mismatches += 1
                     raise
+                if not quote:
+                    quote_mismatches += 1
+                    raise RetrievalGoldenV2Error(
+                        f"{qid}/{source}:{line_start}-{line_end}: quote must be non-empty"
+                    )
                 if actual != quote:
                     quote_mismatches += 1
                     raise RetrievalGoldenV2Error(

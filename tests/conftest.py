@@ -7,6 +7,21 @@ from types import SimpleNamespace
 import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from tests.offline_network_guard import (  # noqa: E402
+    disable_langsmith_and_provider_tracing,
+    install_offline_network_guard,
+)
+
+
+@pytest.fixture(autouse=True)
+def offline_regression_guard(request, monkeypatch):
+    """Fail closed on unexpected external network or tracing in offline tests."""
+    if request.node.get_closest_marker("live_network"):
+        return
+    disable_langsmith_and_provider_tracing(monkeypatch)
+    install_offline_network_guard(monkeypatch)
+
+
 @pytest.fixture(autouse=True)
 def no_retry_sleep(monkeypatch):
     """Neutralize tenacity's backoff (2s->4s->8s) so retry tests run in ms."""
