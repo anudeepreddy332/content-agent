@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5B1 Candidate C v1)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5B2A drafter pack contract)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -444,6 +444,22 @@ not representation wins versus A. Vector multiplier versus A is `2.178x`
 Descriptive dense latency is `1.37x` A. Provider and external evaluation
 network calls were zero. Production serving and Qdrant remain unchanged.
 
+**Phase 5B2A — DRAFTER_PACKED_EVIDENCE_V1 shadow contract COMPLETE; READY
+FOR LIVE-WIRING CONSIDERATION (not wired).** Clean required parent
+`fe6d35970e9c2b4ed5e494a2cea07a0287fc3f4b`. Production `draft_node`,
+retrieval, Candidate-C pack, and verifier unchanged. Shadow contract
+consumes all Candidate-C PACKED groups with no secondary top-3 gate or
+2000-char clip.
+
+Gating exposure recall: packed `0.92424242`, legacy drafter
+`0.75757576`, packed-contract drafter `0.92424242`, verifier
+`0.92424242`. All six known legacy drafter losses recover (Q09, Q17, Q28,
+Q31, Q32, Q34). Q22 stays 0.5 (PACKED loss). Median packed-contract
+context 4 groups / 6842 chars / 1578 cl100k vs legacy 3 / 4000 / 1078.
+Two runs share
+`d71f5f8f49565ca05b4c239dbb4ca1b02058eb27ef70d54003eb227a713f6402`.
+Provider and evaluation network calls zero.
+
 **Phase 5B1 — Candidate C v1 bounded adjacent-neighbor expansion COMPLETE;
 C v1 NOT READY TO ADVANCE.** Clean required parent
 `f67b07054a8823ffbc6b3ebc23c3233f9e5e7496` was verified and pushed before
@@ -830,8 +846,9 @@ revision; drive material-policy denominator and publication-safety conjunction.
 | Call A | PASS (oracle v2) | `call_a_provider_eval_gold_v2` rescore |
 | Call B | PASS | run `semantic_analyzer_run_8f554fa3eb62`, digest `0ed38fc3…899c5` |
 
-**Next:** Phase 5B1 Candidate C v1 evaluated and not advanced. Inspect Q22
-pack-order loss and Q09 drafter K=3 before parent-section retrieval.
+**Next:** Phase 5B2A shadow drafter contract qualified; await explicit
+go-ahead before wiring `draft_node`. Upstream: Q22 pack-order loss and
+Q19/Q21/Q30 retrieval gaps remain before full Candidate-C promotion.
 
 **Final qualification evidence:** `tests/test_brief_requirements_live_wiring.py`
 (7/7); full regression suite; provider calls zero; demonstrated P0/P1 none.

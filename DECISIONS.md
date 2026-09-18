@@ -9,6 +9,49 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-18-04
+Date: 2026-09-18
+
+Decision: **Phase 5B2A DRAFTER_PACKED_EVIDENCE_V1 shadow contract evaluation
+complete; shadow contract ready for live-wiring consideration (not yet wired).**
+
+Reason: Exact required parent
+`fe6d35970e9c2b4ed5e494a2cea07a0287fc3f4b` was clean. Production
+`draft_node`, retrieval, Candidate-C pack, and verifier were unchanged.
+The only variable was a shadow drafter KB exposure contract that consumes
+all Candidate-C PACKED groups with no secondary top-3 gate or 2000-char
+clip.
+
+On 33 gating queries, exposure recall is packed `0.92424242`, legacy
+drafter `0.75757576`, packed-contract drafter `0.92424242`, verifier
+`0.92424242`. All six known PACKED→legacy drafter losses (Q09, Q17, Q28,
+Q31, Q32, Q34) recover under the shadow contract. Q22 remains 0.5 (lost at
+PACKED; not falsely attributed to drafter). Top-K losses eliminated on
+Q09/Q17/Q31/Q34; clipping losses eliminated on Q28/Q32. Zero new
+regressions; packed-group identity and verifier evidence-set parity hold.
+Median packed-contract drafter context: 4 groups, 6842 chars, 1578 cl100k
+tokens (legacy median 3 / 4000 / 1078). Two runs share
+`d71f5f8f49565ca05b4c239dbb4ca1b02058eb27ef70d54003eb227a713f6402`.
+
+The downstream drafter exposure gap is contract-caused, not retrieval- or
+pack-caused. Live wiring remains a separate gated step.
+
+Artifacts:
+
+- `agent/drafter_packed_evidence.py`
+- `evals/fixtures/phase5b2a_drafter_pack_contract.json`
+- `scripts/phase5b2a_drafter_pack_contract.py`
+- `reports/phase5/phase5b2a/`
+- `tests/test_phase5b2a_drafter_pack_contract.py`
+
+Status: **PHASE-5B2A-DRAFTER-PACK-CONTRACT-READY.** Shadow contract
+qualified; do not wire to production `draft_node` without explicit
+go-ahead. Q22 pack-order loss and Q19/Q21/Q30 retrieval gaps remain
+upstream blockers for full Candidate-C promotion.
+
+Confidence: 0.97
+
+---
 Decision ID: D-2026-09-18-03
 Date: 2026-09-18
 

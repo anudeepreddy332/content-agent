@@ -1,0 +1,211 @@
+{
+  "aggregate_gating_33": {
+    "exposure_recall": {
+      "legacy_drafter": 0.75757576,
+      "packed": 0.92424242,
+      "packed_contract_drafter": 0.92424242,
+      "verifier_exposed": 0.92424242
+    },
+    "legacy_drafter_context": {
+      "characters": {
+        "max": 6000,
+        "median": 4000,
+        "min": 2678,
+        "p95": 6000
+      },
+      "cl100k_tokens": {
+        "max": 1970,
+        "median": 1078,
+        "min": 630,
+        "p95": 1656
+      },
+      "groups": {
+        "max": 3,
+        "median": 3,
+        "min": 2,
+        "p95": 3
+      }
+    },
+    "packed_contract_drafter_context": {
+      "characters": {
+        "max": 9194,
+        "median": 6842,
+        "min": 4210,
+        "p95": 9058
+      },
+      "cl100k_tokens": {
+        "max": 1988,
+        "median": 1578,
+        "min": 1000,
+        "p95": 1985
+      },
+      "groups": {
+        "max": 5,
+        "median": 4,
+        "min": 2,
+        "p95": 5
+      }
+    },
+    "prompt_growth_estimate": {
+      "characters_median_ratio": 1.7105,
+      "cl100k_tokens_max_ratio": 1.009137,
+      "cl100k_tokens_median_ratio": 1.463822,
+      "cl100k_tokens_p95_ratio": 1.198671,
+      "groups_median_ratio": 1.333333
+    }
+  },
+  "deterministic_rerun": true,
+  "external_network_calls": 0,
+  "focus": {
+    "Q09": {
+      "classification_vs_packed": "SAME",
+      "forensics": {
+        "clip_loss": false,
+        "clip_spans": [],
+        "new_loss": false,
+        "topk_loss": true,
+        "topk_spans": [
+          "support-vector-machines::support-vector-machines:8-12"
+        ]
+      },
+      "legacy_drafter": 0.0,
+      "packed": 1.0,
+      "packed_contract_drafter": 1.0
+    },
+    "Q13": {
+      "classification_vs_packed": "SAME",
+      "forensics": {
+        "clip_loss": false,
+        "new_loss": false,
+        "topk_loss": false
+      },
+      "legacy_drafter": 1.0,
+      "packed": 1.0,
+      "packed_contract_drafter": 1.0
+    },
+    "Q17": {
+      "classification_vs_packed": "SAME",
+      "forensics": {
+        "clip_loss": false,
+        "clip_spans": [],
+        "new_loss": false,
+        "topk_loss": true,
+        "topk_spans": [
+          "multi-agent-systems::multi-agent-systems:35-37",
+          "multi-agent-systems::multi-agent-systems:37"
+        ]
+      },
+      "legacy_drafter": 0.0,
+      "packed": 1.0,
+      "packed_contract_drafter": 1.0
+    },
+    "Q22": {
+      "classification_vs_packed": "SAME",
+      "forensics": {
+        "clip_loss": false,
+        "new_loss": false,
+        "topk_loss": false
+      },
+      "legacy_drafter": 0.5,
+      "packed": 0.5,
+      "packed_contract_drafter": 0.5
+    },
+    "Q28": {
+      "classification_vs_packed": "SAME",
+      "forensics": {
+        "clip_loss": true,
+        "clip_spans": [
+          "react-agent-pattern::react-agent-pattern:32-32"
+        ],
+        "new_loss": false,
+        "topk_loss": false,
+        "topk_spans": []
+      },
+      "legacy_drafter": 0.0,
+      "packed": 1.0,
+      "packed_contract_drafter": 1.0
+    },
+    "Q31": {
+      "classification_vs_packed": "SAME",
+      "forensics": {
+        "clip_loss": false,
+        "clip_spans": [],
+        "new_loss": false,
+        "topk_loss": true,
+        "topk_spans": [
+          "attention-transformers::attention-transformers:55"
+        ]
+      },
+      "legacy_drafter": 0.5,
+      "packed": 1.0,
+      "packed_contract_drafter": 1.0
+    },
+    "Q32": {
+      "classification_vs_packed": "SAME",
+      "forensics": {
+        "clip_loss": true,
+        "clip_spans": [
+          "feedforward-neural-networks::feedforward-neural-networks:56-56"
+        ],
+        "new_loss": false,
+        "topk_loss": false,
+        "topk_spans": []
+      },
+      "legacy_drafter": 0.0,
+      "packed": 1.0,
+      "packed_contract_drafter": 1.0
+    },
+    "Q34": {
+      "classification_vs_packed": "SAME",
+      "forensics": {
+        "clip_loss": false,
+        "clip_spans": [],
+        "new_loss": false,
+        "topk_loss": true,
+        "topk_spans": [
+          "feedforward-neural-networks::feedforward-neural-networks:52",
+          "feedforward-neural-networks::feedforward-neural-networks:57"
+        ]
+      },
+      "legacy_drafter": 0.0,
+      "packed": 1.0,
+      "packed_contract_drafter": 1.0
+    }
+  },
+  "forensics_summary": {
+    "clip_losses_eliminated": [
+      "Q28",
+      "Q32"
+    ],
+    "known_legacy_losses": [
+      "Q09",
+      "Q17",
+      "Q28",
+      "Q31",
+      "Q32",
+      "Q34"
+    ],
+    "new_evidence_losses": [],
+    "packed_contract_regressions_vs_packed": [],
+    "topk_losses_eliminated": [
+      "Q09",
+      "Q17",
+      "Q31",
+      "Q34"
+    ]
+  },
+  "production_drafter_changed": false,
+  "production_retrieval_changed": false,
+  "provenance_failures": [],
+  "provider_calls": 0,
+  "quality_gate": {
+    "candidate_c_packed_identity_preserved": true,
+    "legacy_losses_recovered": true,
+    "no_new_regressions": true,
+    "packed_contract_matches_packed_recall": true,
+    "packed_contract_matches_verifier_evidence_set": true,
+    "shadow_contract_ready_for_live_wiring": true
+  },
+  "result_sha256": "d71f5f8f49565ca05b4c239dbb4ca1b02058eb27ef70d54003eb227a713f6402",
+  "verifier_changed": false
+}
