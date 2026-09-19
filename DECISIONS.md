@@ -9,6 +9,47 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-19-01
+Date: 2026-09-19
+
+Decision: **Phase 5D0 CI/runtime reproducibility repair — hermetic default CI
+with pinned MiniLM provisioning and BGE tokenizer fixture isolation.**
+
+Reason: GitHub Actions CI on `feature/phase5-rag-hardening` failed with four
+test errors: two BGE tokenizer setup errors (`config.json` identity mismatch
+against runner HF cache state) and two production-integration failures
+(`resolve_local_model_snapshot` could not find pinned MiniLM
+`1110a243…` on a clean runner). Lint passed; 1402 other tests passed.
+
+Repair (no retrieval/ranking/packing architecture changes):
+
+- **MiniLM (production runtime dependency):**
+  `scripts/provision_minilm_snapshot.py` downloads/verifies
+  `sentence-transformers/all-MiniLM-L6-v2@1110a243…` before tests; CI caches
+  the snapshot directory and sets `HF_HUB_OFFLINE=1` /
+  `TRANSFORMERS_OFFLINE=1` for smoke + pytest. `SentenceTransformer(…,
+  local_files_only=True)` remains fail-closed.
+- **BGE (experimental, not production path):** committed
+  `evals/fixtures/phase5a2j_bge_reranker_tokenizer/` (tokenizer/config only);
+  default-CI pair-length tests use the fixture instead of runner HF cache.
+  Full ~1GB BGE weights remain off the default CI path.
+- **Clean inference smoke:** `scripts/inference_smoke.py` — warmup + one
+  deterministic qualified KB retrieval, zero provider calls.
+
+Artifacts:
+
+- `scripts/provision_minilm_snapshot.py`
+- `scripts/inference_smoke.py`
+- `evals/fixtures/phase5a2j_bge_reranker_tokenizer/`
+- `.github/workflows/ci.yml`
+- `scripts/phase5a2j_bge_rerank.py` (`TOKENIZER_FIXTURE`)
+- `tests/test_phase5a2j_bge_rerank.py`
+
+Status: **PHASE-5D0-CI-RUNTIME-REPAIR-LANDED** (pending GitHub CI confirmation).
+
+Confidence: 0.93
+
+---
 Decision ID: D-2026-09-18-06
 Date: 2026-09-18
 

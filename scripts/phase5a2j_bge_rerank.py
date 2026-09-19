@@ -23,6 +23,7 @@ from scripts import phase5a2h_rerank as h  # noqa: E402
 STARTING_HEAD = "d684cb3ade29ff29905cfbc00d56233bc85dd16a"
 DEPENDENCY = ROOT / "evals/fixtures/phase5a2j_bge_reranker_dependency.json"
 CONTRACT = ROOT / "evals/fixtures/phase5a2j_bge_reranker_contract.json"
+TOKENIZER_FIXTURE = ROOT / "evals/fixtures/phase5a2j_bge_reranker_tokenizer"
 OUTPUT = ROOT / "reports/phase5/phase5a2j"
 H2H_CONTRACT = ROOT / "evals/fixtures/phase5a2h_reranker_contract.json"
 FROZEN_POOLS = ROOT / "reports/phase5/phase5a2h/candidate_pools.json"

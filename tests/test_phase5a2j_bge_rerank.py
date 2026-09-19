@@ -23,7 +23,7 @@ def dependency():
 
 @pytest.fixture
 def tokenizer(contract):
-    return bge.load_tokenizer(bge.snapshot_path(), contract["model"])
+    return bge.load_tokenizer(bge.TOKENIZER_FIXTURE, contract["model"])
 
 
 def test_pinned_bge_identity(contract, dependency):

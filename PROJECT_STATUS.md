@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5B3 production RAG integration)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-19 (Phase 5D0 CI/runtime reproducibility repair)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -443,6 +443,13 @@ not representation wins versus A. Vector multiplier versus A is `2.178x`
 (159 vs 73). Hybrid top-5 unique sources are `1.939` versus A `2.970`.
 Descriptive dense latency is `1.37x` A. Provider and external evaluation
 network calls were zero. Production serving and Qdrant remain unchanged.
+
+**Phase 5D0 — CI/runtime reproducibility repair LANDED (GitHub CI pending).**
+Default CI now provisions and hash-verifies pinned production MiniLM
+`all-MiniLM-L6-v2@1110a243…` before offline smoke/tests; BGE pair-length
+tests use committed tokenizer fixtures instead of runner HF cache (experimental
+BGE weights not required on every push). `scripts/inference_smoke.py` proves
+warmup + one deterministic qualified KB retrieval with zero provider calls.
 
 **Phase 5B3 — Production qualified RAG integration COMPLETE.** Clean
 required parent `912342ac0e735af152833d21cf1c8e821532a600` (pushed).
