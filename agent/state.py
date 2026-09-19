@@ -28,7 +28,7 @@ class AgentState(TypedDict):
 
     # Retrieval
     web_sources: list           # [{title, url, content, score}]
-    kb_results: list            # [{text, source, chunk_index, distance, rrf_score}]
+    kb_results: list            # qualified: packed CSWP units + provenance; legacy: [{text, source, ...}]
 
     # Verification
     grounding_report: list      # [{claim, source_url, confidence, status, specificity,

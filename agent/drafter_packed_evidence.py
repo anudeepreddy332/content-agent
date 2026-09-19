@@ -1,4 +1,4 @@
-"""Shadow drafter KB exposure contracts — not wired to production draft_node."""
+"""Drafter KB exposure contracts — DRAFTER_PACKED_EVIDENCE_V1 live in production."""
 
 from __future__ import annotations
 

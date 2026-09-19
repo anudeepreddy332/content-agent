@@ -1,0 +1,95 @@
+{
+  "aggregate_gating_33": {
+    "exposure_recall": {
+      "drafter_exposed": 0.93939394,
+      "expanded": 0.93939394,
+      "packed": 0.93939394,
+      "retrieved": 0.78787879,
+      "verifier_exposed": 0.93939394
+    }
+  },
+  "focus": {
+    "Q09": {
+      "drafter_exposed": 1.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 0.0,
+      "verifier_exposed": 1.0
+    },
+    "Q13": {
+      "drafter_exposed": 1.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 0.0,
+      "verifier_exposed": 1.0
+    },
+    "Q17": {
+      "drafter_exposed": 1.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 0.0,
+      "verifier_exposed": 1.0
+    },
+    "Q19": {
+      "drafter_exposed": 0.5,
+      "expanded": 0.5,
+      "packed": 0.5,
+      "retrieved": 0.5,
+      "verifier_exposed": 0.5
+    },
+    "Q21": {
+      "drafter_exposed": 0.5,
+      "expanded": 0.5,
+      "packed": 0.5,
+      "retrieved": 0.5,
+      "verifier_exposed": 0.5
+    },
+    "Q22": {
+      "drafter_exposed": 1.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 0.5,
+      "verifier_exposed": 1.0
+    },
+    "Q28": {
+      "drafter_exposed": 1.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 1.0,
+      "verifier_exposed": 1.0
+    },
+    "Q30": {
+      "drafter_exposed": 0.5,
+      "expanded": 0.5,
+      "packed": 0.5,
+      "retrieved": 0.5,
+      "verifier_exposed": 0.5
+    },
+    "Q31": {
+      "drafter_exposed": 1.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 1.0,
+      "verifier_exposed": 1.0
+    },
+    "Q32": {
+      "drafter_exposed": 1.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 1.0,
+      "verifier_exposed": 1.0
+    },
+    "Q34": {
+      "drafter_exposed": 1.0,
+      "expanded": 1.0,
+      "packed": 1.0,
+      "retrieved": 1.0,
+      "verifier_exposed": 1.0
+    }
+  },
+  "quality_gate": {
+    "production_integration_ready": true
+  },
+  "result_sha256": "d0030d8e96dad388ee9c67144bc01e50f9c037a79e544fc628f06dacc9000548",
+  "seed_identity_mismatches": []
+}

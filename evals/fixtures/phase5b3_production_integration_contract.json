@@ -1,0 +1,17 @@
+{
+  "external_network_calls": 0,
+  "input_file_sha256": {
+    "agent/drafter_packed_evidence.py": "2687ba026a4d89fdd1fb97c5513377f2434a0b7ddbb79cc73d991eb6a2546973",
+    "agent/nodes.py": "7b824cd1ae3dc609d56fd6f3aa43b12032aadcb00030c77c7be17fac54827858",
+    "agent/qualified_rag.py": "7a102ea7690955bb2ac92857fd339a6cff50cd1e25c8873f62deebb40a71523c",
+    "agent/semantic_analyzer/contract.py": "9d0db7885f5bb2585d612eb2d28e2db5d985cd350f98fcc91b41b99873eec984",
+    "scripts/phase5b3_production_integration.py": "fdb7d55c4e07e142f72cf594a569155cd86643c9e8009c6c2162246a2eec155b"
+  },
+  "provider_calls": 0,
+  "qdrant_reads": 0,
+  "qdrant_writes": 0,
+  "required_parent": "912342ac0e735af152833d21cf1c8e821532a600",
+  "schema_version": "phase5b3_production_integration_v1",
+  "upstream_contract_sha256": "7b8920bf7c66a7adcab1238893130a1078d2df1b41fe12d0bac033fe0b5caf74",
+  "contract_sha256": "a0f6cb24f8f99d8284167fb243c2615b76308a229f4c4b7da81de24729d9ba9a"
+}

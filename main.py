@@ -319,8 +319,9 @@ def run(topic, card_id, series, auto, brief_requirements_json):
 
     # KB warmup (M5): pay the one-time encoder load + BM25 build BEFORE the graph
     # runs, so latency_ms.retrieve_kb measures steady-state query cost only.
-    from tools.query_kb import warmup as kb_warmup
-    warmup_times = kb_warmup()
+    from agent.qualified_rag import warmup as qualified_kb_warmup
+
+    warmup_times = qualified_kb_warmup()
     get_logger("main").info("kb.warmup", run_id=run_id, **warmup_times)
 
 

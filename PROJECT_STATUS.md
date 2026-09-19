@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5B2C seed-first pack)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5B3 production RAG integration)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -444,6 +444,14 @@ not representation wins versus A. Vector multiplier versus A is `2.178x`
 Descriptive dense latency is `1.37x` A. Provider and external evaluation
 network calls were zero. Production serving and Qdrant remain unchanged.
 
+**Phase 5B3 — Production qualified RAG integration COMPLETE.** Clean
+required parent `912342ac0e735af152833d21cf1c8e821532a600` (pushed).
+Production retrieve/draft/verifier now use local CSWP hybrid retrieval,
+±1 expansion, seed-first pack, and `DRAFTER_PACKED_EVIDENCE_V1`. Qdrant
+not used on KB path. Gating exposure recall: retrieved `0.78787879`,
+packed/drafter/verifier `0.93939394`. Two runs share
+`d0030d8e96dad388ee9c67144bc01e50f9c037a79e544fc628f06dacc9000548`.
+
 **Phase 5B2C — Seed-first packing + combined exposure requalification
 COMPLETE; COMBINED CONTRACT READY FOR LIVE-WIRING CONSIDERATION (not
 wired).** Clean required parent `41261a1a12ffba8a8051debc84b27055985c1b4f`
@@ -860,9 +868,8 @@ revision; drive material-policy denominator and publication-safety conjunction.
 | Call A | PASS (oracle v2) | `call_a_provider_eval_gold_v2` rescore |
 | Call B | PASS | run `semantic_analyzer_run_8f554fa3eb62`, digest `0ed38fc3…899c5` |
 
-**Next:** Phase 5B2C combined contract qualified; await explicit go-ahead
-before live-wiring seed-first pack + DRAFTER_PACKED_EVIDENCE_V1 into
-production `draft_node`. Q19/Q21/Q30 retrieval gaps remain upstream.
+**Next:** Phase 5B3 production integration live. Monitor first supervised
+publish runs. Q19/Q21/Q30 retrieval gaps remain upstream.
 
 **Final qualification evidence:** `tests/test_brief_requirements_live_wiring.py`
 (7/7); full regression suite; provider calls zero; demonstrated P0/P1 none.

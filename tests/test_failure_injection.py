@@ -47,7 +47,10 @@ def test_retrieve_tavily_empty_results(base_state, monkeypatch):
         return []
 
     monkeypatch.setattr(nodes, "web_search", empty_search)
-    monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: base_state["kb_results"])
+    monkeypatch.setattr(
+        "agent.qualified_rag.retrieve_qualified_kb",
+        lambda query, n_seeds=5: {"kb_results": base_state["kb_results"]},
+    )
 
     result = nodes.retrieve_node(base_state)
 
@@ -64,7 +67,10 @@ def test_retrieve_tavily_errors_logged_not_fatal(base_state, monkeypatch):
         raise ConnectionError("tavily unreachable")
 
     monkeypatch.setattr(nodes, "web_search", exploding_search)
-    monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: [])
+    monkeypatch.setattr(
+        "agent.qualified_rag.retrieve_qualified_kb",
+        lambda query, n_seeds=5: {"kb_results": []},
+    )
 
     result = nodes.retrieve_node(base_state)  # must not raise
 
@@ -99,7 +105,10 @@ def test_retrieve_survives_kb_down(base_state, monkeypatch):
                         lambda query, max_results=5, force_refresh=False:
                         [{"title": "t", "url": f"https://e.com/{query[:10]}",
                           "content": "c", "score": 0.9}])
-    monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: [])
+    monkeypatch.setattr(
+        "agent.qualified_rag.retrieve_qualified_kb",
+        lambda query, n_seeds=5: {"kb_results": []},
+    )
     result = nodes.retrieve_node(base_state)
     assert result["kb_results"] == []
     assert result["web_sources"], "web path unaffected by KB outage"

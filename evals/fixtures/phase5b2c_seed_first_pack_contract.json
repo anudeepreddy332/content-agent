@@ -8,7 +8,7 @@
   ],
   "external_network_calls": 0,
   "input_file_sha256": {
-    "agent/drafter_packed_evidence.py": "ecabf455889ff7890052384f76641963b8bfc8e3d7311fcb5c218408403e6a0c",
+    "agent/drafter_packed_evidence.py": "2687ba026a4d89fdd1fb97c5513377f2434a0b7ddbb79cc73d991eb6a2546973",
     "scripts/phase5b1_candidate_c.py": "65a53696fbd73dc2899c5c1c4b62166df0185b68a4fb606904843cc3e6d1f97d",
     "scripts/phase5b2a_drafter_pack_contract.py": "798fd9fdbf35b1a410f852dcc5b67372a5f8b2f72a3f5e2c0345251565d69082",
     "scripts/phase5b2c_seed_first_pack.py": "91d6b845d10bb49ce27bd07a03b4d4115da4e8cf68049e94da0d206addb13249"
@@ -34,5 +34,5 @@
     "phase5b2a_drafter_pack": "4a2a2240393e01a73a3aef3cd3ca6de8e9481c9d69e8415f1467ea5e3b534496"
   },
   "verifier_changed": false,
-  "contract_sha256": "7b8920bf7c66a7adcab1238893130a1078d2df1b41fe12d0bac033fe0b5caf74"
+  "contract_sha256": "eec1744613bd3a9414d1a3f98a038093d78c3d9dcb916ef1a59b4e8a8e7fd6fe"
 }

@@ -37,7 +37,6 @@ from agent.html_policy import (
     sha256_utf8,
 )
 from tools.web_search import web_search
-from tools.query_kb import query_kb
 from config import (
     DEEPSEEK_MODEL,
     DEEPSEEK_BASE_URL,
@@ -378,7 +377,17 @@ def draft_node(state: AgentState) -> dict:
         web_sources = state.get("web_sources", []) or []
         kb_results = state.get("kb_results", []) or []
         if web_sources or kb_results:
-            source_context = _build_source_context(web_sources[:6], kb_results[:3])
+            from agent.qualified_rag import build_drafter_kb_context, is_qualified_kb
+
+            web_context = _build_web_source_context(web_sources[:6])
+            if is_qualified_kb(kb_results):
+                kb_context = build_drafter_kb_context(kb_results)
+            else:
+                kb_context = _build_legacy_kb_source_context(kb_results[:3])
+            source_context = (
+                "\n\n".join(part for part in (web_context, kb_context) if part)
+                or "No sources available."
+            )
             source_block = (
                 "\n\nGROUNDING SOURCES (retrieved for this topic):\n"
                 f"{source_context}\n\n"
@@ -637,7 +646,10 @@ def retrieve_node(state: AgentState) -> dict:
     # KB query — use topic + first 100 chars of problem_framing for richer context
     problem_framing_preview = state.get("draft_sections", {}).get("problem_framing", "")[:100]
     kb_query = f"{topic} {problem_framing_preview}".strip()
-    kb_results = query_kb(query=kb_query, n_results=5)
+    from agent.qualified_rag import retrieve_qualified_kb
+
+    qualified = retrieve_qualified_kb(kb_query, n_seeds=5)
+    kb_results = qualified["kb_results"]
 
     latency = int((time.time() - t_start) * 1000)
     existing_latency = state.get("latency_ms", {})
@@ -662,31 +674,40 @@ def retrieve_node(state: AgentState) -> dict:
     }
 
 
-def _build_source_context(web_sources: list, kb_results: list) -> str:
-    """Format sources into a compact string for the verify prompt.
+def _build_web_source_context(web_sources: list) -> str:
+    """Format web sources for draft grounding (unchanged Tavily truncation)."""
 
-    Truncation limits — do not change without re-running benchmark:
-      WEB_CHARS: Tavily content median is ~1923 chars (305-result sample).
-                 1500 chars covers ~78% of a typical result and the full
-                 lower quartile. 98% of results were cut at the old 500-char
-                 limit, which is why obvious claims were marked unverified.
-      KB_CHARS:  Seed docs average ~5294 chars. 800 chars covered only 15%
-                 of a doc (intro paragraph only). 2000 chars covers ~38%,
-                 reaching algorithm-level detail in all seed docs.
-      Context budget at these limits (worst-case, 5+5 sources):
-        source tokens  ~4375  |  total input ~5695  |  headroom 54k / 64k
-        cost delta per verify call: +$0.00074 (+14.3%)
-    """
-    # PHASE-1 EXPERIMENT: raised from 500 → 1500 (web) and 800 → 2000 (kb)
     WEB_CHARS = 1500
-    KB_CHARS  = 2000
-
     parts = []
-    for s in web_sources[:5]:
-        parts.append(f"[WEB] {s['url']}\n{s['content'][:WEB_CHARS]}")
-    for k in kb_results[:5]:
-        parts.append(f"[KB] {k['source']}\n{k['text'][:KB_CHARS]}")
-    return "\n\n".join(parts) if parts else "No sources available."
+    for source in web_sources[:5]:
+        parts.append(f"[WEB] {source['url']}\n{source['content'][:WEB_CHARS]}")
+    return "\n\n".join(parts)
+
+
+def _build_legacy_kb_source_context(kb_results: list) -> str:
+    """Legacy KB clip path retained only for non-qualified fallback states."""
+
+    KB_CHARS = 2000
+    parts = []
+    for item in kb_results[:5]:
+        parts.append(f"[KB] {item['source']}\n{item['text'][:KB_CHARS]}")
+    return "\n\n".join(parts)
+
+
+def _build_source_context(web_sources: list, kb_results: list) -> str:
+    """Format sources into a compact string (verify / legacy paths)."""
+
+    from agent.qualified_rag import build_drafter_kb_context, is_qualified_kb
+
+    web_context = _build_web_source_context(web_sources)
+    if is_qualified_kb(kb_results):
+        kb_context = build_drafter_kb_context(kb_results)
+    else:
+        kb_context = _build_legacy_kb_source_context(kb_results)
+    return (
+        "\n\n".join(part for part in (web_context, kb_context) if part)
+        or "No sources available."
+    )
 
 def _build_citations(grounding_report: list, web_sources: list, kb_results: list | None = None) -> str:
     """Trusted citation HTML. Verifier strings are not URL authority."""

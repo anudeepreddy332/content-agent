@@ -9,6 +9,42 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-18-06
+Date: 2026-09-18
+
+Decision: **Phase 5B3 production qualified RAG integration complete;
+production path live-wired and parity-verified.**
+
+Reason: Exact required parent
+`912342ac0e735af152833d21cf1c8e821532a600` was clean and pushed before
+implementation. Production `retrieve_node` now uses local CSWP manifest
+hybrid retrieval (all-MiniLM-L6-v2 dense + raw BM25 + RRF k=60), ±1
+expansion, seed-first pack, and `DRAFTER_PACKED_EVIDENCE_V1` drafter
+exposure. Verifier manifest consumes the same packed KB identity. Legacy
+`kb_results[:3]` and per-KB 2000-character clipping are bypassed for
+qualified KB results. Production Qdrant is not read/written on this path.
+
+Gating exposure recall measured on production code: retrieved
+`0.78787879`, expanded/packed/drafter/verifier `0.93939394`. Q22 packed
+1.0. Q19/Q21/Q30 unchanged at 0.5. Zero seed-identity mismatches vs frozen
+CSWP hybrid top-5. Two runs share
+`d0030d8e96dad388ee9c67144bc01e50f9c037a79e544fc628f06dacc9000548`.
+
+Artifacts:
+
+- `agent/qualified_rag.py`
+- `agent/nodes.py` (retrieve + draft wiring)
+- `agent/semantic_analyzer/contract.py` (verifier parity)
+- `scripts/phase5b3_production_integration.py`
+- `reports/phase5/phase5b3/`
+- `tests/test_phase5b3_production_integration.py`
+
+Status: **PHASE-5B3-PRODUCTION-RAG-INTEGRATION-READY.** Q19/Q21/Q30
+retrieval gaps remain upstream.
+
+Confidence: 0.96
+
+---
 Decision ID: D-2026-09-18-05
 Date: 2026-09-18
 
