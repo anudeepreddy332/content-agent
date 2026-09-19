@@ -1,9 +1,9 @@
 {
-  "contract_sha256": "dda7eae9a6cd08355307abc8413a5bb3178cf413ef0e68549e07d8c4c846ea09",
+  "contract_sha256": "6c7d45ad97bc52924a31a3210b7187b41beef67401aa86020d18cac80d517f27",
   "external_network_calls": 0,
   "input_file_sha256": {
     "agent/drafter_packed_evidence.py": "2687ba026a4d89fdd1fb97c5513377f2434a0b7ddbb79cc73d991eb6a2546973",
-    "evals/fixtures/phase5b1_candidate_c_contract.json": "bc7f746535cc4b2c4e1e20bef836d1603047fdc18eb81527ec0334db7274f0f3",
+    "evals/fixtures/phase5b1_candidate_c_contract.json": "3a081d5650dff1a3b3609d550599c5acd110817caf5da8cd7fee5e59791710cc",
     "scripts/phase5b2a_drafter_pack_contract.py": "798fd9fdbf35b1a410f852dcc5b67372a5f8b2f72a3f5e2c0345251565d69082"
   },
   "legacy_control": {
@@ -30,6 +30,6 @@
       "no repack, reorder, split, or regeneration"
     ]
   },
-  "upstream_contract_sha256": "e9643d34772b5e804ece6333b4831986499b961453837905c38b8a4c2824b785",
+  "upstream_contract_sha256": "ba454249922025492caa926a17ca5d9671857d234f1ce0bfcef207e8b3c88992",
   "verifier_changed": false
 }

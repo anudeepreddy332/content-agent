@@ -180,8 +180,9 @@ def test_regression_precedence_never_hides_a_mixed_query():
 
 def test_script_has_no_production_or_qdrant_imports():
     source = (ROOT / "scripts/phase5a2_shadow_ab.py").read_text(encoding="utf-8")
-    assert "from agent" not in source
-    assert "import agent" not in source
+    assert "from agent.retrieval" in source
+    assert "from agent.qualified_rag" not in source
+    assert "from agent.shadow_qdrant" not in source
     assert "qdrant_client" not in source
 
 

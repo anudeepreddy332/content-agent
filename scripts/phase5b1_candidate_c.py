@@ -16,12 +16,17 @@ import statistics
 import subprocess
 import sys
 
-import tiktoken
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from scripts import phase5a2_shadow_ab as ab  # noqa: E402
 from scripts.phase5a2b_packed import eval_chunks  # noqa: E402
+from agent.retrieval import expansion as _expansion  # noqa: E402
+
+PACK_BUDGET_CL100K = _expansion.PACK_BUDGET_CL100K
+cl100k = _expansion.cl100k
+cl100k_count = _expansion.cl100k_count
+interval_key = _expansion.interval_key
+flatten = _expansion.flatten
 
 STARTING_HEAD = "f67b07054a8823ffbc6b3ebc23c3233f9e5e7496"
 CSWP_FINGERPRINT = (
@@ -32,7 +37,6 @@ OUTPUT = ROOT / "reports/phase5/phase5b1"
 CSWP = ROOT / "reports/phase5/phase5a2e/candidate_cswp_manifest.json"
 CONTROL = ROOT / "reports/phase5/phase5a2e/results.json"
 A_MANIFEST = ROOT / "reports/phase5/phase5a0/baseline_a_manifest.json"
-PACK_BUDGET_CL100K = 2000
 DRAFTER_K = 3
 DRAFTER_CHAR_LIMIT = 2000
 VERIFIER_K = 5
@@ -44,20 +48,30 @@ class CandidateCError(RuntimeError):
     """A Candidate C identity, expansion, pack, or provenance invariant failed."""
 
 
+def _wrap_expansion_error(fn):
+    def wrapped(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except _expansion.ExpansionError as exc:
+            raise CandidateCError(str(exc)) from exc
+
+    return wrapped
+
+
+expand_seeds = _wrap_expansion_error(_expansion.expand_seeds)
+dedupe_groups = _wrap_expansion_error(_expansion.dedupe_groups)
+pack_units_seed_first = _wrap_expansion_error(_expansion.pack_units_seed_first)
+assert_seed_preservation_invariant = _wrap_expansion_error(
+    _expansion.assert_seed_preservation_invariant
+)
+
+
 def read(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 def file_hash(path):
     return ab.sha256_bytes(Path(path).read_bytes())
-
-
-def cl100k():
-    return tiktoken.get_encoding("cl100k_base")
-
-
-def cl100k_count(text, encoding=None):
-    return len((encoding or cl100k()).encode(text))
 
 
 def percentile(values, p):
@@ -159,127 +173,6 @@ def frozen_seeds(control):
     return rows
 
 
-def same_document(a, b):
-    return (
-        a["document_id"] == b["document_id"]
-        and a["document_version"] == b["document_version"]
-        and a["source_path"] == b["source_path"]
-        and a["source_sha256"] == b["source_sha256"]
-    )
-
-
-def interval_key(unit):
-    return (
-        unit["source_path"],
-        tuple(
-            (s["source_char_start"], s["source_char_end"], s.get("role"))
-            for s in unit["source_spans"]
-        ),
-    )
-
-
-def neighbor_of(seed, by_source, delta):
-    rows = by_source[seed["source_path"]]
-    index = next(
-        i for i, unit in enumerate(rows) if unit["chunk_id"] == seed["chunk_id"]
-    )
-    target = index + delta
-    if target < 0 or target >= len(rows):
-        return None
-    unit = rows[target]
-    if not same_document(seed, unit):
-        raise CandidateCError("adjacent CSWP unit crossed document identity")
-    if abs(target - index) != 1:
-        raise CandidateCError("neighbor is not immediately adjacent")
-    return unit
-
-
-def expand_seeds(seeds, units, by_source):
-    """Expand each frozen seed to at most previous, seed, next. Dedup later."""
-
-    groups = []
-    for seed_row in seeds:
-        seed = units[seed_row["chunk_id"]]
-        members = []
-        for delta, relation in ((-1, "PREVIOUS"), (0, "SEED"), (1, "NEXT")):
-            unit = seed if relation == "SEED" else neighbor_of(seed, by_source, delta)
-            if unit is None:
-                continue
-            members.append(
-                {
-                    "chunk_id": unit["chunk_id"],
-                    "relation": relation,
-                    "seed_rank": seed_row["rank"],
-                    "seed_chunk_id": seed["chunk_id"],
-                    "source_path": unit["source_path"],
-                    "document_id": unit["document_id"],
-                    "document_version": unit["document_version"],
-                    "source_sha256": unit["source_sha256"],
-                    "retrieval_char_start": unit["retrieval_char_start"],
-                    "retrieval_char_end": unit["retrieval_char_end"],
-                    "source_intervals": [
-                        (s["source_char_start"], s["source_char_end"])
-                        for s in unit["source_spans"]
-                    ],
-                    "interval_key": interval_key(unit),
-                }
-            )
-        members.sort(
-            key=lambda row: (
-                row["retrieval_char_start"],
-                row["retrieval_char_end"],
-                row["chunk_id"],
-            )
-        )
-        groups.append(
-            {
-                "seed_rank": seed_row["rank"],
-                "seed_chunk_id": seed["chunk_id"],
-                "members": members,
-            }
-        )
-    return groups
-
-
-def dedupe_groups(groups):
-    seen_ids = set()
-    seen_intervals = {}
-    dropped_duplicate_ids = 0
-    kept = []
-    additional = defaultdict(list)
-    for group in groups:
-        members = []
-        for row in group["members"]:
-            cid = row["chunk_id"]
-            key = row["interval_key"]
-            if cid in seen_ids:
-                dropped_duplicate_ids += 1
-                additional[cid].append(
-                    {
-                        "seed_rank": row["seed_rank"],
-                        "seed_chunk_id": row["seed_chunk_id"],
-                        "relation": row["relation"],
-                    }
-                )
-                continue
-            if key in seen_intervals and seen_intervals[key] != cid:
-                raise CandidateCError(
-                    "identical source interval under a different chunk_id"
-                )
-            seen_ids.add(cid)
-            seen_intervals[key] = cid
-            members.append(row)
-        kept.append({**group, "members": members})
-    return kept, dropped_duplicate_ids, dict(additional)
-
-
-def flatten(groups):
-    rows = []
-    for group in groups:
-        rows.extend(group["members"])
-    return rows
-
-
 def pack_units(rows, units, budget, encoding):
     """Legacy frozen-order packer (pre-5B2C baseline for counterfactual comparison)."""
 
@@ -296,109 +189,6 @@ def pack_units(rows, units, budget, encoding):
         packed.append({**row, "cl100k_tokens": cost})
         used += cost
     return packed, skipped, used, exhausted
-
-
-def pack_units_seed_first(rows, units, budget, encoding):
-    """Two-pass seed-first pack: all unique SEED units, then ±1 neighbors."""
-
-    seed_rows = []
-    seen_seed_chunk = set()
-    for row in rows:
-        if row["relation"] != "SEED":
-            continue
-        cid = row["chunk_id"]
-        if cid in seen_seed_chunk:
-            continue
-        seen_seed_chunk.add(cid)
-        seed_rows.append(row)
-    seed_rows.sort(key=lambda row: (row["seed_rank"], row["chunk_id"]))
-
-    seed_costs = [
-        (
-            row,
-            cl100k_count(units[row["chunk_id"]]["retrieval_text"], encoding),
-        )
-        for row in seed_rows
-    ]
-    total_seed_cost = sum(cost for _, cost in seed_costs)
-    if total_seed_cost > budget:
-        raise CandidateCError(
-            f"seed-only cl100k tokens {total_seed_cost} exceed budget {budget}"
-        )
-
-    packed = []
-    skipped = []
-    packed_ids = set()
-    used = 0
-    for row, cost in seed_costs:
-        packed.append({**row, "cl100k_tokens": cost})
-        packed_ids.add(row["chunk_id"])
-        used += cost
-
-    neighbor_rows = [row for row in rows if row["chunk_id"] not in packed_ids]
-    neighbor_rows.sort(
-        key=lambda row: (
-            row["seed_rank"],
-            row.get(
-                "retrieval_char_start",
-                units[row["chunk_id"]].get("retrieval_char_start", 0),
-            ),
-            row.get(
-                "retrieval_char_end",
-                units[row["chunk_id"]].get("retrieval_char_end", 0),
-            ),
-            row["chunk_id"],
-        )
-    )
-    exhausted = False
-    neighbors_retained = 0
-    for row in neighbor_rows:
-        cost = cl100k_count(units[row["chunk_id"]]["retrieval_text"], encoding)
-        if used + cost > budget:
-            exhausted = True
-            skipped.append({**row, "cl100k_tokens": cost, "skip_reason": "PACK_BUDGET"})
-            continue
-        packed.append({**row, "cl100k_tokens": cost})
-        packed_ids.add(row["chunk_id"])
-        used += cost
-        neighbors_retained += 1
-
-    seed_ids = {row["chunk_id"] for row in seed_rows}
-    if not seed_ids.issubset(packed_ids):
-        raise CandidateCError("seed-preservation invariant violated")
-
-    stats = {
-        "policy": "SEED_FIRST",
-        "seeds_retained": len(seed_rows),
-        "neighbors_retained": neighbors_retained,
-        "seed_only_cl100k": total_seed_cost,
-    }
-    return packed, skipped, used, exhausted, stats
-
-
-def assert_seed_preservation_invariant(rows, units, budget, encoding):
-    """Every original top-5 SEED must survive when the seed set fits the budget."""
-
-    seed_rows = []
-    seen = set()
-    for row in rows:
-        if row["relation"] != "SEED" or row["chunk_id"] in seen:
-            continue
-        seen.add(row["chunk_id"])
-        seed_rows.append(row)
-    total = sum(
-        cl100k_count(units[row["chunk_id"]]["retrieval_text"], encoding)
-        for row in seed_rows
-    )
-    if total > budget:
-        return
-    packed, _, _, _, stats = pack_units_seed_first(rows, units, budget, encoding)
-    packed_seeds = {row["chunk_id"] for row in packed if row["relation"] == "SEED"}
-    expected = {row["chunk_id"] for row in seed_rows}
-    if packed_seeds != expected:
-        raise CandidateCError("seed-preservation invariant failed")
-    if stats["seeds_retained"] != len(seed_rows):
-        raise CandidateCError("seed count mismatch after seed-first pack")
 
 
 def content_prefix_len(unit):

@@ -9,7 +9,6 @@ imports production serving or Qdrant code.
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import hashlib
 import json
 import math
@@ -23,6 +22,8 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from agent.retrieval.chunks import EvalChunk, normalize_interval, source_offsets  # noqa: E402
+from agent.retrieval.metrics import span_covered as _span_covered_impl  # noqa: E402
 STARTING_HEAD = "4a1567544005eba30c5f679aa66de3dc76b567d3"
 BASELINE_MANIFEST = ROOT / "reports/phase5/phase5a0/baseline_a_manifest.json"
 CANDIDATE_B_MANIFEST = ROOT / "reports/phase5/phase5a1/candidate_b_manifest.json"
@@ -42,19 +43,6 @@ QUALITY_KEYS = (
 
 class Phase5A2Error(RuntimeError):
     """Fail closed when the frozen experiment contract cannot be reproduced."""
-
-
-@dataclass(frozen=True)
-class EvalChunk:
-    """One rankable item with exact normalized source intervals."""
-
-    ordinal: int
-    chunk_id: str
-    source: str
-    source_path: str
-    retrieval_text: str
-    source_intervals: tuple[tuple[int, int], ...]
-    embedding_content_token_count: int
 
 
 def canonical_json(value: Any) -> str:
@@ -104,19 +92,13 @@ def install_offline_guard() -> None:
 
 
 def _source_offsets(raw_text: str) -> tuple[int, int]:
-    stripped = raw_text.strip()
-    start = raw_text.index(stripped) if stripped else 0
-    return start, start + len(stripped)
+    return source_offsets(raw_text)
 
 
 def _normalize_interval(
     start: int, end: int, raw_start: int, raw_end: int
 ) -> tuple[int, int] | None:
-    clipped_start = max(start, raw_start)
-    clipped_end = min(end, raw_end)
-    if clipped_start >= clipped_end:
-        return None
-    return clipped_start - raw_start, clipped_end - raw_start
+    return normalize_interval(start, end, raw_start, raw_end)
 
 
 def load_representations() -> tuple[
@@ -462,24 +444,7 @@ def _span_covered(
     chunks_by_id: dict[str, EvalChunk],
     k: int,
 ) -> bool:
-    intervals: list[tuple[int, int]] = []
-    for row in rows[:k]:
-        chunk = chunks_by_id[row["chunk_id"]]
-        if chunk.source != span.source:
-            continue
-        for chunk_start, chunk_end in chunk.source_intervals:
-            start = max(span.char_start, chunk_start)
-            end = min(span.char_end, chunk_end)
-            if start < end:
-                intervals.append((start, end))
-    covered_until = span.char_start
-    for start, end in sorted(intervals):
-        if start > covered_until:
-            break
-        covered_until = max(covered_until, end)
-        if covered_until >= span.char_end:
-            return True
-    return False
+    return _span_covered_impl(span, rows, chunks_by_id, k)
 
 
 def _evidence_recall(

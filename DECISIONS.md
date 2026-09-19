@@ -9,6 +9,46 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-19-03
+Date: 2026-09-19
+
+Decision: **Phase 5D3 durable shadow Qdrant CSWP index — production retrieval
+extracted, versioned non-serving collection, 33-query parity proven; no alias
+cutover.**
+
+Reason: Production `qualified_rag` imported experiment scripts for hybrid
+ranking, expansion, and packing. Phase 5D3 extracts those primitives into
+`agent/retrieval/`, builds a durable shadow Qdrant index from production-owned
+`kb/indexes/cswp_v1/`, and proves exact dense/BM25/RRF/packed parity against
+the in-memory qualified path before any serving cutover.
+
+Repair (no serving alias swap, no `machinist_evergreen` mutation):
+
+- **`agent/retrieval/`** — production chunks, encoder pin, fusion, expansion,
+  metrics (extracted from phase5a2/phase5b1 algorithms unchanged).
+- **`agent/shadow_qdrant/`** — index lifecycle (full rebuild, upsert document,
+  update/delete by version), payload contract, exact-search shadow retrieval.
+- **`agent/qualified_rag.py`** — imports production modules only; no
+  `scripts/` or `reports/` authority.
+- **`kb/indexes/cswp_v1/qdrant_shadow_manifest.json`** — index fingerprint,
+  collection `ca_cswp_v1_5141e33453611e44`, 159 points, MiniLM
+  `1110a243…`, payload schema v1.
+- **`scripts/phase5a2_shadow_ab.py` / `scripts/phase5b1_candidate_c.py`** —
+  thin wrappers re-exporting production modules for historical evals.
+- **`tests/test_phase5d3_qdrant_shadow.py`** — deterministic IDs, payload,
+  neighbors, lifecycle, 33-query parity gate (packed recall 0.93939394).
+
+Parity at parent `7024d522f2117688c5f10894dfea22f516e652ac`: dense top-20
+identity match 33/33; BM25 identity 33/33; RRF top-5 identity 33/33; baseline
+and shadow packed recall both 0.93939394; zero packed regressions; rebuild
+deterministic; update/delete lifecycle verified; zero provider calls; zero
+production Qdrant writes.
+
+Status: **PHASE-5D3-QDRANT-SHADOW-READY** (local commit; not pushed).
+
+Confidence: 0.94
+
+---
 Decision ID: D-2026-09-19-02
 Date: 2026-09-19
 
