@@ -317,11 +317,13 @@ def run(topic, card_id, series, auto, brief_requirements_json):
         topic, slug, card_id, series, run_id, brief_requirements=brief_reqs,
     )
 
-    # KB warmup (M5): pay the one-time encoder load + BM25 build BEFORE the graph
-    # runs, so latency_ms.retrieve_kb measures steady-state query cost only.
-    from agent.qualified_rag import warmup as qualified_kb_warmup
+    # KB warmup (M5): warm the selected CSWP backend BEFORE the graph runs so
+    # latency_ms.retrieve_kb measures steady-state query cost only.
+    from agent.kb_backend import warmup as kb_warmup
+    from agent.kb_backend.selector import abort_on_invalid_kb_backend
 
-    warmup_times = qualified_kb_warmup()
+    abort_on_invalid_kb_backend()
+    warmup_times = kb_warmup()
     get_logger("main").info("kb.warmup", run_id=run_id, **warmup_times)
 
 

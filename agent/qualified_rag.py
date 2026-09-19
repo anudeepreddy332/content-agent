@@ -100,7 +100,7 @@ def _hybrid_top5(query: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]
     return seeds, hybrid
 
 
-def _packed_rows_to_kb_results(
+def packed_rows_to_kb_results(
     packed_rows: list[dict[str, Any]],
     units: dict[str, dict[str, Any]],
     retrieval_seeds: list[dict[str, Any]],
@@ -176,7 +176,7 @@ def retrieve_qualified_kb(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
         expanded, units, PACK_BUDGET_CL100K, encoding
     )
     serialized = serialize_drafter_packed_evidence_v1(packed, units)
-    kb_results = _packed_rows_to_kb_results(packed, units, retrieval_seeds)
+    kb_results = packed_rows_to_kb_results(packed, units, retrieval_seeds)
     fingerprint = packed_identity_fingerprint(serialized)
     log.info(
         "qualified_rag.complete",

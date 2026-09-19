@@ -16,9 +16,20 @@ class EncoderError(RuntimeError):
 
 
 def resolve_local_model_snapshot(explicit: Path | None = None) -> Path:
+    import os
+
     candidates: list[Path] = []
     if explicit is not None:
         candidates.append(explicit)
+    hf_home = os.getenv("HF_HOME")
+    if hf_home:
+        candidates.append(
+            Path(hf_home)
+            / "hub"
+            / MODEL_CACHE_DIRNAME
+            / "snapshots"
+            / MODEL_REVISION
+        )
     candidates.append(
         Path.home()
         / ".cache"

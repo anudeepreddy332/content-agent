@@ -646,9 +646,9 @@ def retrieve_node(state: AgentState) -> dict:
     # KB query — use topic + first 100 chars of problem_framing for richer context
     problem_framing_preview = state.get("draft_sections", {}).get("problem_framing", "")[:100]
     kb_query = f"{topic} {problem_framing_preview}".strip()
-    from agent.qualified_rag import retrieve_qualified_kb
+    from agent.kb_backend import retrieve_kb
 
-    qualified = retrieve_qualified_kb(kb_query, n_seeds=5)
+    qualified = retrieve_kb(kb_query, n_seeds=5)
     kb_results = qualified["kb_results"]
 
     latency = int((time.time() - t_start) * 1000)
@@ -662,7 +662,10 @@ def retrieve_node(state: AgentState) -> dict:
         run_id=state["run_id"],
         web_sources=len(web_sources),
         kb_results=len(kb_results),
-        latency_ms=latency
+        kb_backend=qualified.get("kb_backend"),
+        collection_name=qualified.get("collection_name"),
+        qdrant_reads=qualified.get("qdrant_reads", 0),
+        latency_ms=latency,
     )
 
 

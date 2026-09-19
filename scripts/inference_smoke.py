@@ -16,11 +16,9 @@ sys.path.insert(0, str(REPO_ROOT))
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
-from agent.qualified_rag import (  # noqa: E402
-    is_qualified_kb,
-    retrieve_qualified_kb,
-    warmup,
-)
+from agent.kb_backend import retrieve_kb, warmup  # noqa: E402
+from agent.kb_backend.selector import resolve_kb_backend  # noqa: E402
+from agent.qualified_rag import is_qualified_kb  # noqa: E402
 from scripts.phase5a0_baseline import (  # noqa: E402
     MODEL_REVISION,
     resolve_local_model_snapshot,
@@ -43,17 +41,20 @@ def inference_smoke() -> list[str]:
             f"snapshot revision mismatch: {snapshot.name} != {MODEL_REVISION}"
         )
 
+    backend = resolve_kb_backend()
     try:
         timings = warmup()
     except Exception as exc:  # noqa: BLE001
-        failures.append(f"qualified RAG warmup failed: {exc}")
+        failures.append(f"KB backend {backend!r} warmup failed: {exc}")
         return failures
 
-    if "encoder_load_ms" not in timings or "cswp_index_ms" not in timings:
-        failures.append(f"warmup missing timing keys: {timings!r}")
+    if timings.get("kb_backend") != backend:
+        failures.append(f"warmup backend mismatch: {timings!r}")
+    if "encoder_load_ms" not in timings:
+        failures.append(f"warmup missing encoder_load_ms: {timings!r}")
 
     try:
-        result = retrieve_qualified_kb(SMOKE_QUERY, n_seeds=5)
+        result = retrieve_kb(SMOKE_QUERY, n_seeds=5)
     except Exception as exc:  # noqa: BLE001
         failures.append(f"qualified KB retrieval failed: {exc}")
         return failures

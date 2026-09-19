@@ -275,9 +275,12 @@ def _seed_initial_state(body: CreateRun, *, slug: str, run_id: str) -> dict:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Pay the one-time encoder load + BM25 build at startup (M5 warmup), so the
-    # first run's retrieve_kb telemetry measures steady-state, same as the CLI.
-    from tools.query_kb import warmup as kb_warmup
+    # Warm the selected CSWP backend at startup so first-run retrieve_kb telemetry
+    # measures steady-state query cost, same as the CLI.
+    from agent.kb_backend.selector import abort_on_invalid_kb_backend
+    from agent.kb_backend import warmup as kb_warmup
+
+    abort_on_invalid_kb_backend()
     log.info("api.warmup", **kb_warmup())
     yield
     EXECUTOR.shutdown(wait=False)

@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-19 (Phase 5D3 shadow Qdrant CSWP index)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-19 (Phase 5D4B CSWP serving backend)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -461,17 +461,25 @@ fingerprint `439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`.
 fingerprint mismatch. No Qdrant write; no serving ranking change. Rebuild:
 `uv run python -m agent.cswp --source kb/seed_docs/`.
 
+**Phase 5D4B — Explicit CSWP serving backend READY (local; pending CI).**
+Parent `0f0b992ff66aa0cc5679b4f42a29536135fb411b`. Fail-closed
+`KB_BACKEND=cswp_local | cswp_qdrant` selector; unset defaults to
+`cswp_local` (no Qdrant required for local dev). Qdrant serving reads
+`QDRANT_URL` + code-pinned alias `kb_cswp_serving`; hydrates BM25,
+expansion, and packing from Qdrant payloads (alias rollback is not
+split-brain). Legacy `tools/query_kb` remains reachable only on its own
+import path — not used by production retrieve or API warmup.
+`docker-compose.prod.yml` sets `KB_BACKEND=cswp_qdrant`. 33 gating queries:
+local and Qdrant packed recall both `0.93939394`; zero regressions; alias
+swap/rollback verified in-memory. No holdout eval; no production alias
+activation outside isolated tests.
+
 **Phase 5D3 — Durable shadow Qdrant CSWP index READY (local; not pushed).**
 Parent `7024d522f2117688c5f10894dfea22f516e652ac`. Production retrieval
-primitives extracted to `agent/retrieval/`; `agent/qualified_rag.py` no longer
-imports experiment scripts. Shadow index at `agent/shadow_qdrant/` builds
-versioned collection `ca_cswp_v1_5141e33453611e44` (159 points, exact cosine,
-MiniLM `1110a243…`) from `kb/indexes/cswp_v1/` with manifest
-`qdrant_shadow_manifest.json`. 33 gating queries: dense top-20, BM25, RRF
-top-5, and packed recall parity vs in-memory qualified path (both
-`0.93939394`); zero packed regressions. `machinist_evergreen` untouched;
-`kb_cswp_serving` alias not activated. Serving remains in-memory qualified
-path.
+primitives extracted to `agent/retrieval/`; shadow index builds versioned
+collection `ca_cswp_v1_5141e33453611e44` (159 points). Phase 5D4B supersedes
+the "serving remains in-memory only" conclusion with an explicit opt-in
+Qdrant backend while keeping `cswp_local` as developer default.
 
 **Phase 5B3 — Production qualified RAG integration COMPLETE.** Clean
 required parent `912342ac0e735af152833d21cf1c8e821532a600` (pushed).

@@ -62,14 +62,23 @@ uv sync
 cp .env.example .env
 # Edit .env — add DEEPSEEK_API_KEY and TAVILY_API_KEY
 
-# 4. Start Qdrant (Docker required)
+# 4. (Optional) Start Qdrant for legacy ingest or cswp_qdrant serving
 docker-compose up -d
 
-# 5. Seed the knowledge base
+# 5. (Optional) Seed the legacy Qdrant collection
 uv run python scripts/ingest.py --source kb/seed_docs/
+```
 
-# 6. Verify KB is populated
-uv run python scripts/ingest.py --stats
+**Local inference without Qdrant:** the default `KB_BACKEND=cswp_local` serves the
+production CSWP index from `kb/indexes/cswp_v1/` in memory. No Qdrant container is
+required for pipeline runs, inference smoke, or pytest. Set `KB_BACKEND=cswp_qdrant`
+only when a durable Qdrant instance has the `kb_cswp_serving` alias pointed at a
+qualified CSWP collection (production compose sets this automatically).
+
+```bash
+# Provision pinned MiniLM and run zero-provider inference smoke (cswp_local default)
+uv run python scripts/provision_minilm_snapshot.py
+uv run python scripts/inference_smoke.py
 ```
 
 ---

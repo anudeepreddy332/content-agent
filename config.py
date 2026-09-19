@@ -47,9 +47,14 @@ CHROMA_DB_PATH = os.getenv("CHROMA_DB_PATH", "./kb/chroma_db")
 CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "machinist_evergreen")
 KB_N_RESULTS = 5            # How many KB chunks to retrieve per query
 
-# Qdrant – step 4 migration target
-# QDRANT_URL points to local docker during dev, Qdrant Cloud in production
+# KB serving backend — explicit only; unset defaults to cswp_local (developer DX).
+# Valid: cswp_local | cswp_qdrant. Unknown values abort at startup.
+KB_BACKEND = os.getenv("KB_BACKEND", "")
+
+# Qdrant — cswp_qdrant serving reads QDRANT_URL + kb_cswp_serving alias only.
+# QDRANT_URL points to local docker during dev, Qdrant Cloud in production.
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+# Legacy ingest-only authority for tools/save_to_kb and tools/query_kb — not CSWP serving.
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "machinist_evergreen")
 # Embedding dimension for all-MiniLM-L6-v2 — must match the model used in save_to_kb
 QDRANT_EMBEDDING_DIM = 384

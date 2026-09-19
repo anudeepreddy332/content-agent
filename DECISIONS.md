@@ -9,6 +9,45 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-19-04
+Date: 2026-09-19
+
+Decision: **Phase 5D4B explicit CSWP serving backend — fail-closed
+`KB_BACKEND` selector, local default, durable Qdrant serving via
+`kb_cswp_serving` alias with payload hydration; 33-query parity proven.**
+
+Reason: Phase 5D3 proved shadow Qdrant parity but serving remained
+hard-wired to in-memory qualified RAG. Phase 5D4B adds an explicit backend
+contract so production can serve from local CSWP artifacts (developer default)
+or from durable Qdrant without silent fallback, legacy `query_kb` authority,
+or `machinist_evergreen` reads.
+
+Repair (no retrieval-semantics change; no holdout eval; no production alias
+activation outside isolated tests):
+
+- **`KB_BACKEND=cswp_local | cswp_qdrant`** — unset → `cswp_local`; unknown
+  values (`memory`, `qdrant`, `auto`) abort at startup.
+- **`agent/kb_backend/`** — selector, local wrapper, Qdrant serving with
+  BM25/expand/pack hydrated from Qdrant payloads (not `units.jsonl`).
+- **`kb_cswp_serving`** — code-pinned alias; `BLOCKED_COLLECTIONS` includes
+  `machinist_evergreen`; serving URL is `QDRANT_URL` only.
+- **Warmup** — API lifespan and CLI warm the selected backend; legacy
+  `tools.query_kb.warmup` removed from API path.
+- **`docker-compose.prod.yml`** — `KB_BACKEND=cswp_qdrant`.
+- **`tests/test_phase5d4b_serving_backend.py`** — selector gates, payload
+  hydration proof (corrupt local units.jsonl), alias swap/rollback, 33-query
+  packed recall 0.93939394 both backends, zero regressions.
+
+Parity at parent `0f0b992ff66aa0cc5679b4f42a29536135fb411b`: local and Qdrant
+packed recall both 0.93939394; zero per-query regressions; alias swap/rollback
+verified in-memory; zero provider calls; legacy `query_kb` not imported by
+Qdrant serving path.
+
+Status: **PHASE-5D4B-SERVING-BACKEND-READY** (pending GitHub CI).
+
+Confidence: 0.93
+
+---
 Decision ID: D-2026-09-19-03
 Date: 2026-09-19
 

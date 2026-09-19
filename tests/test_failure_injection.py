@@ -48,8 +48,11 @@ def test_retrieve_tavily_empty_results(base_state, monkeypatch):
 
     monkeypatch.setattr(nodes, "web_search", empty_search)
     monkeypatch.setattr(
-        "agent.qualified_rag.retrieve_qualified_kb",
-        lambda query, n_seeds=5: {"kb_results": base_state["kb_results"]},
+        "agent.kb_backend.retrieve_kb",
+        lambda query, n_seeds=5: {
+            "kb_results": base_state["kb_results"],
+            "kb_backend": "cswp_local",
+        },
     )
 
     result = nodes.retrieve_node(base_state)
@@ -68,8 +71,8 @@ def test_retrieve_tavily_errors_logged_not_fatal(base_state, monkeypatch):
 
     monkeypatch.setattr(nodes, "web_search", exploding_search)
     monkeypatch.setattr(
-        "agent.qualified_rag.retrieve_qualified_kb",
-        lambda query, n_seeds=5: {"kb_results": []},
+        "agent.kb_backend.retrieve_kb",
+        lambda query, n_seeds=5: {"kb_results": [], "kb_backend": "cswp_local"},
     )
 
     result = nodes.retrieve_node(base_state)  # must not raise
@@ -106,8 +109,8 @@ def test_retrieve_survives_kb_down(base_state, monkeypatch):
                         [{"title": "t", "url": f"https://e.com/{query[:10]}",
                           "content": "c", "score": 0.9}])
     monkeypatch.setattr(
-        "agent.qualified_rag.retrieve_qualified_kb",
-        lambda query, n_seeds=5: {"kb_results": []},
+        "agent.kb_backend.retrieve_kb",
+        lambda query, n_seeds=5: {"kb_results": [], "kb_backend": "cswp_local"},
     )
     result = nodes.retrieve_node(base_state)
     assert result["kb_results"] == []
