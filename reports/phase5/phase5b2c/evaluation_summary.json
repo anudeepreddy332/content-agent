@@ -1,0 +1,164 @@
+{
+  "aggregate_gating_33": {
+    "exposure_recall": {
+      "expanded": 0.93939394,
+      "legacy_drafter": 0.6969697,
+      "legacy_frozen_order_packed": 0.92424242,
+      "packed_contract_drafter": 0.93939394,
+      "retrieved": 0.78787879,
+      "seed_first_packed": 0.93939394,
+      "verifier_exposed": 0.93939394
+    },
+    "groups_per_query": {
+      "max": 9,
+      "mean": 6.606061,
+      "median": 6,
+      "min": 4,
+      "p95": 9
+    },
+    "legacy_frozen_order_packed_tokens_cl100k": {
+      "max": 1988,
+      "mean": 1566.121212,
+      "median": 1578,
+      "min": 1000,
+      "p95": 1985
+    },
+    "mean_neighbors_retained": 5.30303,
+    "mean_seeds_retained": 3.181818,
+    "packed_contract_drafter_vs_legacy_drafter": {
+      "legacy_drafter_context": {
+        "max": 1769,
+        "mean": 1204.969697,
+        "median": 1121,
+        "min": 630,
+        "p95": 1713
+      },
+      "packed_contract_drafter_context": {
+        "max": 1986,
+        "mean": 1568.545455,
+        "median": 1578,
+        "min": 1000,
+        "p95": 1970
+      },
+      "prompt_growth_estimate": {
+        "cl100k_tokens_max_ratio": 1.122668,
+        "cl100k_tokens_median_ratio": 1.407672,
+        "cl100k_tokens_p95_ratio": 1.150029
+      }
+    },
+    "seed_first_packed_tokens_cl100k": {
+      "max": 1986,
+      "mean": 1568.545455,
+      "median": 1578,
+      "min": 1000,
+      "p95": 1970
+    }
+  },
+  "deterministic_rerun": true,
+  "external_network_calls": 0,
+  "focus": {
+    "Q09": {
+      "expanded": 1.0,
+      "packed_contract_drafter": 1.0,
+      "retrieved": 0.0,
+      "seed_first_packed": 1.0,
+      "verifier_exposed": 1.0,
+      "vs_expanded": "SAME"
+    },
+    "Q13": {
+      "expanded": 1.0,
+      "packed_contract_drafter": 1.0,
+      "retrieved": 0.0,
+      "seed_first_packed": 1.0,
+      "verifier_exposed": 1.0,
+      "vs_expanded": "SAME"
+    },
+    "Q17": {
+      "expanded": 1.0,
+      "packed_contract_drafter": 1.0,
+      "retrieved": 0.0,
+      "seed_first_packed": 1.0,
+      "verifier_exposed": 1.0,
+      "vs_expanded": "SAME"
+    },
+    "Q19": {
+      "expanded": 0.5,
+      "packed_contract_drafter": 0.5,
+      "retrieved": 0.5,
+      "seed_first_packed": 0.5,
+      "verifier_exposed": 0.5,
+      "vs_expanded": "SAME"
+    },
+    "Q21": {
+      "expanded": 0.5,
+      "packed_contract_drafter": 0.5,
+      "retrieved": 0.5,
+      "seed_first_packed": 0.5,
+      "verifier_exposed": 0.5,
+      "vs_expanded": "SAME"
+    },
+    "Q22": {
+      "expanded": 1.0,
+      "packed_contract_drafter": 1.0,
+      "retrieved": 0.5,
+      "seed_first_packed": 1.0,
+      "verifier_exposed": 1.0,
+      "vs_expanded": "SAME"
+    },
+    "Q28": {
+      "expanded": 1.0,
+      "packed_contract_drafter": 1.0,
+      "retrieved": 1.0,
+      "seed_first_packed": 1.0,
+      "verifier_exposed": 1.0,
+      "vs_expanded": "SAME"
+    },
+    "Q30": {
+      "expanded": 0.5,
+      "packed_contract_drafter": 0.5,
+      "retrieved": 0.5,
+      "seed_first_packed": 0.5,
+      "verifier_exposed": 0.5,
+      "vs_expanded": "SAME"
+    },
+    "Q31": {
+      "expanded": 1.0,
+      "packed_contract_drafter": 1.0,
+      "retrieved": 1.0,
+      "seed_first_packed": 1.0,
+      "verifier_exposed": 1.0,
+      "vs_expanded": "SAME"
+    },
+    "Q32": {
+      "expanded": 1.0,
+      "packed_contract_drafter": 1.0,
+      "retrieved": 1.0,
+      "seed_first_packed": 1.0,
+      "verifier_exposed": 1.0,
+      "vs_expanded": "SAME"
+    },
+    "Q34": {
+      "expanded": 1.0,
+      "packed_contract_drafter": 1.0,
+      "retrieved": 1.0,
+      "seed_first_packed": 1.0,
+      "verifier_exposed": 1.0,
+      "vs_expanded": "SAME"
+    }
+  },
+  "forensics_summary": {
+    "provenance_failures": [],
+    "regressions_vs_expanded": [],
+    "seeds_exceeding_2000": []
+  },
+  "production_drafter_changed": false,
+  "provider_calls": 0,
+  "quality_gate": {
+    "combined_contract_ready_for_live_wiring": true,
+    "exposure_layers_aligned": true,
+    "no_regressions_vs_expanded": true,
+    "q22_seed_first_recovery": true,
+    "seed_preservation_invariant": true
+  },
+  "result_sha256": "75ab169bd69408e984d788952ee8d7b699b8edb8ede037112effb85dcf32f4cf"
+}

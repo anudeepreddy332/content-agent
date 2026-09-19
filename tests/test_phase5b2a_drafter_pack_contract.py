@@ -138,17 +138,17 @@ def test_exposure_metrics_and_focus_queries():
     gating = [row for row in result["per_query"] if row["gating_eligible"]]
     assert len(gating) == 33
     agg = result["aggregate_gating_33"]["exposure_recall"]
-    assert agg["packed"] == 0.92424242
-    assert agg["legacy_drafter"] == 0.75757576
-    assert agg["packed_contract_drafter"] == 0.92424242
-    assert agg["verifier_exposed"] == 0.92424242
+    assert agg["packed"] == 0.93939394
+    assert agg["legacy_drafter"] == 0.6969697
+    assert agg["packed_contract_drafter"] == 0.93939394
+    assert agg["verifier_exposed"] == 0.93939394
     for qid in b2a.KNOWN_LEGACY_LOSSES:
         row = next(r for r in result["per_query"] if r["query_id"] == qid)
         assert row["exposure_recall"]["packed_contract_drafter"] == row["exposure_recall"]["packed"]
         assert row["exposure_recall"]["packed_contract_drafter"] >= row["exposure_recall"]["legacy_drafter"]
     q22 = next(r for r in result["per_query"] if r["query_id"] == "Q22")
-    assert q22["exposure_recall"]["packed"] == 0.5
-    assert q22["exposure_recall"]["packed_contract_drafter"] == 0.5
+    assert q22["exposure_recall"]["packed"] == 1.0
+    assert q22["exposure_recall"]["packed_contract_drafter"] == 1.0
     assert q22["vs_packed"]["packed_contract_drafter"]["classification"] == "SAME"
     assert result["quality_gate"]["shadow_contract_ready_for_live_wiring"] is True
     assert not result["provenance_failures"]

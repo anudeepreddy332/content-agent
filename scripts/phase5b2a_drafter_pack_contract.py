@@ -158,11 +158,19 @@ def verify_no_secondary_clip(serialized):
 
 
 def verify_no_top3_gate(serialized, packed_rows):
-    packed_ranks = sorted({row["seed_rank"] for row in packed_rows})
-    exposed_ranks = sorted({group["seed_rank"] for group in serialized})
-    if exposed_ranks != packed_ranks:
+    """Every packed unit is exposed; ranks above legacy K=3 are not dropped."""
+
+    exposed = [
+        member["chunk_id"] for group in serialized for member in group["members"]
+    ]
+    packed = [row["chunk_id"] for row in packed_rows]
+    if exposed != packed:
         return False
-    return len(serialized) == len({row["seed_rank"] for row in packed_rows})
+    high_ranks = {
+        row["seed_rank"] for row in packed_rows if row["seed_rank"] > LEGACY_DRAFTER_K
+    }
+    exposed_ranks = {group["seed_rank"] for group in serialized}
+    return high_ranks.issubset(exposed_ranks)
 
 
 def forensics(query, spans, packed, units, chunks):
@@ -213,7 +221,9 @@ def evaluate_once(oracle, evidence, control, units, by_source, chunks, seeds, en
         groups = c.expand_seeds(seed_row["seeds"], units, by_source)
         expanded_groups, _, _ = c.dedupe_groups(groups)
         expanded = c.flatten(expanded_groups)
-        packed, _, used, _ = c.pack_units(expanded, units, c.PACK_BUDGET_CL100K, encoding)
+        packed, _, used, _, _ = c.pack_units_seed_first(
+            expanded, units, c.PACK_BUDGET_CL100K, encoding
+        )
         packed_metrics = c.layer_metrics(query, spans, packed, units, chunks)
         legacy_metrics = c.seed_group_layer(
             query, spans, packed, units, chunks, LEGACY_DRAFTER_K, LEGACY_DRAFTER_CHAR_LIMIT

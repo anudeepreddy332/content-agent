@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5B2A drafter pack contract)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-18 (Phase 5B2C seed-first pack)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -444,6 +444,20 @@ not representation wins versus A. Vector multiplier versus A is `2.178x`
 Descriptive dense latency is `1.37x` A. Provider and external evaluation
 network calls were zero. Production serving and Qdrant remain unchanged.
 
+**Phase 5B2C — Seed-first packing + combined exposure requalification
+COMPLETE; COMBINED CONTRACT READY FOR LIVE-WIRING CONSIDERATION (not
+wired).** Clean required parent `41261a1a12ffba8a8051debc84b27055985c1b4f`
+(pushed). Only change: Candidate-C SEED_FIRST pack policy. CSWP
+representation, retrieval, ±1 expansion, and DRAFTER_PACKED_EVIDENCE_V1
+shadow contract preserved; production `draft_node` unchanged.
+
+Gating exposure recall: retrieved `0.78787879`, expanded `0.93939394`,
+seed-first packed `0.93939394`, packed-contract drafter `0.93939394`,
+verifier `0.93939394`. Q22 recovers at pack (0.5→1.0). Q19/Q21/Q30
+unchanged at 0.5. Median packed tokens 1578; max 1986. Mean seeds
+retained 3.18; mean neighbors 5.30. Two runs share
+`75ab169bd69408e984d788952ee8d7b699b8edb8ede037112effb85dcf32f4cf`.
+
 **Phase 5B2A — DRAFTER_PACKED_EVIDENCE_V1 shadow contract COMPLETE; READY
 FOR LIVE-WIRING CONSIDERATION (not wired).** Clean required parent
 `fe6d35970e9c2b4ed5e494a2cea07a0287fc3f4b`. Production `draft_node`,
@@ -846,9 +860,9 @@ revision; drive material-policy denominator and publication-safety conjunction.
 | Call A | PASS (oracle v2) | `call_a_provider_eval_gold_v2` rescore |
 | Call B | PASS | run `semantic_analyzer_run_8f554fa3eb62`, digest `0ed38fc3…899c5` |
 
-**Next:** Phase 5B2A shadow drafter contract qualified; await explicit
-go-ahead before wiring `draft_node`. Upstream: Q22 pack-order loss and
-Q19/Q21/Q30 retrieval gaps remain before full Candidate-C promotion.
+**Next:** Phase 5B2C combined contract qualified; await explicit go-ahead
+before live-wiring seed-first pack + DRAFTER_PACKED_EVIDENCE_V1 into
+production `draft_node`. Q19/Q21/Q30 retrieval gaps remain upstream.
 
 **Final qualification evidence:** `tests/test_brief_requirements_live_wiring.py`
 (7/7); full regression suite; provider calls zero; demonstrated P0/P1 none.

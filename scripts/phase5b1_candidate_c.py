@@ -281,6 +281,8 @@ def flatten(groups):
 
 
 def pack_units(rows, units, budget, encoding):
+    """Legacy frozen-order packer (pre-5B2C baseline for counterfactual comparison)."""
+
     packed = []
     skipped = []
     used = 0
@@ -294,6 +296,109 @@ def pack_units(rows, units, budget, encoding):
         packed.append({**row, "cl100k_tokens": cost})
         used += cost
     return packed, skipped, used, exhausted
+
+
+def pack_units_seed_first(rows, units, budget, encoding):
+    """Two-pass seed-first pack: all unique SEED units, then ±1 neighbors."""
+
+    seed_rows = []
+    seen_seed_chunk = set()
+    for row in rows:
+        if row["relation"] != "SEED":
+            continue
+        cid = row["chunk_id"]
+        if cid in seen_seed_chunk:
+            continue
+        seen_seed_chunk.add(cid)
+        seed_rows.append(row)
+    seed_rows.sort(key=lambda row: (row["seed_rank"], row["chunk_id"]))
+
+    seed_costs = [
+        (
+            row,
+            cl100k_count(units[row["chunk_id"]]["retrieval_text"], encoding),
+        )
+        for row in seed_rows
+    ]
+    total_seed_cost = sum(cost for _, cost in seed_costs)
+    if total_seed_cost > budget:
+        raise CandidateCError(
+            f"seed-only cl100k tokens {total_seed_cost} exceed budget {budget}"
+        )
+
+    packed = []
+    skipped = []
+    packed_ids = set()
+    used = 0
+    for row, cost in seed_costs:
+        packed.append({**row, "cl100k_tokens": cost})
+        packed_ids.add(row["chunk_id"])
+        used += cost
+
+    neighbor_rows = [row for row in rows if row["chunk_id"] not in packed_ids]
+    neighbor_rows.sort(
+        key=lambda row: (
+            row["seed_rank"],
+            row.get(
+                "retrieval_char_start",
+                units[row["chunk_id"]].get("retrieval_char_start", 0),
+            ),
+            row.get(
+                "retrieval_char_end",
+                units[row["chunk_id"]].get("retrieval_char_end", 0),
+            ),
+            row["chunk_id"],
+        )
+    )
+    exhausted = False
+    neighbors_retained = 0
+    for row in neighbor_rows:
+        cost = cl100k_count(units[row["chunk_id"]]["retrieval_text"], encoding)
+        if used + cost > budget:
+            exhausted = True
+            skipped.append({**row, "cl100k_tokens": cost, "skip_reason": "PACK_BUDGET"})
+            continue
+        packed.append({**row, "cl100k_tokens": cost})
+        packed_ids.add(row["chunk_id"])
+        used += cost
+        neighbors_retained += 1
+
+    seed_ids = {row["chunk_id"] for row in seed_rows}
+    if not seed_ids.issubset(packed_ids):
+        raise CandidateCError("seed-preservation invariant violated")
+
+    stats = {
+        "policy": "SEED_FIRST",
+        "seeds_retained": len(seed_rows),
+        "neighbors_retained": neighbors_retained,
+        "seed_only_cl100k": total_seed_cost,
+    }
+    return packed, skipped, used, exhausted, stats
+
+
+def assert_seed_preservation_invariant(rows, units, budget, encoding):
+    """Every original top-5 SEED must survive when the seed set fits the budget."""
+
+    seed_rows = []
+    seen = set()
+    for row in rows:
+        if row["relation"] != "SEED" or row["chunk_id"] in seen:
+            continue
+        seen.add(row["chunk_id"])
+        seed_rows.append(row)
+    total = sum(
+        cl100k_count(units[row["chunk_id"]]["retrieval_text"], encoding)
+        for row in seed_rows
+    )
+    if total > budget:
+        return
+    packed, _, _, _, stats = pack_units_seed_first(rows, units, budget, encoding)
+    packed_seeds = {row["chunk_id"] for row in packed if row["relation"] == "SEED"}
+    expected = {row["chunk_id"] for row in seed_rows}
+    if packed_seeds != expected:
+        raise CandidateCError("seed-preservation invariant failed")
+    if stats["seeds_retained"] != len(seed_rows):
+        raise CandidateCError("seed count mismatch after seed-first pack")
 
 
 def content_prefix_len(unit):
@@ -719,7 +824,10 @@ def evaluate_once(oracle, evidence, control, units, by_source, chunks, seeds, en
         groups = expand_seeds(seed_row["seeds"], units, by_source)
         expanded_groups, dup_ids, additional = dedupe_groups(groups)
         expanded = flatten(expanded_groups)
-        packed, skipped, used, exhausted = pack_units(
+        packed, skipped, used, exhausted, pack_stats = pack_units_seed_first(
+            expanded, units, PACK_BUDGET_CL100K, encoding
+        )
+        assert_seed_preservation_invariant(
             expanded, units, PACK_BUDGET_CL100K, encoding
         )
         if used > PACK_BUDGET_CL100K:
@@ -754,11 +862,15 @@ def evaluate_once(oracle, evidence, control, units, by_source, chunks, seeds, en
                 "layers": layers,
                 "comparisons_vs_retrieved": comparisons,
                 "pack": {
+                    "policy": pack_stats["policy"],
                     "used_cl100k": used,
                     "budget_cl100k": PACK_BUDGET_CL100K,
                     "utilization": round(used / PACK_BUDGET_CL100K, 8),
                     "exhausted": exhausted,
                     "skipped_units": skipped,
+                    "seeds_retained": pack_stats["seeds_retained"],
+                    "neighbors_retained": pack_stats["neighbors_retained"],
+                    "seed_only_cl100k": pack_stats["seed_only_cl100k"],
                     "status": "PACK_BUDGET_EXHAUSTED" if exhausted else "PACK_WITHIN_BUDGET",
                 },
                 "duplicate_chunk_ids_removed": dup_ids,

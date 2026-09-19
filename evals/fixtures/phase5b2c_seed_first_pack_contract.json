@@ -1,0 +1,38 @@
+{
+  "exposure_layers": [
+    "retrieved",
+    "expanded",
+    "seed_first_packed",
+    "packed_contract_drafter",
+    "verifier_exposed"
+  ],
+  "external_network_calls": 0,
+  "input_file_sha256": {
+    "agent/drafter_packed_evidence.py": "ecabf455889ff7890052384f76641963b8bfc8e3d7311fcb5c218408403e6a0c",
+    "scripts/phase5b1_candidate_c.py": "65a53696fbd73dc2899c5c1c4b62166df0185b68a4fb606904843cc3e6d1f97d",
+    "scripts/phase5b2a_drafter_pack_contract.py": "798fd9fdbf35b1a410f852dcc5b67372a5f8b2f72a3f5e2c0345251565d69082",
+    "scripts/phase5b2c_seed_first_pack.py": "91d6b845d10bb49ce27bd07a03b4d4115da4e8cf68049e94da0d206addb13249"
+  },
+  "name": "Seed-first packing integration (Candidate C v1)",
+  "pack_policy": {
+    "budget_cl100k": 2000,
+    "fail_closed": "seed-only cl100k total exceeding 2000",
+    "id": "SEED_FIRST",
+    "invariant": "supplementary expansion context may never evict an original retrieved seed when the seed set fits the global budget",
+    "pass_1": "unique original frozen top-5 retrieved SEED units in retrieval-rank order",
+    "pass_2": "remaining budget for deduplicated ±1 neighbors ordered by originating seed rank, source order, chunk_id",
+    "tokenizer": "cl100k_base"
+  },
+  "production_drafter_changed": false,
+  "production_retrieval_changed": false,
+  "provider_calls": 0,
+  "required_parent": "41261a1a12ffba8a8051debc84b27055985c1b4f",
+  "schema_version": "phase5b2c_seed_first_pack_v1",
+  "shadow_contract": "DRAFTER_PACKED_EVIDENCE_V1",
+  "upstream_contracts": {
+    "phase5b1_candidate_c": "5a42c2a603519c6a868b2354bf9791018521916878eb545a8666c4a389977ae4",
+    "phase5b2a_drafter_pack": "4a2a2240393e01a73a3aef3cd3ca6de8e9481c9d69e8415f1467ea5e3b534496"
+  },
+  "verifier_changed": false,
+  "contract_sha256": "7b8920bf7c66a7adcab1238893130a1078d2df1b41fe12d0bac033fe0b5caf74"
+}

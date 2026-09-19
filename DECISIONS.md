@@ -9,6 +9,48 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-18-05
+Date: 2026-09-18
+
+Decision: **Phase 5B2C seed-first packing integration complete; combined
+Candidate-C + DRAFTER_PACKED_EVIDENCE_V1 contract ready for live-wiring
+consideration (not yet wired).**
+
+Reason: Exact required parent
+`41261a1a12ffba8a8051debc84b27055985c1b4f` was clean and pushed before
+implementation. The only change was Candidate-C packing priority: pass-1
+unique frozen top-5 SEED units, pass-2 deduplicated ±1 neighbors within
+the existing 2000 cl100k whole-unit budget. Contiguous Structural Window
+Packing representation, retrieval, expansion, dedup, and
+DRAFTER_PACKED_EVIDENCE_V1 shadow contract were preserved; production
+`draft_node` unchanged.
+
+On 33 gating queries, exposure recall is retrieved `0.78787879`,
+expanded `0.93939394`, seed-first packed `0.93939394`, packed-contract
+drafter `0.93939394`, verifier `0.93939394`. Q22 recovers 0.5→1.0 at
+pack (primary seed-first test). All six prior drafter-recovered cases
+remain at 1.0. Q19/Q21/Q30 unchanged at 0.5. Zero regressions vs
+expanded; zero seeds exceeding 2000 cl100k alone; seed-preservation
+invariant holds on all queries. Median packed tokens 1578 (legacy
+frozen-order median 1578; max 1986). Two runs share
+`75ab169bd69408e984d788952ee8d7b699b8edb8ede037112effb85dcf32f4cf`.
+
+Artifacts:
+
+- `scripts/phase5b1_candidate_c.py` (`pack_units_seed_first`)
+- `scripts/phase5b2c_seed_first_pack.py`
+- `evals/fixtures/phase5b2c_seed_first_pack_contract.json`
+- `reports/phase5/phase5b2c/`
+- `tests/test_phase5b2c_seed_first_pack.py`
+
+Status: **PHASE-5B2C-COMBINED-EXPOSURE-READY.** Combined deterministic
+contract qualified; live wiring of pack policy + drafter shadow contract
+remains a separate gated step. Q19/Q21/Q30 retrieval gaps remain
+upstream.
+
+Confidence: 0.97
+
+---
 Decision ID: D-2026-09-18-04
 Date: 2026-09-18
 

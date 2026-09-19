@@ -1,57 +1,57 @@
 {
   "aggregate_gating_33": {
     "exposure_recall": {
-      "legacy_drafter": 0.75757576,
-      "packed": 0.92424242,
-      "packed_contract_drafter": 0.92424242,
-      "verifier_exposed": 0.92424242
+      "legacy_drafter": 0.6969697,
+      "packed": 0.93939394,
+      "packed_contract_drafter": 0.93939394,
+      "verifier_exposed": 0.93939394
     },
     "legacy_drafter_context": {
       "characters": {
-        "max": 6000,
-        "median": 4000,
+        "max": 8066,
+        "median": 5228,
         "min": 2678,
-        "p95": 6000
+        "p95": 7844
       },
       "cl100k_tokens": {
-        "max": 1970,
-        "median": 1078,
+        "max": 1769,
+        "median": 1121,
         "min": 630,
-        "p95": 1656
+        "p95": 1713
       },
       "groups": {
-        "max": 3,
-        "median": 3,
-        "min": 2,
-        "p95": 3
+        "max": 6,
+        "median": 5,
+        "min": 3,
+        "p95": 6
       }
     },
     "packed_contract_drafter_context": {
       "characters": {
-        "max": 9194,
+        "max": 9439,
         "median": 6842,
         "min": 4210,
-        "p95": 9058
+        "p95": 9172
       },
       "cl100k_tokens": {
-        "max": 1988,
+        "max": 1986,
         "median": 1578,
         "min": 1000,
-        "p95": 1985
+        "p95": 1970
       },
       "groups": {
-        "max": 5,
-        "median": 4,
-        "min": 2,
-        "p95": 5
+        "max": 9,
+        "median": 6,
+        "min": 4,
+        "p95": 9
       }
     },
     "prompt_growth_estimate": {
-      "characters_median_ratio": 1.7105,
-      "cl100k_tokens_max_ratio": 1.009137,
-      "cl100k_tokens_median_ratio": 1.463822,
-      "cl100k_tokens_p95_ratio": 1.198671,
-      "groups_median_ratio": 1.333333
+      "characters_median_ratio": 1.308722,
+      "cl100k_tokens_max_ratio": 1.122668,
+      "cl100k_tokens_median_ratio": 1.407672,
+      "cl100k_tokens_p95_ratio": 1.150029,
+      "groups_median_ratio": 1.2
     }
   },
   "deterministic_rerun": true,
@@ -103,25 +103,25 @@
       "classification_vs_packed": "SAME",
       "forensics": {
         "clip_loss": false,
+        "clip_spans": [],
         "new_loss": false,
-        "topk_loss": false
+        "topk_loss": true,
+        "topk_spans": [
+          "xgboost::xgboost:14-16"
+        ]
       },
       "legacy_drafter": 0.5,
-      "packed": 0.5,
-      "packed_contract_drafter": 0.5
+      "packed": 1.0,
+      "packed_contract_drafter": 1.0
     },
     "Q28": {
       "classification_vs_packed": "SAME",
       "forensics": {
-        "clip_loss": true,
-        "clip_spans": [
-          "react-agent-pattern::react-agent-pattern:32-32"
-        ],
+        "clip_loss": false,
         "new_loss": false,
-        "topk_loss": false,
-        "topk_spans": []
+        "topk_loss": false
       },
-      "legacy_drafter": 0.0,
+      "legacy_drafter": 1.0,
       "packed": 1.0,
       "packed_contract_drafter": 1.0
     },
@@ -174,7 +174,6 @@
   },
   "forensics_summary": {
     "clip_losses_eliminated": [
-      "Q28",
       "Q32"
     ],
     "known_legacy_losses": [
@@ -206,6 +205,6 @@
     "packed_contract_matches_verifier_evidence_set": true,
     "shadow_contract_ready_for_live_wiring": true
   },
-  "result_sha256": "d71f5f8f49565ca05b4c239dbb4ca1b02058eb27ef70d54003eb227a713f6402",
+  "result_sha256": "ae5eb267f63da1280963132d1778606b58514945df1e2a407b10c7987911637d",
   "verifier_changed": false
 }

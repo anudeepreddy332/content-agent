@@ -78,6 +78,32 @@ def test_dedup_keeps_earliest_seed_and_nonidentical_intervals():
     assert c.interval_key(a) != c.interval_key(b)
 
 
+def test_seed_first_pack_preserves_all_seeds_then_neighbors():
+    units = {
+        "big": {"retrieval_text": "word " * 400},
+        "small": {"retrieval_text": "ok"},
+        "mid": {"retrieval_text": "word " * 50},
+    }
+    rows = [
+        {"chunk_id": "big", "relation": "SEED", "seed_rank": 1, "seed_chunk_id": "big"},
+        {
+            "chunk_id": "small",
+            "relation": "NEXT",
+            "seed_rank": 1,
+            "seed_chunk_id": "big",
+        },
+        {"chunk_id": "mid", "relation": "SEED", "seed_rank": 2, "seed_chunk_id": "mid"},
+    ]
+    encoding = c.cl100k()
+    packed, skipped, used, exhausted, stats = c.pack_units_seed_first(
+        rows, units, 500, encoding
+    )
+    assert [r["chunk_id"] for r in packed[:2]] == ["big", "mid"]
+    assert stats["seeds_retained"] == 2
+    assert stats["policy"] == "SEED_FIRST"
+    c.assert_seed_preservation_invariant(rows, units, 500, encoding)
+
+
 def test_pack_skips_and_continues_without_splitting():
     units = {
         "big": {"retrieval_text": "word " * 400},
@@ -158,7 +184,8 @@ def test_exposure_layers_and_focus_hypotheses():
     assert focus["Q21"]["expanded"] == focus["Q21"]["retrieved"] == 0.5
     assert focus["Q22"]["retrieved"] == 0.5
     assert focus["Q22"]["expanded"] == 1.0
-    assert focus["Q22"]["packed"] == focus["Q22"]["drafter_exposed"] == 0.5
+    assert focus["Q22"]["packed"] == focus["Q22"]["verifier_exposed"] == 1.0
+    assert agg["packed"] == 0.93939394
     assert focus["Q30"]["expanded"] == focus["Q30"]["retrieved"] == 0.5
     assert result["quality_gate"]["candidate_c_ready_to_advance"] is False
     assert result["quality_gate"]["useful_q13_survives_pack_drafter_verifier"] is True
