@@ -8,7 +8,6 @@ budget. Does not read or write production Qdrant.
 
 from __future__ import annotations
 
-import json
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -16,6 +15,8 @@ from typing import Any
 import numpy as np
 from rank_bm25 import BM25Okapi
 
+from agent.cswp.constants import PRODUCTION_INDEX_DIR
+from agent.cswp.loader import load_production_index, production_index_available
 from agent.drafter_packed_evidence import (
     DRAFTER_PACKED_EVIDENCE_V1,
     packed_identity_fingerprint,
@@ -33,10 +34,7 @@ from scripts.phase5a0_baseline import (
 log = get_logger("qualified_rag")
 
 ROOT = Path(__file__).resolve().parent.parent
-CSWP_MANIFEST = ROOT / "reports/phase5/phase5a2e/candidate_cswp_manifest.json"
-CSWP_FINGERPRINT = (
-    "439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3"
-)
+PRODUCTION_CSWP_INDEX = PRODUCTION_INDEX_DIR
 PACK_BUDGET_CL100K = candidate_c.PACK_BUDGET_CL100K
 ENCODER_MODEL = "all-MiniLM-L6-v2"
 
@@ -93,10 +91,9 @@ def _eval_chunks_from_manifest(manifest: dict[str, Any]) -> list[ab.EvalChunk]:
 
 @lru_cache(maxsize=1)
 def _index():
-    manifest = json.loads(CSWP_MANIFEST.read_text(encoding="utf-8"))
-    if ab.sha256_json(manifest) != CSWP_FINGERPRINT:
-        raise QualifiedRAGError("CSWP manifest fingerprint drift")
-    _manifest_loaded, units, by_source = candidate_c.load_units()
+    if not production_index_available(PRODUCTION_CSWP_INDEX):
+        raise QualifiedRAGError("production CSWP index missing")
+    manifest, units, by_source = load_production_index(PRODUCTION_CSWP_INDEX)
     chunks = _eval_chunks_from_manifest(manifest)
     if len(chunks) != 159:
         raise QualifiedRAGError("CSWP unit count drift")

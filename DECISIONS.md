@@ -9,6 +9,44 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-19-02
+Date: 2026-09-19
+
+Decision: **Phase 5D2 production CSWP ingest compiler — production-owned
+`kb/indexes/cswp_v1/` artifacts with current-corpus qualification parity; no
+Qdrant write.**
+
+Reason: Qualified runtime previously depended on
+`reports/phase5/phase5a2e/candidate_cswp_manifest.json` and experiment script
+modules for authoritative corpus data. Phase 5D2 extracts parser → structural
+children → CSWP-v1 packer into `agent/cswp/`, compiles the frozen 20-document
+seed corpus deterministically, attaches same-document neighbor metadata, and
+writes production-owned `units.jsonl` + `manifest.json`. Historical
+representation fingerprint `439ccdf…` is asserted only in qualification
+tests, not hardcoded as a generic compiler gate.
+
+Repair (no Qdrant / ranking / serving cutover beyond fail-closed production
+loader):
+
+- **`agent/cswp/`** — production structural parser, CSWP packer, compiler,
+  loader, CLI (`python -m agent.cswp`).
+- **`kb/indexes/cswp_v1/`** — compiled 159-unit index with neighbor metadata.
+- **`agent/qualified_rag.py`** — loads production index; fail-closed on
+  fingerprint mismatch with historical qualified representation.
+- **`scripts/phase5a1_shadow.py` / `scripts/phase5a2e_cswp.py`** — thin
+  wrappers over production module so Phase-5 evals keep working without a
+  second algorithm.
+- **`tests/test_phase5d2_cswp_compiler.py`** — current-corpus parity gate.
+
+Parity at parent `514a2bc5216cd5c744e9b3a80335b103fe3b0768`: 159 units;
+representation fingerprint `439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`;
+byte-identical rebuild; zero silent truncation; zero provider/Qdrant writes.
+
+Status: **PHASE-5D2-CSWP-COMPILER-READY** (local commit; not pushed).
+
+Confidence: 0.95
+
+---
 Decision ID: D-2026-09-19-01
 Date: 2026-09-19
 

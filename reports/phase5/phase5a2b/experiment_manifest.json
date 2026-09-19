@@ -89,9 +89,9 @@
     "reports/phase5/phase5a0/baseline_a_manifest.json": "b8e518ce67c85f158273dd7b983938223ac0661ccf13fbf608120a5158dee4b2",
     "reports/phase5/phase5a1/candidate_b_manifest.json": "bbea98a77a7cd67e744b596f0809379d067021850a91e6dac390aa8af11c9a65",
     "scripts/phase5a0_baseline.py": "df3f96e41b9c345bfedef8bbf8f13f666fe129baf79da13e5f88c9c6e23dade5",
-    "scripts/phase5a1_shadow.py": "de071d380f51e84532080c56f694c533f55d519647ab76dfc4f9e123184ce8c8",
+    "scripts/phase5a1_shadow.py": "15b63ee88d74002d17b3faf354fcad8f73ff53dad779ea6a5590ed7be0cca8ea",
     "scripts/phase5a2_shadow_ab.py": "8ef09b4bcf2d0595de98ff2644e96ed3f40a46e26172227d9ee4a5e0276ee349",
-    "scripts/phase5a2b_packed.py": "4c32880f26ae437d93b872bc8b604df2632d9c662feb001b0521d9c2cc43ca67"
+    "scripts/phase5a2b_packed.py": "cee3b1db41ee0962fe7bc0a29c3651b964f9f07d9d9b933165fd65ade5a3989d"
   },
   "frozen_at_utc": "2026-09-18T09:40:12.749337+00:00",
   "held_constant": {
@@ -123,7 +123,7 @@
     "metric_implementation": "phase5a0_baseline metric functions reused",
     "query_set_sha256": "5240539808b9a49f9f96b9358afb0b421e55b69d7d72b3b702bef02c816aa96c"
   },
-  "manifest_sha256": "fbcb9da160b5fc43e772697706e6fbae76242cafcc3f51cf998609e2d08adbc3",
+  "manifest_sha256": "3690bacd96d8cab26289198b036e97e44c9dd7c9dc62462999c21758455c12dd",
   "packing_contract": {
     "absence_metrics": null,
     "advance_gate": {

@@ -1,4 +1,5 @@
 {
+  "contract_sha256": "eec1744613bd3a9414d1a3f98a038093d78c3d9dcb916ef1a59b4e8a8e7fd6fe",
   "exposure_layers": [
     "retrieved",
     "expanded",
@@ -20,7 +21,7 @@
     "id": "SEED_FIRST",
     "invariant": "supplementary expansion context may never evict an original retrieved seed when the seed set fits the global budget",
     "pass_1": "unique original frozen top-5 retrieved SEED units in retrieval-rank order",
-    "pass_2": "remaining budget for deduplicated ±1 neighbors ordered by originating seed rank, source order, chunk_id",
+    "pass_2": "remaining budget for deduplicated \u00b11 neighbors ordered by originating seed rank, source order, chunk_id",
     "tokenizer": "cl100k_base"
   },
   "production_drafter_changed": false,
@@ -33,6 +34,5 @@
     "phase5b1_candidate_c": "5a42c2a603519c6a868b2354bf9791018521916878eb545a8666c4a389977ae4",
     "phase5b2a_drafter_pack": "4a2a2240393e01a73a3aef3cd3ca6de8e9481c9d69e8415f1467ea5e3b534496"
   },
-  "verifier_changed": false,
-  "contract_sha256": "eec1744613bd3a9414d1a3f98a038093d78c3d9dcb916ef1a59b4e8a8e7fd6fe"
+  "verifier_changed": false
 }

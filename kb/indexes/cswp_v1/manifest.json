@@ -1,0 +1,32 @@
+{
+  "baseline_corpus_fingerprint": "724a8c3486cb482eadbd592a93918a6e2954bebdbdfa12a39753556b1c3d7c02",
+  "chunker_version": "structural-source-spans-v1",
+  "compiled_at_utc": "2026-09-19T08:35:30.231408+00:00",
+  "compiler_version": "phase5d2-cswp-compiler-v1",
+  "contract_sha256": "8509739b6f516bf9c9eaebbf6c7286a8f56205c1807d73fb74188c4b1a9a7ae3",
+  "external_network_calls": 0,
+  "frozen_B_fingerprint": "a9402fea0c4fbbae6613346370c0759b0239d3d870a386526980e1c40815e852",
+  "packing_version": "cswp-v1",
+  "parser_name": "markdown-it-py",
+  "parser_version": "4.2.0",
+  "provider_calls": 0,
+  "qdrant_writes": 0,
+  "representation_fingerprint": "439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3",
+  "schema_version": "cswp_v1_production_manifest",
+  "serialization_version": "title-breadcrumb-exact-child-v1",
+  "tokenizer": {
+    "file_sha256": {
+      "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+      "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+      "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+    },
+    "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "padding": false,
+    "tokenizer_id": "ca:tokenizer:3d47d3d5844b3cbd60f78f8845669468729a2d4fec4d07ee1c2f444117b2e0e5",
+    "tokenizers_version": "0.22.2",
+    "truncation": false
+  },
+  "unit_count": 159,
+  "units_file": "units.jsonl"
+}

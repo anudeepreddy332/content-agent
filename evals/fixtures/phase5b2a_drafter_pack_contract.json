@@ -1,8 +1,9 @@
 {
+  "contract_sha256": "dda7eae9a6cd08355307abc8413a5bb3178cf413ef0e68549e07d8c4c846ea09",
   "external_network_calls": 0,
   "input_file_sha256": {
     "agent/drafter_packed_evidence.py": "2687ba026a4d89fdd1fb97c5513377f2434a0b7ddbb79cc73d991eb6a2546973",
-    "evals/fixtures/phase5b1_candidate_c_contract.json": "bb2e06b12ccba898c32e9f8326ac05d0ed8eed49a6c6b490b3534e9b6889160c",
+    "evals/fixtures/phase5b1_candidate_c_contract.json": "bc7f746535cc4b2c4e1e20bef836d1603047fdc18eb81527ec0334db7274f0f3",
     "scripts/phase5b2a_drafter_pack_contract.py": "798fd9fdbf35b1a410f852dcc5b67372a5f8b2f72a3f5e2c0345251565d69082"
   },
   "legacy_control": {
@@ -29,7 +30,6 @@
       "no repack, reorder, split, or regeneration"
     ]
   },
-  "upstream_contract_sha256": "5a42c2a603519c6a868b2354bf9791018521916878eb545a8666c4a389977ae4",
-  "verifier_changed": false,
-  "contract_sha256": "d6c3b7a3e706af4f8d5c349060cbeaf325a6966e5da4093b68813c47f05f97ea"
+  "upstream_contract_sha256": "e9643d34772b5e804ece6333b4831986499b961453837905c38b8a4c2824b785",
+  "verifier_changed": false
 }

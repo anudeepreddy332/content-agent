@@ -15,7 +15,7 @@
     "ranking": "source recall, precision, graded nDCG at 1/3/5/10 and MRR@10; any component decrease => REGRESSED, else any increase => IMPROVED, else SAME; report mixed component changes",
     "ranking_only_regression": "EVIDENCE SAME and RANKING-METRIC REGRESSED"
   },
-  "contract_sha256": "4c28667f72fd5234c8e36d3765feeb4363abc291a689e77013b7fd710f95aecc",
+  "contract_sha256": "d696819a819461348d18f8ae3c82b8c33e69546f9e07ab3af6cba3166a9c30bf",
   "cswp_fingerprint": "439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3",
   "determinism": {
     "attention_implementation": "eager",
@@ -62,13 +62,13 @@
     "kb/seed_docs/xgboost.md": "ebeacb3d7f8aba77ceb09d7753dc16142c14dbd5bce32bc3f4f997589df7cd7e",
     "reports/phase5/phase5a0/baseline_a_manifest.json": "b8e518ce67c85f158273dd7b983938223ac0661ccf13fbf608120a5158dee4b2",
     "reports/phase5/phase5a2e/candidate_cswp_manifest.json": "f224257583ec1a89d685cb00a224b882d2851b13537a7e3407976d76febc5005",
-    "reports/phase5/phase5a2e/experiment_manifest.json": "b2a9689000b5a8aa9838d961e93dd96d9bc03b437b6b8bcbd3f05daa807735ee",
+    "reports/phase5/phase5a2e/experiment_manifest.json": "68b49af8d32c6e916d9086007b65673dbf42bacf40b825a3044e22269e2d549e",
     "reports/phase5/phase5a2e/results.json": "8fd1f8cb7a286b3e36f405a78c26a9ee5ba2b85b79958b5c5e104b567a7537ab",
     "scripts/phase5a0_baseline.py": "df3f96e41b9c345bfedef8bbf8f13f666fe129baf79da13e5f88c9c6e23dade5",
-    "scripts/phase5a1_shadow.py": "de071d380f51e84532080c56f694c533f55d519647ab76dfc4f9e123184ce8c8",
+    "scripts/phase5a1_shadow.py": "15b63ee88d74002d17b3faf354fcad8f73ff53dad779ea6a5590ed7be0cca8ea",
     "scripts/phase5a2_shadow_ab.py": "8ef09b4bcf2d0595de98ff2644e96ed3f40a46e26172227d9ee4a5e0276ee349",
     "scripts/phase5a2b_packed.py": "cee3b1db41ee0962fe7bc0a29c3651b964f9f07d9d9b933165fd65ade5a3989d",
-    "scripts/phase5a2e_cswp.py": "a51ac0e4e8043f49a5d3d0dc28eca42177b2886e97a40a3cede99e20b418209c"
+    "scripts/phase5a2e_cswp.py": "790460bb2f099fa0af961be1f68234305dbd306a3746ea6526eb18f15b2cfa08"
   },
   "library_versions": {
     "numpy": "2.4.4",

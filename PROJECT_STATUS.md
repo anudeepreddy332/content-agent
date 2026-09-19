@@ -1,6 +1,6 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-19 (Phase 5D0 CI/runtime reproducibility repair)._
+_Canonical current-state snapshot. Last synchronized: 2026-09-19 (Phase 5D2 production CSWP ingest compiler)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -450,6 +450,16 @@ Default CI now provisions and hash-verifies pinned production MiniLM
 tests use committed tokenizer fixtures instead of runner HF cache (experimental
 BGE weights not required on every push). `scripts/inference_smoke.py` proves
 warmup + one deterministic qualified KB retrieval with zero provider calls.
+
+**Phase 5D2 — Production CSWP ingest compiler READY (local; not pushed).**
+Parent `514a2bc5216cd5c744e9b3a80335b103fe3b0768`. Production-owned compiler
+at `agent/cswp/` rebuilds the frozen 20-document seed corpus into
+`kb/indexes/cswp_v1/units.jsonl` + `manifest.json` with same-document neighbor
+metadata. Current-corpus qualification reproduces 159 units and representation
+fingerprint `439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`.
+`agent/qualified_rag.py` now loads the production index fail-closed on
+fingerprint mismatch. No Qdrant write; no serving ranking change. Rebuild:
+`uv run python -m agent.cswp --source kb/seed_docs/`.
 
 **Phase 5B3 — Production qualified RAG integration COMPLETE.** Clean
 required parent `912342ac0e735af152833d21cf1c8e821532a600` (pushed).

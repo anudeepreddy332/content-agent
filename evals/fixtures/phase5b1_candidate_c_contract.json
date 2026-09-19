@@ -7,6 +7,7 @@
     "no_critical_retrieved_grade2_loss": "no gating grade-2 span covered at retrieved may be lost at packed",
     "useful_gains_survive_pack_and_downstream": "focus gains that exist at expanded must be reported at packed, drafter-exposed and verifier-exposed; success is not expanded-only"
   },
+  "contract_sha256": "e9643d34772b5e804ece6333b4831986499b961453837905c38b8a4c2824b785",
   "cswp_fingerprint": "439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3",
   "dedup": [
     "canonical chunk_id first-seen in seed-rank then source order",
@@ -74,17 +75,17 @@
     "kb/seed_docs/xgboost.md": "ebeacb3d7f8aba77ceb09d7753dc16142c14dbd5bce32bc3f4f997589df7cd7e",
     "reports/phase5/phase5a0/baseline_a_manifest.json": "b8e518ce67c85f158273dd7b983938223ac0661ccf13fbf608120a5158dee4b2",
     "reports/phase5/phase5a2e/candidate_cswp_manifest.json": "f224257583ec1a89d685cb00a224b882d2851b13537a7e3407976d76febc5005",
-    "reports/phase5/phase5a2e/experiment_manifest.json": "b2a9689000b5a8aa9838d961e93dd96d9bc03b437b6b8bcbd3f05daa807735ee",
+    "reports/phase5/phase5a2e/experiment_manifest.json": "68b49af8d32c6e916d9086007b65673dbf42bacf40b825a3044e22269e2d549e",
     "reports/phase5/phase5a2e/results.json": "8fd1f8cb7a286b3e36f405a78c26a9ee5ba2b85b79958b5c5e104b567a7537ab",
     "scripts/phase5a0_baseline.py": "df3f96e41b9c345bfedef8bbf8f13f666fe129baf79da13e5f88c9c6e23dade5",
-    "scripts/phase5a1_shadow.py": "de071d380f51e84532080c56f694c533f55d519647ab76dfc4f9e123184ce8c8",
+    "scripts/phase5a1_shadow.py": "15b63ee88d74002d17b3faf354fcad8f73ff53dad779ea6a5590ed7be0cca8ea",
     "scripts/phase5a2_shadow_ab.py": "8ef09b4bcf2d0595de98ff2644e96ed3f40a46e26172227d9ee4a5e0276ee349",
     "scripts/phase5a2b_packed.py": "cee3b1db41ee0962fe7bc0a29c3651b964f9f07d9d9b933165fd65ade5a3989d",
-    "scripts/phase5a2e_cswp.py": "a51ac0e4e8043f49a5d3d0dc28eca42177b2886e97a40a3cede99e20b418209c",
+    "scripts/phase5a2e_cswp.py": "790460bb2f099fa0af961be1f68234305dbd306a3746ea6526eb18f15b2cfa08",
     "scripts/phase5b2a_drafter_pack_contract.py": "798fd9fdbf35b1a410f852dcc5b67372a5f8b2f72a3f5e2c0345251565d69082"
   },
   "mmr": false,
-  "name": "Candidate C v1 — Bounded Adjacent-Neighbor Expansion",
+  "name": "Candidate C v1 \u2014 Bounded Adjacent-Neighbor Expansion",
   "ordering": [
     "seed rank ascending",
     "within a seed group source reading order",
@@ -92,7 +93,7 @@
     "earliest seed-rank provenance is primary"
   ],
   "pack_budget_cl100k": 2000,
-  "pack_policy": "SEED_FIRST: pass-1 unique frozen top-5 SEED units in retrieval-rank order; pass-2 deduplicated ±1 neighbors by seed rank, source order, chunk_id; whole CSWP retrieval_text units only; skip-and-continue; never split",
+  "pack_policy": "SEED_FIRST: pass-1 unique frozen top-5 SEED units in retrieval-rank order; pass-2 deduplicated \u00b11 neighbors by seed rank, source order, chunk_id; whole CSWP retrieval_text units only; skip-and-continue; never split",
   "pack_tokenizer": "cl100k_base",
   "parent_child_retrieval": false,
   "production_qdrant_reads": 0,
@@ -108,6 +109,5 @@
     "character_clip": null,
     "items": "the frozen retrieved top-5 seeds remain kb_results[:5]; each result exposes its packed PREVIOUS/SEED/NEXT retrieval_text in source order with no character clip",
     "k": 5
-  },
-  "contract_sha256": "5a42c2a603519c6a868b2354bf9791018521916878eb545a8666c4a389977ae4"
+  }
 }
