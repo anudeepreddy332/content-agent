@@ -461,6 +461,15 @@ fingerprint `439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`.
 fingerprint mismatch. No Qdrant write; no serving ranking change. Rebuild:
 `uv run python -m agent.cswp --source kb/seed_docs/`.
 
+**Phase 5D4C — Qdrant serving contract hardening READY (local; pending CI).**
+Parent `e2a8fce61bc90016bfe45cc9060c0ea9e5422848`. Mandatory startup
+validation for `cswp_qdrant` (dim 384, cosine, payload schema, compiler
+version, MiniLM pin, fingerprint); alias-only `kb_cswp_serving` resolution;
+atomic alias swap; per-stage retrieve telemetry. Real Docker acceptance on
+`qdrant/qdrant:v1.9.2`: 33 gating queries packed recall 0.93939394 both
+backends, zero RRF/packed regressions. Supersedes 5D4B optional-fingerprint
+and physical-collection fallback gaps.
+
 **Phase 5D4B — Explicit CSWP serving backend READY (local; pending CI).**
 Parent `0f0b992ff66aa0cc5679b4f42a29536135fb411b`. Fail-closed
 `KB_BACKEND=cswp_local | cswp_qdrant` selector; unset defaults to

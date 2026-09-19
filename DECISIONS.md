@@ -9,6 +9,43 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-19-05
+Date: 2026-09-19
+
+Decision: **Phase 5D4C Qdrant serving contract hardening — mandatory
+fingerprint, alias-only resolution, startup validation, atomic alias swap,
+stage telemetry, real Docker v1.9.2 acceptance.**
+
+Reason: Phase 5D4B proved 33-query in-memory parity but left serving-integrity
+gaps: optional fingerprint gate, physical-collection fallback for
+`kb_cswp_serving`, deferred validation (KeyError risk), non-atomic alias
+repoint, and no real Qdrant acceptance.
+
+Repair (no retrieval-semantics change; no holdout eval):
+
+- **`cswp_qdrant` startup** — always validates dim 384, cosine, payload
+  schema, compiler version, MiniLM pin `1110a243…`, required payload fields,
+  point count, and index fingerprint against
+  `kb/indexes/cswp_v1/qdrant_shadow_manifest.json`; no env opt-out.
+- **Alias-only serving** — refuses physical collection named `kb_cswp_serving`
+  without a real alias mapping.
+- **Atomic alias swap** — `create_serving_alias` deletes existing alias and
+  creates new mapping in one `update_collection_aliases` transaction.
+- **Stage telemetry** — `retrieve()` returns per-stage ms (hydrate, dense,
+  bm25, fusion, expand, pack, total); `validate_startup()` returns full
+  contract pins.
+- **`tests/test_phase5d4c_serving_hardening.py`** — hardening gates plus
+  isolated Docker `qdrant/qdrant:v1.9.2` 33-query parity (packed recall
+  0.93939394, zero RRF/packed regressions).
+
+Parity at parent `e2a8fce61bc90016bfe45cc9060c0ea9e5422848`: local and Qdrant
+packed recall both 0.93939394; exact RRF top-5 identity; zero provider calls.
+
+Status: **PHASE-5D4C-SERVING-HARDENING-READY** (pending GitHub CI).
+
+Confidence: 0.94
+
+---
 Decision ID: D-2026-09-19-04
 Date: 2026-09-19
 

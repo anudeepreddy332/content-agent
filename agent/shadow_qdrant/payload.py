@@ -6,6 +6,51 @@ from typing import Any
 
 from agent.shadow_qdrant.constants import PAYLOAD_SCHEMA_VERSION
 
+REQUIRED_PAYLOAD_FIELDS = frozenset(
+    {
+        "payload_schema_version",
+        "chunk_id",
+        "document_id",
+        "document_version",
+        "source_path",
+        "source_sha256",
+        "retrieval_text",
+        "source_spans",
+        "heading_path",
+        "structural_segments",
+        "embedding_content_token_count",
+        "reading_order_ordinal",
+        "previous_chunk_id",
+        "next_chunk_id",
+        "compiler_version",
+        "retrieval_char_start",
+        "retrieval_char_end",
+    }
+)
+
+
+def validate_point_payload(
+    payload: dict[str, Any],
+    *,
+    expected_schema_version: str,
+    expected_compiler_version: str,
+) -> None:
+    """Fail closed if a Qdrant point payload violates the CSWP serving contract."""
+
+    missing = REQUIRED_PAYLOAD_FIELDS - payload.keys()
+    if missing:
+        raise ValueError(f"payload missing required fields: {sorted(missing)}")
+    if payload["payload_schema_version"] != expected_schema_version:
+        raise ValueError(
+            "payload_schema_version mismatch: "
+            f"expected {expected_schema_version!r} got {payload['payload_schema_version']!r}"
+        )
+    if payload["compiler_version"] != expected_compiler_version:
+        raise ValueError(
+            "compiler_version mismatch: "
+            f"expected {expected_compiler_version!r} got {payload['compiler_version']!r}"
+        )
+
 
 def build_point_payload(unit: dict[str, Any], *, compiler_version: str) -> dict[str, Any]:
     """Persist metadata required for durable retrieval and ±1 expansion."""
