@@ -19,7 +19,6 @@ from qdrant_client.models import (
 )
 
 from agent.cswp.constants import MANIFEST_FILE, UNITS_FILE
-from agent.cswp.identity import sha256_json
 from agent.cswp.loader import load_production_index, load_units_jsonl
 from agent.retrieval.encoder import (
     EMBEDDING_DIMENSION,
@@ -36,6 +35,7 @@ from agent.shadow_qdrant.constants import (
     SHADOW_MANIFEST_FILE,
     shadow_collection_name,
 )
+from agent.shadow_qdrant.identity import collection_content_fingerprint
 from agent.shadow_qdrant.payload import build_point_payload
 
 PRODUCTION_COLLECTION_GUARD = PRODUCTION_COLLECTION
@@ -57,16 +57,15 @@ def _assert_safe_collection(name: str) -> None:
 def _index_fingerprint(
     cswp_manifest: dict[str, Any], units: list[dict[str, Any]]
 ) -> str:
-    payload = {
-        "representation_fingerprint": cswp_manifest["representation_fingerprint"],
-        "compiler_version": cswp_manifest["compiler_version"],
-        "unit_count": len(units),
-        "payload_schema_version": PAYLOAD_SCHEMA_VERSION,
-        "encoder_model": ENCODER_MODEL,
-        "encoder_revision": MODEL_REVISION,
-        "ordered_chunk_ids": [unit["chunk_id"] for unit in units],
-    }
-    return sha256_json(payload)
+    payloads = [
+        build_point_payload(unit, compiler_version=cswp_manifest["compiler_version"])
+        for unit in units
+    ]
+    return collection_content_fingerprint(
+        payloads,
+        representation_fingerprint=cswp_manifest["representation_fingerprint"],
+        compiler_version=cswp_manifest["compiler_version"],
+    )
 
 
 def _index_digest16(index_fingerprint: str) -> str:

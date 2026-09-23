@@ -15,7 +15,10 @@ from typing import Any
 import numpy as np
 from rank_bm25 import BM25Okapi
 
-from agent.cswp.constants import PRODUCTION_INDEX_DIR
+from agent.cswp.constants import (
+    CURRENT_CORPUS_REPRESENTATION_FINGERPRINT,
+    PRODUCTION_INDEX_DIR,
+)
 from agent.cswp.loader import load_production_index, production_index_available
 from agent.drafter_packed_evidence import (
     DRAFTER_PACKED_EVIDENCE_V1,
@@ -40,6 +43,9 @@ from agent.retrieval.fusion import (
     rank_dense,
     reciprocal_rank_fusion,
 )
+from agent.shadow_qdrant.identity import collection_content_fingerprint
+from agent.shadow_qdrant.index import load_index_manifest
+from agent.shadow_qdrant.payload import build_point_payload
 from observability.logger import get_logger
 
 log = get_logger("qualified_rag")
@@ -100,6 +106,31 @@ def _hybrid_top5(query: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]
     return seeds, hybrid
 
 
+def _runtime_identity(units: dict[str, dict[str, Any]]) -> dict[str, str]:
+    """Derive local identity from the same canonical payload contract as serving."""
+
+    shadow_manifest = load_index_manifest(PRODUCTION_CSWP_INDEX)
+    representation_fingerprint = CURRENT_CORPUS_REPRESENTATION_FINGERPRINT
+    if representation_fingerprint != shadow_manifest["representation_fingerprint"]:
+        raise QualifiedRAGError("local/Qdrant representation fingerprint drift")
+    compiler_version = shadow_manifest["cswp_compiler_version"]
+    payloads = [
+        build_point_payload(unit, compiler_version=compiler_version)
+        for unit in units.values()
+    ]
+    return {
+        "source_corpus_fingerprint": shadow_manifest["source_corpus_fingerprint"],
+        "index_fingerprint": collection_content_fingerprint(
+            payloads,
+            representation_fingerprint=representation_fingerprint,
+            compiler_version=compiler_version,
+        ),
+        "minilm_model_id": shadow_manifest["minilm_model_id"],
+        "minilm_model_revision": shadow_manifest["minilm_model_revision"],
+        "qualified_contract": DRAFTER_PACKED_EVIDENCE_V1,
+    }
+
+
 def packed_rows_to_kb_results(
     packed_rows: list[dict[str, Any]],
     units: dict[str, dict[str, Any]],
@@ -111,7 +142,9 @@ def packed_rows_to_kb_results(
     packed_order = 0
     for group in serialized:
         for member in group["members"]:
-            row = next(item for item in packed_rows if item["chunk_id"] == member["chunk_id"])
+            row = next(
+                item for item in packed_rows if item["chunk_id"] == member["chunk_id"]
+            )
             seed = seed_meta.get(row["seed_rank"], {})
             kb_results.append(
                 {
@@ -141,7 +174,9 @@ def packed_rows_to_kb_results(
 
 def is_qualified_kb(kb_results: list[dict[str, Any]] | None) -> bool:
     rows = kb_results or []
-    return bool(rows) and rows[0].get("qualified_contract") == DRAFTER_PACKED_EVIDENCE_V1
+    return (
+        bool(rows) and rows[0].get("qualified_contract") == DRAFTER_PACKED_EVIDENCE_V1
+    )
 
 
 def build_drafter_kb_context(kb_results: list[dict[str, Any]]) -> str:
@@ -172,12 +207,12 @@ def retrieve_qualified_kb(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
     packed, skipped, used, exhausted, pack_stats = pack_units_seed_first(
         expanded, units, PACK_BUDGET_CL100K, encoding
     )
-    assert_seed_preservation_invariant(
-        expanded, units, PACK_BUDGET_CL100K, encoding
-    )
+    assert_seed_preservation_invariant(expanded, units, PACK_BUDGET_CL100K, encoding)
     serialized = serialize_drafter_packed_evidence_v1(packed, units)
     kb_results = packed_rows_to_kb_results(packed, units, retrieval_seeds)
+    expanded_rows = packed_rows_to_kb_results(expanded, units, retrieval_seeds)
     fingerprint = packed_identity_fingerprint(serialized)
+    runtime_identity = _runtime_identity(units)
     log.info(
         "qualified_rag.complete",
         seeds=len(retrieval_seeds),
@@ -189,6 +224,7 @@ def retrieve_qualified_kb(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
     )
     return {
         "kb_results": kb_results,
+        "expanded_rows": expanded_rows,
         "retrieval_seeds": retrieval_seeds,
         "packed_rows": packed,
         "serialized_groups": serialized,
@@ -198,6 +234,7 @@ def retrieve_qualified_kb(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
         "provider_calls": 0,
         "qdrant_reads": 0,
         "qdrant_writes": 0,
+        **runtime_identity,
     }
 
 

@@ -1,9 +1,9 @@
 {
-  "collection_name": "ca_cswp_v1_5141e33453611e44",
+  "collection_name": "ca_cswp_v1_d5010e1978c568e2",
   "cswp_compiler_version": "phase5d2-cswp-compiler-v1",
   "distance": "cosine",
   "exact_search": true,
-  "index_fingerprint": "5141e33453611e4401dfe82a9d8bf4a3e737fdfa02344da34e72bf27476dc771",
+  "index_fingerprint": "d5010e1978c568e2f90ab984ce8501a8a61313a3144adb4f31dda7d4b04d828e",
   "minilm_model_id": "sentence-transformers/all-MiniLM-L6-v2",
   "minilm_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
   "payload_schema_version": "cswp_shadow_payload_v1",

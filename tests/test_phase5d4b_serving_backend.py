@@ -194,7 +194,10 @@ def _parity_report(_client, monkeypatch):
     chunks_by_id = {chunk.chunk_id: chunk for chunk in chunks}
 
     gating = [q for q in oracle["queries"] if q["gating_eligible"]]
-    packed_regressions = []
+    seed_mismatches = []
+    expanded_mismatches = []
+    packed_id_mismatches = []
+    packed_fingerprint_mismatches = []
     baseline_packed = []
     qdrant_packed = []
 
@@ -202,6 +205,15 @@ def _parity_report(_client, monkeypatch):
         baseline = retrieve_qualified_kb(query["query"], n_seeds=5)
         shadow = retrieve_kb(query["query"], n_seeds=5)
         spans = spans_by[query["query_id"]]
+
+        if [row["chunk_id"] for row in baseline["retrieval_seeds"]] != [
+            row["chunk_id"] for row in shadow["retrieval_seeds"]
+        ]:
+            seed_mismatches.append(query["query_id"])
+        if [row["chunk_id"] for row in baseline["expanded_rows"]] != [
+            row["chunk_id"] for row in shadow["expanded_rows"]
+        ]:
+            expanded_mismatches.append(query["query_id"])
 
         base_packed_ids = [row["chunk_id"] for row in baseline["packed_rows"]]
         qdrant_packed_ids = [row["chunk_id"] for row in shadow["packed_rows"]]
@@ -219,11 +231,16 @@ def _parity_report(_client, monkeypatch):
         )
         baseline_packed.append(base_recall)
         qdrant_packed.append(q_recall)
-        if q_recall < base_recall:
-            packed_regressions.append(query["query_id"])
+        if base_packed_ids != qdrant_packed_ids:
+            packed_id_mismatches.append(query["query_id"])
+        if baseline["packed_fingerprint"] != shadow["packed_fingerprint"]:
+            packed_fingerprint_mismatches.append(query["query_id"])
 
     return {
-        "packed_regressions": packed_regressions,
+        "seed_mismatches": seed_mismatches,
+        "expanded_mismatches": expanded_mismatches,
+        "packed_id_mismatches": packed_id_mismatches,
+        "packed_fingerprint_mismatches": packed_fingerprint_mismatches,
         "local_packed_recall": round(sum(baseline_packed) / len(baseline_packed), 8),
         "qdrant_packed_recall": round(sum(qdrant_packed) / len(qdrant_packed), 8),
         "gating_count": len(gating),
@@ -234,7 +251,10 @@ def test_parity_33_gating_queries(built_index, monkeypatch):
     _client, _index_dir, _manifest = built_index
     report = _parity_report(_client, monkeypatch)
     assert report["gating_count"] == 33
-    assert report["packed_regressions"] == []
+    assert report["seed_mismatches"] == []
+    assert report["expanded_mismatches"] == []
+    assert report["packed_id_mismatches"] == []
+    assert report["packed_fingerprint_mismatches"] == []
     assert report["local_packed_recall"] == 0.93939394
     assert report["qdrant_packed_recall"] == 0.93939394
 

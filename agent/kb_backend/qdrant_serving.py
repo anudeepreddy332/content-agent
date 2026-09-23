@@ -23,6 +23,7 @@ from qdrant_client.models import (
 from rank_bm25 import BM25Okapi
 
 from agent.drafter_packed_evidence import (
+    DRAFTER_PACKED_EVIDENCE_V1,
     packed_identity_fingerprint,
     serialize_drafter_packed_evidence_v1,
 )
@@ -56,6 +57,7 @@ from agent.shadow_qdrant.constants import (
     SERVING_ALIAS,
     SHADOW_MANIFEST_FILE,
 )
+from agent.shadow_qdrant.identity import collection_content_fingerprint
 from agent.shadow_qdrant.payload import validate_point_payload
 from observability.logger import get_logger
 
@@ -129,7 +131,9 @@ def eval_chunks_from_units(units_list: list[dict[str, Any]]) -> list[EvalChunk]:
     return chunks
 
 
-def _build_by_source(units_list: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+def _build_by_source(
+    units_list: list[dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
     by_source: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for unit in units_list:
         by_source[unit["source_path"]].append(unit)
@@ -269,6 +273,67 @@ def _scroll_payloads(
     return payloads
 
 
+def _validate_live_payload_topology(
+    payloads: list[dict[str, Any]], *, expected_point_count: int
+) -> dict[str, dict[str, Any]]:
+    """Validate cross-point content and the frozen same-document ±1 topology."""
+
+    if len(payloads) != expected_point_count:
+        raise QdrantServingError(
+            f"hydrated payload count {len(payloads)} != expected {expected_point_count}"
+        )
+
+    units: dict[str, dict[str, Any]] = {}
+    document_versions: dict[str, str] = {}
+    version_documents: dict[str, str] = {}
+    document_sources: dict[str, tuple[str, str]] = {}
+    ordinals: set[int] = set()
+    for payload in payloads:
+        chunk_id = payload["chunk_id"]
+        if chunk_id in units:
+            raise QdrantServingError(f"duplicate chunk_id in serving collection: {chunk_id!r}")
+        ordinal = payload["reading_order_ordinal"]
+        if not isinstance(ordinal, int) or isinstance(ordinal, bool) or ordinal < 0:
+            raise QdrantServingError(f"invalid reading_order_ordinal for {chunk_id!r}")
+        if ordinal in ordinals:
+            raise QdrantServingError(f"duplicate reading_order_ordinal: {ordinal}")
+        ordinals.add(ordinal)
+        document_id = payload["document_id"]
+        document_version = payload["document_version"]
+        source = (payload["source_path"], payload["source_sha256"])
+        if document_versions.setdefault(document_id, document_version) != document_version:
+            raise QdrantServingError(
+                f"document_id {document_id!r} has conflicting document versions"
+            )
+        if version_documents.setdefault(document_version, document_id) != document_id:
+            raise QdrantServingError(
+                f"document_version {document_version!r} belongs to multiple document IDs"
+            )
+        if document_sources.setdefault(document_id, source) != source:
+            raise QdrantServingError(
+                f"document_id {document_id!r} has inconsistent source identity"
+            )
+        units[chunk_id] = payload
+
+    by_document: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for payload in units.values():
+        by_document[payload["document_id"]].append(payload)
+    for document_id, rows in by_document.items():
+        rows.sort(key=lambda row: row["reading_order_ordinal"])
+        for index, row in enumerate(rows):
+            expected_previous = rows[index - 1]["chunk_id"] if index else None
+            expected_next = rows[index + 1]["chunk_id"] if index + 1 < len(rows) else None
+            if row["previous_chunk_id"] != expected_previous:
+                raise QdrantServingError(
+                    f"broken previous_chunk_id for {row['chunk_id']!r} in {document_id!r}"
+                )
+            if row["next_chunk_id"] != expected_next:
+                raise QdrantServingError(
+                    f"broken next_chunk_id for {row['chunk_id']!r} in {document_id!r}"
+                )
+    return units
+
+
 def _rank_dense_qdrant(
     client: QdrantClient,
     collection: str,
@@ -331,7 +396,9 @@ def _hybrid_top5(
     )
     stage_telemetry["fusion_ms"] = int((time.perf_counter() - t2) * 1000)
 
-    seed_texts = [chunks_by_id[row["chunk_id"]].retrieval_text for row in hybrid[:SEED_TOP_K]]
+    seed_texts = [
+        chunks_by_id[row["chunk_id"]].retrieval_text for row in hybrid[:SEED_TOP_K]
+    ]
     seed_embeddings = np.asarray(encoder.encode(seed_texts), dtype=np.float32)
     seeds: list[dict[str, Any]] = []
     for index, row in enumerate(hybrid[:SEED_TOP_K]):
@@ -372,7 +439,20 @@ def _serving_state(client_key: str):
         expected_schema_version=manifest["payload_schema_version"],
         expected_compiler_version=manifest["cswp_compiler_version"],
     )
-    units_list = [payload_to_unit(payload) for payload in payloads]
+    payload_by_chunk_id = _validate_live_payload_topology(
+        payloads, expected_point_count=info.points_count
+    )
+    live_fingerprint = collection_content_fingerprint(
+        payloads,
+        representation_fingerprint=manifest["representation_fingerprint"],
+        compiler_version=manifest["cswp_compiler_version"],
+    )
+    if live_fingerprint != index_fingerprint:
+        raise QdrantServingError(
+            "live collection fingerprint mismatch: serving payload identity does not match "
+            "the qualified index"
+        )
+    units_list = [payload_to_unit(payload) for payload in payload_by_chunk_id.values()]
     units = {unit["chunk_id"]: unit for unit in units_list}
     by_source = _build_by_source(units_list)
     chunks = eval_chunks_from_units(units_list)
@@ -391,6 +471,7 @@ def _serving_state(client_key: str):
         "bm25": bm25,
         "point_count": info.points_count,
         "index_fingerprint": index_fingerprint,
+        "live_collection_fingerprint": live_fingerprint,
         "manifest": manifest,
         "hydrate_ms": hydrate_ms,
     }
@@ -407,6 +488,7 @@ def validate_startup() -> dict[str, Any]:
         "collection_name": state["collection"],
         "point_count": state["point_count"],
         "index_fingerprint": state["index_fingerprint"],
+        "live_collection_fingerprint": state["live_collection_fingerprint"],
         "qdrant_url": _qdrant_url(),
         "vector_size": EMBEDDING_DIMENSION,
         "distance": "cosine",
@@ -458,6 +540,7 @@ def retrieve(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
     assert_seed_preservation_invariant(expanded, units, PACK_BUDGET_CL100K, encoding)
     serialized = serialize_drafter_packed_evidence_v1(packed, units)
     kb_results = packed_rows_to_kb_results(packed, units, retrieval_seeds)
+    expanded_rows = packed_rows_to_kb_results(expanded, units, retrieval_seeds)
     fingerprint = packed_identity_fingerprint(serialized)
     stage_telemetry["pack_ms"] = int((time.perf_counter() - t_pack) * 1000)
     stage_telemetry["total_ms"] = int((time.perf_counter() - t0) * 1000)
@@ -473,6 +556,7 @@ def retrieve(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
 
     return {
         "kb_results": kb_results,
+        "expanded_rows": expanded_rows,
         "retrieval_seeds": retrieval_seeds,
         "packed_rows": packed,
         "serialized_groups": serialized,
@@ -484,9 +568,13 @@ def retrieve(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
         "collection_name": collection,
         "point_count": state["point_count"],
         "index_fingerprint": state["index_fingerprint"],
+        "live_collection_fingerprint": state["live_collection_fingerprint"],
+        "source_corpus_fingerprint": state["manifest"]["source_corpus_fingerprint"],
+        "minilm_model_id": state["manifest"]["minilm_model_id"],
+        "minilm_model_revision": state["manifest"]["minilm_model_revision"],
+        "qualified_contract": DRAFTER_PACKED_EVIDENCE_V1,
         "payload_schema_version": state["manifest"]["payload_schema_version"],
         "cswp_compiler_version": state["manifest"]["cswp_compiler_version"],
-        "minilm_model_revision": state["manifest"]["minilm_model_revision"],
         "stage_telemetry": stage_telemetry,
         "provider_calls": 0,
         "qdrant_reads": 1,
@@ -523,7 +611,9 @@ def create_serving_alias(
     """Atomically repoint the serving alias at a versioned collection."""
 
     if collection_name in BLOCKED_COLLECTIONS:
-        raise QdrantServingError(f"refusing alias to blocked collection: {collection_name}")
+        raise QdrantServingError(
+            f"refusing alias to blocked collection: {collection_name}"
+        )
 
     operations: list[Any] = []
     existing_aliases = {alias.alias_name for alias in client.get_aliases().aliases}
