@@ -1236,18 +1236,70 @@ def run_qualification(
     parity = []
     frozen_runtime_identity = None
     runtime_failures: list[dict[str, Any]] = []
-    execution_failure: dict[str, str] | None = None
+    execution_failure: dict[str, Any] | None = None
     for query in fixture["queries"]:
+        outputs: Any = None
+        stage = "backend_execution"
         try:
             outputs = executor(query["query"])
+            # Preserve what the adapters returned before any validation or
+            # canonicalization can reject it.  Successful rows are replaced
+            # below with their canonicalized form; failed rows remain raw.
+            if isinstance(outputs, dict):
+                for name in BACKENDS:
+                    if name in outputs:
+                        raw[name].append(outputs[name])
+            stage = "backend_output_shape"
+            if not isinstance(outputs, dict) or set(outputs) != set(BACKENDS):
+                raise QualificationHarnessError("both raw backend objects are required")
+            stage = "canonicalization"
+            canonical = {
+                name: canonical_raw(
+                    outputs[name], canonical_source_map=canonical_source_map
+                )
+                for name in BACKENDS
+            }
+            stage = "runtime_identity"
+            _observed, failures, frozen_runtime_identity = validate_runtime_identity(
+                query_id=query["query_id"],
+                outputs={name: canonical[name]["raw"] for name in BACKENDS},
+                expected=expected_identity,
+                frozen=frozen_runtime_identity,
+            )
+            runtime_failures.extend(failures)
+            for name in BACKENDS:
+                raw[name][-1] = canonical[name]["raw"]
+            stage = "backend_parity"
+            parity.extend(
+                [
+                    {"query_id": query["query_id"], **m}
+                    for m in compare_backends(
+                        canonical["cswp_local"], canonical["cswp_qdrant"]
+                    )
+                ]
+            )
+            # Identity is checked before this query can affect scoring.
+            stage = "scoring"
+            score = score_query(query, canonical["cswp_local"])
+            scores.append(score)
+            if _journal is not None:
+                stage = "journal_persistence"
+                append_execution_journal(_journal, {
+                    "event": "query_completed", "execution": _execution_number,
+                    "query_id": query["query_id"],
+                    "raw_backend_outputs": {name: canonical[name]["raw"] for name in BACKENDS},
+                    "per_query": score,
+                })
         except Exception as exc:
             execution_failure = {
                 "query_id": query["query_id"],
+                "stage": stage,
                 "failure": sanitized_failure(exc),
             }
             if _journal is not None:
                 append_execution_journal(_journal, {
                     "event": "execution_incomplete", "execution": _execution_number,
+                    "raw_backend_outputs": outputs if isinstance(outputs, dict) else None,
                     **execution_failure,
                 })
                 # The reserved authoritative attempt must be finalized as an
@@ -1256,41 +1308,6 @@ def run_qualification(
                 # previous exception behavior.
                 break
             raise
-        if set(outputs) != set(BACKENDS):
-            raise QualificationHarnessError("both raw backend objects are required")
-        canonical = {
-            name: canonical_raw(
-                outputs[name], canonical_source_map=canonical_source_map
-            )
-            for name in BACKENDS
-        }
-        _observed, failures, frozen_runtime_identity = validate_runtime_identity(
-            query_id=query["query_id"],
-            outputs={name: canonical[name]["raw"] for name in BACKENDS},
-            expected=expected_identity,
-            frozen=frozen_runtime_identity,
-        )
-        runtime_failures.extend(failures)
-        for name in BACKENDS:
-            raw[name].append(canonical[name]["raw"])
-        parity.extend(
-            [
-                {"query_id": query["query_id"], **m}
-                for m in compare_backends(
-                    canonical["cswp_local"], canonical["cswp_qdrant"]
-                )
-            ]
-        )
-        # Identity is checked before this query can affect scoring.
-        score = score_query(query, canonical["cswp_local"])
-        scores.append(score)
-        if _journal is not None:
-            append_execution_journal(_journal, {
-                "event": "query_completed", "execution": _execution_number,
-                "query_id": query["query_id"],
-                "raw_backend_outputs": {name: canonical[name]["raw"] for name in BACKENDS},
-                "per_query": score,
-            })
     prov = provenance(
         fixture,
         snapshot.sha256,

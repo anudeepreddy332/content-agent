@@ -691,6 +691,128 @@ def test_unverified_archive_cannot_issue_authoritative_pass(tmp_path, monkeypatc
         )
 
 
+def _assert_incomplete_archive(report, archive, *, stage, execution, query_id="SYN-A2"):
+    assert report["terminal_status"] == "INCOMPLETE"
+    assert report["overall_pass"] is False
+    assert report["disposition"] == load_contract(CONTRACT)["disposition_values"][1]
+    record = report["executions"][execution - 1]
+    assert record["failure"]["query_id"] == query_id
+    assert record["failure"]["stage"] == stage
+    assert len(record["per_query"]) == 1
+    assert len(record["raw_backend_outputs"]["cswp_local"]) == 2
+    assert len(record["raw_backend_outputs"]["cswp_qdrant"]) == 2
+    journal = [
+        json.loads(line)
+        for line in (archive / "execution_journal.jsonl").read_text().splitlines()
+    ]
+    incomplete = [
+        item
+        for item in journal
+        if item["event"] == "execution_incomplete" and item["execution"] == execution
+    ]
+    assert incomplete[-1]["query_id"] == query_id
+    assert incomplete[-1]["stage"] == stage
+    assert incomplete[-1]["raw_backend_outputs"] is not None
+    assert journal[-1]["event"] == "execution_completed"
+    assert journal[-1]["terminal_status"] == "INCOMPLETE"
+    assert archive_is_successful(archive) is False
+
+
+def test_query_two_malformed_ranking_finalizes_incomplete_with_raw_outputs(tmp_path, monkeypatch):
+    archive = tmp_path / "malformed-ranking"
+    calls = 0
+
+    def malformed(query):
+        nonlocal calls
+        calls += 1
+        outputs = executor()(query)
+        if calls == 2:
+            outputs["cswp_local"]["dense_top20"] = None
+        return outputs
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=malformed,
+        archive_root=archive,
+        **_authorized(monkeypatch),
+    )
+    _assert_incomplete_archive(report, archive, stage="canonicalization", execution=1)
+    assert report["executions"][0]["raw_backend_outputs"]["cswp_local"][1][
+        "dense_top20"
+    ] is None
+
+
+def test_query_two_validation_exception_finalizes_incomplete(tmp_path, monkeypatch):
+    archive = tmp_path / "validation-failure"
+    original = runner.validate_runtime_identity
+
+    def invalid(*, query_id, **kwargs):
+        if query_id == "SYN-A2":
+            raise QualificationHarnessError("synthetic validation failure")
+        return original(query_id=query_id, **kwargs)
+
+    monkeypatch.setattr(runner, "validate_runtime_identity", invalid)
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=executor(),
+        archive_root=archive,
+        **_authorized(monkeypatch),
+    )
+    _assert_incomplete_archive(report, archive, stage="runtime_identity", execution=1)
+
+
+def test_query_two_scoring_exception_finalizes_incomplete(tmp_path, monkeypatch):
+    archive = tmp_path / "scoring-failure"
+    original = runner.score_query
+
+    def unscorable(query, raw):
+        if query["query_id"] == "SYN-A2":
+            raise QualificationHarnessError("synthetic scoring failure")
+        return original(query, raw)
+
+    monkeypatch.setattr(runner, "score_query", unscorable)
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=executor(),
+        archive_root=archive,
+        **_authorized(monkeypatch),
+    )
+    _assert_incomplete_archive(report, archive, stage="scoring", execution=1)
+
+
+def test_execution_two_partial_results_survive_archive_and_execution_artifact(tmp_path, monkeypatch):
+    archive = tmp_path / "execution-two-failure"
+    calls = 0
+
+    def malformed_second_execution(query):
+        nonlocal calls
+        calls += 1
+        outputs = executor()(query)
+        if calls == 7:
+            outputs["cswp_qdrant"]["hybrid_top10"] = None
+        return outputs
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=malformed_second_execution,
+        archive_root=archive,
+        **_authorized(monkeypatch),
+    )
+    assert calls == 7
+    assert len(report["executions"]) == 2
+    _assert_incomplete_archive(report, archive, stage="canonicalization", execution=2)
+    execution_artifact = json.loads((archive / "executions.json").read_text())
+    assert execution_artifact[1]["failure"]["query_id"] == "SYN-A2"
+    assert len(execution_artifact[1]["per_query"]) == 1
+    second_raw = json.loads((archive / "execution_2_raw_backend_outputs.json").read_text())
+    assert len(second_raw["cswp_local"]) == len(second_raw["cswp_qdrant"]) == 2
+    assert second_raw["cswp_qdrant"][1]["hybrid_top10"] is None
+
+
 @pytest.mark.parametrize(
     "failure",
     [
