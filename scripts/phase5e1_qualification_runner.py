@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -550,6 +551,19 @@ def reserve_archive(root: Path) -> None:
         ) from exc
 
 
+def append_execution_journal(path: Path, record: dict[str, Any]) -> None:
+    """Durably append one non-secret qualification observation."""
+
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(canonical_json_dumps(record) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def sanitized_failure(exc: Exception) -> str:
+    return f"{type(exc).__name__}: {str(exc)[:300]}"
+
+
 def write_qualification_archive(
     payload: dict[str, Any], root: Path, *, already_reserved: bool = False
 ) -> dict[str, str]:
@@ -596,6 +610,8 @@ def run_qualification(
     approved_execution_sha: str | None = None,
     approved_fixture_sha256: str | None = None,
     _fixture_snapshot: FixtureSnapshot | None = None,
+    _journal: Path | None = None,
+    _execution_number: int = 1,
 ) -> dict[str, Any]:
     contract = load_contract(contract_path)
     if write_archive and not authoritative:
@@ -616,13 +632,24 @@ def run_qualification(
     resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
     if write_archive:
         reserve_archive(resolved_archive)
+        _journal = resolved_archive / "execution_journal.jsonl"
+    if _journal is not None:
+        append_execution_journal(_journal, {"event": "execution_started", "execution": _execution_number})
     raw = {name: [] for name in BACKENDS}
     scores = []
     parity = []
     frozen_runtime_identity = None
     runtime_failures: list[dict[str, Any]] = []
     for query in fixture["queries"]:
-        outputs = executor(query["query"])
+        try:
+            outputs = executor(query["query"])
+        except Exception as exc:
+            if _journal is not None:
+                append_execution_journal(_journal, {
+                    "event": "execution_incomplete", "execution": _execution_number,
+                    "query_id": query["query_id"], "failure": sanitized_failure(exc),
+                })
+            raise
         if set(outputs) != set(BACKENDS):
             raise QualificationHarnessError("both raw backend objects are required")
         canonical = {name: canonical_raw(outputs[name]) for name in BACKENDS}
@@ -644,7 +671,15 @@ def run_qualification(
             ]
         )
         # Identity is checked before this query can affect scoring.
-        scores.append(score_query(query, canonical["cswp_local"]))
+        score = score_query(query, canonical["cswp_local"])
+        scores.append(score)
+        if _journal is not None:
+            append_execution_journal(_journal, {
+                "event": "query_completed", "execution": _execution_number,
+                "query_id": query["query_id"],
+                "raw_backend_outputs": {name: canonical[name]["raw"] for name in BACKENDS},
+                "per_query": score,
+            })
     prov = provenance(
         fixture,
         snapshot.sha256,
@@ -674,11 +709,17 @@ def run_qualification(
         "runtime_identity": payload["provenance"]["observed"]["runtime_identity"],
     }
     payload["determinism"] = {"run_a_fingerprint": sha256_json(canonical_payload)}
+    if _journal is not None and _execution_number == 1:
+        append_execution_journal(
+            _journal,
+            {"event": "execution_queries_completed", "execution": _execution_number},
+        )
     if determinism_executor is not None:
         try:
             repeat = run_qualification(
                 fixture_path=fixture_path, contract_path=contract_path,
                 executor=determinism_executor, _fixture_snapshot=snapshot,
+                _journal=_journal, _execution_number=2,
             )
             run_b = {
                 "per_query": repeat["per_query"],
@@ -708,6 +749,11 @@ def run_qualification(
     payload["aggregate"]["disposition"] = contract["disposition_values"][0] if payload["aggregate"]["overall_pass"] else contract["disposition_values"][1]
     payload["overall_pass"] = payload["aggregate"]["overall_pass"]
     payload["disposition"] = payload["aggregate"]["disposition"]
+    if _journal is not None:
+        append_execution_journal(_journal, {
+            "event": "execution_completed", "execution": _execution_number,
+            "overall_pass": payload["overall_pass"], "disposition": payload["disposition"],
+        })
     if write_archive:
         payload["archive_paths"] = write_qualification_archive(
             payload, resolved_archive, already_reserved=True

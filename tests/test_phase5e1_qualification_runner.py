@@ -507,3 +507,61 @@ def test_authoritative_second_run_exception_is_incomplete(monkeypatch):
     assert report["determinism"]["status"] == "INCOMPLETE"
     assert report["overall_pass"] is report["aggregate"]["overall_pass"] is False
     assert report["disposition"] == report["aggregate"]["disposition"]
+
+
+def test_authoritative_archive_journals_every_query_of_both_executions(tmp_path, monkeypatch):
+    archive = tmp_path / "journal"
+    run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor(),
+        archive_root=archive, write_archive=True, **_authorized(monkeypatch)
+    )
+    records = [json.loads(line) for line in (archive / "execution_journal.jsonl").read_text().splitlines()]
+    completed = [r for r in records if r["event"] == "query_completed"]
+    assert [r["execution"] for r in completed].count(1) == 5
+    assert [r["execution"] for r in completed].count(2) == 5
+    assert all(set(r["raw_backend_outputs"]) == {"cswp_local", "cswp_qdrant"} for r in completed)
+
+
+def test_first_execution_failure_retains_prior_journal_evidence(tmp_path, monkeypatch):
+    archive = tmp_path / "journal"
+    calls = 0
+
+    def fail_query_two(query):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise RuntimeError("query two failed")
+        return executor()(query)
+
+    with pytest.raises(RuntimeError, match="query two failed"):
+        run_qualification(
+            fixture_path=FIXTURE, contract_path=CONTRACT, executor=fail_query_two,
+            archive_root=archive, write_archive=True, **_authorized(monkeypatch)
+        )
+    records = [json.loads(line) for line in (archive / "execution_journal.jsonl").read_text().splitlines()]
+    assert [r["event"] for r in records].count("query_completed") == 1
+    assert records[-1]["event"] == "execution_incomplete"
+    assert records[-1]["execution"] == 1
+
+
+def test_second_execution_failure_retains_both_execution_evidence(tmp_path, monkeypatch):
+    archive = tmp_path / "journal"
+    calls = 0
+
+    def fail_second_after_two(query):
+        nonlocal calls
+        calls += 1
+        if calls == 8:
+            raise RuntimeError("second query-three failed")
+        return executor()(query)
+
+    report = run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=fail_second_after_two,
+        archive_root=archive, write_archive=True, **_authorized(monkeypatch)
+    )
+    records = [json.loads(line) for line in (archive / "execution_journal.jsonl").read_text().splitlines()]
+    completed = [r for r in records if r["event"] == "query_completed"]
+    assert [r["execution"] for r in completed].count(1) == 5
+    assert [r["execution"] for r in completed].count(2) == 2
+    assert any(r["event"] == "execution_incomplete" and r["execution"] == 2 for r in records)
+    assert report["overall_pass"] is False
