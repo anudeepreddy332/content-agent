@@ -5,6 +5,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import pytest
+import scripts.phase5e1_qualification_runner as runner
 from scripts.phase5e1_qualification_runner import (
     QualificationHarnessError,
     contract_sha256,
@@ -339,3 +340,94 @@ def test_deterministic_second_raw_run_matches():
         determinism_executor=executor(),
     )
     assert report["determinism"]["passed"] is True
+
+
+@pytest.mark.parametrize(
+    "kwargs, message",
+    [
+        ({}, "approved execution SHA"),
+        ({"approved_execution_sha": "wrong"}, "runtime HEAD"),
+        ({"approved_execution_sha": "authorized"}, "approved fixture SHA-256"),
+        (
+            {
+                "approved_execution_sha": "authorized",
+                "approved_fixture_sha256": "wrong",
+            },
+            "fixture bytes",
+        ),
+    ],
+)
+def test_authorization_rejects_before_any_retrieval(kwargs, message, monkeypatch):
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
+    calls = 0
+
+    def counted(query):
+        nonlocal calls
+        calls += 1
+        return executor()(query)
+
+    with pytest.raises(QualificationHarnessError, match=message):
+        run_qualification(
+            fixture_path=FIXTURE,
+            contract_path=CONTRACT,
+            executor=counted,
+            authoritative=True,
+            **kwargs,
+        )
+    assert calls == 0
+
+
+def test_authorized_fixture_snapshot_is_scored_after_file_mutation(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
+    fixture = tmp_path / "fixture.json"
+    original = FIXTURE.read_bytes()
+    fixture.write_bytes(original)
+    calls = 0
+
+    def mutate_after_snapshot(query):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            fixture.write_text('{"schema_version":"retrieval_holdout_v1","queries":[]}')
+        return executor()(query)
+
+    report = run_qualification(
+        fixture_path=fixture,
+        contract_path=CONTRACT,
+        executor=mutate_after_snapshot,
+        authoritative=True,
+        approved_execution_sha="authorized",
+        approved_fixture_sha256=__import__("hashlib").sha256(original).hexdigest(),
+    )
+    assert report["fixture_sha256"] == __import__("hashlib").sha256(original).hexdigest()
+    assert len(report["per_query"]) == 5
+
+
+def test_authorized_matching_sha_and_digest_permit_execution(monkeypatch):
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=executor(),
+        authoritative=True,
+        approved_execution_sha="authorized",
+        approved_fixture_sha256=runner.sha256_file(FIXTURE),
+    )
+    assert report["overall_pass"] is True
+
+
+def test_authorization_rejection_does_not_reserve_archive(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
+    archive = tmp_path / "authoritative-archive"
+    with pytest.raises(QualificationHarnessError, match="fixture SHA-256"):
+        run_qualification(
+            fixture_path=FIXTURE,
+            contract_path=CONTRACT,
+            archive_root=archive,
+            write_archive=True,
+            executor=lambda _: pytest.fail("retrieval must not execute"),
+            authoritative=True,
+            approved_execution_sha="authorized",
+            approved_fixture_sha256="wrong",
+        )
+    assert not archive.exists()

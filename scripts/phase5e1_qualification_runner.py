@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 from statistics import fmean
 from typing import Any, Callable
+from dataclasses import dataclass
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -69,6 +70,22 @@ def load_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise QualificationHarnessError(f"{path}: expected JSON object")
     return value
+
+
+@dataclass(frozen=True)
+class FixtureSnapshot:
+    fixture: dict[str, Any]
+    sha256: str
+
+
+def load_fixture_snapshot(path: Path) -> FixtureSnapshot:
+    """Read, hash, and parse exactly one immutable fixture-byte snapshot."""
+
+    raw = path.read_bytes()
+    value = json.loads(raw.decode("utf-8"))
+    if not isinstance(value, dict):
+        raise QualificationHarnessError(f"{path}: expected JSON object")
+    return FixtureSnapshot(value, hashlib.sha256(raw).hexdigest())
 
 
 def load_contract(path: Path | None = None) -> dict[str, Any]:
@@ -389,16 +406,17 @@ def validate_runtime_identity(
 
 
 def provenance(
-    fixture_path: Path,
+    fixture: dict[str, Any],
+    fixture_sha256: str,
     contract: dict[str, Any],
     expected_runtime_identity: dict[str, dict[str, str]],
     frozen_runtime_identity: dict[str, dict[str, str]] | None,
     runtime_failures: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    expected = load_json(fixture_path).get("expected_provenance", {})
+    expected = fixture.get("expected_provenance", {})
     observed = {
         "execution_git_sha": runtime_git_sha(),
-        "fixture_sha256": sha256_file(fixture_path),
+        "fixture_sha256": fixture_sha256,
         "contract_sha256": sha256_json(contract),
         "backend_identity": list(BACKENDS),
         "expected_runtime_identity": expected_runtime_identity,
@@ -574,9 +592,22 @@ def run_qualification(
     write_archive: bool = False,
     executor: Callable[[str], dict[str, dict[str, Any]]] = execute_qualified_backends,
     determinism_executor: Callable[[str], dict[str, dict[str, Any]]] | None = None,
+    authoritative: bool = False,
+    approved_execution_sha: str | None = None,
+    approved_fixture_sha256: str | None = None,
 ) -> dict[str, Any]:
     contract = load_contract(contract_path)
-    fixture = load_json(fixture_path)
+    if authoritative:
+        if not approved_execution_sha:
+            raise QualificationHarnessError("authoritative qualification requires approved execution SHA")
+        if approved_execution_sha != runtime_git_sha():
+            raise QualificationHarnessError("approved execution SHA does not match runtime HEAD")
+        if not approved_fixture_sha256:
+            raise QualificationHarnessError("authoritative qualification requires approved fixture SHA-256")
+    snapshot = load_fixture_snapshot(fixture_path)
+    fixture = snapshot.fixture
+    if authoritative and approved_fixture_sha256 != snapshot.sha256:
+        raise QualificationHarnessError("approved fixture SHA-256 does not match fixture bytes")
     validate_fixture(fixture)
     expected_identity = expected_runtime_identity(fixture, contract)
     resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
@@ -612,7 +643,8 @@ def run_qualification(
         # Identity is checked before this query can affect scoring.
         scores.append(score_query(query, canonical["cswp_local"]))
     prov = provenance(
-        fixture_path,
+        fixture,
+        snapshot.sha256,
         contract,
         expected_identity,
         frozen_runtime_identity,
@@ -621,7 +653,7 @@ def run_qualification(
     aggregate = disposition(fixture["queries"], scores, contract, parity, prov)
     payload = {
         "contract": contract,
-        "fixture_sha256": sha256_file(fixture_path),
+        "fixture_sha256": snapshot.sha256,
         "raw_backend_outputs": raw,
         "per_query": scores,
         "backend_parity": {"passed": not parity, "mismatches": parity},
@@ -672,12 +704,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--contract", type=Path, default=DEFAULT_CONTRACT_PATH)
     p.add_argument("--write-archive", action="store_true")
     p.add_argument("--archive-root", type=Path)
+    p.add_argument("--approved-execution-sha", required=True)
+    p.add_argument("--approved-fixture-sha256", required=True)
     a = p.parse_args(argv)
     report = run_qualification(
         fixture_path=a.fixture,
         contract_path=a.contract,
         archive_root=a.archive_root,
         write_archive=a.write_archive,
+        authoritative=True,
+        approved_execution_sha=a.approved_execution_sha,
+        approved_fixture_sha256=a.approved_fixture_sha256,
     )
     print(canonical_json_dumps(report))
     return 0 if report["overall_pass"] else 1
