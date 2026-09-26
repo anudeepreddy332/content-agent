@@ -202,6 +202,7 @@ def _parity_report(_client, monkeypatch):
         "dense_top20": [],
         "bm25_rank_order": [],
         "hybrid_seed_top5": [],
+        "hybrid_top10": [],
     }
     baseline_packed = []
     qdrant_packed = []
@@ -245,6 +246,7 @@ def _parity_report(_client, monkeypatch):
                 row["chunk_id"] for row in shadow[field]
             ]:
                 rank_parity_mismatches[field].append(query["query_id"])
+        assert len(baseline["hybrid_top10"]) == len(shadow["hybrid_top10"]) == 10
 
     return {
         "seed_mismatches": seed_mismatches,
@@ -270,6 +272,7 @@ def test_parity_33_gating_queries(built_index, monkeypatch):
         "dense_top20": [],
         "bm25_rank_order": [],
         "hybrid_seed_top5": [],
+        "hybrid_top10": [],
     }
     assert report["local_packed_recall"] == 0.93939394
     assert report["qdrant_packed_recall"] == 0.93939394

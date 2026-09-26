@@ -111,6 +111,7 @@ def _hybrid_top5(
         "dense_top20": dense[:CANDIDATE_K],
         "bm25_rank_order": bm25_rows,
         "hybrid_seed_top5": hybrid[:5],
+        "hybrid_top10": hybrid[:10],
     }
 
 

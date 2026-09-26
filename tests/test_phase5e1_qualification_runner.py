@@ -13,8 +13,10 @@ from scripts.phase5e1_qualification_runner import (
     load_contract,
     reserve_archive,
     run_qualification,
+    score_query,
     write_qualification_archive,
 )
+from scripts.phase5a0_baseline import graded_ndcg_at_k
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "evals/fixtures/phase5e1_qualification_synthetic_oracle.json"
@@ -35,12 +37,17 @@ def executor(*, packed_mismatch=False, packed_loss=False):
             "synthetic absent diagnostic": "doc-hn",
         }[query]
         rows = [row(source, source + "__0001")]
+        hybrid_top10 = rows + [
+            row(f"background-{rank}", f"background-{rank}__0001")
+            for rank in range(2, 11)
+        ]
         packed = [] if packed_loss and source == "doc-a" else rows
         base = {
             "retrieval_seeds": rows,
             "dense_top20": rows,
             "bm25_rank_order": rows,
             "hybrid_seed_top5": rows,
+            "hybrid_top10": hybrid_top10,
             "expanded_rows": rows,
             "packed_rows": rows,
             "kb_results": packed,
@@ -77,6 +84,103 @@ def test_raw_coverage_and_metrics_are_executable():
     assert report["per_query"][0]["metrics"]["mrr"] == 1.0
     assert report["per_query"][0]["metrics"]["ndcg"] == 1.0
     assert report["per_query"][0]["metrics"]["source_recall"] == 1.0
+
+
+def _metric_raw(hybrid_top10):
+    return {
+        "seeds": hybrid_top10[:5],
+        "expanded": hybrid_top10,
+        "packed": hybrid_top10,
+        "dense_top20": hybrid_top10,
+        "bm25_rank_order": hybrid_top10,
+        "hybrid_seed_top5": hybrid_top10[:5],
+        "hybrid_top10": hybrid_top10,
+        "packed_fingerprint": "metric-fixture",
+    }
+
+
+def test_secondary_metrics_use_source_grade_and_credit_duplicate_source_once():
+    query = {
+        "query_id": "metric-grades",
+        "answerability": "ANSWERABLE",
+        "relevant_sources": [
+            {
+                "source": "high-source",
+                "grade": 2,
+                "evidence": [{"span_id": "high:1", "grade": 1, "char_start": 0, "char_end": 20}],
+            },
+            {
+                "source": "low-source",
+                "grade": 1,
+                "evidence": [{"span_id": "low:1", "grade": 2, "char_start": 0, "char_end": 20}],
+            },
+        ],
+    }
+    hybrid_top10 = [
+        row("high-source", "high-1"),
+        row("high-source", "high-2"),
+        row("low-source", "low-1"),
+        *[row(f"noise-{rank}", f"noise-{rank}") for rank in range(4, 11)],
+    ]
+    score = score_query(query, _metric_raw(hybrid_top10))
+    ranked = score["secondary_metrics"]["retrieved"]["source_rank_metrics"]
+    expected = round(
+        graded_ndcg_at_k(hybrid_top10, {"high-source": 2, "low-source": 1}, 3), 8
+    )
+    assert ranked["source_recall_at"] == {"1": 0.5, "3": 1.0, "5": 1.0}
+    assert ranked["graded_ndcg_at"]["3"] == expected
+    assert ranked["graded_ndcg_at"]["3"] < 1.0
+
+
+def test_mrr_at_10_uses_existing_hybrid_rank_seven_not_five_seeds():
+    query = {
+        "query_id": "metric-rank-seven",
+        "answerability": "ANSWERABLE",
+        "relevant_sources": [
+            {
+                "source": "relevant",
+                "grade": 2,
+                "evidence": [{"span_id": "relevant:1", "grade": 2, "char_start": 0, "char_end": 20}],
+            }
+        ],
+    }
+    hybrid_top10 = [
+        *[row(f"noise-{rank}", f"noise-{rank}") for rank in range(1, 7)],
+        row("relevant", "relevant-7"),
+        *[row(f"noise-{rank}", f"noise-{rank}") for rank in range(8, 11)],
+    ]
+    score = score_query(query, _metric_raw(hybrid_top10))
+    retrieved = score["secondary_metrics"]["retrieved"]
+    assert retrieved["source_rank_metrics"]["mrr_at_10"] == pytest.approx(1 / 7)
+    assert score["metrics"]["mrr"] == pytest.approx(1 / 7)
+
+
+def test_layer_metrics_and_absent_na_preserve_primary_population():
+    report = run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor()
+    )
+    answerable = report["per_query"][0]
+    assert answerable["metrics"]["evidence_recall_at_5"] == answerable[
+        "secondary_metrics"
+    ]["retrieved"]["evidence_recall_at"]["5"]
+    assert answerable["metrics"]["expanded_evidence_recall"] == answerable[
+        "secondary_metrics"
+    ]["expanded"]["evidence_recall_full"]
+    assert answerable["metrics"]["packed_evidence_recall"] == answerable[
+        "secondary_metrics"
+    ]["packed"]["evidence_recall_full"]
+    assert answerable["secondary_metrics"]["expanded"]["source_rank_metrics"][
+        "status"
+    ] == "NOT_APPLICABLE"
+    absent = next(row for row in report["per_query"] if row["answerability"] == "ABSENT")
+    assert absent["metrics"]["evidence_recall_at_1"] is None
+    assert absent["metrics"]["packed_evidence_recall"] is None
+    assert absent["secondary_metrics"]["retrieved"]["evidence_recall_at"] == {
+        "1": None,
+        "3": None,
+        "5": None,
+    }
+    assert report["aggregate"]["primary_metric"]["observed"] == 1.0
 
 
 def test_forged_coverage_and_packed_recall_cannot_pass():
@@ -602,11 +706,18 @@ def test_authoritative_archive_journals_every_query_of_both_executions(tmp_path,
     archived_repeat_raw = json.loads(
         (archive / "execution_2_raw_backend_outputs.json").read_text()
     )
+    archived_metrics = json.loads((archive / "per_query.json").read_text())
     for raw_execution in (archived_raw, archived_repeat_raw):
         for backend_rows in raw_execution.values():
             assert {"dense_top20", "bm25_rank_order", "hybrid_seed_top5"} <= set(
                 backend_rows[0]
             )
+            assert len(backend_rows[0]["hybrid_top10"]) == 10
+    for execution in ("execution_1", "execution_2"):
+        assert "secondary_metrics" in archived_metrics[execution][0]
+        assert archived_metrics[execution][0]["secondary_metrics"]["retrieved"][
+            "source_rank_metrics"
+        ]["mrr_at_10"] == 1.0
     assert archive_is_successful(archive) is True
 
 

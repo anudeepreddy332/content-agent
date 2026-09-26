@@ -138,6 +138,7 @@ def _parity_report(client) -> dict:
         "dense_top20": [],
         "bm25_rank_order": [],
         "hybrid_seed_top5": [],
+        "hybrid_top10": [],
     }
     packed_regressions = []
     baseline_packed = []
@@ -182,6 +183,8 @@ def _parity_report(client) -> dict:
                 row["chunk_id"] for row in shadow[field]
             ]:
                 rank_parity_mismatches[field].append(query["query_id"])
+        if len(baseline["hybrid_top10"]) != 10 or len(shadow["hybrid_top10"]) != 10:
+            rank_parity_mismatches["hybrid_top10"].append(query["query_id"])
         if q_recall < base_recall:
             packed_regressions.append(query["query_id"])
 

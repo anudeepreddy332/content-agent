@@ -17,6 +17,12 @@ from statistics import fmean
 from typing import Any, Callable
 from dataclasses import dataclass
 
+from scripts.phase5a0_baseline import (
+    graded_ndcg_at_k,
+    reciprocal_rank,
+    source_recall_at_k,
+)
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -33,6 +39,8 @@ RANKING_PARITY_FIELDS = (
     "bm25_rank_order",
     "hybrid_seed_top5",
 )
+SECONDARY_K_VALUES = (1, 3, 5)
+MRR_DEPTH = 10
 EVIDENCE_BEARING = frozenset(("ANSWERABLE", "PARTIAL"))
 REQUIRED_RUNTIME_IDENTITY = {
     "cswp_local": (
@@ -243,7 +251,11 @@ def require_rank_rows(raw: dict[str, Any], field: str) -> list[dict[str, Any]]:
 
     rows = raw.get(field)
     if not isinstance(rows, list) or any(
-        not isinstance(row, dict) or not isinstance(row.get("chunk_id"), str) or not row["chunk_id"]
+        not isinstance(row, dict)
+        or not isinstance(row.get("chunk_id"), str)
+        or not row["chunk_id"]
+        or not isinstance(row.get("source"), str)
+        or not row["source"]
         for row in rows
     ):
         raise QualificationHarnessError(
@@ -263,6 +275,7 @@ def canonical_raw(raw: dict[str, Any]) -> dict[str, Any]:
         "expanded": require_rows(raw, "expanded_rows"),
         "packed": require_rows(raw, "kb_results"),
         **{field: require_rank_rows(raw, field) for field in RANKING_PARITY_FIELDS},
+        "hybrid_top10": require_rank_rows(raw, "hybrid_top10"),
         "packed_fingerprint": raw["packed_fingerprint"],
         "raw": raw,
     }
@@ -459,23 +472,96 @@ def provenance(
 def score_query(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
     spans = gold_spans(query)
     seeds, expanded, packed = raw["seeds"], raw["expanded"], raw["packed"]
+    hybrid_top10 = raw["hybrid_top10"]
+    if len(hybrid_top10) < MRR_DEPTH:
+        raise QualificationHarnessError("raw backend output missing a true hybrid top-10")
+    answerability = query["answerability"]
+    evidence_bearing = answerability in EVIDENCE_BEARING
+    source_relevance = {
+        source["source"]: int(source["grade"])
+        for source in query.get("relevant_sources", [])
+    }
+
+    def evidence_at(rows: list[dict[str, Any]], k: int) -> float | None:
+        return recall(spans, rows, k) if evidence_bearing else None
+
+    def evidence_layer(rows: list[dict[str, Any]], *, ranking: bool) -> dict[str, Any]:
+        if not evidence_bearing:
+            return {
+                "population": "NOT_APPLICABLE_ABSENT",
+                "evidence_recall_at": {str(k): None for k in SECONDARY_K_VALUES},
+                "evidence_recall_full": None,
+                "source_rank_metrics": None,
+            }
+        values: dict[str, Any] = {
+            "population": "evidence_bearing_exact_spans",
+            "evidence_recall_at": {
+                str(k): evidence_at(rows, k) for k in SECONDARY_K_VALUES
+            },
+            "evidence_recall_full": recall(spans, rows, len(rows)),
+        }
+        if ranking:
+            values["source_rank_metrics"] = {
+                "population": "relevant_sources_grade",
+                "source_recall_at": {
+                    str(k): round(source_recall_at_k(rows, source_relevance, k), 8)
+                    for k in SECONDARY_K_VALUES
+                },
+                "mrr_at_10": round(
+                    reciprocal_rank(rows, source_relevance, MRR_DEPTH), 8
+                ),
+                "graded_ndcg_at": {
+                    str(k): round(graded_ndcg_at_k(rows, source_relevance, k), 8)
+                    for k in SECONDARY_K_VALUES
+                },
+            }
+        else:
+            values["source_rank_metrics"] = {
+                "status": "NOT_APPLICABLE",
+                "reason": "seed-first output order is not a retrieval ranking",
+            }
+        return values
+
+    retrieved_secondary = evidence_layer(hybrid_top10, ranking=True)
+    expanded_secondary = evidence_layer(expanded, ranking=False)
+    packed_secondary = evidence_layer(packed, ranking=False)
     return {
         "query_id": query["query_id"],
-        "answerability": query["answerability"],
+        "answerability": answerability,
         "coverage": {
             "retrieved": coverage(spans, seeds, 5),
             "expanded": coverage(spans, expanded, len(expanded)),
             "packed": coverage(spans, packed, len(packed)),
         },
         "metrics": {
-            "evidence_recall_at_1": recall(spans, seeds, 1),
-            "evidence_recall_at_3": recall(spans, seeds, 3),
-            "evidence_recall_at_5": recall(spans, seeds, 5),
-            "expanded_evidence_recall": recall(spans, expanded, len(expanded)),
-            "packed_evidence_recall": recall(spans, packed, len(packed)),
-            "source_recall": source_recall(spans, seeds, 5),
-            "mrr": mrr(spans, seeds, 5),
-            "ndcg": ndcg(spans, seeds, 5),
+            "evidence_recall_at_1": retrieved_secondary["evidence_recall_at"]["1"],
+            "evidence_recall_at_3": retrieved_secondary["evidence_recall_at"]["3"],
+            "evidence_recall_at_5": retrieved_secondary["evidence_recall_at"]["5"],
+            "expanded_evidence_recall": expanded_secondary["evidence_recall_full"],
+            "packed_evidence_recall": packed_secondary["evidence_recall_full"],
+            "source_recall": None
+            if not evidence_bearing
+            else retrieved_secondary["source_rank_metrics"]["source_recall_at"]["5"],
+            "mrr": None
+            if not evidence_bearing
+            else retrieved_secondary["source_rank_metrics"]["mrr_at_10"],
+            "ndcg": None
+            if not evidence_bearing
+            else retrieved_secondary["source_rank_metrics"]["graded_ndcg_at"]["5"],
+        },
+        "secondary_metrics": {
+            "retrieved": {
+                "sequence": "hybrid_top10_ranking",
+                **retrieved_secondary,
+            },
+            "expanded": {
+                "sequence": "seed_first_expansion_output",
+                **expanded_secondary,
+            },
+            "packed": {
+                "sequence": "seed_first_packed_output",
+                **packed_secondary,
+            },
         },
         "raw_identities": {
             "seed_chunk_ids": [r["chunk_id"] for r in seeds],
@@ -488,6 +574,7 @@ def score_query(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
             "hybrid_seed_top5_chunk_ids": [
                 r["chunk_id"] for r in raw["hybrid_seed_top5"]
             ],
+            "hybrid_top10_chunk_ids": [r["chunk_id"] for r in hybrid_top10],
             "packed_evidence_fingerprint": raw["packed_fingerprint"],
         },
     }
