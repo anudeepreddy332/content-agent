@@ -256,7 +256,16 @@ def test_legacy_fingerprint_name_cannot_satisfy_canonical_contract():
     )
 
 
-def test_archive_is_create_once(tmp_path):
+def _authorized(monkeypatch):
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
+    return {
+        "authoritative": True,
+        "approved_execution_sha": "authorized",
+        "approved_fixture_sha256": runner.sha256_file(FIXTURE),
+    }
+
+
+def test_archive_is_create_once(tmp_path, monkeypatch):
     archive = tmp_path / "archive"
     run_qualification(
         fixture_path=FIXTURE,
@@ -264,6 +273,7 @@ def test_archive_is_create_once(tmp_path):
         executor=executor(),
         archive_root=archive,
         write_archive=True,
+        **_authorized(monkeypatch),
     )
     with pytest.raises(QualificationHarnessError, match="archive already exists"):
         run_qualification(
@@ -272,10 +282,11 @@ def test_archive_is_create_once(tmp_path):
             executor=executor(),
             archive_root=archive,
             write_archive=True,
+            **_authorized(monkeypatch),
         )
 
 
-def test_existing_archive_rejects_before_executor_calls(tmp_path):
+def test_existing_archive_rejects_before_executor_calls(tmp_path, monkeypatch):
     archive = tmp_path / "reserved"
     archive.mkdir()
     calls = 0
@@ -292,6 +303,7 @@ def test_existing_archive_rejects_before_executor_calls(tmp_path):
             executor=counted,
             archive_root=archive,
             write_archive=True,
+            **_authorized(monkeypatch),
         )
     assert calls == 0
 
@@ -311,7 +323,7 @@ def test_concurrent_archive_reservation_has_exactly_one_claimant(tmp_path):
     assert claims.count(True) == 1
 
 
-def test_second_archive_write_cannot_overwrite(tmp_path):
+def test_second_archive_write_cannot_overwrite(tmp_path, monkeypatch):
     archive = tmp_path / "archive"
     report = run_qualification(
         fixture_path=FIXTURE,
@@ -319,6 +331,7 @@ def test_second_archive_write_cannot_overwrite(tmp_path):
         executor=executor(),
         archive_root=archive,
         write_archive=True,
+        **_authorized(monkeypatch),
     )
     with pytest.raises(FileExistsError):
         write_qualification_archive(report, archive, already_reserved=True)
@@ -431,3 +444,66 @@ def test_authorization_rejection_does_not_reserve_archive(tmp_path, monkeypatch)
             approved_fixture_sha256="wrong",
         )
     assert not archive.exists()
+
+
+def test_authoritative_attempt_runs_two_complete_matching_executions(monkeypatch):
+    calls = 0
+
+    def counted(query):
+        nonlocal calls
+        calls += 1
+        return executor()(query)
+
+    report = run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=counted, **_authorized(monkeypatch)
+    )
+    assert calls == 10
+    assert report["determinism"]["passed"] is True
+    assert report["overall_pass"] is report["aggregate"]["overall_pass"] is True
+    assert report["disposition"] == report["aggregate"]["disposition"]
+
+
+@pytest.mark.parametrize("mode", ["packed", "metric", "identity"])
+def test_authoritative_second_run_mismatch_fails_consistently(mode, monkeypatch):
+    calls = 0
+
+    def changed(query):
+        nonlocal calls
+        calls += 1
+        result = executor()(query)
+        if calls > 5:
+            for output in result.values():
+                if mode == "packed":
+                    output["kb_results"] = [row("doc-z", "doc-z__0001")]
+                    output["packed_fingerprint"] = "changed"
+                elif mode == "metric":
+                    output["kb_results"] = []
+                else:
+                    output["index_fingerprint"] = "changed-index"
+                    output["live_collection_fingerprint"] = "changed-index"
+        return result
+
+    report = run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=changed, **_authorized(monkeypatch)
+    )
+    assert report["determinism"]["passed"] is False
+    assert report["overall_pass"] is report["aggregate"]["overall_pass"] is False
+    assert report["disposition"] == report["aggregate"]["disposition"]
+
+
+def test_authoritative_second_run_exception_is_incomplete(monkeypatch):
+    calls = 0
+
+    def fail_second(query):
+        nonlocal calls
+        calls += 1
+        if calls == 6:
+            raise RuntimeError("second execution exploded")
+        return executor()(query)
+
+    report = run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=fail_second, **_authorized(monkeypatch)
+    )
+    assert report["determinism"]["status"] == "INCOMPLETE"
+    assert report["overall_pass"] is report["aggregate"]["overall_pass"] is False
+    assert report["disposition"] == report["aggregate"]["disposition"]

@@ -595,8 +595,11 @@ def run_qualification(
     authoritative: bool = False,
     approved_execution_sha: str | None = None,
     approved_fixture_sha256: str | None = None,
+    _fixture_snapshot: FixtureSnapshot | None = None,
 ) -> dict[str, Any]:
     contract = load_contract(contract_path)
+    if write_archive and not authoritative:
+        raise QualificationHarnessError("archive qualification requires authoritative authorization")
     if authoritative:
         if not approved_execution_sha:
             raise QualificationHarnessError("authoritative qualification requires approved execution SHA")
@@ -604,7 +607,7 @@ def run_qualification(
             raise QualificationHarnessError("approved execution SHA does not match runtime HEAD")
         if not approved_fixture_sha256:
             raise QualificationHarnessError("authoritative qualification requires approved fixture SHA-256")
-    snapshot = load_fixture_snapshot(fixture_path)
+    snapshot = _fixture_snapshot or load_fixture_snapshot(fixture_path)
     fixture = snapshot.fixture
     if authoritative and approved_fixture_sha256 != snapshot.sha256:
         raise QualificationHarnessError("approved fixture SHA-256 does not match fixture bytes")
@@ -661,36 +664,50 @@ def run_qualification(
         "aggregate": aggregate,
         **aggregate,
     }
-    # A caller can request a second independently executed raw run.  The
-    # comparison deliberately contains no timestamp or latency fields.
+    # Authoritative qualification always performs two complete executions.
+    if authoritative and determinism_executor is None:
+        determinism_executor = executor
     canonical_payload = {
         "per_query": payload["per_query"],
         "backend_parity": payload["backend_parity"],
         "provenance": payload["provenance"],
+        "runtime_identity": payload["provenance"]["observed"]["runtime_identity"],
     }
     payload["determinism"] = {"run_a_fingerprint": sha256_json(canonical_payload)}
     if determinism_executor is not None:
-        repeat = run_qualification(
-            fixture_path=fixture_path,
-            contract_path=contract_path,
-            executor=determinism_executor,
-        )
-        run_b = {
-            "per_query": repeat["per_query"],
-            "backend_parity": repeat["backend_parity"],
-            "provenance": repeat["provenance"],
-        }
-        payload["determinism"]["run_b_fingerprint"] = sha256_json(run_b)
-        payload["determinism"]["passed"] = (
-            payload["determinism"]["run_a_fingerprint"]
-            == payload["determinism"]["run_b_fingerprint"]
-        )
-        if not payload["determinism"]["passed"]:
-            payload["hard_failures"].append(
-                {"gate": "determinism_mismatch", "detail": payload["determinism"]}
+        try:
+            repeat = run_qualification(
+                fixture_path=fixture_path, contract_path=contract_path,
+                executor=determinism_executor, _fixture_snapshot=snapshot,
             )
-            payload["overall_pass"] = False
-            payload["disposition"] = contract["disposition_values"][1]
+            run_b = {
+                "per_query": repeat["per_query"],
+                "backend_parity": repeat["backend_parity"],
+                "provenance": repeat["provenance"],
+                "runtime_identity": repeat["provenance"]["observed"]["runtime_identity"],
+            }
+            payload["determinism"]["run_b_fingerprint"] = sha256_json(run_b)
+            payload["determinism"]["passed"] = (
+                payload["determinism"]["run_a_fingerprint"]
+                == payload["determinism"]["run_b_fingerprint"]
+            )
+            if not payload["determinism"]["passed"]:
+                payload["aggregate"]["hard_failures"].append(
+                    {"gate": "determinism_mismatch", "detail": payload["determinism"]}
+                )
+        except Exception as exc:
+            payload["determinism"].update({"passed": False, "status": "INCOMPLETE", "error": str(exc)})
+            payload["aggregate"]["hard_failures"].append(
+                {"gate": "second_execution_incomplete", "detail": str(exc)}
+            )
+    if authoritative and not payload["determinism"].get("passed"):
+        payload["aggregate"]["hard_failures"].append(
+            {"gate": "second_execution_missing", "detail": payload["determinism"]}
+        )
+    payload["aggregate"]["overall_pass"] = not payload["aggregate"]["hard_failures"]
+    payload["aggregate"]["disposition"] = contract["disposition_values"][0] if payload["aggregate"]["overall_pass"] else contract["disposition_values"][1]
+    payload["overall_pass"] = payload["aggregate"]["overall_pass"]
+    payload["disposition"] = payload["aggregate"]["disposition"]
     if write_archive:
         payload["archive_paths"] = write_qualification_archive(
             payload, resolved_archive, already_reserved=True
