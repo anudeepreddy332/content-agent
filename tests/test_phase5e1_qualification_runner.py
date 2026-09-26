@@ -41,6 +41,9 @@ def executor(*, packed_mismatch=False, packed_loss=False):
             row(f"background-{rank}", f"background-{rank}__0001")
             for rank in range(2, 11)
         ]
+        for rank, ranked in enumerate(hybrid_top10, start=1):
+            ranked["rrf_score"] = round(1 / (60 + rank - 1), 8)
+        rows[0]["native_score"] = 0.9
         packed = [] if packed_loss and source == "doc-a" else rows
         base = {
             "retrieval_seeds": rows,
@@ -181,6 +184,92 @@ def test_layer_metrics_and_absent_na_preserve_primary_population():
         "5": None,
     }
     assert report["aggregate"]["primary_metric"]["observed"] == 1.0
+
+
+def test_absent_diagnostics_use_fixture_labels_and_existing_raw_scores():
+    report = run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor()
+    )
+    absent = next(row for row in report["per_query"] if row["answerability"] == "ABSENT")
+    diagnostics = absent["absent_diagnostics"]
+    assert set(diagnostics) == {
+        "interpretation",
+        "hard_negative_exposure",
+        "source_concentration",
+        "dense_top1_distance",
+        "dense_top1_similarity",
+        "bm25_top_score",
+        "hybrid_top1_rrf_score",
+        "max_dense_similarity",
+        "retrieved_chunk_count",
+        "packed_chunk_count",
+    }
+    exposure = diagnostics["hard_negative_exposure"]["value"]
+    assert exposure["observed"] is True
+    assert exposure["matches"][0]["chunk_id"] == "doc-hn__0001"
+    assert exposure["matches"][0]["source"] == "doc-hn"
+    concentration = diagnostics["source_concentration"]["value"]
+    assert concentration["unique_source_count"] == 10
+    assert concentration["max_source_count"] == 1
+    assert concentration["max_source_fraction"] == 0.1
+    assert diagnostics["dense_top1_similarity"]["value"] == 0.9
+    assert diagnostics["dense_top1_distance"]["value"] == 0.1
+    assert diagnostics["max_dense_similarity"]["value"] == 0.9
+    assert diagnostics["bm25_top_score"]["value"] == 0.9
+    assert diagnostics["hybrid_top1_rrf_score"]["value"] == round(1 / 60, 8)
+    assert diagnostics["retrieved_chunk_count"]["value"] == 10
+    assert diagnostics["packed_chunk_count"]["value"] == 1
+    assert absent["metrics"]["packed_evidence_recall"] is None
+    assert "refusal_safety" not in diagnostics
+
+
+def test_absent_diagnostics_report_no_exposure_and_explicit_na_for_missing_scores():
+    query = {
+        "query_id": "absent-no-exposure",
+        "answerability": "ABSENT",
+        "hard_negatives": [{"source": "hard-negative", "chunk_id": "hard-negative-1"}],
+    }
+    hybrid_top10 = [
+        row(f"noise-{rank}", f"noise-{rank}") for rank in range(1, 11)
+    ]
+    score = score_query(query, _metric_raw(hybrid_top10))
+    diagnostics = score["absent_diagnostics"]
+    assert diagnostics["hard_negative_exposure"]["value"]["observed"] is False
+    for field in (
+        "dense_top1_distance",
+        "dense_top1_similarity",
+        "bm25_top_score",
+        "hybrid_top1_rrf_score",
+        "max_dense_similarity",
+    ):
+        assert diagnostics[field]["status"] == "NOT_APPLICABLE"
+        assert diagnostics[field]["value"] is None
+        assert diagnostics[field]["reason"]
+
+
+def test_absent_diagnostic_score_drift_fails_determinism(monkeypatch):
+    calls = 0
+
+    def changed_second_execution(query):
+        nonlocal calls
+        calls += 1
+        outputs = executor()(query)
+        if calls > 5 and query == "synthetic absent diagnostic":
+            for output in outputs.values():
+                output["hybrid_top10"][0]["rrf_score"] = 0.5
+        return outputs
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=changed_second_execution,
+        **_authorized(monkeypatch),
+    )
+    assert report["determinism"]["passed"] is False
+    assert any(
+        failure["gate"] == "determinism_mismatch"
+        for failure in report["aggregate"]["hard_failures"]
+    )
 
 
 def test_forged_coverage_and_packed_recall_cannot_pass():
@@ -718,6 +807,12 @@ def test_authoritative_archive_journals_every_query_of_both_executions(tmp_path,
         assert archived_metrics[execution][0]["secondary_metrics"]["retrieved"][
             "source_rank_metrics"
         ]["mrr_at_10"] == 1.0
+        archived_absent = next(
+            row for row in archived_metrics[execution] if row["answerability"] == "ABSENT"
+        )
+        assert archived_absent["absent_diagnostics"]["hard_negative_exposure"][
+            "value"
+        ]["observed"] is True
     assert archive_is_successful(archive) is True
 
 

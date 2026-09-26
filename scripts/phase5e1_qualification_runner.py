@@ -153,6 +153,19 @@ def validate_fixture(fixture: dict[str, Any]) -> None:
             raise QualificationHarnessError(f"{q['query_id']}: invalid answerability")
         if q["answerability"] == "ABSENT" and q.get("relevant_sources"):
             raise QualificationHarnessError("ABSENT cannot have evidence")
+        if q["answerability"] == "ABSENT":
+            labels = q.get("hard_negatives", [])
+            if not isinstance(labels, list) or any(
+                not isinstance(label, dict)
+                or not any(
+                    isinstance(label.get(field), str) and label[field]
+                    for field in ("source", "chunk_id")
+                )
+                for label in labels
+            ):
+                raise QualificationHarnessError(
+                    f"{q['query_id']}: hard negatives need a source or chunk_id"
+                )
         gold_spans(q)
     if not ids:
         raise QualificationHarnessError("fixture has no queries")
@@ -469,6 +482,134 @@ def provenance(
     }
 
 
+def _diagnostic_available(value: Any, *, basis: str) -> dict[str, Any]:
+    return {"status": "AVAILABLE", "value": value, "basis": basis}
+
+
+def _diagnostic_unavailable(reason: str) -> dict[str, Any]:
+    return {"status": "NOT_APPLICABLE", "value": None, "reason": reason}
+
+
+def _numeric_top_value(
+    rows: list[dict[str, Any]], field: str, *, basis: str
+) -> dict[str, Any]:
+    if not rows:
+        return _diagnostic_unavailable(f"{basis} has no rows")
+    value = rows[0].get(field)
+    if not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+        return _diagnostic_unavailable(f"{basis}[0].{field} is unavailable")
+    return _diagnostic_available(round(float(value), 8), basis=f"{basis}[0].{field}")
+
+
+def _hard_negative_match(label: dict[str, Any], row: dict[str, Any]) -> bool:
+    """Match every identifier specified by a fixture-owned hard-negative label."""
+
+    return all(
+        label.get(field) is None or row.get(field) == label[field]
+        for field in ("source", "chunk_id")
+    )
+
+
+def absent_diagnostics(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
+    """Report frozen ABSENT diagnostics from existing retrieval outputs only."""
+
+    if query["answerability"] != "ABSENT":
+        raise QualificationHarnessError("ABSENT diagnostics requested for evidence-bearing query")
+    hybrid = raw["hybrid_top10"]
+    dense = raw["dense_top20"]
+    bm25 = raw["bm25_rank_order"]
+    packed = raw["packed"]
+    labels = query.get("hard_negatives", [])
+    exposure: list[dict[str, Any]] = []
+    for label_index, label in enumerate(labels):
+        for layer, rows in (("retrieved_hybrid_top10", hybrid), ("expanded", raw["expanded"]), ("packed", packed)):
+            for rank, row in enumerate(rows, start=1):
+                if _hard_negative_match(label, row):
+                    exposure.append(
+                        {
+                            "label_index": label_index,
+                            "label": label,
+                            "layer": layer,
+                            "rank_or_output_order": rank,
+                            "source": row["source"],
+                            "chunk_id": row["chunk_id"],
+                        }
+                    )
+    source_counts: dict[str, int] = {}
+    for row in hybrid:
+        source_counts[row["source"]] = source_counts.get(row["source"], 0) + 1
+    if source_counts:
+        max_count = max(source_counts.values())
+        concentration: dict[str, Any] = _diagnostic_available(
+            {
+                "sequence": "hybrid_top10_ranking",
+                "unique_source_count": len(source_counts),
+                "max_source_count": max_count,
+                "max_source_fraction": round(max_count / len(hybrid), 8),
+                "dominant_sources": sorted(
+                    source for source, count in source_counts.items() if count == max_count
+                ),
+            },
+            basis="hybrid_top10 source frequency",
+        )
+    else:
+        concentration = _diagnostic_unavailable("hybrid_top10 has no source rows")
+
+    dense_top1_similarity = _numeric_top_value(
+        dense, "native_score", basis="dense_top20"
+    )
+    if dense_top1_similarity["status"] == "AVAILABLE":
+        dense_top1_distance = _diagnostic_available(
+            round(1.0 - dense_top1_similarity["value"], 8),
+            basis="1 - dense_top20[0].native_score (cosine similarity)",
+        )
+    else:
+        dense_top1_distance = _diagnostic_unavailable(
+            "dense_top1_similarity is unavailable"
+        )
+    dense_scores = [
+        float(row["native_score"])
+        for row in dense
+        if isinstance(row.get("native_score"), (int, float))
+        and math.isfinite(float(row["native_score"]))
+    ]
+    max_dense_similarity = (
+        _diagnostic_available(
+            round(max(dense_scores), 8), basis="max dense_top20.native_score"
+        )
+        if dense_scores
+        else _diagnostic_unavailable("dense_top20.native_score is unavailable")
+    )
+    return {
+        "interpretation": "retrieval_diagnostics_only_no_abstention_or_refusal_claim",
+        "hard_negative_exposure": _diagnostic_available(
+            {
+                "observed": bool(exposure),
+                "label_count": len(labels),
+                "matches": exposure,
+                "match_semantics": "all supplied label source/chunk_id identifiers match",
+            },
+            basis="fixture hard_negatives against existing retrieved/expanded/packed outputs",
+        ),
+        "source_concentration": concentration,
+        "dense_top1_distance": dense_top1_distance,
+        "dense_top1_similarity": dense_top1_similarity,
+        "bm25_top_score": _numeric_top_value(
+            bm25, "native_score", basis="bm25_rank_order"
+        ),
+        "hybrid_top1_rrf_score": _numeric_top_value(
+            hybrid, "rrf_score", basis="hybrid_top10"
+        ),
+        "max_dense_similarity": max_dense_similarity,
+        "retrieved_chunk_count": _diagnostic_available(
+            len(hybrid), basis="hybrid_top10 ranked retrieval sequence"
+        ),
+        "packed_chunk_count": _diagnostic_available(
+            len(packed), basis="seed-first packed output"
+        ),
+    }
+
+
 def score_query(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
     spans = gold_spans(query)
     seeds, expanded, packed = raw["seeds"], raw["expanded"], raw["packed"]
@@ -563,6 +704,9 @@ def score_query(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
                 **packed_secondary,
             },
         },
+        "absent_diagnostics": absent_diagnostics(query, raw)
+        if answerability == "ABSENT"
+        else None,
         "raw_identities": {
             "seed_chunk_ids": [r["chunk_id"] for r in seeds],
             "expanded_chunk_ids": [r["chunk_id"] for r in expanded],
