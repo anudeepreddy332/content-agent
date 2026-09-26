@@ -12,6 +12,7 @@ import socket
 import subprocess
 import sys
 import time
+from urllib.request import urlopen
 from collections import defaultdict
 from contextlib import contextmanager
 from pathlib import Path
@@ -87,8 +88,14 @@ def _docker_qdrant(port: int, container_name: str):
     if not ready:
         subprocess.run(["docker", "rm", "-f", container_name], check=False)
         raise RuntimeError(f"Qdrant container {container_name} failed to become ready")
+    with urlopen(url, timeout=5) as response:  # noqa: S310 - isolated loopback container
+        qdrant_version = json.load(response)["version"]
+    if qdrant_version != "1.9.2":
+        raise RuntimeError(
+            f"Qdrant server version {qdrant_version!r} does not match required '1.9.2'"
+        )
     try:
-        yield url, QdrantClient(url=url)
+        yield url, QdrantClient(url=url), qdrant_version
     finally:
         subprocess.run(["docker", "rm", "-f", container_name], check=False)
         del container_id
@@ -123,7 +130,10 @@ def _parity_report(client) -> dict:
     chunks_by_id = {chunk.chunk_id: chunk for chunk in chunks}
 
     gating = [q for q in oracle["queries"] if q["gating_eligible"]]
-    rrf_mismatches = []
+    seed_mismatches = []
+    expanded_mismatches = []
+    packed_id_mismatches = []
+    packed_fingerprint_mismatches = []
     packed_regressions = []
     baseline_packed = []
     qdrant_packed = []
@@ -133,10 +143,14 @@ def _parity_report(client) -> dict:
         shadow = retrieve_kb(query["query"], n_seeds=5)
         spans = spans_by[query["query_id"]]
 
-        base_seeds = [s["chunk_id"] for s in baseline["retrieval_seeds"]]
-        qdrant_seeds = [s["chunk_id"] for s in shadow["retrieval_seeds"]]
+        base_seeds = [row["chunk_id"] for row in baseline["retrieval_seeds"]]
+        qdrant_seeds = [row["chunk_id"] for row in shadow["retrieval_seeds"]]
         if base_seeds != qdrant_seeds:
-            rrf_mismatches.append(query["query_id"])
+            seed_mismatches.append(query["query_id"])
+        if [row["chunk_id"] for row in baseline["expanded_rows"]] != [
+            row["chunk_id"] for row in shadow["expanded_rows"]
+        ]:
+            expanded_mismatches.append(query["query_id"])
 
         base_packed_ids = [row["chunk_id"] for row in baseline["packed_rows"]]
         qdrant_packed_ids = [row["chunk_id"] for row in shadow["packed_rows"]]
@@ -154,11 +168,18 @@ def _parity_report(client) -> dict:
         )
         baseline_packed.append(base_recall)
         qdrant_packed.append(q_recall)
+        if base_packed_ids != qdrant_packed_ids:
+            packed_id_mismatches.append(query["query_id"])
+        if baseline["packed_fingerprint"] != shadow["packed_fingerprint"]:
+            packed_fingerprint_mismatches.append(query["query_id"])
         if q_recall < base_recall:
             packed_regressions.append(query["query_id"])
 
     return {
-        "rrf_mismatches": rrf_mismatches,
+        "seed_mismatches": seed_mismatches,
+        "expanded_mismatches": expanded_mismatches,
+        "packed_id_mismatches": packed_id_mismatches,
+        "packed_fingerprint_mismatches": packed_fingerprint_mismatches,
         "packed_regressions": packed_regressions,
         "local_packed_recall": round(sum(baseline_packed) / len(baseline_packed), 8),
         "qdrant_packed_recall": round(sum(qdrant_packed) / len(qdrant_packed), 8),
@@ -184,7 +205,7 @@ def main() -> int:
 
     from agent.kb_backend import qdrant_serving
 
-    with _docker_qdrant(port, container_name) as (url, client):
+    with _docker_qdrant(port, container_name) as (url, client, qdrant_version):
         os.environ["QDRANT_URL"] = url
         os.environ["KB_BACKEND"] = "cswp_qdrant"
         qdrant_serving._serving_client = lambda: client  # type: ignore[method-assign]
@@ -198,16 +219,25 @@ def main() -> int:
         assert info["kb_backend"] == QDRANT_BACKEND
         assert info["startup_validated"] is True
         assert info["point_count"] == 159
+        assert info["live_collection_fingerprint"] == manifest["index_fingerprint"]
 
         timings = warmup()
         assert timings["kb_backend"] == QDRANT_BACKEND
         assert timings["startup_validated"] is True
 
         report = _parity_report(client)
+        report["qdrant_version"] = qdrant_version
+        report["live_collection_fingerprint"] = info["live_collection_fingerprint"]
         print(json.dumps(report, indent=2))
         if report["gating_count"] != 33:
             return 1
-        if report["rrf_mismatches"] or report["packed_regressions"]:
+        if (
+            report["seed_mismatches"]
+            or report["expanded_mismatches"]
+            or report["packed_id_mismatches"]
+            or report["packed_fingerprint_mismatches"]
+            or report["packed_regressions"]
+        ):
             return 1
         if report["local_packed_recall"] != 0.93939394:
             return 1
