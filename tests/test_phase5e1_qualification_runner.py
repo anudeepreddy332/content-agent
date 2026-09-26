@@ -38,6 +38,9 @@ def executor(*, packed_mismatch=False, packed_loss=False):
         packed = [] if packed_loss and source == "doc-a" else rows
         base = {
             "retrieval_seeds": rows,
+            "dense_top20": rows,
+            "bm25_rank_order": rows,
+            "hybrid_seed_top5": rows,
             "expanded_rows": rows,
             "packed_rows": rows,
             "kb_results": packed,
@@ -117,6 +120,59 @@ def test_direct_backend_identity_comparison_ignores_forged_mismatch_count():
     )
     assert report["overall_pass"] is False
     assert report["backend_parity"]["mismatches"]
+
+
+@pytest.mark.parametrize("field", ["dense_top20", "bm25_rank_order", "hybrid_seed_top5"])
+def test_missing_required_rank_diagnostic_fails_closed(field):
+    def missing(query):
+        outputs = executor()(query)
+        del outputs["cswp_qdrant"][field]
+        return outputs
+
+    with pytest.raises(QualificationHarnessError, match=field):
+        run_qualification(fixture_path=FIXTURE, contract_path=CONTRACT, executor=missing)
+
+
+@pytest.mark.parametrize("field", ["dense_top20", "bm25_rank_order", "hybrid_seed_top5"])
+def test_ordered_rank_diagnostic_mismatch_fails_backend_identity_gate(field):
+    def mismatched(query):
+        outputs = executor()(query)
+        outputs["cswp_qdrant"][field] = [row("doc-other", "doc-other__0001")]
+        return outputs
+
+    report = run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=mismatched
+    )
+    assert report["overall_pass"] is False
+    assert any(
+        issue["field"] == f"{field}.chunk_id"
+        for issue in report["backend_parity"]["mismatches"]
+    )
+
+
+def test_rank_diagnostic_repeat_run_drift_fails_determinism(monkeypatch):
+    calls = 0
+
+    def changed_second_execution(query):
+        nonlocal calls
+        calls += 1
+        outputs = executor()(query)
+        if calls > 5:
+            for output in outputs.values():
+                output["dense_top20"] = [row("doc-other", "doc-other__0001")]
+        return outputs
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=changed_second_execution,
+        **_authorized(monkeypatch),
+    )
+    assert report["determinism"]["passed"] is False
+    assert any(
+        failure["gate"] == "determinism_mismatch"
+        for failure in report["aggregate"]["hard_failures"]
+    )
 
 
 def test_wrong_contract_sha_fails(tmp_path):
@@ -542,6 +598,15 @@ def test_authoritative_archive_journals_every_query_of_both_executions(tmp_path,
     assert set(manifest["artifacts"]) == {
         path.name for path in archive.iterdir() if path.name != "manifest.json"
     }
+    archived_raw = json.loads((archive / "raw_backend_outputs.json").read_text())
+    archived_repeat_raw = json.loads(
+        (archive / "execution_2_raw_backend_outputs.json").read_text()
+    )
+    for raw_execution in (archived_raw, archived_repeat_raw):
+        for backend_rows in raw_execution.values():
+            assert {"dense_top20", "bm25_rank_order", "hybrid_seed_top5"} <= set(
+                backend_rows[0]
+            )
     assert archive_is_successful(archive) is True
 
 

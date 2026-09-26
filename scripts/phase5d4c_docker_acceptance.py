@@ -134,6 +134,11 @@ def _parity_report(client) -> dict:
     expanded_mismatches = []
     packed_id_mismatches = []
     packed_fingerprint_mismatches = []
+    rank_parity_mismatches = {
+        "dense_top20": [],
+        "bm25_rank_order": [],
+        "hybrid_seed_top5": [],
+    }
     packed_regressions = []
     baseline_packed = []
     qdrant_packed = []
@@ -172,6 +177,11 @@ def _parity_report(client) -> dict:
             packed_id_mismatches.append(query["query_id"])
         if baseline["packed_fingerprint"] != shadow["packed_fingerprint"]:
             packed_fingerprint_mismatches.append(query["query_id"])
+        for field in rank_parity_mismatches:
+            if [row["chunk_id"] for row in baseline[field]] != [
+                row["chunk_id"] for row in shadow[field]
+            ]:
+                rank_parity_mismatches[field].append(query["query_id"])
         if q_recall < base_recall:
             packed_regressions.append(query["query_id"])
 
@@ -180,6 +190,7 @@ def _parity_report(client) -> dict:
         "expanded_mismatches": expanded_mismatches,
         "packed_id_mismatches": packed_id_mismatches,
         "packed_fingerprint_mismatches": packed_fingerprint_mismatches,
+        "rank_parity_mismatches": rank_parity_mismatches,
         "packed_regressions": packed_regressions,
         "local_packed_recall": round(sum(baseline_packed) / len(baseline_packed), 8),
         "qdrant_packed_recall": round(sum(qdrant_packed) / len(qdrant_packed), 8),
@@ -236,6 +247,7 @@ def main() -> int:
             or report["expanded_mismatches"]
             or report["packed_id_mismatches"]
             or report["packed_fingerprint_mismatches"]
+            or any(report["rank_parity_mismatches"].values())
             or report["packed_regressions"]
         ):
             return 1

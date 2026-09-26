@@ -198,6 +198,11 @@ def _parity_report(_client, monkeypatch):
     expanded_mismatches = []
     packed_id_mismatches = []
     packed_fingerprint_mismatches = []
+    rank_parity_mismatches = {
+        "dense_top20": [],
+        "bm25_rank_order": [],
+        "hybrid_seed_top5": [],
+    }
     baseline_packed = []
     qdrant_packed = []
 
@@ -235,12 +240,18 @@ def _parity_report(_client, monkeypatch):
             packed_id_mismatches.append(query["query_id"])
         if baseline["packed_fingerprint"] != shadow["packed_fingerprint"]:
             packed_fingerprint_mismatches.append(query["query_id"])
+        for field in rank_parity_mismatches:
+            if [row["chunk_id"] for row in baseline[field]] != [
+                row["chunk_id"] for row in shadow[field]
+            ]:
+                rank_parity_mismatches[field].append(query["query_id"])
 
     return {
         "seed_mismatches": seed_mismatches,
         "expanded_mismatches": expanded_mismatches,
         "packed_id_mismatches": packed_id_mismatches,
         "packed_fingerprint_mismatches": packed_fingerprint_mismatches,
+        "rank_parity_mismatches": rank_parity_mismatches,
         "local_packed_recall": round(sum(baseline_packed) / len(baseline_packed), 8),
         "qdrant_packed_recall": round(sum(qdrant_packed) / len(qdrant_packed), 8),
         "gating_count": len(gating),
@@ -255,6 +266,11 @@ def test_parity_33_gating_queries(built_index, monkeypatch):
     assert report["expanded_mismatches"] == []
     assert report["packed_id_mismatches"] == []
     assert report["packed_fingerprint_mismatches"] == []
+    assert report["rank_parity_mismatches"] == {
+        "dense_top20": [],
+        "bm25_rank_order": [],
+        "hybrid_seed_top5": [],
+    }
     assert report["local_packed_recall"] == 0.93939394
     assert report["qdrant_packed_recall"] == 0.93939394
 

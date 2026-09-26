@@ -28,6 +28,11 @@ EXPECTED_CONTRACT_SHA256 = (
     "7c19cb7b0ae6126be19816615a8976e0685be18b1f8686c31658338afdf38b47"
 )
 BACKENDS = ("cswp_local", "cswp_qdrant")
+RANKING_PARITY_FIELDS = (
+    "dense_top20",
+    "bm25_rank_order",
+    "hybrid_seed_top5",
+)
 EVIDENCE_BEARING = frozenset(("ANSWERABLE", "PARTIAL"))
 REQUIRED_RUNTIME_IDENTITY = {
     "cswp_local": (
@@ -233,6 +238,20 @@ def require_rows(raw: dict[str, Any], field: str) -> list[dict[str, Any]]:
     return rows
 
 
+def require_rank_rows(raw: dict[str, Any], field: str) -> list[dict[str, Any]]:
+    """Require an already-computed diagnostic ranking without rerunning retrieval."""
+
+    rows = raw.get(field)
+    if not isinstance(rows, list) or any(
+        not isinstance(row, dict) or not isinstance(row.get("chunk_id"), str) or not row["chunk_id"]
+        for row in rows
+    ):
+        raise QualificationHarnessError(
+            f"raw backend output missing usable {field} ranking diagnostic"
+        )
+    return rows
+
+
 def canonical_raw(raw: dict[str, Any]) -> dict[str, Any]:
     if (
         not isinstance(raw.get("packed_fingerprint"), str)
@@ -243,6 +262,7 @@ def canonical_raw(raw: dict[str, Any]) -> dict[str, Any]:
         "seeds": require_rows(raw, "retrieval_seeds"),
         "expanded": require_rows(raw, "expanded_rows"),
         "packed": require_rows(raw, "kb_results"),
+        **{field: require_rank_rows(raw, field) for field in RANKING_PARITY_FIELDS},
         "packed_fingerprint": raw["packed_fingerprint"],
         "raw": raw,
     }
@@ -259,6 +279,10 @@ def compare_backends(
         )
         if a != b:
             mismatches.append({"field": f"{layer}.chunk_id", "local": a, "qdrant": b})
+    for field in RANKING_PARITY_FIELDS:
+        a, b = [r["chunk_id"] for r in left[field]], [r["chunk_id"] for r in right[field]]
+        if a != b:
+            mismatches.append({"field": f"{field}.chunk_id", "local": a, "qdrant": b})
     if left["packed_fingerprint"] != right["packed_fingerprint"]:
         mismatches.append(
             {
@@ -457,6 +481,13 @@ def score_query(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
             "seed_chunk_ids": [r["chunk_id"] for r in seeds],
             "expanded_chunk_ids": [r["chunk_id"] for r in expanded],
             "packed_chunk_ids": [r["chunk_id"] for r in packed],
+            "dense_top20_chunk_ids": [r["chunk_id"] for r in raw["dense_top20"]],
+            "bm25_rank_order_chunk_ids": [
+                r["chunk_id"] for r in raw["bm25_rank_order"]
+            ],
+            "hybrid_seed_top5_chunk_ids": [
+                r["chunk_id"] for r in raw["hybrid_seed_top5"]
+            ],
             "packed_evidence_fingerprint": raw["packed_fingerprint"],
         },
     }

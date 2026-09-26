@@ -375,7 +375,7 @@ def _hybrid_top5(
     chunks_by_id: dict[str, EvalChunk],
     bm25: BM25Okapi,
     stage_telemetry: dict[str, int],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, list[dict[str, Any]]]]:
     encoder = get_encoder()
 
     t0 = time.perf_counter()
@@ -416,7 +416,12 @@ def _hybrid_top5(
                 ),
             }
         )
-    return seeds, hybrid
+    return seeds, hybrid, {
+        # Diagnostic views of the exact rankings already produced for RRF.
+        "dense_top20": dense[:DENSE_TOP_K],
+        "bm25_rank_order": bm25_rows,
+        "hybrid_seed_top5": hybrid[:SEED_TOP_K],
+    }
 
 
 @lru_cache(maxsize=1)
@@ -516,7 +521,7 @@ def retrieve(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
     bm25 = state["bm25"]
 
     stage_telemetry: dict[str, int] = {"hydrate_ms": state["hydrate_ms"]}
-    retrieval_seeds, _hybrid = _hybrid_top5(
+    retrieval_seeds, _hybrid, ranking_diagnostics = _hybrid_top5(
         client,
         query,
         collection=collection,
@@ -558,6 +563,7 @@ def retrieve(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
         "kb_results": kb_results,
         "expanded_rows": expanded_rows,
         "retrieval_seeds": retrieval_seeds,
+        **ranking_diagnostics,
         "packed_rows": packed,
         "serialized_groups": serialized,
         "packed_fingerprint": fingerprint,

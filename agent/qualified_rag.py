@@ -74,7 +74,9 @@ def _index():
     return manifest, units, by_source, chunks, chunks_by_id, embeddings, bm25
 
 
-def _hybrid_top5(query: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _hybrid_top5(
+    query: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, list[dict[str, Any]]]]:
     _manifest, _units, _by_source, chunks, chunks_by_id, embeddings, bm25 = _index()
     encoder = get_encoder()
     query_embedding = np.asarray(encoder.encode(query), dtype=np.float32)
@@ -103,7 +105,13 @@ def _hybrid_top5(query: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]
                 ),
             }
         )
-    return seeds, hybrid
+    return seeds, hybrid, {
+        # These are diagnostic views of the ranking work already completed above.
+        # They do not trigger another search, embedding, ranking, or model call.
+        "dense_top20": dense[:CANDIDATE_K],
+        "bm25_rank_order": bm25_rows,
+        "hybrid_seed_top5": hybrid[:5],
+    }
 
 
 def _runtime_identity(units: dict[str, dict[str, Any]]) -> dict[str, str]:
@@ -199,7 +207,7 @@ def retrieve_qualified_kb(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
         raise QualifiedRAGError("qualified contract requires top-5 seeds")
 
     _manifest, units, by_source, _chunks, _chunks_by_id, _embeddings, _bm25 = _index()
-    retrieval_seeds, _hybrid = _hybrid_top5(query)
+    retrieval_seeds, _hybrid, ranking_diagnostics = _hybrid_top5(query)
     groups = expand_seeds(retrieval_seeds, units, by_source)
     expanded_groups, _dup_ids, _additional = dedupe_groups(groups)
     expanded = flatten(expanded_groups)
@@ -226,6 +234,7 @@ def retrieve_qualified_kb(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
         "kb_results": kb_results,
         "expanded_rows": expanded_rows,
         "retrieval_seeds": retrieval_seeds,
+        **ranking_diagnostics,
         "packed_rows": packed,
         "serialized_groups": serialized,
         "packed_fingerprint": fingerprint,
