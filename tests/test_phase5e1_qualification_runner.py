@@ -89,6 +89,71 @@ def test_raw_coverage_and_metrics_are_executable():
     assert report["per_query"][0]["metrics"]["source_recall"] == 1.0
 
 
+def _adapter_shape_without_intervals(chunk_id="chunk-a", source="doc-a"):
+    row = {"chunk_id": chunk_id, "source": source}
+    return {
+        "retrieval_seeds": [row],
+        "expanded_rows": [row],
+        "kb_results": [row],
+        "dense_top20": [row],
+        "bm25_rank_order": [row],
+        "hybrid_seed_top5": [row],
+        "hybrid_top10": [row],
+        "packed_fingerprint": "adapter-shape",
+    }
+
+
+def test_actual_adapter_shape_hydrates_exact_canonical_intervals():
+    raw = _adapter_shape_without_intervals()
+    canonical = runner.canonical_raw(
+        raw,
+        canonical_source_map={
+            "chunk-a": {"source": "doc-a", "source_intervals": ((7, 21),)}
+        },
+    )
+    assert raw["retrieval_seeds"][0].get("source_intervals") is None
+    assert canonical["seeds"] == [
+        {"chunk_id": "chunk-a", "source": "doc-a", "source_intervals": [[7, 21]]}
+    ]
+    assert canonical["hybrid_top10"][0]["source_intervals"] == [[7, 21]]
+
+
+@pytest.mark.parametrize(
+    ("field", "row", "message"),
+    [
+        ("retrieval_seeds", {"chunk_id": "missing", "source": "doc-a"}, "unknown qualified"),
+        ("retrieval_seeds", {"chunk_id": "chunk-a", "source": "wrong"}, "source disagrees"),
+        (
+            "hybrid_top10",
+            {"chunk_id": "chunk-a", "source": "doc-a", "source_intervals": [[8, 21]]},
+            "intervals disagree",
+        ),
+    ],
+)
+def test_canonical_adapter_mapping_fails_closed(field, row, message):
+    raw = _adapter_shape_without_intervals()
+    raw[field] = [row]
+    with pytest.raises(QualificationHarnessError, match=message):
+        runner.canonical_raw(
+            raw,
+            canonical_source_map={
+                "chunk-a": {"source": "doc-a", "source_intervals": ((7, 21),)}
+            },
+        )
+
+
+def test_158_unit_corpus_rejects_before_mapping(monkeypatch):
+    monkeypatch.setattr(
+        "agent.cswp.loader.load_production_index",
+        lambda *_args, **_kwargs: ({}, {str(i): {} for i in range(158)}, {}),
+    )
+    monkeypatch.setattr(
+        "agent.cswp.loader.load_units_jsonl", lambda _path: [{} for _ in range(158)]
+    )
+    with pytest.raises(QualificationHarnessError, match="exactly 159"):
+        runner.qualified_canonical_source_map()
+
+
 def _metric_raw(hybrid_top10):
     return {
         "seeds": hybrid_top10[:5],
@@ -513,6 +578,39 @@ def _authorized(monkeypatch):
         "approved_execution_sha": "authorized",
         "approved_fixture_sha256": runner.sha256_file(FIXTURE),
     }
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "qualified CSWP corpus must contain exactly 159 units",
+        "invalid Qdrant startup",
+        "live collection fingerprint mismatch",
+    ],
+)
+def test_real_preflight_rejection_makes_zero_executor_calls(monkeypatch, failure):
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
+    monkeypatch.setattr(
+        runner,
+        "validate_real_adapter_preflight",
+        lambda _expected: (_ for _ in ()).throw(QualificationHarnessError(failure)),
+    )
+    calls = 0
+
+    def counted(query):
+        nonlocal calls
+        calls += 1
+        return executor()(query)
+
+    with pytest.raises(QualificationHarnessError, match=failure):
+        run_qualification(
+            fixture_path=FIXTURE,
+            contract_path=CONTRACT,
+            executor=counted,
+            real_adapter_mode=True,
+            **_authorized(monkeypatch),
+        )
+    assert calls == 0
 
 
 def test_archive_is_create_once(tmp_path, monkeypatch):

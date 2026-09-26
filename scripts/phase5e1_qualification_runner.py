@@ -39,6 +39,14 @@ RANKING_PARITY_FIELDS = (
     "bm25_rank_order",
     "hybrid_seed_top5",
 )
+CANONICAL_INTERVAL_FIELDS = (
+    "retrieval_seeds",
+    "expanded_rows",
+    "kb_results",
+    *RANKING_PARITY_FIELDS,
+    "hybrid_top10",
+)
+QUALIFIED_UNIT_COUNT = 159
 SECONDARY_K_VALUES = (1, 3, 5)
 MRR_DEPTH = 10
 EVIDENCE_BEARING = frozenset(("ANSWERABLE", "PARTIAL"))
@@ -277,7 +285,154 @@ def require_rank_rows(raw: dict[str, Any], field: str) -> list[dict[str, Any]]:
     return rows
 
 
-def canonical_raw(raw: dict[str, Any]) -> dict[str, Any]:
+def _canonical_source_intervals(
+    units_list: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Build the only admissible chunk-to-source-interval mapping.
+
+    Qualification coverage is owned by frozen CSWP source spans, never by an
+    adapter's generated text, rank, or caller-supplied interval assertion.
+    """
+
+    mapping: dict[str, dict[str, Any]] = {}
+    for unit in units_list:
+        chunk_id = unit.get("chunk_id")
+        source_path = unit.get("source_path")
+        spans = unit.get("source_spans")
+        if not isinstance(chunk_id, str) or not chunk_id:
+            raise QualificationHarnessError("qualified CSWP unit missing chunk_id")
+        if chunk_id in mapping:
+            raise QualificationHarnessError(
+                f"qualified CSWP contains duplicate chunk_id: {chunk_id!r}"
+            )
+        if not isinstance(source_path, str) or not source_path:
+            raise QualificationHarnessError(
+                f"qualified CSWP unit {chunk_id!r} missing source_path"
+            )
+        if not isinstance(spans, list) or not spans:
+            raise QualificationHarnessError(
+                f"qualified CSWP unit {chunk_id!r} missing source_spans"
+            )
+        intervals: list[tuple[int, int]] = []
+        for span in spans:
+            if not isinstance(span, dict):
+                raise QualificationHarnessError(
+                    f"qualified CSWP unit {chunk_id!r} has invalid source span"
+                )
+            start, end = span.get("source_char_start"), span.get("source_char_end")
+            if (
+                not isinstance(start, int)
+                or isinstance(start, bool)
+                or not isinstance(end, int)
+                or isinstance(end, bool)
+                or start >= end
+            ):
+                raise QualificationHarnessError(
+                    f"qualified CSWP unit {chunk_id!r} has invalid source interval"
+                )
+            intervals.append((start, end))
+        if intervals != sorted(intervals) or len(intervals) != len(set(intervals)):
+            raise QualificationHarnessError(
+                f"qualified CSWP unit {chunk_id!r} has duplicate or unordered source intervals"
+            )
+        mapping[chunk_id] = {
+            "source": Path(source_path).stem,
+            "source_intervals": tuple(intervals),
+        }
+    return mapping
+
+
+def qualified_canonical_source_map() -> dict[str, dict[str, Any]]:
+    """Load and validate the frozen production CSWP corpus for scoring."""
+
+    from agent.cswp.constants import PRODUCTION_INDEX_DIR, UNITS_FILE
+    from agent.cswp.loader import load_production_index, load_units_jsonl
+
+    # The production loader owns the current-corpus representation check and
+    # declared manifest/unit-count check.  Read the ordered source separately
+    # so duplicate chunk IDs cannot be silently collapsed into the loader map.
+    _representation, units, _by_source = load_production_index(PRODUCTION_INDEX_DIR)
+    units_list = load_units_jsonl(PRODUCTION_INDEX_DIR / UNITS_FILE)
+    if len(units_list) != QUALIFIED_UNIT_COUNT or len(units) != QUALIFIED_UNIT_COUNT:
+        raise QualificationHarnessError(
+            f"qualified CSWP corpus must contain exactly {QUALIFIED_UNIT_COUNT} units"
+        )
+    mapping = _canonical_source_intervals(units_list)
+    if len(mapping) != QUALIFIED_UNIT_COUNT or set(mapping) != set(units):
+        raise QualificationHarnessError("qualified CSWP chunk mapping is incomplete or inconsistent")
+    return mapping
+
+
+def hydrate_canonical_source_intervals(
+    raw: dict[str, Any], *, canonical_source_map: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
+    """Resolve actual adapter rows to authoritative CSWP source intervals."""
+
+    hydrated = dict(raw)
+    for field in CANONICAL_INTERVAL_FIELDS:
+        rows = raw.get(field)
+        if not isinstance(rows, list):
+            # Let the normal raw-output contract name the missing field below.
+            continue
+        hydrated_rows: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for row in rows:
+            if not isinstance(row, dict):
+                hydrated_rows.append(row)
+                continue
+            chunk_id = row.get("chunk_id")
+            if not isinstance(chunk_id, str) or not chunk_id:
+                hydrated_rows.append(row)
+                continue
+            if chunk_id in seen:
+                raise QualificationHarnessError(
+                    f"{field} contains duplicate chunk_id: {chunk_id!r}"
+                )
+            seen.add(chunk_id)
+            canonical = canonical_source_map.get(chunk_id)
+            if canonical is None:
+                raise QualificationHarnessError(
+                    f"{field} contains unknown qualified chunk_id: {chunk_id!r}"
+                )
+            if row.get("source") not in (None, canonical["source"]):
+                raise QualificationHarnessError(
+                    f"{field} source disagrees with canonical mapping for {chunk_id!r}"
+                )
+            supplied = row.get("source_intervals")
+            expected = canonical["source_intervals"]
+            if supplied is not None:
+                if not isinstance(supplied, list):
+                    raise QualificationHarnessError(
+                        f"{field} source intervals are invalid for {chunk_id!r}"
+                    )
+                try:
+                    observed = tuple((int(interval[0]), int(interval[1])) for interval in supplied)
+                except (IndexError, TypeError, ValueError):
+                    raise QualificationHarnessError(
+                        f"{field} source intervals are invalid for {chunk_id!r}"
+                    ) from None
+                if observed != expected:
+                    raise QualificationHarnessError(
+                        f"{field} source intervals disagree with canonical mapping for {chunk_id!r}"
+                    )
+            hydrated_rows.append(
+                {
+                    **row,
+                    "source": canonical["source"],
+                    "source_intervals": [list(interval) for interval in expected],
+                }
+            )
+        hydrated[field] = hydrated_rows
+    return hydrated
+
+
+def canonical_raw(
+    raw: dict[str, Any], *, canonical_source_map: dict[str, dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    if canonical_source_map is not None:
+        raw = hydrate_canonical_source_intervals(
+            raw, canonical_source_map=canonical_source_map
+        )
     if (
         not isinstance(raw.get("packed_fingerprint"), str)
         or not raw["packed_fingerprint"]
@@ -372,6 +527,52 @@ def expected_runtime_identity(
         if expected[backend]["minilm_model_revision"] != required_revision:
             raise QualificationHarnessError("expected MiniLM revision contradicts frozen contract")
     return expected
+
+
+def validate_real_adapter_preflight(
+    expected: dict[str, dict[str, str]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Validate the qualified corpus and live serving target before query one."""
+
+    from agent.cswp.loader import load_production_index
+    from agent.kb_backend.qdrant_serving import validate_startup
+    from agent.qualified_rag import _runtime_identity
+
+    canonical_source_map = qualified_canonical_source_map()
+    _representation, units, _by_source = load_production_index()
+    local_identity = _runtime_identity(units)
+    if local_identity != expected["cswp_local"]:
+        raise QualificationHarnessError(
+            "qualified local corpus/model/index identity disagrees with frozen expectation"
+        )
+
+    qdrant = validate_startup()
+    if qdrant.get("point_count") != QUALIFIED_UNIT_COUNT:
+        raise QualificationHarnessError(
+            f"live Qdrant serving collection must contain exactly {QUALIFIED_UNIT_COUNT} units"
+        )
+    qdrant_identity = {
+        **{
+            field: qdrant.get(field)
+            for field in REQUIRED_RUNTIME_IDENTITY["cswp_qdrant"]
+            if field != "qualified_contract"
+        },
+        "qualified_contract": expected["cswp_qdrant"]["qualified_contract"],
+    }
+    if qdrant_identity != expected["cswp_qdrant"]:
+        raise QualificationHarnessError(
+            "live Qdrant alias, fingerprint, or model/index identity disagrees with frozen expectation"
+        )
+    return (
+        canonical_source_map,
+        {
+            "cswp_local": {
+                "unit_count": len(canonical_source_map),
+                **local_identity,
+            },
+            "cswp_qdrant": qdrant,
+        },
+    )
 
 
 def validate_runtime_identity(
@@ -967,6 +1168,7 @@ def run_qualification(
     authoritative: bool = False,
     approved_execution_sha: str | None = None,
     approved_fixture_sha256: str | None = None,
+    real_adapter_mode: bool | None = None,
     _fixture_snapshot: FixtureSnapshot | None = None,
     _journal: Path | None = None,
     _execution_number: int = 1,
@@ -993,6 +1195,17 @@ def run_qualification(
         raise QualificationHarnessError("approved fixture SHA-256 does not match fixture bytes")
     validate_fixture(fixture)
     expected_identity = expected_runtime_identity(fixture, contract)
+    if real_adapter_mode is None:
+        real_adapter_mode = executor is execute_qualified_backends
+    canonical_source_map = None
+    preflight = None
+    if real_adapter_mode:
+        if authoritative:
+            canonical_source_map, preflight = validate_real_adapter_preflight(
+                expected_identity
+            )
+        else:
+            canonical_source_map = qualified_canonical_source_map()
     resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
     if write_archive:
         reserve_archive(resolved_archive)
@@ -1026,7 +1239,12 @@ def run_qualification(
             raise
         if set(outputs) != set(BACKENDS):
             raise QualificationHarnessError("both raw backend objects are required")
-        canonical = {name: canonical_raw(outputs[name]) for name in BACKENDS}
+        canonical = {
+            name: canonical_raw(
+                outputs[name], canonical_source_map=canonical_source_map
+            )
+            for name in BACKENDS
+        }
         _observed, failures, frozen_runtime_identity = validate_runtime_identity(
             query_id=query["query_id"],
             outputs={name: canonical[name]["raw"] for name in BACKENDS},
@@ -1078,6 +1296,8 @@ def run_qualification(
         "aggregate": aggregate,
         **aggregate,
     }
+    if preflight is not None:
+        payload["preflight"] = preflight
     if authoritative:
         payload["authorization"] = {
             "approved_execution_sha": approved_execution_sha,
@@ -1114,6 +1334,10 @@ def run_qualification(
                 fixture_path=fixture_path, contract_path=contract_path,
                 executor=determinism_executor, _fixture_snapshot=snapshot,
                 _journal=_journal, _execution_number=2,
+                authoritative=authoritative,
+                approved_execution_sha=approved_execution_sha,
+                approved_fixture_sha256=approved_fixture_sha256,
+                real_adapter_mode=real_adapter_mode,
             )
             payload["execution_2"] = repeat
             payload["executions"].append(repeat["execution"])

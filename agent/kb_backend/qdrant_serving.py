@@ -495,6 +495,7 @@ def validate_startup() -> dict[str, Any]:
         "point_count": state["point_count"],
         "index_fingerprint": state["index_fingerprint"],
         "live_collection_fingerprint": state["live_collection_fingerprint"],
+        "source_corpus_fingerprint": manifest["source_corpus_fingerprint"],
         "qdrant_url": _qdrant_url(),
         "vector_size": EMBEDDING_DIMENSION,
         "distance": "cosine",
