@@ -23,6 +23,13 @@ FIXTURE = ROOT / "evals/fixtures/phase5e1_qualification_synthetic_oracle.json"
 CONTRACT = ROOT / "evals/fixtures/phase5e1_qualification_contract.json"
 
 
+@pytest.fixture(autouse=True)
+def isolated_default_release_archive(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        runner, "DEFAULT_ARCHIVE_ROOT", tmp_path / "default-authoritative-archive"
+    )
+
+
 def row(source, chunk, start=0, end=20):
     return {"source": source, "chunk_id": chunk, "source_intervals": [[start, end]]}
 
@@ -87,6 +94,9 @@ def test_raw_coverage_and_metrics_are_executable():
     assert report["per_query"][0]["metrics"]["mrr"] == 1.0
     assert report["per_query"][0]["metrics"]["ndcg"] == 1.0
     assert report["per_query"][0]["metrics"]["source_recall"] == 1.0
+    assert report["decision_scope"] == "development"
+    assert report["disposition"] == runner.DEVELOPMENT_PASS_DISPOSITION
+    assert report["disposition"] != load_contract(CONTRACT)["disposition_values"][0]
 
 
 def _adapter_shape_without_intervals(chunk_id="chunk-a", source="doc-a"):
@@ -575,9 +585,110 @@ def _authorized(monkeypatch):
     monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
     return {
         "authoritative": True,
+        "write_archive": True,
         "approved_execution_sha": "authorized",
         "approved_fixture_sha256": runner.sha256_file(FIXTURE),
     }
+
+
+def test_authoritative_mode_without_archive_rejects_before_retrieval(monkeypatch):
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
+    calls = 0
+
+    def counted(query):
+        nonlocal calls
+        calls += 1
+        return executor()(query)
+
+    with pytest.raises(QualificationHarnessError, match="reserved and written archive"):
+        run_qualification(
+            fixture_path=FIXTURE,
+            contract_path=CONTRACT,
+            executor=counted,
+            authoritative=True,
+            approved_execution_sha="authorized",
+            approved_fixture_sha256=runner.sha256_file(FIXTURE),
+        )
+    assert calls == 0
+
+
+def test_cli_forces_authoritative_archive_and_rejects_optional_flag(monkeypatch, capsys):
+    recorded = {}
+
+    def invoked(**kwargs):
+        recorded.update(kwargs)
+        return {"overall_pass": True}
+
+    monkeypatch.setattr(runner, "run_qualification", invoked)
+    assert runner.main(
+        [
+            "--fixture", str(FIXTURE),
+            "--approved-execution-sha", "approved",
+            "--approved-fixture-sha256", runner.sha256_file(FIXTURE),
+        ]
+    ) == 0
+    assert recorded["authoritative"] is True
+    assert recorded["write_archive"] is True
+    with pytest.raises(SystemExit):
+        runner.main(
+            [
+                "--fixture", str(FIXTURE),
+                "--approved-execution-sha", "approved",
+                "--approved-fixture-sha256", runner.sha256_file(FIXTURE),
+                "--write-archive",
+            ]
+        )
+    capsys.readouterr()
+
+
+def test_archive_reservation_precedes_first_authoritative_query(tmp_path, monkeypatch):
+    archive = tmp_path / "reserved-before-query"
+    observed = []
+
+    def counted(query):
+        observed.append(
+            archive.is_dir() and (archive / "execution_journal.jsonl").is_file()
+        )
+        return executor()(query)
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=counted,
+        archive_root=archive,
+        **_authorized(monkeypatch),
+    )
+    assert all(observed)
+    assert report["disposition"] == load_contract(CONTRACT)["disposition_values"][0]
+    assert archive_is_successful(archive) is True
+
+
+def test_failed_archive_finalization_cannot_issue_authoritative_pass(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        runner,
+        "write_qualification_archive",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("archive write failed")),
+    )
+    with pytest.raises(OSError, match="archive write failed"):
+        run_qualification(
+            fixture_path=FIXTURE,
+            contract_path=CONTRACT,
+            executor=executor(),
+            archive_root=tmp_path / "failed-archive",
+            **_authorized(monkeypatch),
+        )
+
+
+def test_unverified_archive_cannot_issue_authoritative_pass(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "archive_is_successful", lambda _archive: False)
+    with pytest.raises(QualificationHarnessError, match="completed, verified release archive"):
+        run_qualification(
+            fixture_path=FIXTURE,
+            contract_path=CONTRACT,
+            executor=executor(),
+            archive_root=tmp_path / "unverified-archive",
+            **_authorized(monkeypatch),
+        )
 
 
 @pytest.mark.parametrize(
@@ -620,7 +731,6 @@ def test_archive_is_create_once(tmp_path, monkeypatch):
         contract_path=CONTRACT,
         executor=executor(),
         archive_root=archive,
-        write_archive=True,
         **_authorized(monkeypatch),
     )
     with pytest.raises(QualificationHarnessError, match="archive already exists"):
@@ -629,7 +739,6 @@ def test_archive_is_create_once(tmp_path, monkeypatch):
             contract_path=CONTRACT,
             executor=executor(),
             archive_root=archive,
-            write_archive=True,
             **_authorized(monkeypatch),
         )
 
@@ -650,7 +759,6 @@ def test_existing_archive_rejects_before_executor_calls(tmp_path, monkeypatch):
             contract_path=CONTRACT,
             executor=counted,
             archive_root=archive,
-            write_archive=True,
             **_authorized(monkeypatch),
         )
     assert calls == 0
@@ -678,7 +786,6 @@ def test_second_archive_write_cannot_overwrite(tmp_path, monkeypatch):
         contract_path=CONTRACT,
         executor=executor(),
         archive_root=archive,
-        write_archive=True,
         **_authorized(monkeypatch),
     )
     original_summary = (archive / "summary.json").read_bytes()
@@ -735,6 +842,7 @@ def test_authorization_rejects_before_any_retrieval(kwargs, message, monkeypatch
             contract_path=CONTRACT,
             executor=counted,
             authoritative=True,
+            write_archive=True,
             **kwargs,
         )
     assert calls == 0
@@ -759,6 +867,7 @@ def test_authorized_fixture_snapshot_is_scored_after_file_mutation(tmp_path, mon
         contract_path=CONTRACT,
         executor=mutate_after_snapshot,
         authoritative=True,
+        write_archive=True,
         approved_execution_sha="authorized",
         approved_fixture_sha256=__import__("hashlib").sha256(original).hexdigest(),
     )
@@ -773,6 +882,7 @@ def test_authorized_matching_sha_and_digest_permit_execution(monkeypatch):
         contract_path=CONTRACT,
         executor=executor(),
         authoritative=True,
+        write_archive=True,
         approved_execution_sha="authorized",
         approved_fixture_sha256=runner.sha256_file(FIXTURE),
     )
@@ -787,9 +897,9 @@ def test_authorization_rejection_does_not_reserve_archive(tmp_path, monkeypatch)
             fixture_path=FIXTURE,
             contract_path=CONTRACT,
             archive_root=archive,
-            write_archive=True,
             executor=lambda _: pytest.fail("retrieval must not execute"),
             authoritative=True,
+            write_archive=True,
             approved_execution_sha="authorized",
             approved_fixture_sha256="wrong",
         )
@@ -863,7 +973,7 @@ def test_authoritative_archive_journals_every_query_of_both_executions(tmp_path,
     archive = tmp_path / "journal"
     report = run_qualification(
         fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor(),
-        archive_root=archive, write_archive=True, **_authorized(monkeypatch)
+        archive_root=archive, **_authorized(monkeypatch)
     )
     records = [json.loads(line) for line in (archive / "execution_journal.jsonl").read_text().splitlines()]
     completed = [r for r in records if r["event"] == "query_completed"]
@@ -927,7 +1037,7 @@ def test_first_execution_failure_retains_prior_journal_evidence(tmp_path, monkey
 
     report = run_qualification(
         fixture_path=FIXTURE, contract_path=CONTRACT, executor=fail_query_two,
-        archive_root=archive, write_archive=True, **_authorized(monkeypatch)
+        archive_root=archive, **_authorized(monkeypatch)
     )
     records = [json.loads(line) for line in (archive / "execution_journal.jsonl").read_text().splitlines()]
     assert [r["event"] for r in records].count("query_completed") == 1
@@ -955,7 +1065,7 @@ def test_second_execution_failure_retains_both_execution_evidence(tmp_path, monk
 
     report = run_qualification(
         fixture_path=FIXTURE, contract_path=CONTRACT, executor=fail_second_after_two,
-        archive_root=archive, write_archive=True, **_authorized(monkeypatch)
+        archive_root=archive, **_authorized(monkeypatch)
     )
     records = [json.loads(line) for line in (archive / "execution_journal.jsonl").read_text().splitlines()]
     completed = [r for r in records if r["event"] == "query_completed"]
@@ -986,7 +1096,7 @@ def test_determinism_mismatch_finalizes_as_complete_consistent_fail(tmp_path, mo
 
     report = run_qualification(
         fixture_path=FIXTURE, contract_path=CONTRACT, executor=changed_second_execution,
-        archive_root=archive, write_archive=True, **_authorized(monkeypatch)
+        archive_root=archive, **_authorized(monkeypatch)
     )
     summary = json.loads((archive / "summary.json").read_text())
     disposition_record = json.loads((archive / "disposition.json").read_text())

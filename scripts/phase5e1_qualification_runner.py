@@ -50,6 +50,7 @@ QUALIFIED_UNIT_COUNT = 159
 SECONDARY_K_VALUES = (1, 3, 5)
 MRR_DEPTH = 10
 EVIDENCE_BEARING = frozenset(("ANSWERABLE", "PARTIAL"))
+DEVELOPMENT_PASS_DISPOSITION = "PHASE-5E1A-DEVELOPMENT-EVALUATION-PASS"
 REQUIRED_RUNTIME_IDENTITY = {
     "cswp_local": (
         "source_corpus_fingerprint",
@@ -931,6 +932,8 @@ def disposition(
     contract: dict[str, Any],
     parity: list[dict[str, Any]],
     prov: dict[str, Any],
+    *,
+    authoritative: bool = False,
 ) -> dict[str, Any]:
     failures = []
     if parity:
@@ -997,9 +1000,15 @@ def disposition(
         },
         "hard_failures": failures,
         "overall_pass": not failures,
-        "disposition": contract["disposition_values"][0]
-        if not failures
-        else contract["disposition_values"][1],
+        "disposition": (
+            contract["disposition_values"][0]
+            if authoritative and not failures
+            else (
+                DEVELOPMENT_PASS_DISPOSITION
+                if not failures
+                else contract["disposition_values"][1]
+            )
+        ),
     }
 
 
@@ -1172,6 +1181,7 @@ def run_qualification(
     _fixture_snapshot: FixtureSnapshot | None = None,
     _journal: Path | None = None,
     _execution_number: int = 1,
+    _archive_reserved: bool = False,
 ) -> dict[str, Any]:
     contract = load_contract(contract_path)
     resolved_contract_path = contract_path or DEFAULT_CONTRACT_PATH
@@ -1193,6 +1203,15 @@ def run_qualification(
     fixture = snapshot.fixture
     if authoritative and approved_fixture_sha256 != snapshot.sha256:
         raise QualificationHarnessError("approved fixture SHA-256 does not match fixture bytes")
+    if authoritative:
+        if not write_archive:
+            raise QualificationHarnessError(
+                "authoritative qualification requires a reserved and written archive before retrieval"
+            )
+        if _execution_number > 1 and not _archive_reserved:
+            raise QualificationHarnessError(
+                "authoritative repeat requires the already-reserved release archive"
+            )
     validate_fixture(fixture)
     expected_identity = expected_runtime_identity(fixture, contract)
     if real_adapter_mode is None:
@@ -1207,7 +1226,7 @@ def run_qualification(
         else:
             canonical_source_map = qualified_canonical_source_map()
     resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
-    if write_archive:
+    if authoritative and _execution_number == 1:
         reserve_archive(resolved_archive)
         _journal = resolved_archive / "execution_journal.jsonl"
     if _journal is not None:
@@ -1280,7 +1299,9 @@ def run_qualification(
         frozen_runtime_identity,
         runtime_failures,
     )
-    aggregate = disposition(fixture["queries"], scores, contract, parity, prov)
+    aggregate = disposition(
+        fixture["queries"], scores, contract, parity, prov, authoritative=authoritative
+    )
     if execution_failure is not None:
         aggregate["hard_failures"].append(
             {"gate": "execution_incomplete", "detail": execution_failure}
@@ -1294,6 +1315,7 @@ def run_qualification(
         "backend_parity": {"passed": not parity, "mismatches": parity},
         "provenance": prov,
         "aggregate": aggregate,
+        "decision_scope": "authoritative_release" if authoritative else "development",
         **aggregate,
     }
     if preflight is not None:
@@ -1338,6 +1360,9 @@ def run_qualification(
                 approved_execution_sha=approved_execution_sha,
                 approved_fixture_sha256=approved_fixture_sha256,
                 real_adapter_mode=real_adapter_mode,
+                write_archive=write_archive,
+                archive_root=resolved_archive,
+                _archive_reserved=authoritative,
             )
             payload["execution_2"] = repeat
             payload["executions"].append(repeat["execution"])
@@ -1379,7 +1404,8 @@ def run_qualification(
             {"gate": "second_execution_missing", "detail": payload["determinism"]}
         )
     payload["aggregate"]["overall_pass"] = not payload["aggregate"]["hard_failures"]
-    payload["aggregate"]["disposition"] = contract["disposition_values"][0] if payload["aggregate"]["overall_pass"] else contract["disposition_values"][1]
+    if not payload["aggregate"]["overall_pass"]:
+        payload["aggregate"]["disposition"] = contract["disposition_values"][1]
     payload["overall_pass"] = payload["aggregate"]["overall_pass"]
     payload["disposition"] = payload["aggregate"]["disposition"]
     payload["terminal_status"] = (
@@ -1393,11 +1419,15 @@ def run_qualification(
             "terminal_status": payload["terminal_status"],
             "overall_pass": payload["overall_pass"], "disposition": payload["disposition"],
         })
-    if write_archive:
+    if authoritative and _execution_number == 1:
         try:
             payload["archive_paths"] = write_qualification_archive(
                 payload, resolved_archive, already_reserved=True
             )
+            if payload["overall_pass"] and not archive_is_successful(resolved_archive):
+                raise QualificationHarnessError(
+                    "authoritative PASS requires a completed, verified release archive"
+                )
         except Exception as exc:
             append_execution_journal(_journal, {
                 "event": "archive_finalization_incomplete",
@@ -1412,7 +1442,6 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--fixture", required=True, type=Path)
     p.add_argument("--contract", type=Path, default=DEFAULT_CONTRACT_PATH)
-    p.add_argument("--write-archive", action="store_true")
     p.add_argument("--archive-root", type=Path)
     p.add_argument("--approved-execution-sha", required=True)
     p.add_argument("--approved-fixture-sha256", required=True)
@@ -1421,7 +1450,7 @@ def main(argv: list[str] | None = None) -> int:
         fixture_path=a.fixture,
         contract_path=a.contract,
         archive_root=a.archive_root,
-        write_archive=a.write_archive,
+        write_archive=True,
         authoritative=True,
         approved_execution_sha=a.approved_execution_sha,
         approved_fixture_sha256=a.approved_fixture_sha256,
