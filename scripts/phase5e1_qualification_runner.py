@@ -564,20 +564,98 @@ def sanitized_failure(exc: Exception) -> str:
     return f"{type(exc).__name__}: {str(exc)[:300]}"
 
 
+def archive_is_successful(root: Path) -> bool:
+    """Return true only for a complete, internally consistent terminal archive."""
+
+    required = {"per_query.json", "summary.json", "parity.json", "manifest.json", "disposition.json"}
+    if not all((root / name).is_file() for name in required):
+        return False
+    try:
+        summary = load_json(root / "summary.json")
+        disposition_record = load_json(root / "disposition.json")
+        manifest = load_json(root / "manifest.json")
+    except (OSError, json.JSONDecodeError, QualificationHarnessError):
+        return False
+    inventory = manifest.get("artifacts")
+    actual = {
+        path.name for path in root.iterdir() if path.is_file() and path.name != "manifest.json"
+    }
+    if not isinstance(inventory, dict) or set(inventory) != actual:
+        return False
+    for name, detail in inventory.items():
+        path = root / name
+        if (
+            not isinstance(detail, dict)
+            or detail.get("sha256") != sha256_file(path)
+            or detail.get("bytes") != path.stat().st_size
+        ):
+            return False
+    aggregate = summary.get("aggregate")
+    disposition_aggregate = disposition_record.get("aggregate")
+    if not isinstance(aggregate, dict) or not isinstance(disposition_aggregate, dict):
+        return False
+    return (
+        manifest.get("terminal_status") == "COMPLETE"
+        and summary.get("terminal_status") == "COMPLETE"
+        and disposition_record.get("terminal_status") == "COMPLETE"
+        and summary.get("overall_pass") is True
+        and disposition_record.get("overall_pass") is True
+        and summary.get("disposition") == disposition_record.get("disposition")
+        and aggregate.get("overall_pass") is True
+        and aggregate.get("disposition") == summary.get("disposition")
+        and disposition_aggregate.get("overall_pass") is True
+        and disposition_aggregate.get("disposition") == summary.get("disposition")
+        and manifest.get("overall_pass") is True
+        and manifest.get("disposition") == summary.get("disposition")
+    )
+
+
 def write_qualification_archive(
     payload: dict[str, Any], root: Path, *, already_reserved: bool = False
 ) -> dict[str, str]:
+    """Create a final immutable archive after all retrieval has completed.
+
+    The manifest is created last and is the terminal completion witness.  An
+    archive without it (for example, after abrupt process termination) is not
+    interpretable as a successful qualification.
+    """
+
     if not already_reserved:
         reserve_archive(root)
     values = {
+        "per_query": {
+            "execution_1": payload["per_query"],
+            "execution_2": payload.get("execution_2", {}).get("per_query"),
+        },
+        "summary": {
+            "terminal_status": payload["terminal_status"],
+            "overall_pass": payload["overall_pass"],
+            "disposition": payload["disposition"],
+            "aggregate": payload["aggregate"],
+            "authorization": payload.get("authorization"),
+            "contract_identity": payload["contract_identity"],
+        },
+        "parity": {
+            "execution_1": payload["backend_parity"],
+            "execution_2": payload.get("execution_2", {}).get("backend_parity"),
+            "determinism": payload["determinism"],
+        },
         "raw_backend_outputs": payload["raw_backend_outputs"],
-        "per_query": payload["per_query"],
-        "aggregate": payload["aggregate"],
+        "execution_2_raw_backend_outputs": payload.get("execution_2", {}).get(
+            "raw_backend_outputs"
+        ),
+        "executions": payload["executions"],
         "provenance": payload["provenance"],
         "contract": payload["contract"],
+        "determinism": payload["determinism"],
         "disposition": {
+            "terminal_status": payload["terminal_status"],
             "disposition": payload["disposition"],
             "overall_pass": payload["overall_pass"],
+            "aggregate": {
+                "overall_pass": payload["aggregate"]["overall_pass"],
+                "disposition": payload["aggregate"]["disposition"],
+            },
         },
     }
     paths = {}
@@ -586,6 +664,24 @@ def write_qualification_archive(
         with path.open("x", encoding="utf-8") as handle:
             handle.write(canonical_json_dumps(value) + "\n")
         paths[name] = str(path)
+    inventory = {
+        path.name: {"sha256": sha256_file(path), "bytes": path.stat().st_size}
+        for path in sorted(root.iterdir())
+        if path.is_file()
+    }
+    manifest = {
+        "terminal_status": payload["terminal_status"],
+        "overall_pass": payload["overall_pass"],
+        "disposition": payload["disposition"],
+        "artifacts": inventory,
+        "manifest_inventory_excludes_self": True,
+        "terminal_artifact": "manifest.json",
+        "contract_identity": payload["contract_identity"],
+    }
+    manifest_path = root / "manifest.json"
+    with manifest_path.open("x", encoding="utf-8") as handle:
+        handle.write(canonical_json_dumps(manifest) + "\n")
+    paths["manifest"] = str(manifest_path)
     return paths
 
 
@@ -614,6 +710,12 @@ def run_qualification(
     _execution_number: int = 1,
 ) -> dict[str, Any]:
     contract = load_contract(contract_path)
+    resolved_contract_path = contract_path or DEFAULT_CONTRACT_PATH
+    contract_identity = {
+        "canonical_json_sha256": sha256_json(contract),
+        "contract_file_sha256": sha256_file(resolved_contract_path),
+        "historical_embedded_digest": contract.get("contract_sha256"),
+    }
     if write_archive and not authoritative:
         raise QualificationHarnessError("archive qualification requires authoritative authorization")
     if authoritative:
@@ -640,15 +742,25 @@ def run_qualification(
     parity = []
     frozen_runtime_identity = None
     runtime_failures: list[dict[str, Any]] = []
+    execution_failure: dict[str, str] | None = None
     for query in fixture["queries"]:
         try:
             outputs = executor(query["query"])
         except Exception as exc:
+            execution_failure = {
+                "query_id": query["query_id"],
+                "failure": sanitized_failure(exc),
+            }
             if _journal is not None:
                 append_execution_journal(_journal, {
                     "event": "execution_incomplete", "execution": _execution_number,
-                    "query_id": query["query_id"], "failure": sanitized_failure(exc),
+                    **execution_failure,
                 })
+                # The reserved authoritative attempt must be finalized as an
+                # explicit INCOMPLETE record rather than losing earlier durable
+                # observations.  Non-journaled developer calls retain the
+                # previous exception behavior.
+                break
             raise
         if set(outputs) != set(BACKENDS):
             raise QualificationHarnessError("both raw backend objects are required")
@@ -689,8 +801,13 @@ def run_qualification(
         runtime_failures,
     )
     aggregate = disposition(fixture["queries"], scores, contract, parity, prov)
+    if execution_failure is not None:
+        aggregate["hard_failures"].append(
+            {"gate": "execution_incomplete", "detail": execution_failure}
+        )
     payload = {
         "contract": contract,
+        "contract_identity": contract_identity,
         "fixture_sha256": snapshot.sha256,
         "raw_backend_outputs": raw,
         "per_query": scores,
@@ -699,6 +816,21 @@ def run_qualification(
         "aggregate": aggregate,
         **aggregate,
     }
+    if authoritative:
+        payload["authorization"] = {
+            "approved_execution_sha": approved_execution_sha,
+            "approved_fixture_sha256": approved_fixture_sha256,
+        }
+    payload["execution"] = {
+        "execution": _execution_number,
+        "status": "INCOMPLETE" if execution_failure else "COMPLETE",
+        "failure": execution_failure,
+        "raw_backend_outputs": raw,
+        "per_query": scores,
+        "backend_parity": payload["backend_parity"],
+        "provenance": prov,
+    }
+    payload["executions"] = [payload["execution"]]
     # Authoritative qualification always performs two complete executions.
     if authoritative and determinism_executor is None:
         determinism_executor = executor
@@ -709,18 +841,20 @@ def run_qualification(
         "runtime_identity": payload["provenance"]["observed"]["runtime_identity"],
     }
     payload["determinism"] = {"run_a_fingerprint": sha256_json(canonical_payload)}
-    if _journal is not None and _execution_number == 1:
+    if _journal is not None and _execution_number == 1 and execution_failure is None:
         append_execution_journal(
             _journal,
             {"event": "execution_queries_completed", "execution": _execution_number},
         )
-    if determinism_executor is not None:
+    if _execution_number == 1 and execution_failure is None and determinism_executor is not None:
         try:
             repeat = run_qualification(
                 fixture_path=fixture_path, contract_path=contract_path,
                 executor=determinism_executor, _fixture_snapshot=snapshot,
                 _journal=_journal, _execution_number=2,
             )
+            payload["execution_2"] = repeat
+            payload["executions"].append(repeat["execution"])
             run_b = {
                 "per_query": repeat["per_query"],
                 "backend_parity": repeat["backend_parity"],
@@ -728,19 +862,32 @@ def run_qualification(
                 "runtime_identity": repeat["provenance"]["observed"]["runtime_identity"],
             }
             payload["determinism"]["run_b_fingerprint"] = sha256_json(run_b)
-            payload["determinism"]["passed"] = (
+            payload["determinism"]["passed"] = repeat["terminal_status"] == "COMPLETE" and (
                 payload["determinism"]["run_a_fingerprint"]
                 == payload["determinism"]["run_b_fingerprint"]
             )
-            if not payload["determinism"]["passed"]:
+            if repeat["terminal_status"] == "INCOMPLETE":
+                payload["determinism"].update(
+                    {"status": "INCOMPLETE", "failure": repeat["execution"]["failure"]}
+                )
+                payload["aggregate"]["hard_failures"].append(
+                    {"gate": "second_execution_incomplete", "detail": repeat["execution"]["failure"]}
+                )
+            elif not payload["determinism"]["passed"]:
                 payload["aggregate"]["hard_failures"].append(
                     {"gate": "determinism_mismatch", "detail": payload["determinism"]}
                 )
         except Exception as exc:
-            payload["determinism"].update({"passed": False, "status": "INCOMPLETE", "error": str(exc)})
-            payload["aggregate"]["hard_failures"].append(
-                {"gate": "second_execution_incomplete", "detail": str(exc)}
+            payload["determinism"].update(
+                {"passed": False, "status": "INCOMPLETE", "error": sanitized_failure(exc)}
             )
+            payload["aggregate"]["hard_failures"].append(
+                {"gate": "second_execution_incomplete", "detail": sanitized_failure(exc)}
+            )
+    elif _execution_number == 1 and execution_failure is not None:
+        payload["determinism"].update(
+            {"passed": False, "status": "INCOMPLETE", "failure": execution_failure}
+        )
     if authoritative and not payload["determinism"].get("passed"):
         payload["aggregate"]["hard_failures"].append(
             {"gate": "second_execution_missing", "detail": payload["determinism"]}
@@ -749,15 +896,29 @@ def run_qualification(
     payload["aggregate"]["disposition"] = contract["disposition_values"][0] if payload["aggregate"]["overall_pass"] else contract["disposition_values"][1]
     payload["overall_pass"] = payload["aggregate"]["overall_pass"]
     payload["disposition"] = payload["aggregate"]["disposition"]
+    payload["terminal_status"] = (
+        "INCOMPLETE"
+        if execution_failure is not None or payload["determinism"].get("status") == "INCOMPLETE"
+        else "COMPLETE"
+    )
     if _journal is not None:
         append_execution_journal(_journal, {
             "event": "execution_completed", "execution": _execution_number,
+            "terminal_status": payload["terminal_status"],
             "overall_pass": payload["overall_pass"], "disposition": payload["disposition"],
         })
     if write_archive:
-        payload["archive_paths"] = write_qualification_archive(
-            payload, resolved_archive, already_reserved=True
-        )
+        try:
+            payload["archive_paths"] = write_qualification_archive(
+                payload, resolved_archive, already_reserved=True
+            )
+        except Exception as exc:
+            append_execution_journal(_journal, {
+                "event": "archive_finalization_incomplete",
+                "execution": _execution_number,
+                "failure": sanitized_failure(exc),
+            })
+            raise
     return payload
 
 

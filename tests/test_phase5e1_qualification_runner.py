@@ -8,6 +8,7 @@ import pytest
 import scripts.phase5e1_qualification_runner as runner
 from scripts.phase5e1_qualification_runner import (
     QualificationHarnessError,
+    archive_is_successful,
     contract_sha256,
     load_contract,
     reserve_archive,
@@ -333,8 +334,10 @@ def test_second_archive_write_cannot_overwrite(tmp_path, monkeypatch):
         write_archive=True,
         **_authorized(monkeypatch),
     )
+    original_summary = (archive / "summary.json").read_bytes()
     with pytest.raises(FileExistsError):
         write_qualification_archive(report, archive, already_reserved=True)
+    assert (archive / "summary.json").read_bytes() == original_summary
 
 
 def test_partial_denominator_excludes_missing_obligation():
@@ -511,7 +514,7 @@ def test_authoritative_second_run_exception_is_incomplete(monkeypatch):
 
 def test_authoritative_archive_journals_every_query_of_both_executions(tmp_path, monkeypatch):
     archive = tmp_path / "journal"
-    run_qualification(
+    report = run_qualification(
         fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor(),
         archive_root=archive, write_archive=True, **_authorized(monkeypatch)
     )
@@ -520,6 +523,26 @@ def test_authoritative_archive_journals_every_query_of_both_executions(tmp_path,
     assert [r["execution"] for r in completed].count(1) == 5
     assert [r["execution"] for r in completed].count(2) == 5
     assert all(set(r["raw_backend_outputs"]) == {"cswp_local", "cswp_qdrant"} for r in completed)
+    assert {path.name for path in archive.iterdir()} >= {
+        "per_query.json", "summary.json", "parity.json", "manifest.json",
+        "disposition.json", "execution_journal.jsonl", "raw_backend_outputs.json",
+        "execution_2_raw_backend_outputs.json", "provenance.json", "contract.json",
+        "determinism.json", "executions.json",
+    }
+    per_query = json.loads((archive / "per_query.json").read_text())
+    summary = json.loads((archive / "summary.json").read_text())
+    disposition_record = json.loads((archive / "disposition.json").read_text())
+    manifest = json.loads((archive / "manifest.json").read_text())
+    assert len(per_query["execution_1"]) == len(per_query["execution_2"]) == 5
+    assert summary["overall_pass"] is report["overall_pass"] is True
+    assert summary["disposition"] == disposition_record["disposition"] == report["disposition"]
+    assert summary["aggregate"] == report["aggregate"]
+    assert manifest["artifacts"]["execution_journal.jsonl"]["bytes"] > 0
+    assert manifest["manifest_inventory_excludes_self"] is True
+    assert set(manifest["artifacts"]) == {
+        path.name for path in archive.iterdir() if path.name != "manifest.json"
+    }
+    assert archive_is_successful(archive) is True
 
 
 def test_first_execution_failure_retains_prior_journal_evidence(tmp_path, monkeypatch):
@@ -533,15 +556,21 @@ def test_first_execution_failure_retains_prior_journal_evidence(tmp_path, monkey
             raise RuntimeError("query two failed")
         return executor()(query)
 
-    with pytest.raises(RuntimeError, match="query two failed"):
-        run_qualification(
-            fixture_path=FIXTURE, contract_path=CONTRACT, executor=fail_query_two,
-            archive_root=archive, write_archive=True, **_authorized(monkeypatch)
-        )
+    report = run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=fail_query_two,
+        archive_root=archive, write_archive=True, **_authorized(monkeypatch)
+    )
     records = [json.loads(line) for line in (archive / "execution_journal.jsonl").read_text().splitlines()]
     assert [r["event"] for r in records].count("query_completed") == 1
-    assert records[-1]["event"] == "execution_incomplete"
-    assert records[-1]["execution"] == 1
+    incomplete = [r for r in records if r["event"] == "execution_incomplete"]
+    assert incomplete[-1]["execution"] == 1
+    assert records[-1]["event"] == "execution_completed"
+    assert records[-1]["terminal_status"] == "INCOMPLETE"
+    assert report["terminal_status"] == "INCOMPLETE"
+    assert report["overall_pass"] is False
+    assert json.loads((archive / "summary.json").read_text())["terminal_status"] == "INCOMPLETE"
+    assert json.loads((archive / "disposition.json").read_text())["overall_pass"] is False
+    assert archive_is_successful(archive) is False
 
 
 def test_second_execution_failure_retains_both_execution_evidence(tmp_path, monkeypatch):
@@ -565,3 +594,46 @@ def test_second_execution_failure_retains_both_execution_evidence(tmp_path, monk
     assert [r["execution"] for r in completed].count(2) == 2
     assert any(r["event"] == "execution_incomplete" and r["execution"] == 2 for r in records)
     assert report["overall_pass"] is False
+    assert report["terminal_status"] == "INCOMPLETE"
+    assert len(report["executions"]) == 2
+    assert len(report["executions"][0]["per_query"]) == 5
+    assert len(report["executions"][1]["per_query"]) == 2
+    assert archive_is_successful(archive) is False
+
+
+def test_determinism_mismatch_finalizes_as_complete_consistent_fail(tmp_path, monkeypatch):
+    archive = tmp_path / "mismatch"
+    calls = 0
+
+    def changed_second_execution(query):
+        nonlocal calls
+        calls += 1
+        outputs = executor()(query)
+        if calls > 5:
+            for output in outputs.values():
+                output["kb_results"] = [row("doc-z", "doc-z__0001")]
+                output["packed_fingerprint"] = "changed"
+        return outputs
+
+    report = run_qualification(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=changed_second_execution,
+        archive_root=archive, write_archive=True, **_authorized(monkeypatch)
+    )
+    summary = json.loads((archive / "summary.json").read_text())
+    disposition_record = json.loads((archive / "disposition.json").read_text())
+    assert report["terminal_status"] == summary["terminal_status"] == "COMPLETE"
+    assert report["overall_pass"] is summary["overall_pass"] is disposition_record["overall_pass"] is False
+    assert report["disposition"] == summary["disposition"] == disposition_record["disposition"]
+    assert archive_is_successful(archive) is False
+
+
+def test_missing_or_incomplete_terminal_artifacts_never_count_as_success(tmp_path):
+    archive = tmp_path / "missing-terminal"
+    archive.mkdir()
+    (archive / "summary.json").write_text(
+        json.dumps({"terminal_status": "COMPLETE", "overall_pass": True, "disposition": "PASS"})
+    )
+    (archive / "disposition.json").write_text(
+        json.dumps({"terminal_status": "COMPLETE", "overall_pass": True, "disposition": "PASS"})
+    )
+    assert archive_is_successful(archive) is False
