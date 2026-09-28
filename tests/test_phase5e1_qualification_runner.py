@@ -1,6 +1,7 @@
 """Phase-5E1E raw authority tests; no sealed fixture, network, or providers."""
 
 from __future__ import annotations
+import copy
 import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -345,6 +346,134 @@ def test_absent_diagnostic_score_drift_fails_determinism(monkeypatch):
     assert any(
         failure["gate"] == "determinism_mismatch"
         for failure in report["aggregate"]["hard_failures"]
+    )
+
+
+def _second_execution_backend_only(mutate):
+    calls = 0
+
+    def changed(query):
+        nonlocal calls
+        calls += 1
+        outputs = copy.deepcopy(executor()(query))
+        # The synthetic adapter intentionally shares row lists between the two
+        # outputs; split only the selected backend before injecting drift.
+        backend = mutate.__dict__.get("backend", "cswp_qdrant")
+        outputs[backend] = copy.deepcopy(outputs[backend])
+        if calls > 5:
+            mutate(query, outputs[backend])
+        return outputs
+
+    return changed
+
+
+def _assert_backend_determinism_failure(report, *, backend, field):
+    assert report["determinism"]["passed"] is False
+    assert report["overall_pass"] is False
+    mismatch = next(
+        item
+        for item in report["determinism"]["mismatches"]
+        if item["backend"] == backend and field in item["field"]
+    )
+    assert mismatch["query_id"]
+    assert mismatch["execution_1"] != mismatch["execution_2"]
+
+
+def test_qdrant_only_hybrid_top10_rank_seven_eight_drift_fails_determinism(tmp_path, monkeypatch):
+    def swap_hybrid(_query, output):
+        output["hybrid_top10"][6:8] = output["hybrid_top10"][7:5:-1]
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=_second_execution_backend_only(swap_hybrid),
+        archive_root=tmp_path / "qdrant-hybrid-drift",
+        **_authorized(monkeypatch),
+    )
+    _assert_backend_determinism_failure(
+        report, backend="cswp_qdrant", field="hybrid_top10_chunk_ids"
+    )
+    assert archive_is_successful(tmp_path / "qdrant-hybrid-drift") is False
+    archived = json.loads((tmp_path / "qdrant-hybrid-drift" / "determinism.json").read_text())
+    assert archived["passed"] is False
+    assert any(item["backend"] == "cswp_qdrant" for item in archived["mismatches"])
+
+
+def test_local_only_hybrid_top10_drift_fails_determinism(monkeypatch):
+    def swap_hybrid(_query, output):
+        output["hybrid_top10"][6:8] = output["hybrid_top10"][7:5:-1]
+
+    swap_hybrid.backend = "cswp_local"
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=_second_execution_backend_only(swap_hybrid),
+        **_authorized(monkeypatch),
+    )
+    _assert_backend_determinism_failure(
+        report, backend="cswp_local", field="hybrid_top10_chunk_ids"
+    )
+
+
+def test_qdrant_only_absent_diagnostic_input_drift_fails_determinism(monkeypatch):
+    def changed(query, output):
+        if query == "synthetic absent diagnostic":
+            output["dense_top20"][0]["native_score"] = 0.123456
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=_second_execution_backend_only(changed),
+        **_authorized(monkeypatch),
+    )
+    _assert_backend_determinism_failure(
+        report, backend="cswp_qdrant", field="dense_top1_similarity"
+    )
+
+
+def test_qdrant_only_bm25_diagnostic_and_packed_fingerprint_drift_fail(tmp_path, monkeypatch):
+    def changed(query, output):
+        if query == "synthetic absent diagnostic":
+            output["bm25_rank_order"][0]["native_score"] = 0.123456
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=_second_execution_backend_only(changed),
+        archive_root=tmp_path / "bm25-drift",
+        **_authorized(monkeypatch),
+    )
+    _assert_backend_determinism_failure(
+        report, backend="cswp_qdrant", field="bm25_top_score"
+    )
+
+    def packed(_query, output):
+        output["packed_fingerprint"] = "execution-two-drift"
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=_second_execution_backend_only(packed),
+        archive_root=tmp_path / "packed-fingerprint-drift",
+        **_authorized(monkeypatch),
+    )
+    _assert_backend_determinism_failure(
+        report, backend="cswp_qdrant", field="packed_evidence_fingerprint"
+    )
+
+
+def test_qdrant_runtime_identity_drift_is_captured_and_fails(monkeypatch):
+    def changed(_query, output):
+        output["collection_name"] = "different-qualified-collection"
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=_second_execution_backend_only(changed),
+        **_authorized(monkeypatch),
+    )
+    _assert_backend_determinism_failure(
+        report, backend="cswp_qdrant", field="runtime_identity.collection_name"
     )
 
 
@@ -933,6 +1062,9 @@ def test_deterministic_second_raw_run_matches():
         determinism_executor=executor(),
     )
     assert report["determinism"]["passed"] is True
+    assert report["determinism"]["mismatches"] == []
+    assert report["determinism"]["execution_1"] == report["determinism"]["execution_2"]
+    assert set(report["determinism"]["execution_1"]["SYN-ABS1"]) == set(runner.BACKENDS)
 
 
 @pytest.mark.parametrize(

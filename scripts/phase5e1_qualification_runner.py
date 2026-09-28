@@ -926,6 +926,137 @@ def score_query(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def deterministic_backend_snapshot(
+    raw: dict[str, Any], score: dict[str, Any], backend: str
+) -> dict[str, Any]:
+    """Capture all archived deterministic evidence for one backend/query."""
+
+    return {
+        "rankings": {
+            "dense_top20_chunk_ids": [row["chunk_id"] for row in raw["dense_top20"]],
+            "bm25_rank_order_chunk_ids": [
+                row["chunk_id"] for row in raw["bm25_rank_order"]
+            ],
+            "hybrid_top5_chunk_ids": [
+                row["chunk_id"] for row in raw["hybrid_seed_top5"]
+            ],
+            "hybrid_top10_chunk_ids": [
+                row["chunk_id"] for row in raw["hybrid_top10"]
+            ],
+            "seed_chunk_ids": [row["chunk_id"] for row in raw["seeds"]],
+            "expanded_chunk_ids": [row["chunk_id"] for row in raw["expanded"]],
+            "packed_chunk_ids": [row["chunk_id"] for row in raw["packed"]],
+        },
+        "packed_evidence_fingerprint": raw["packed_fingerprint"],
+        "runtime_identity": {
+            field: raw["raw"].get(field)
+            for field in REQUIRED_RUNTIME_IDENTITY[backend]
+        },
+        "per_query_scoring": score,
+        "absent_diagnostics": score["absent_diagnostics"],
+    }
+
+
+def deterministic_execution_snapshot(
+    rows: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Make query/backend evidence directly comparable across two executions."""
+
+    return {
+        row["query_id"]: row["backends"]
+        for row in rows
+    }
+
+
+def deterministic_mismatches(
+    first: Any, second: Any, *, query_id: str | None = None,
+    backend: str | None = None, field: str = "",
+) -> list[dict[str, Any]]:
+    """Report ordered, backend-scoped deterministic differences without masking them."""
+
+    if isinstance(first, dict) and isinstance(second, dict):
+        mismatches = []
+        for key in sorted(set(first) | set(second)):
+            child_field = f"{field}.{key}" if field else key
+            if key not in first or key not in second:
+                mismatches.append(
+                    {
+                        "query_id": query_id,
+                        "backend": backend,
+                        "field": child_field,
+                        "execution_1": first.get(key),
+                        "execution_2": second.get(key),
+                    }
+                )
+            else:
+                mismatches.extend(
+                    deterministic_mismatches(
+                        first[key], second[key], query_id=query_id,
+                        backend=backend, field=child_field,
+                    )
+                )
+        return mismatches
+    if isinstance(first, list) and isinstance(second, list):
+        mismatches = []
+        if len(first) != len(second):
+            mismatches.append(
+                {
+                    "query_id": query_id,
+                    "backend": backend,
+                    "field": f"{field}.length",
+                    "execution_1": len(first),
+                    "execution_2": len(second),
+                }
+            )
+        for index, (left, right) in enumerate(zip(first, second)):
+            mismatches.extend(
+                deterministic_mismatches(
+                    left, right, query_id=query_id, backend=backend,
+                    field=f"{field}[{index}]",
+                )
+            )
+        return mismatches
+    if first != second:
+        return [{
+            "query_id": query_id,
+            "backend": backend,
+            "field": field,
+            "execution_1": first,
+            "execution_2": second,
+        }]
+    return []
+
+
+def compare_deterministic_executions(
+    first: dict[str, dict[str, Any]], second: dict[str, dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Compare every archived deterministic field per query and backend."""
+
+    mismatches = []
+    for query_id in sorted(set(first) | set(second)):
+        first_backends = first.get(query_id)
+        second_backends = second.get(query_id)
+        if not isinstance(first_backends, dict) or not isinstance(second_backends, dict):
+            mismatches.append(
+                {
+                    "query_id": query_id,
+                    "backend": None,
+                    "field": "backend_snapshot",
+                    "execution_1": first_backends,
+                    "execution_2": second_backends,
+                }
+            )
+            continue
+        for backend in BACKENDS:
+            mismatches.extend(
+                deterministic_mismatches(
+                    first_backends.get(backend), second_backends.get(backend),
+                    query_id=query_id, backend=backend,
+                )
+            )
+    return mismatches
+
+
 def disposition(
     queries: list[dict[str, Any]],
     scores: list[dict[str, Any]],
@@ -1436,6 +1567,7 @@ def run_qualification(
         append_execution_journal(_journal, {"event": "execution_started", "execution": _execution_number})
     raw = {name: [] for name in BACKENDS}
     scores = []
+    determinism_rows: list[dict[str, Any]] = []
     parity = []
     frozen_runtime_identity = None
     runtime_failures: list[dict[str, Any]] = []
@@ -1483,8 +1615,22 @@ def run_qualification(
             )
             # Identity is checked before this query can affect scoring.
             stage = "scoring"
-            score = score_query(query, canonical["cswp_local"])
+            backend_scores = {
+                name: score_query(query, canonical[name]) for name in BACKENDS
+            }
+            score = backend_scores["cswp_local"]
             scores.append(score)
+            determinism_rows.append(
+                {
+                    "query_id": query["query_id"],
+                    "backends": {
+                        name: deterministic_backend_snapshot(
+                            canonical[name], backend_scores[name], name
+                        )
+                        for name in BACKENDS
+                    },
+                }
+            )
             if _journal is not None:
                 stage = "journal_persistence"
                 append_execution_journal(_journal, {
@@ -1532,6 +1678,7 @@ def run_qualification(
         "fixture_sha256": snapshot.sha256,
         "raw_backend_outputs": raw,
         "per_query": scores,
+        "determinism_evidence": determinism_rows,
         "backend_parity": {"passed": not parity, "mismatches": parity},
         "provenance": prov,
         "aggregate": aggregate,
@@ -1559,12 +1706,12 @@ def run_qualification(
     if authoritative and determinism_executor is None:
         determinism_executor = executor
     canonical_payload = {
-        "per_query": payload["per_query"],
-        "backend_parity": payload["backend_parity"],
-        "provenance": payload["provenance"],
-        "runtime_identity": payload["provenance"]["observed"]["runtime_identity"],
+        "backend_evidence": deterministic_execution_snapshot(determinism_rows),
     }
-    payload["determinism"] = {"run_a_fingerprint": sha256_json(canonical_payload)}
+    payload["determinism"] = {
+        "execution_1": canonical_payload["backend_evidence"],
+        "run_a_fingerprint": sha256_json(canonical_payload),
+    }
     if _journal is not None and _execution_number == 1 and execution_failure is None:
         append_execution_journal(
             _journal,
@@ -1587,15 +1734,18 @@ def run_qualification(
             payload["execution_2"] = repeat
             payload["executions"].append(repeat["execution"])
             run_b = {
-                "per_query": repeat["per_query"],
-                "backend_parity": repeat["backend_parity"],
-                "provenance": repeat["provenance"],
-                "runtime_identity": repeat["provenance"]["observed"]["runtime_identity"],
+                "backend_evidence": deterministic_execution_snapshot(
+                    repeat["determinism_evidence"]
+                ),
             }
+            mismatches = compare_deterministic_executions(
+                canonical_payload["backend_evidence"], run_b["backend_evidence"]
+            )
+            payload["determinism"]["execution_2"] = run_b["backend_evidence"]
             payload["determinism"]["run_b_fingerprint"] = sha256_json(run_b)
-            payload["determinism"]["passed"] = repeat["terminal_status"] == "COMPLETE" and (
-                payload["determinism"]["run_a_fingerprint"]
-                == payload["determinism"]["run_b_fingerprint"]
+            payload["determinism"]["mismatches"] = mismatches
+            payload["determinism"]["passed"] = (
+                repeat["terminal_status"] == "COMPLETE" and not mismatches
             )
             if repeat["terminal_status"] == "INCOMPLETE":
                 payload["determinism"].update(
