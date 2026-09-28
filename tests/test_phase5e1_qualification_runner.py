@@ -18,7 +18,11 @@ from scripts.phase5e1_qualification_runner import (
     score_query,
     write_qualification_archive,
 )
-from scripts.phase5a0_baseline import graded_ndcg_at_k
+from scripts.phase5a0_baseline import (
+    graded_ndcg_at_k,
+    reciprocal_rank,
+    source_recall_at_k,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "evals/fixtures/phase5e1_qualification_synthetic_oracle.json"
@@ -179,6 +183,13 @@ def _metric_raw(hybrid_top10):
     }
 
 
+def _layer_metric_raw(hybrid_top10, expanded, packed):
+    raw = _metric_raw(hybrid_top10)
+    raw["expanded"] = expanded
+    raw["packed"] = packed
+    return raw
+
+
 def test_secondary_metrics_use_source_grade_and_credit_duplicate_source_once():
     query = {
         "query_id": "metric-grades",
@@ -235,6 +246,66 @@ def test_mrr_at_10_uses_existing_hybrid_rank_seven_not_five_seeds():
     assert score["metrics"]["mrr"] == pytest.approx(1 / 7)
 
 
+def test_expanded_and_packed_ordered_sequences_have_complete_source_metric_matrix():
+    query = {
+        "query_id": "secondary-layer-matrix",
+        "answerability": "ANSWERABLE",
+        "relevant_sources": [
+            {
+                "source": "high-source",
+                "grade": 2,
+                "evidence": [{"span_id": "high:1", "grade": 2, "char_start": 0, "char_end": 20}],
+            },
+            {
+                "source": "low-source",
+                "grade": 1,
+                "evidence": [{"span_id": "low:1", "grade": 1, "char_start": 0, "char_end": 20}],
+            },
+        ],
+    }
+    relevance = {"high-source": 2, "low-source": 1}
+    hybrid = [
+        row("high-source", "high-1"),
+        row("low-source", "low-1"),
+        *[row(f"noise-{rank}", f"noise-{rank}") for rank in range(3, 11)],
+    ]
+    expanded = [
+        row("high-source", "high-1"),
+        row("high-source", "high-2"),
+        row("low-source", "low-1"),
+    ]
+    packed = [
+        *[row(f"noise-{rank}", f"noise-{rank}") for rank in range(1, 7)],
+        row("high-source", "high-1"),
+    ]
+    score = score_query(query, _layer_metric_raw(hybrid, expanded, packed))
+    layers = score["secondary_metrics"]
+    for name, rows in (("expanded", expanded), ("packed", packed)):
+        metrics = layers[name]["source_rank_metrics"]
+        assert metrics["source_recall_at"] == {
+            str(k): round(source_recall_at_k(rows, relevance, k), 8)
+            for k in (1, 3, 5)
+        }
+        assert metrics["mrr_at_10"] == pytest.approx(reciprocal_rank(rows, relevance, 10))
+        assert metrics["graded_ndcg_at"] == {
+            str(k): round(graded_ndcg_at_k(rows, relevance, k), 8)
+            for k in (1, 3, 5)
+        }
+        assert "status" not in metrics
+    assert layers["expanded"]["source_rank_metrics"]["source_recall_at"] == {
+        "1": 0.5, "3": 1.0, "5": 1.0
+    }
+    assert layers["packed"]["source_rank_metrics"]["source_recall_at"] == {
+        "1": 0.0, "3": 0.0, "5": 0.0
+    }
+    assert layers["packed"]["source_rank_metrics"]["mrr_at_10"] == pytest.approx(1 / 7)
+    assert layers["expanded"]["source_rank_metrics"]["graded_ndcg_at"]["3"] == round(
+        graded_ndcg_at_k(expanded, relevance, 3), 8
+    )
+    assert layers["expanded"]["sequence_semantics"].endswith("not retrieval ranks")
+    assert layers["packed"]["sequence_semantics"].endswith("not retrieval ranks")
+
+
 def test_layer_metrics_and_absent_na_preserve_primary_population():
     report = run_qualification(
         fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor()
@@ -249,9 +320,13 @@ def test_layer_metrics_and_absent_na_preserve_primary_population():
     assert answerable["metrics"]["packed_evidence_recall"] == answerable[
         "secondary_metrics"
     ]["packed"]["evidence_recall_full"]
-    assert answerable["secondary_metrics"]["expanded"]["source_rank_metrics"][
-        "status"
-    ] == "NOT_APPLICABLE"
+    for layer in ("expanded", "packed"):
+        assert answerable["secondary_metrics"][layer]["source_rank_metrics"][
+            "source_recall_at"
+        ] == {"1": 1.0, "3": 1.0, "5": 1.0}
+        assert answerable["secondary_metrics"][layer]["source_rank_metrics"][
+            "mrr_at_10"
+        ] == 1.0
     absent = next(row for row in report["per_query"] if row["answerability"] == "ABSENT")
     assert absent["metrics"]["evidence_recall_at_1"] is None
     assert absent["metrics"]["packed_evidence_recall"] is None
@@ -474,6 +549,33 @@ def test_qdrant_runtime_identity_drift_is_captured_and_fails(monkeypatch):
     )
     _assert_backend_determinism_failure(
         report, backend="cswp_qdrant", field="runtime_identity.collection_name"
+    )
+
+
+@pytest.mark.parametrize(
+    ("raw_field", "layer"),
+    [("expanded_rows", "expanded"), ("kb_results", "packed")],
+)
+def test_execution_two_secondary_layer_metric_drift_fails_determinism(
+    raw_field, layer, monkeypatch
+):
+    def changed(query, output):
+        if query == "synthetic answerable one":
+            output[raw_field] = [
+                row("background", "background__0001"),
+                row("doc-a", "doc-a__0001"),
+            ]
+
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=_second_execution_backend_only(changed),
+        **_authorized(monkeypatch),
+    )
+    _assert_backend_determinism_failure(
+        report,
+        backend="cswp_qdrant",
+        field=f"per_query_scoring.secondary_metrics.{layer}.source_rank_metrics",
     )
 
 

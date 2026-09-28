@@ -828,7 +828,7 @@ def score_query(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
     def evidence_at(rows: list[dict[str, Any]], k: int) -> float | None:
         return recall(spans, rows, k) if evidence_bearing else None
 
-    def evidence_layer(rows: list[dict[str, Any]], *, ranking: bool) -> dict[str, Any]:
+    def evidence_layer(rows: list[dict[str, Any]]) -> dict[str, Any]:
         if not evidence_bearing:
             return {
                 "population": "NOT_APPLICABLE_ABSENT",
@@ -843,31 +843,25 @@ def score_query(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
             },
             "evidence_recall_full": recall(spans, rows, len(rows)),
         }
-        if ranking:
-            values["source_rank_metrics"] = {
-                "population": "relevant_sources_grade",
-                "source_recall_at": {
-                    str(k): round(source_recall_at_k(rows, source_relevance, k), 8)
-                    for k in SECONDARY_K_VALUES
-                },
-                "mrr_at_10": round(
-                    reciprocal_rank(rows, source_relevance, MRR_DEPTH), 8
-                ),
-                "graded_ndcg_at": {
-                    str(k): round(graded_ndcg_at_k(rows, source_relevance, k), 8)
-                    for k in SECONDARY_K_VALUES
-                },
-            }
-        else:
-            values["source_rank_metrics"] = {
-                "status": "NOT_APPLICABLE",
-                "reason": "seed-first output order is not a retrieval ranking",
-            }
+        values["source_rank_metrics"] = {
+            "population": "relevant_sources_grade",
+            "source_recall_at": {
+                str(k): round(source_recall_at_k(rows, source_relevance, k), 8)
+                for k in SECONDARY_K_VALUES
+            },
+            "mrr_at_10": round(
+                reciprocal_rank(rows, source_relevance, MRR_DEPTH), 8
+            ),
+            "graded_ndcg_at": {
+                str(k): round(graded_ndcg_at_k(rows, source_relevance, k), 8)
+                for k in SECONDARY_K_VALUES
+            },
+        }
         return values
 
-    retrieved_secondary = evidence_layer(hybrid_top10, ranking=True)
-    expanded_secondary = evidence_layer(expanded, ranking=False)
-    packed_secondary = evidence_layer(packed, ranking=False)
+    retrieved_secondary = evidence_layer(hybrid_top10)
+    expanded_secondary = evidence_layer(expanded)
+    packed_secondary = evidence_layer(packed)
     return {
         "query_id": query["query_id"],
         "answerability": answerability,
@@ -895,14 +889,21 @@ def score_query(query: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
         "secondary_metrics": {
             "retrieved": {
                 "sequence": "hybrid_top10_ranking",
+                "sequence_semantics": "true hybrid retrieval ranking",
                 **retrieved_secondary,
             },
             "expanded": {
                 "sequence": "seed_first_expansion_output",
+                "sequence_semantics": (
+                    "deterministic expansion output order; positions are not retrieval ranks"
+                ),
                 **expanded_secondary,
             },
             "packed": {
                 "sequence": "seed_first_packed_output",
+                "sequence_semantics": (
+                    "deterministic seed-first packing order; positions are not retrieval ranks"
+                ),
                 **packed_secondary,
             },
         },
