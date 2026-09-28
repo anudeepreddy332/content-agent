@@ -9,6 +9,7 @@ import scripts.phase5e1_qualification_runner as runner
 from scripts.phase5e1_qualification_runner import (
     QualificationHarnessError,
     archive_is_successful,
+    archive_verification_failure,
     contract_sha256,
     load_contract,
     reserve_archive,
@@ -1144,6 +1145,160 @@ def test_authoritative_archive_journals_every_query_of_both_executions(tmp_path,
             "value"
         ]["observed"] is True
     assert archive_is_successful(archive) is True
+
+
+def _complete_authoritative_archive(tmp_path, monkeypatch):
+    archive = tmp_path / f"complete-authoritative-archive-{len(list(tmp_path.iterdir()))}"
+    run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=executor(),
+        archive_root=archive,
+        **_authorized(monkeypatch),
+    )
+    assert archive_is_successful(archive) is True
+    return archive
+
+
+def _rewrite_archive_json(archive, name, transform):
+    path = archive / name
+    path.write_text(runner.canonical_json_dumps(transform(json.loads(path.read_text()))) + "\n")
+
+
+def _refresh_archive_manifest(archive):
+    manifest_path = archive / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["artifacts"] = {
+        path.name: {"sha256": runner.sha256_file(path), "bytes": path.stat().st_size}
+        for path in sorted(archive.iterdir())
+        if path.is_file() and path.name != "manifest.json"
+    }
+    manifest_path.write_text(runner.canonical_json_dumps(manifest) + "\n")
+
+
+def _assert_semantic_rejection(archive, expected_reason):
+    _refresh_archive_manifest(archive)
+    assert archive_is_successful(archive) is False
+    assert archive_verification_failure(archive) == expected_reason
+
+
+def test_semantic_verifier_accepts_one_complete_consistent_authoritative_pass(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    assert archive_verification_failure(archive) is None
+
+
+def test_semantic_verifier_rejects_hash_valid_failed_determinism(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(archive, "determinism.json", lambda value: {**value, "passed": False})
+    _rewrite_archive_json(
+        archive,
+        "parity.json",
+        lambda value: {**value, "determinism": {**value["determinism"], "passed": False}},
+    )
+    _assert_semantic_rejection(archive, "determinism_not_passed")
+
+
+def test_semantic_verifier_rejects_hash_valid_missing_execution_two(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(archive, "executions.json", lambda value: value[:1])
+    _rewrite_archive_json(archive, "per_query.json", lambda value: {**value, "execution_2": None})
+    _rewrite_archive_json(archive, "parity.json", lambda value: {**value, "execution_2": None})
+    _rewrite_archive_json(archive, "execution_2_raw_backend_outputs.json", lambda _value: None)
+    _assert_semantic_rejection(archive, "missing_or_failed_execution_evidence")
+
+
+def test_semantic_verifier_rejects_incomplete_execution_two(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+
+    def incomplete(value):
+        value[1]["status"] = "INCOMPLETE"
+        value[1]["failure"] = {"stage": "synthetic"}
+        return value
+
+    _rewrite_archive_json(archive, "executions.json", incomplete)
+    _assert_semantic_rejection(archive, "incomplete_execution_evidence")
+
+
+def test_semantic_verifier_rejects_missing_query_or_backend_output(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(
+        archive, "per_query.json", lambda value: {**value, "execution_2": value["execution_2"][:-1]}
+    )
+    _assert_semantic_rejection(archive, "incomplete_execution_evidence")
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(
+        archive,
+        "execution_2_raw_backend_outputs.json",
+        lambda value: {"cswp_local": value["cswp_local"]},
+    )
+    _assert_semantic_rejection(archive, "incomplete_execution_evidence")
+
+
+def test_semantic_verifier_rejects_hard_failure_and_outcome_contradictions(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(
+        archive,
+        "summary.json",
+        lambda value: {**value, "aggregate": {**value["aggregate"], "hard_failures": [{"gate": "bad"}]}},
+    )
+    _assert_semantic_rejection(archive, "aggregate_disposition_disagreement")
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(
+        archive,
+        "disposition.json",
+        lambda value: {**value, "overall_pass": False},
+    )
+    _assert_semantic_rejection(archive, "terminal_outcome_not_authoritative_pass")
+
+
+def test_semantic_verifier_rejects_failed_parity_and_identity_mismatch(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(
+        archive,
+        "parity.json",
+        lambda value: {
+            **value,
+            "execution_1": {"passed": False, "mismatches": [{"field": "synthetic"}]},
+        },
+    )
+    _assert_semantic_rejection(archive, "missing_or_failed_execution_evidence")
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(
+        archive,
+        "provenance.json",
+        lambda value: {**value, "passed": False, "mismatches": ["synthetic"]},
+    )
+    _assert_semantic_rejection(archive, "authorization_or_provenance_mismatch")
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(
+        archive,
+        "summary.json",
+        lambda value: {
+            **value,
+            "authorization": {
+                **value["authorization"],
+                "approved_fixture_sha256": "mismatched-approved-fixture",
+            },
+        },
+    )
+    _assert_semantic_rejection(archive, "authorization_or_provenance_mismatch")
+
+
+def test_semantic_verifier_rejects_missing_terminal_artifact_and_byte_tampering(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    (archive / "determinism.json").unlink()
+    assert archive_verification_failure(archive) == "missing_required_artifact"
+    assert archive_is_successful(archive) is False
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    with (archive / "summary.json").open("a", encoding="utf-8") as handle:
+        handle.write(" ")
+    assert archive_verification_failure(archive) == "artifact_digest_mismatch"
+    assert archive_is_successful(archive) is False
 
 
 def test_first_execution_failure_retains_prior_journal_evidence(tmp_path, monkeypatch):

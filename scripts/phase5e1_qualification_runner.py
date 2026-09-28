@@ -1036,50 +1036,244 @@ def sanitized_failure(exc: Exception) -> str:
     return f"{type(exc).__name__}: {str(exc)[:300]}"
 
 
-def archive_is_successful(root: Path) -> bool:
-    """Return true only for a complete, internally consistent terminal archive."""
-
-    required = {"per_query.json", "summary.json", "parity.json", "manifest.json", "disposition.json"}
-    if not all((root / name).is_file() for name in required):
-        return False
-    try:
-        summary = load_json(root / "summary.json")
-        disposition_record = load_json(root / "disposition.json")
-        manifest = load_json(root / "manifest.json")
-    except (OSError, json.JSONDecodeError, QualificationHarnessError):
-        return False
-    inventory = manifest.get("artifacts")
-    actual = {
-        path.name for path in root.iterdir() if path.is_file() and path.name != "manifest.json"
+REQUIRED_ARCHIVE_ARTIFACTS = frozenset(
+    {
+        "per_query.json",
+        "summary.json",
+        "parity.json",
+        "raw_backend_outputs.json",
+        "execution_2_raw_backend_outputs.json",
+        "executions.json",
+        "provenance.json",
+        "contract.json",
+        "determinism.json",
+        "disposition.json",
+        "execution_journal.jsonl",
     }
-    if not isinstance(inventory, dict) or set(inventory) != actual:
+)
+REQUIRED_ARCHIVE_RAW_FIELDS = frozenset((*CANONICAL_INTERVAL_FIELDS, "packed_fingerprint"))
+
+
+def _archive_json(path: Path) -> Any:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _complete_archive_scores(scores: Any, query_ids: list[str]) -> bool:
+    if not isinstance(scores, list) or len(scores) != len(query_ids):
         return False
-    for name, detail in inventory.items():
-        path = root / name
-        if (
-            not isinstance(detail, dict)
-            or detail.get("sha256") != sha256_file(path)
-            or detail.get("bytes") != path.stat().st_size
-        ):
-            return False
-    aggregate = summary.get("aggregate")
-    disposition_aggregate = disposition_record.get("aggregate")
-    if not isinstance(aggregate, dict) or not isinstance(disposition_aggregate, dict):
+    observed = [score.get("query_id") for score in scores if isinstance(score, dict)]
+    if observed != query_ids or len(observed) != len(set(observed)):
         return False
-    return (
-        manifest.get("terminal_status") == "COMPLETE"
-        and summary.get("terminal_status") == "COMPLETE"
-        and disposition_record.get("terminal_status") == "COMPLETE"
-        and summary.get("overall_pass") is True
-        and disposition_record.get("overall_pass") is True
-        and summary.get("disposition") == disposition_record.get("disposition")
-        and aggregate.get("overall_pass") is True
-        and aggregate.get("disposition") == summary.get("disposition")
-        and disposition_aggregate.get("overall_pass") is True
-        and disposition_aggregate.get("disposition") == summary.get("disposition")
-        and manifest.get("overall_pass") is True
-        and manifest.get("disposition") == summary.get("disposition")
+    return all(
+        isinstance(score.get("metrics"), dict)
+        and isinstance(score.get("coverage"), dict)
+        and isinstance(score.get("raw_identities"), dict)
+        and isinstance(score.get("answerability"), str)
+        for score in scores
     )
+
+
+def _complete_archive_raw(raw: Any, query_ids: list[str]) -> bool:
+    if not isinstance(raw, dict) or set(raw) != set(BACKENDS):
+        return False
+    return all(
+        isinstance(rows, list)
+        and len(rows) == len(query_ids)
+        and all(
+            isinstance(row, dict) and REQUIRED_ARCHIVE_RAW_FIELDS <= set(row)
+            for row in rows
+        )
+        for rows in raw.values()
+    )
+
+
+def _complete_archive_parity(parity: Any) -> bool:
+    return (
+        isinstance(parity, dict)
+        and parity.get("passed") is True
+        and parity.get("mismatches") == []
+    )
+
+
+def archive_verification_failure(root: Path) -> str | None:
+    """Return a bounded reason when an archive cannot prove authoritative PASS.
+
+    The verifier is deliberately read-only.  It treats the terminal manifest as
+    an integrity envelope, then proves the archived attempts, score evidence,
+    parity, determinism, and approved identities agree with that envelope.
+    """
+
+    try:
+        actual = {
+            path.name
+            for path in root.iterdir()
+            if path.is_file() and path.name != "manifest.json"
+        }
+        if not REQUIRED_ARCHIVE_ARTIFACTS <= actual or not (root / "manifest.json").is_file():
+            return "missing_required_artifact"
+        archive = {name: _archive_json(root / name) for name in REQUIRED_ARCHIVE_ARTIFACTS if name != "execution_journal.jsonl"}
+        manifest = _archive_json(root / "manifest.json")
+        journal = [json.loads(line) for line in (root / "execution_journal.jsonl").read_text(encoding="utf-8").splitlines()]
+    except (OSError, json.JSONDecodeError, TypeError):
+        return "unreadable_required_artifact"
+
+    if not isinstance(manifest, dict):
+        return "invalid_terminal_manifest"
+    inventory = manifest.get("artifacts")
+    if not isinstance(inventory, dict) or set(inventory) != actual:
+        return "manifest_inventory_mismatch"
+    try:
+        for name, detail in inventory.items():
+            path = root / name
+            if (
+                not isinstance(detail, dict)
+                or detail.get("sha256") != sha256_file(path)
+                or detail.get("bytes") != path.stat().st_size
+            ):
+                return "artifact_digest_mismatch"
+    except OSError:
+        return "artifact_digest_mismatch"
+
+    summary = archive["summary.json"]
+    disposition_record = archive["disposition.json"]
+    aggregate = summary.get("aggregate") if isinstance(summary, dict) else None
+    disposition_aggregate = (
+        disposition_record.get("aggregate") if isinstance(disposition_record, dict) else None
+    )
+    frozen_pass = load_contract()["disposition_values"][0]
+    terminal_values = (manifest, summary, disposition_record)
+    if not all(isinstance(value, dict) for value in terminal_values):
+        return "invalid_terminal_record"
+    if (
+        manifest.get("terminal_artifact") != "manifest.json"
+        or manifest.get("manifest_inventory_excludes_self") is not True
+        or any(value.get("terminal_status") != "COMPLETE" for value in terminal_values)
+        or any(value.get("overall_pass") is not True for value in terminal_values)
+        or any(value.get("disposition") != frozen_pass for value in terminal_values)
+    ):
+        return "terminal_outcome_not_authoritative_pass"
+    if (
+        not isinstance(aggregate, dict)
+        or not isinstance(disposition_aggregate, dict)
+        or aggregate.get("overall_pass") is not True
+        or aggregate.get("disposition") != frozen_pass
+        or aggregate.get("hard_failures") != []
+        or disposition_aggregate.get("overall_pass") is not True
+        or disposition_aggregate.get("disposition") != frozen_pass
+    ):
+        return "aggregate_disposition_disagreement"
+
+    attempt = manifest.get("attempt_identity")
+    if not isinstance(attempt, dict):
+        return "missing_attempt_identity"
+    query_ids = attempt.get("query_ids")
+    if (
+        attempt.get("execution_count") != 2
+        or attempt.get("backends") != list(BACKENDS)
+        or not isinstance(query_ids, list)
+        or not query_ids
+        or any(not isinstance(query_id, str) for query_id in query_ids)
+        or len(query_ids) != len(set(query_ids))
+    ):
+        return "invalid_attempt_identity"
+
+    contract = archive["contract.json"]
+    provenance_record = archive["provenance.json"]
+    authorization = summary.get("authorization")
+    contract_identity = summary.get("contract_identity")
+    if (
+        not isinstance(contract, dict)
+        or sha256_json(contract) != EXPECTED_CONTRACT_SHA256
+        or not isinstance(provenance_record, dict)
+        or provenance_record.get("passed") is not True
+        or provenance_record.get("mismatches") != []
+        or not isinstance(authorization, dict)
+        or not all(isinstance(authorization.get(key), str) and authorization[key] for key in (
+            "approved_execution_sha", "approved_fixture_sha256"
+        ))
+        or contract_identity != manifest.get("contract_identity")
+        or contract_identity != attempt.get("contract_identity")
+        or authorization != attempt.get("authorization")
+        or provenance_record.get("observed") != attempt.get("provenance")
+    ):
+        return "authorization_or_provenance_mismatch"
+    observed = provenance_record["observed"]
+    if (
+        not isinstance(observed, dict)
+        or observed.get("execution_git_sha") != authorization["approved_execution_sha"]
+        or observed.get("fixture_sha256") != authorization["approved_fixture_sha256"]
+        or observed.get("fixture_sha256") != attempt.get("fixture_sha256")
+        or observed.get("contract_sha256") != contract_identity.get("canonical_json_sha256")
+        or contract_identity.get("canonical_json_sha256") != sha256_json(contract)
+    ):
+        return "authorization_or_provenance_mismatch"
+
+    per_query = archive["per_query.json"]
+    parity = archive["parity.json"]
+    executions = archive["executions.json"]
+    raw_by_execution = (
+        archive["raw_backend_outputs.json"],
+        archive["execution_2_raw_backend_outputs.json"],
+    )
+    if (
+        not isinstance(per_query, dict)
+        or not isinstance(parity, dict)
+        or not isinstance(executions, list)
+        or len(executions) != 2
+        or not _complete_archive_parity(parity.get("execution_1"))
+        or not _complete_archive_parity(parity.get("execution_2"))
+    ):
+        return "missing_or_failed_execution_evidence"
+    for number, raw in enumerate(raw_by_execution, start=1):
+        scores = per_query.get(f"execution_{number}")
+        execution = executions[number - 1]
+        if (
+            not _complete_archive_scores(scores, query_ids)
+            or not _complete_archive_raw(raw, query_ids)
+            or not isinstance(execution, dict)
+            or execution.get("execution") != number
+            or execution.get("status") != "COMPLETE"
+            or execution.get("failure") is not None
+            or execution.get("per_query") != scores
+            or execution.get("raw_backend_outputs") != raw
+            or execution.get("backend_parity") != parity.get(f"execution_{number}")
+            or execution.get("provenance") != provenance_record
+        ):
+            return "incomplete_execution_evidence"
+
+    determinism = archive["determinism.json"]
+    if (
+        not isinstance(determinism, dict)
+        or determinism.get("passed") is not True
+        or parity.get("determinism") != determinism
+    ):
+        return "determinism_not_passed"
+    if not isinstance(journal, list) or not all(isinstance(row, dict) for row in journal):
+        return "invalid_execution_journal"
+    for number in (1, 2):
+        completed = [
+            row for row in journal
+            if row.get("event") == "query_completed" and row.get("execution") == number
+        ]
+        terminal = [
+            row for row in journal
+            if row.get("event") == "execution_completed" and row.get("execution") == number
+        ]
+        if (
+            [row.get("query_id") for row in completed] != query_ids
+            or len(terminal) != 1
+            or terminal[0].get("terminal_status") != "COMPLETE"
+        ):
+            return "incomplete_execution_journal"
+    if any(row.get("event") in {"execution_incomplete", "archive_finalization_incomplete"} for row in journal):
+        return "incomplete_execution_journal"
+    return None
+
+
+def archive_is_successful(root: Path) -> bool:
+    """Return true only when the archive semantically proves authoritative PASS."""
+
+    return archive_verification_failure(root) is None
 
 
 def write_qualification_archive(
@@ -1149,6 +1343,15 @@ def write_qualification_archive(
         "manifest_inventory_excludes_self": True,
         "terminal_artifact": "manifest.json",
         "contract_identity": payload["contract_identity"],
+        "attempt_identity": {
+            "execution_count": len(payload["executions"]),
+            "query_ids": [score["query_id"] for score in payload["per_query"]],
+            "backends": list(BACKENDS),
+            "fixture_sha256": payload["provenance"]["observed"]["fixture_sha256"],
+            "authorization": payload.get("authorization"),
+            "provenance": payload["provenance"]["observed"],
+            "contract_identity": payload["contract_identity"],
+        },
     }
     manifest_path = root / "manifest.json"
     with manifest_path.open("x", encoding="utf-8") as handle:
