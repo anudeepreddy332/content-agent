@@ -1,0 +1,23 @@
+{
+  "phase": "5E3D4A",
+  "purpose": "Pre-fix reproduction of the caller-controlled authoritative PASS bypass",
+  "starting_sha": "3d95ae81a22cd6ebf37347213067f2b5a6cd642c",
+  "fixture": "evals/fixtures/phase5e1_qualification_synthetic_oracle.json",
+  "fixture_sha256": "d22e366ddc32579d218011f79333d4687374396f3033e8c54e1f2fac154676e6",
+  "execution": {
+    "approved_execution_sha": "reproduction-sha",
+    "runtime_git_sha": "reproduction-sha",
+    "executor": "tests.test_phase5e1_qualification_runner.executor",
+    "real_adapter_mode": false,
+    "archive": "fresh temporary archive",
+    "paid_provider_calls": 0,
+    "sealed_holdout_accessed": false
+  },
+  "observed": {
+    "disposition": "PHASE-5E1A-HOLDOUT-PASS",
+    "overall_pass": true,
+    "preflight": null,
+    "archive_is_successful": true
+  },
+  "conclusion": "Before this change, caller-selected synthetic execution could create a semantically successful archive and an authoritative HOLDOUT PASS without real preflight."
+}

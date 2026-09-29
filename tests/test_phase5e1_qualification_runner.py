@@ -14,7 +14,7 @@ from scripts.phase5e1_qualification_runner import (
     contract_sha256,
     load_contract,
     reserve_archive,
-    run_qualification,
+    _run_evaluation,
     score_query,
     write_qualification_archive,
 )
@@ -27,6 +27,20 @@ from scripts.phase5a0_baseline import (
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "evals/fixtures/phase5e1_qualification_synthetic_oracle.json"
 CONTRACT = ROOT / "evals/fixtures/phase5e1_qualification_contract.json"
+
+
+def run_qualification(**kwargs):
+    """Exercise legacy archive mechanics through the private core only.
+
+    Public-surface tests below call ``runner.run_qualification`` and
+    ``runner.run_authoritative_qualification`` directly.  Existing archive and
+    determinism regression cases keep their focused coverage without granting
+    the production compatibility API an authority-bearing signature.
+    """
+
+    if kwargs.get("authoritative"):
+        return _run_evaluation(**kwargs)
+    return runner.run_qualification(**kwargs)
 
 
 @pytest.fixture(autouse=True)
@@ -844,30 +858,20 @@ def test_authoritative_mode_without_archive_rejects_before_retrieval(monkeypatch
     assert calls == 0
 
 
-def test_cli_forces_authoritative_archive_and_rejects_optional_flag(monkeypatch, capsys):
+def test_cli_exposes_no_caller_control_over_authoritative_inputs(monkeypatch, capsys):
     recorded = {}
 
     def invoked(**kwargs):
         recorded.update(kwargs)
         return {"overall_pass": True}
 
-    monkeypatch.setattr(runner, "run_qualification", invoked)
-    assert runner.main(
-        [
-            "--fixture", str(FIXTURE),
-            "--approved-execution-sha", "approved",
-            "--approved-fixture-sha256", runner.sha256_file(FIXTURE),
-        ]
-    ) == 0
-    assert recorded["authoritative"] is True
-    assert recorded["write_archive"] is True
+    monkeypatch.setattr(runner, "run_authoritative_qualification", invoked)
+    assert runner.main(["--archive-root", "temporary-release-archive"]) == 0
+    assert recorded["archive_root"] == Path("temporary-release-archive")
     with pytest.raises(SystemExit):
         runner.main(
             [
                 "--fixture", str(FIXTURE),
-                "--approved-execution-sha", "approved",
-                "--approved-fixture-sha256", runner.sha256_file(FIXTURE),
-                "--write-archive",
             ]
         )
     capsys.readouterr()
@@ -1627,3 +1631,114 @@ def test_missing_or_incomplete_terminal_artifacts_never_count_as_success(tmp_pat
         json.dumps({"terminal_status": "COMPLETE", "overall_pass": True, "disposition": "PASS"})
     )
     assert archive_is_successful(archive) is False
+
+
+def _authoritative_fixture(tmp_path, *, holdout=True, approved_execution_sha="a" * 40):
+    """Create test-only public bytes with the authoritative schema shape."""
+
+    fixture = json.loads(FIXTURE.read_text())
+    fixture["schema_version"] = runner.AUTHORITATIVE_HOLDOUT_SCHEMA
+    fixture["holdout"] = holdout
+    fixture["approved_execution_sha"] = approved_execution_sha
+    path = tmp_path / "authoritative-fixture.json"
+    path.write_text(json.dumps(fixture))
+    return path
+
+
+def _counted_authoritative_executor(monkeypatch):
+    calls = []
+
+    def counted(query):
+        calls.append(query)
+        return executor()(query)
+
+    monkeypatch.setattr(runner, "execute_qualified_backends", counted)
+    return calls
+
+
+def test_public_development_api_cannot_be_promoted_by_authority_keywords(monkeypatch):
+    calls = _counted_authoritative_executor(monkeypatch)
+    with pytest.raises(TypeError):
+        runner.run_qualification(
+            fixture_path=FIXTURE,
+            contract_path=CONTRACT,
+            executor=executor(),
+            authoritative=True,
+        )
+    assert calls == []
+
+
+def test_public_development_fixture_is_never_a_holdout_pass():
+    report = runner.run_development_evaluation(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor()
+    )
+    assert report["decision_scope"] == "development"
+    assert report["disposition"] == runner.DEVELOPMENT_PASS_DISPOSITION
+    assert report["disposition"] != "PHASE-5E1A-HOLDOUT-PASS"
+
+
+def test_authoritative_api_rejects_injected_executor_and_preflight_flags():
+    with pytest.raises(TypeError):
+        runner.run_authoritative_qualification(executor=executor())
+    with pytest.raises(TypeError):
+        runner.run_authoritative_qualification(real_adapter_mode=False)
+
+
+def test_missing_designated_fixture_fails_closed_before_retrieval(tmp_path, monkeypatch):
+    calls = _counted_authoritative_executor(monkeypatch)
+    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", tmp_path / "missing.json")
+    with pytest.raises(QualificationHarnessError, match="unavailable"):
+        runner.run_authoritative_qualification()
+    assert calls == []
+
+
+def test_incorrect_authoritative_fixture_identity_fails_before_retrieval(
+    tmp_path, monkeypatch
+):
+    calls = _counted_authoritative_executor(monkeypatch)
+    fixture = _authoritative_fixture(tmp_path, holdout=False)
+    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", fixture)
+    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_SHA256", runner.sha256_file(fixture))
+    with pytest.raises(QualificationHarnessError, match="not marked as holdout"):
+        runner.run_authoritative_qualification()
+    assert calls == []
+
+
+def test_incorrect_authoritative_fixture_digest_fails_before_retrieval(
+    tmp_path, monkeypatch
+):
+    calls = _counted_authoritative_executor(monkeypatch)
+    fixture = _authoritative_fixture(tmp_path)
+    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", fixture)
+    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_SHA256", "incorrect")
+    with pytest.raises(QualificationHarnessError, match="byte SHA-256"):
+        runner.run_authoritative_qualification()
+    assert calls == []
+
+
+def test_failed_mandatory_real_preflight_makes_zero_retrieval_calls(tmp_path, monkeypatch):
+    calls = _counted_authoritative_executor(monkeypatch)
+    approved = "a" * 40
+    fixture = _authoritative_fixture(tmp_path, approved_execution_sha=approved)
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: approved)
+    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", fixture)
+    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_SHA256", runner.sha256_file(fixture))
+    monkeypatch.setattr(
+        runner,
+        "validate_real_adapter_preflight",
+        lambda _expected: (_ for _ in ()).throw(QualificationHarnessError("live Qdrant unavailable")),
+    )
+    with pytest.raises(QualificationHarnessError, match="live Qdrant unavailable"):
+        runner.run_authoritative_qualification()
+    assert calls == []
+
+
+def test_authoritative_execution_sha_mismatch_fails_before_retrieval(tmp_path, monkeypatch):
+    calls = _counted_authoritative_executor(monkeypatch)
+    fixture = _authoritative_fixture(tmp_path, approved_execution_sha="a" * 40)
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: "b" * 40)
+    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", fixture)
+    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_SHA256", runner.sha256_file(fixture))
+    with pytest.raises(QualificationHarnessError, match="runtime HEAD"):
+        runner.run_authoritative_qualification()
+    assert calls == []

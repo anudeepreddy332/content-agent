@@ -31,9 +31,9 @@ from scripts.phase5d4c_docker_acceptance import (  # noqa: E402
 )
 from scripts.phase5e1_qualification_runner import (  # noqa: E402
     DEFAULT_CONTRACT_PATH,
+    _run_evaluation,
     execute_qualified_backends,
     runtime_git_sha,
-    run_qualification,
     sha256_file,
 )
 
@@ -96,7 +96,11 @@ def main() -> int:
                     outputs["cswp_qdrant"]["hybrid_top10"] = None
                 return outputs
 
-            report = run_qualification(
+            # This is a failure-only regression over a temporary archive.  It
+            # exercises internal finalization mechanics after the real adapters
+            # have already returned malformed public-development data; it is
+            # not an authoritative release entry point and cannot emit PASS.
+            report = _run_evaluation(
                 fixture_path=fixture_path,
                 contract_path=DEFAULT_CONTRACT_PATH,
                 archive_root=archive,

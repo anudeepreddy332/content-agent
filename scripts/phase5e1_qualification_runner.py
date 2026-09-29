@@ -30,6 +30,13 @@ DEFAULT_CONTRACT_PATH = (
     REPO_ROOT / "evals/fixtures/phase5e1_qualification_contract.json"
 )
 DEFAULT_ARCHIVE_ROOT = REPO_ROOT / "reports/phase5/phase5e1a/holdout-run-1"
+AUTHORITATIVE_HOLDOUT_PATH = REPO_ROOT / "evals/fixtures/retrieval_holdout_v1.json"
+AUTHORITATIVE_HOLDOUT_SCHEMA = "retrieval_holdout_v1"
+# This is the externally approved byte digest of the designated sealed fixture.
+# The fixture is intentionally not checked into this release worktree.
+AUTHORITATIVE_HOLDOUT_SHA256 = (
+    "9d45c7255886c5dcd3060260a470080c2f1ca5080361c37274dbbab24167874f"
+)
 EXPECTED_CONTRACT_SHA256 = (
     "7c19cb7b0ae6126be19816615a8976e0685be18b1f8686c31658338afdf38b47"
 )
@@ -1501,7 +1508,7 @@ def execute_qualified_backends(query: str) -> dict[str, dict[str, Any]]:
     }
 
 
-def run_qualification(
+def _run_evaluation(
     *,
     fixture_path: Path,
     contract_path: Path | None = None,
@@ -1513,6 +1520,8 @@ def run_qualification(
     approved_execution_sha: str | None = None,
     approved_fixture_sha256: str | None = None,
     real_adapter_mode: bool | None = None,
+    _canonical_source_map: dict[str, dict[str, Any]] | None = None,
+    _preflight: dict[str, dict[str, Any]] | None = None,
     _fixture_snapshot: FixtureSnapshot | None = None,
     _journal: Path | None = None,
     _execution_number: int = 1,
@@ -1551,14 +1560,14 @@ def run_qualification(
     expected_identity = expected_runtime_identity(fixture, contract)
     if real_adapter_mode is None:
         real_adapter_mode = executor is execute_qualified_backends
-    canonical_source_map = None
-    preflight = None
+    canonical_source_map = _canonical_source_map
+    preflight = _preflight
     if real_adapter_mode:
-        if authoritative:
+        if authoritative and canonical_source_map is None:
             canonical_source_map, preflight = validate_real_adapter_preflight(
                 expected_identity
             )
-        else:
+        elif not authoritative and canonical_source_map is None:
             canonical_source_map = qualified_canonical_source_map()
     resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
     if authoritative and _execution_number == 1:
@@ -1720,7 +1729,7 @@ def run_qualification(
         )
     if _execution_number == 1 and execution_failure is None and determinism_executor is not None:
         try:
-            repeat = run_qualification(
+            repeat = _run_evaluation(
                 fixture_path=fixture_path, contract_path=contract_path,
                 executor=determinism_executor, _fixture_snapshot=snapshot,
                 _journal=_journal, _execution_number=2,
@@ -1728,6 +1737,8 @@ def run_qualification(
                 approved_execution_sha=approved_execution_sha,
                 approved_fixture_sha256=approved_fixture_sha256,
                 real_adapter_mode=real_adapter_mode,
+                _canonical_source_map=canonical_source_map,
+                _preflight=preflight,
                 write_archive=write_archive,
                 archive_root=resolved_archive,
                 _archive_reserved=authoritative,
@@ -1809,23 +1820,135 @@ def run_qualification(
     return payload
 
 
+def run_development_evaluation(
+    *,
+    fixture_path: Path,
+    contract_path: Path | None = None,
+    executor: Callable[[str], dict[str, dict[str, Any]]] = execute_qualified_backends,
+    determinism_executor: Callable[[str], dict[str, dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
+    """Run a non-authoritative development evaluation.
+
+    This API intentionally accepts synthetic fixtures and injected executors.
+    Its disposition is permanently scoped to development and it cannot reserve
+    or write a release archive.
+    """
+
+    return _run_evaluation(
+        fixture_path=fixture_path,
+        contract_path=contract_path,
+        executor=executor,
+        determinism_executor=determinism_executor,
+        authoritative=False,
+        write_archive=False,
+    )
+
+
+def run_qualification(
+    *,
+    fixture_path: Path,
+    contract_path: Path | None = None,
+    executor: Callable[[str], dict[str, dict[str, Any]]] = execute_qualified_backends,
+    determinism_executor: Callable[[str], dict[str, dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
+    """Backward-compatible name for :func:`run_development_evaluation`.
+
+    Qualification callers that need a release disposition must use the
+    argument-free authoritative API below; this compatibility function cannot
+    be elevated through invocation flags or caller-provided authority.
+    """
+
+    return run_development_evaluation(
+        fixture_path=fixture_path,
+        contract_path=contract_path,
+        executor=executor,
+        determinism_executor=determinism_executor,
+    )
+
+
+def _load_authoritative_holdout_snapshot() -> FixtureSnapshot:
+    """Load only the designated fixture and verify its external release identity."""
+
+    if not AUTHORITATIVE_HOLDOUT_PATH.is_file():
+        raise QualificationHarnessError(
+            "designated authoritative holdout fixture is unavailable; fail closed before retrieval"
+        )
+    snapshot = load_fixture_snapshot(AUTHORITATIVE_HOLDOUT_PATH)
+    fixture = snapshot.fixture
+    if fixture.get("schema_version") != AUTHORITATIVE_HOLDOUT_SCHEMA:
+        raise QualificationHarnessError("designated authoritative holdout has an invalid schema")
+    if fixture.get("holdout") is not True:
+        raise QualificationHarnessError("designated authoritative fixture is not marked as holdout")
+    if snapshot.sha256 != AUTHORITATIVE_HOLDOUT_SHA256:
+        raise QualificationHarnessError(
+            "designated authoritative holdout byte SHA-256 does not match release approval"
+        )
+    validate_fixture(fixture)
+    return snapshot
+
+
+def approved_authoritative_execution_sha(fixture: dict[str, Any]) -> str:
+    """Read the execution SHA from a fixture already verified by byte digest.
+
+    The value is release authority only after ``_load_authoritative_holdout_snapshot``
+    establishes the exact fixture bytes against the independently approved
+    digest.  It therefore cannot be supplied or changed by an invocation
+    caller, while avoiding an impossible source-file self-hash pin.
+    """
+
+    value = fixture.get("approved_execution_sha")
+    if (
+        not isinstance(value, str)
+        or len(value) != 40
+        or any(char not in "0123456789abcdef" for char in value)
+    ):
+        raise QualificationHarnessError(
+            "designated authoritative holdout is missing an approved execution Git SHA"
+        )
+    return value
+
+
+def run_authoritative_qualification(
+    *, archive_root: Path | None = None
+) -> dict[str, Any]:
+    """Run the only authoritative Phase-5 qualification path.
+
+    Fixture selection, runtime SHA, adapters, and real preflight are release
+    authority, not caller options.  The absence of the sealed fixture is an
+    expected fail-closed state until the separately authorized integration.
+    """
+
+    snapshot = _load_authoritative_holdout_snapshot()
+    approved_execution_sha = approved_authoritative_execution_sha(snapshot.fixture)
+    if runtime_git_sha() != approved_execution_sha:
+        raise QualificationHarnessError(
+            "runtime HEAD does not match the approved authoritative execution SHA"
+        )
+    contract = load_contract(DEFAULT_CONTRACT_PATH)
+    expected_identity = expected_runtime_identity(snapshot.fixture, contract)
+    # This must finish before the archive is reserved and before query one.
+    canonical_source_map, preflight = validate_real_adapter_preflight(expected_identity)
+    return _run_evaluation(
+        fixture_path=AUTHORITATIVE_HOLDOUT_PATH,
+        contract_path=DEFAULT_CONTRACT_PATH,
+        archive_root=archive_root,
+        write_archive=True,
+        executor=execute_qualified_backends,
+        authoritative=True,
+        approved_execution_sha=approved_execution_sha,
+        approved_fixture_sha256=AUTHORITATIVE_HOLDOUT_SHA256,
+        real_adapter_mode=True,
+        _fixture_snapshot=snapshot,
+        _canonical_source_map=canonical_source_map,
+        _preflight=preflight,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--fixture", required=True, type=Path)
-    p.add_argument("--contract", type=Path, default=DEFAULT_CONTRACT_PATH)
     p.add_argument("--archive-root", type=Path)
-    p.add_argument("--approved-execution-sha", required=True)
-    p.add_argument("--approved-fixture-sha256", required=True)
     a = p.parse_args(argv)
-    report = run_qualification(
-        fixture_path=a.fixture,
-        contract_path=a.contract,
-        archive_root=a.archive_root,
-        write_archive=True,
-        authoritative=True,
-        approved_execution_sha=a.approved_execution_sha,
-        approved_fixture_sha256=a.approved_fixture_sha256,
-    )
+    report = run_authoritative_qualification(archive_root=a.archive_root)
     print(canonical_json_dumps(report))
     return 0 if report["overall_pass"] else 1
 
