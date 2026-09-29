@@ -1,13 +1,15 @@
-"""Check semantic archive verification with public development retrieval only.
+"""Check archived-snapshot recomputation with public development retrieval.
 
 The check runs public Q01/Q02 through the local and real Qdrant v1.9.2
-adapters.  It then creates hash-valid copies whose determinism or second
-execution evidence is missing, proving that semantic verification—not merely
-the archive manifest digests—controls authoritative archive success.
+adapters twice, rebuilds runtime-equivalent snapshots from the resulting raw
+and structured evidence, and detects a Qdrant-only mutation.  It deliberately
+uses development evaluation rather than manufacturing a holdout qualification.
+Direct verifier-fixture tests cover authoritative archive acceptance.
 """
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import shutil
@@ -31,13 +33,11 @@ from scripts.phase5d4c_docker_acceptance import (  # noqa: E402
 )
 from scripts.phase5e1_qualification_runner import (  # noqa: E402
     DEFAULT_CONTRACT_PATH,
-    archive_is_successful,
-    archive_verification_failure,
-    canonical_json_dumps,
+    ArchiveEvidenceConflict,
+    archived_deterministic_execution_snapshot,
+    compare_deterministic_executions,
     execute_qualified_backends,
-    run_qualification,
-    runtime_git_sha,
-    sha256_file,
+    run_development_evaluation,
 )
 
 DEVELOPMENT_FIXTURE = ROOT / "evals/fixtures/retrieval_golden_v2.json"
@@ -66,19 +66,35 @@ def _canonical_development_fixture(path: Path) -> None:
     )
 
 
-def _refresh_manifest(archive: Path) -> None:
-    path = archive / "manifest.json"
-    manifest = json.loads(path.read_text(encoding="utf-8"))
-    manifest["artifacts"] = {
-        item.name: {"sha256": sha256_file(item), "bytes": item.stat().st_size}
-        for item in sorted(archive.iterdir())
-        if item.is_file() and item.name != "manifest.json"
-    }
-    path.write_text(canonical_json_dumps(manifest) + "\n", encoding="utf-8")
+def _recompute_development_determinism(report: dict) -> tuple[bool, bool]:
+    """Rebuild archived-style snapshots without invoking release qualification."""
 
-
-def _write_json(path: Path, value: object) -> None:
-    path.write_text(canonical_json_dumps(value) + "\n", encoding="utf-8")
+    query_ids = [row["query_id"] for row in report["per_query"]]
+    first = archived_deterministic_execution_snapshot(
+        report["per_query"], report["backend_per_query"],
+        report["raw_backend_outputs"], query_ids,
+    )
+    second_report = report["execution_2"]
+    second = archived_deterministic_execution_snapshot(
+        second_report["per_query"], second_report["backend_per_query"],
+        second_report["raw_backend_outputs"], query_ids,
+    )
+    mutated_raw = copy.deepcopy(second_report["raw_backend_outputs"])
+    mutated_raw["cswp_qdrant"][0]["hybrid_top10"][0]["chunk_id"] += "__tampered"
+    try:
+        mutated = archived_deterministic_execution_snapshot(
+            second_report["per_query"], second_report["backend_per_query"],
+            mutated_raw, query_ids,
+        )
+    except ArchiveEvidenceConflict:
+        mutation_detected = True
+    else:
+        mutation_detected = bool(compare_deterministic_executions(first, mutated))
+    return (
+        first == report["determinism"]["execution_1"]
+        and second == report["determinism"]["execution_2"],
+        mutation_detected,
+    )
 
 
 def main() -> int:
@@ -93,7 +109,6 @@ def main() -> int:
         for name in ("manifest.json", "units.jsonl"):
             shutil.copy2(PRODUCTION_INDEX_DIR / name, index_dir / name)
         fixture_path = temporary_root / "public-development-q01-q02.json"
-        archive = temporary_root / "complete-archive"
         _canonical_development_fixture(fixture_path)
 
         port = _free_port()
@@ -105,60 +120,31 @@ def main() -> int:
             manifest = full_rebuild(client, index_dir=index_dir)
             create_serving_alias(client, manifest["collection_name"])
             clear_serving_cache()
-            report = run_qualification(
+            report = run_development_evaluation(
                 fixture_path=fixture_path,
                 contract_path=DEFAULT_CONTRACT_PATH,
-                archive_root=archive,
-                write_archive=True,
                 executor=execute_qualified_backends,
-                authoritative=True,
-                approved_execution_sha=runtime_git_sha(),
-                approved_fixture_sha256=sha256_file(fixture_path),
-                real_adapter_mode=True,
+                determinism_executor=execute_qualified_backends,
             )
-
-        failed_determinism = temporary_root / "failed-determinism"
-        missing_second = temporary_root / "missing-second-execution"
-        shutil.copytree(archive, failed_determinism)
-        shutil.copytree(archive, missing_second)
-        determinism = json.loads((failed_determinism / "determinism.json").read_text())
-        determinism["passed"] = False
-        _write_json(failed_determinism / "determinism.json", determinism)
-        parity = json.loads((failed_determinism / "parity.json").read_text())
-        parity["determinism"] = determinism
-        _write_json(failed_determinism / "parity.json", parity)
-        _refresh_manifest(failed_determinism)
-
-        executions = json.loads((missing_second / "executions.json").read_text())
-        _write_json(missing_second / "executions.json", executions[:1])
-        per_query = json.loads((missing_second / "per_query.json").read_text())
-        per_query["execution_2"] = None
-        _write_json(missing_second / "per_query.json", per_query)
-        second_parity = json.loads((missing_second / "parity.json").read_text())
-        second_parity["execution_2"] = None
-        _write_json(missing_second / "parity.json", second_parity)
-        _write_json(missing_second / "execution_2_raw_backend_outputs.json", None)
-        _refresh_manifest(missing_second)
+        snapshots_match, qdrant_mutation_detected = _recompute_development_determinism(report)
 
         complete = (
             version == "1.9.2"
             and manifest["point_count"] == 159
             and report["overall_pass"] is True
-            and archive_is_successful(archive)
-            and archive_verification_failure(archive) is None
-            and not archive_is_successful(failed_determinism)
-            and archive_verification_failure(failed_determinism) == "determinism_not_passed"
-            and not archive_is_successful(missing_second)
-            and archive_verification_failure(missing_second) == "missing_or_failed_execution_evidence"
+            and report["decision_scope"] == "development"
+            and report["determinism"]["passed"] is True
+            and snapshots_match
+            and qdrant_mutation_detected
         )
         print(
             json.dumps(
                 {
                     "qdrant_version": version,
                     "point_count": manifest["point_count"],
-                    "complete_archive_semantically_verified": archive_is_successful(archive),
-                    "failed_determinism_reason": archive_verification_failure(failed_determinism),
-                    "missing_second_execution_reason": archive_verification_failure(missing_second),
+                    "decision_scope": report["decision_scope"],
+                    "snapshots_match_runtime_evidence": snapshots_match,
+                    "qdrant_hybrid_mutation_detected": qdrant_mutation_detected,
                     "sealed_holdout_accessed": False,
                 },
                 sort_keys=True,

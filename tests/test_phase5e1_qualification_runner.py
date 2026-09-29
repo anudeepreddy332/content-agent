@@ -1433,7 +1433,209 @@ def test_semantic_verifier_rejects_hash_valid_failed_determinism(tmp_path, monke
         "parity.json",
         lambda value: {**value, "determinism": {**value["determinism"], "passed": False}},
     )
-    _assert_semantic_rejection(archive, "determinism_not_passed")
+    _assert_semantic_rejection(archive, "determinism_assertion_conflict")
+
+
+def _rewrite_execution_raw(archive, execution_number, transform):
+    name = (
+        "raw_backend_outputs.json"
+        if execution_number == 1
+        else "execution_2_raw_backend_outputs.json"
+    )
+    path = archive / name
+    raw = json.loads(path.read_text())
+    transform(raw)
+    path.write_text(runner.canonical_json_dumps(raw) + "\n")
+    _rewrite_archive_json(
+        archive,
+        "executions.json",
+        lambda rows: [
+            {**row, "raw_backend_outputs": raw}
+            if row["execution"] == execution_number
+            else row
+            for row in rows
+        ],
+    )
+    return raw
+
+
+def _rewrite_backend_scores(archive, execution_number, transform):
+    path = archive / "backend_per_query.json"
+    values = json.loads(path.read_text())
+    rows = values[f"execution_{execution_number}"]
+    transform(rows)
+    path.write_text(runner.canonical_json_dumps(values) + "\n")
+    _rewrite_archive_json(
+        archive,
+        "executions.json",
+        lambda executions: [
+            {**execution, "backend_per_query": rows}
+            if execution["execution"] == execution_number
+            else execution
+            for execution in executions
+        ],
+    )
+    return values
+
+
+def _rewrite_determinism(archive, transform):
+    path = archive / "determinism.json"
+    determinism = json.loads(path.read_text())
+    transform(determinism)
+    path.write_text(runner.canonical_json_dumps(determinism) + "\n")
+    _rewrite_archive_json(
+        archive,
+        "parity.json",
+        lambda value: {**value, "determinism": determinism},
+    )
+    return determinism
+
+
+def _rebuild_recorded_snapshot(archive, execution_number):
+    manifest = json.loads((archive / "manifest.json").read_text())
+    query_ids = manifest["attempt_identity"]["query_ids"]
+    scores = json.loads((archive / "per_query.json").read_text())[f"execution_{execution_number}"]
+    backend_scores = json.loads((archive / "backend_per_query.json").read_text())[f"execution_{execution_number}"]
+    raw_name = (
+        "raw_backend_outputs.json"
+        if execution_number == 1
+        else "execution_2_raw_backend_outputs.json"
+    )
+    raw = json.loads((archive / raw_name).read_text())
+    rebuilt = runner.archived_deterministic_execution_snapshot(
+        scores, backend_scores, raw, query_ids
+    )
+    _rewrite_determinism(
+        archive,
+        lambda value: value.__setitem__(f"execution_{execution_number}", rebuilt),
+    )
+
+
+@pytest.mark.parametrize("backend", ["cswp_qdrant", "cswp_local"])
+def test_semantic_verifier_rejects_hash_valid_backend_only_hybrid_top10_mutation(
+    tmp_path, monkeypatch, backend
+):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+
+    def mutate(raw):
+        raw[backend][0]["hybrid_top10"][0]["chunk_id"] += "__tampered"
+
+    _rewrite_execution_raw(archive, 2, mutate)
+    _assert_semantic_rejection(archive, "execution_snapshot_conflict")
+
+
+def test_semantic_verifier_rejects_hash_valid_nonempty_mismatches_with_passed_true(
+    tmp_path, monkeypatch
+):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_determinism(
+        archive,
+        lambda value: value.__setitem__(
+            "mismatches",
+            [{"query_id": "SYN-A1", "backend": "cswp_qdrant", "field": "synthetic"}],
+        ),
+    )
+    _assert_semantic_rejection(archive, "determinism_assertion_conflict")
+
+
+def test_semantic_verifier_rejects_hash_valid_packed_fingerprint_and_runtime_drift(
+    tmp_path, monkeypatch
+):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_execution_raw(
+        archive,
+        2,
+        lambda raw: raw["cswp_qdrant"][0].__setitem__(
+            "packed_fingerprint", "tampered-fingerprint"
+        ),
+    )
+    _assert_semantic_rejection(archive, "execution_snapshot_conflict")
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_execution_raw(
+        archive,
+        2,
+        lambda raw: raw["cswp_qdrant"][0].__setitem__(
+            "collection_name", "tampered-collection"
+        ),
+    )
+    _assert_semantic_rejection(archive, "execution_snapshot_conflict")
+
+
+def test_semantic_verifier_rejects_hash_valid_absent_and_secondary_metric_drift(
+    tmp_path, monkeypatch
+):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_backend_scores(
+        archive,
+        2,
+        lambda rows: next(
+            row for row in rows if row["query_id"] == "SYN-ABS1"
+        )["backends"]["cswp_qdrant"].__setitem__(
+            "absent_diagnostics", {"tampered": True}
+        ),
+    )
+    _assert_semantic_rejection(archive, "execution_snapshot_conflict")
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_backend_scores(
+        archive,
+        2,
+        lambda rows: rows[0]["backends"]["cswp_qdrant"]["secondary_metrics"][
+            "packed"
+        ].__setitem__("evidence_recall_full", 0.25),
+    )
+    _assert_semantic_rejection(archive, "execution_snapshot_conflict")
+
+
+def test_semantic_verifier_rejects_snapshot_change_without_execution_change(
+    tmp_path, monkeypatch
+):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_determinism(
+        archive,
+        lambda value: value["execution_2"]["SYN-A1"]["cswp_qdrant"][
+            "rankings"
+        ]["hybrid_top10_chunk_ids"].__setitem__(0, "tampered-snapshot"),
+    )
+    _assert_semantic_rejection(archive, "execution_snapshot_conflict")
+
+
+def test_semantic_verifier_rejects_missing_or_malformed_determinism_evidence(
+    tmp_path, monkeypatch
+):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_determinism(archive, lambda value: value.clear())
+    _assert_semantic_rejection(archive, "missing_determinism_evidence")
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_execution_raw(
+        archive,
+        2,
+        lambda raw: raw["cswp_qdrant"][0].__setitem__("hybrid_top10", [{"bad": "row"}]),
+    )
+    _assert_semantic_rejection(archive, "malformed_deterministic_field")
+
+
+def test_semantic_verifier_recomputes_archived_execution_mismatch(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    raw = _rewrite_execution_raw(
+        archive,
+        2,
+        lambda value: value["cswp_qdrant"][0]["hybrid_top10"][0].__setitem__(
+            "chunk_id", "recomputed-drift"
+        ),
+    )
+
+    def align_score(rows):
+        canonical = runner.canonical_raw(raw["cswp_qdrant"][0])
+        rows[0]["backends"]["cswp_qdrant"]["raw_identities"] = (
+            runner._raw_identity_snapshot(canonical)
+        )
+
+    _rewrite_backend_scores(archive, 2, align_score)
+    _rebuild_recorded_snapshot(archive, 2)
+    _assert_semantic_rejection(archive, "archived_determinism_mismatch")
 
 
 def test_semantic_verifier_rejects_hash_valid_missing_execution_two(tmp_path, monkeypatch):

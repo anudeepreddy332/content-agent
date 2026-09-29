@@ -83,6 +83,10 @@ class QualificationHarnessError(ValueError):
     pass
 
 
+class ArchiveEvidenceConflict(QualificationHarnessError):
+    """Archived structured evidence conflicts with its raw execution record."""
+
+
 def canonical_json_dumps(value: Any) -> str:
     return json.dumps(value, sort_keys=True, ensure_ascii=True, separators=(",", ":"))
 
@@ -1177,6 +1181,7 @@ def sanitized_failure(exc: Exception) -> str:
 
 REQUIRED_ARCHIVE_ARTIFACTS = frozenset(
     {
+        "backend_per_query.json",
         "per_query.json",
         "summary.json",
         "parity.json",
@@ -1212,6 +1217,29 @@ def _complete_archive_scores(scores: Any, query_ids: list[str]) -> bool:
     )
 
 
+def _complete_archive_backend_scores(scores: Any, query_ids: list[str]) -> bool:
+    """Require the structured score emitted for each backend and query."""
+
+    if not isinstance(scores, list) or len(scores) != len(query_ids):
+        return False
+    if [row.get("query_id") for row in scores if isinstance(row, dict)] != query_ids:
+        return False
+    return all(
+        isinstance(row.get("backends"), dict)
+        and set(row["backends"]) == set(BACKENDS)
+        and all(
+            isinstance(row["backends"][backend], dict)
+            and row["backends"][backend].get("query_id") == row["query_id"]
+            and isinstance(row["backends"][backend].get("metrics"), dict)
+            and isinstance(row["backends"][backend].get("coverage"), dict)
+            and isinstance(row["backends"][backend].get("raw_identities"), dict)
+            and isinstance(row["backends"][backend].get("answerability"), str)
+            for backend in BACKENDS
+        )
+        for row in scores
+    )
+
+
 def _complete_archive_raw(raw: Any, query_ids: list[str]) -> bool:
     if not isinstance(raw, dict) or set(raw) != set(BACKENDS):
         return False
@@ -1232,6 +1260,65 @@ def _complete_archive_parity(parity: Any) -> bool:
         and parity.get("passed") is True
         and parity.get("mismatches") == []
     )
+
+
+def _raw_identity_snapshot(raw: dict[str, Any]) -> dict[str, Any]:
+    """Derive the score-visible identities from canonical archived raw output."""
+
+    return {
+        "seed_chunk_ids": [row["chunk_id"] for row in raw["seeds"]],
+        "expanded_chunk_ids": [row["chunk_id"] for row in raw["expanded"]],
+        "packed_chunk_ids": [row["chunk_id"] for row in raw["packed"]],
+        "dense_top20_chunk_ids": [row["chunk_id"] for row in raw["dense_top20"]],
+        "bm25_rank_order_chunk_ids": [
+            row["chunk_id"] for row in raw["bm25_rank_order"]
+        ],
+        "hybrid_seed_top5_chunk_ids": [
+            row["chunk_id"] for row in raw["hybrid_seed_top5"]
+        ],
+        "hybrid_top10_chunk_ids": [
+            row["chunk_id"] for row in raw["hybrid_top10"]
+        ],
+        "packed_evidence_fingerprint": raw["packed_fingerprint"],
+    }
+
+
+def archived_deterministic_execution_snapshot(
+    scores: list[dict[str, Any]],
+    backend_scores: list[dict[str, Any]],
+    raw: dict[str, list[dict[str, Any]]],
+    query_ids: list[str],
+) -> dict[str, dict[str, Any]]:
+    """Rebuild runtime determinism evidence from archived raw/structured output.
+
+    No stored determinism snapshot is consulted here.  The archive supplies
+    one raw backend result and one structured backend score for every query;
+    the canonical runtime snapshot helper then defines the exact semantics.
+    """
+
+    if not (
+        _complete_archive_scores(scores, query_ids)
+        and _complete_archive_backend_scores(backend_scores, query_ids)
+        and _complete_archive_raw(raw, query_ids)
+    ):
+        raise QualificationHarnessError("malformed archived deterministic evidence")
+    rebuilt: dict[str, dict[str, Any]] = {}
+    for index, query_id in enumerate(query_ids):
+        row = backend_scores[index]
+        if scores[index] != row["backends"]["cswp_local"]:
+            raise ArchiveEvidenceConflict("local score disagrees with backend score evidence")
+        rebuilt[query_id] = {}
+        for backend in BACKENDS:
+            canonical = canonical_raw(raw[backend][index])
+            score = row["backends"][backend]
+            if score.get("raw_identities") != _raw_identity_snapshot(canonical):
+                raise ArchiveEvidenceConflict(
+                    "structured score disagrees with archived raw evidence"
+                )
+            rebuilt[query_id][backend] = deterministic_backend_snapshot(
+                canonical, score, backend
+            )
+    return rebuilt
 
 
 def archive_verification_failure(root: Path) -> str | None:
@@ -1348,6 +1435,7 @@ def archive_verification_failure(root: Path) -> str | None:
         return "authorization_or_provenance_mismatch"
 
     per_query = archive["per_query.json"]
+    backend_per_query = archive["backend_per_query.json"]
     parity = archive["parity.json"]
     executions = archive["executions.json"]
     raw_by_execution = (
@@ -1365,15 +1453,18 @@ def archive_verification_failure(root: Path) -> str | None:
         return "missing_or_failed_execution_evidence"
     for number, raw in enumerate(raw_by_execution, start=1):
         scores = per_query.get(f"execution_{number}")
+        backend_scores = backend_per_query.get(f"execution_{number}") if isinstance(backend_per_query, dict) else None
         execution = executions[number - 1]
         if (
             not _complete_archive_scores(scores, query_ids)
+            or not _complete_archive_backend_scores(backend_scores, query_ids)
             or not _complete_archive_raw(raw, query_ids)
             or not isinstance(execution, dict)
             or execution.get("execution") != number
             or execution.get("status") != "COMPLETE"
             or execution.get("failure") is not None
             or execution.get("per_query") != scores
+            or execution.get("backend_per_query") != backend_scores
             or execution.get("raw_backend_outputs") != raw
             or execution.get("backend_parity") != parity.get(f"execution_{number}")
             or execution.get("provenance") != provenance_record
@@ -1383,10 +1474,38 @@ def archive_verification_failure(root: Path) -> str | None:
     determinism = archive["determinism.json"]
     if (
         not isinstance(determinism, dict)
-        or determinism.get("passed") is not True
+    ):
+        return "missing_determinism_evidence"
+    if not all(isinstance(determinism.get(key), dict) for key in ("execution_1", "execution_2")):
+        return "missing_determinism_evidence"
+    try:
+        rebuilt = [
+            archived_deterministic_execution_snapshot(
+                per_query[f"execution_{number}"],
+                backend_per_query[f"execution_{number}"],
+                raw,
+                query_ids,
+            )
+            for number, raw in enumerate(raw_by_execution, start=1)
+        ]
+    except ArchiveEvidenceConflict:
+        return "execution_snapshot_conflict"
+    except (KeyError, TypeError, QualificationHarnessError):
+        return "malformed_deterministic_field"
+    stored = (determinism.get("execution_1"), determinism.get("execution_2"))
+    if any(
+        deterministic_mismatches(snapshot, evidence)
+        for snapshot, evidence in zip(stored, rebuilt, strict=True)
+    ):
+        return "execution_snapshot_conflict"
+    if compare_deterministic_executions(rebuilt[0], rebuilt[1]):
+        return "archived_determinism_mismatch"
+    if (
+        determinism.get("passed") is not True
+        or determinism.get("mismatches") != []
         or parity.get("determinism") != determinism
     ):
-        return "determinism_not_passed"
+        return "determinism_assertion_conflict"
     if not isinstance(journal, list) or not all(isinstance(row, dict) for row in journal):
         return "invalid_execution_journal"
     for number in (1, 2):
@@ -1431,6 +1550,10 @@ def write_qualification_archive(
         "per_query": {
             "execution_1": payload["per_query"],
             "execution_2": payload.get("execution_2", {}).get("per_query"),
+        },
+        "backend_per_query": {
+            "execution_1": payload["backend_per_query"],
+            "execution_2": payload.get("execution_2", {}).get("backend_per_query"),
         },
         "summary": {
             "terminal_status": payload["terminal_status"],
@@ -1577,6 +1700,7 @@ def _run_evaluation(
         append_execution_journal(_journal, {"event": "execution_started", "execution": _execution_number})
     raw = {name: [] for name in BACKENDS}
     scores = []
+    backend_per_query: list[dict[str, Any]] = []
     determinism_rows: list[dict[str, Any]] = []
     parity = []
     frozen_runtime_identity = None
@@ -1630,6 +1754,9 @@ def _run_evaluation(
             }
             score = backend_scores["cswp_local"]
             scores.append(score)
+            backend_per_query.append(
+                {"query_id": query["query_id"], "backends": backend_scores}
+            )
             determinism_rows.append(
                 {
                     "query_id": query["query_id"],
@@ -1688,6 +1815,7 @@ def _run_evaluation(
         "fixture_sha256": snapshot.sha256,
         "raw_backend_outputs": raw,
         "per_query": scores,
+        "backend_per_query": backend_per_query,
         "determinism_evidence": determinism_rows,
         "backend_parity": {"passed": not parity, "mismatches": parity},
         "provenance": prov,
@@ -1708,6 +1836,7 @@ def _run_evaluation(
         "failure": execution_failure,
         "raw_backend_outputs": raw,
         "per_query": scores,
+        "backend_per_query": backend_per_query,
         "backend_parity": payload["backend_parity"],
         "provenance": prov,
     }

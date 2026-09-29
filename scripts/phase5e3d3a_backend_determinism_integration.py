@@ -25,11 +25,8 @@ from scripts.phase5d4c_docker_acceptance import (  # noqa: E402
 from scripts.phase5e1_qualification_runner import (  # noqa: E402
     BACKENDS,
     DEFAULT_CONTRACT_PATH,
-    archive_is_successful,
     execute_qualified_backends,
-    run_qualification,
-    runtime_git_sha,
-    sha256_file,
+    run_development_evaluation,
 )
 from scripts.phase5e3d2c_archive_verification_integration import (  # noqa: E402
     _canonical_development_fixture,
@@ -48,7 +45,6 @@ def main() -> int:
         for name in ("manifest.json", "units.jsonl"):
             shutil.copy2(PRODUCTION_INDEX_DIR / name, index_dir / name)
         fixture_path = temporary_root / "public-development-q01-q02.json"
-        archive = temporary_root / "two-run-archive"
         _canonical_development_fixture(fixture_path)
 
         port = _free_port()
@@ -60,16 +56,11 @@ def main() -> int:
             manifest = full_rebuild(client, index_dir=index_dir)
             create_serving_alias(client, manifest["collection_name"])
             clear_serving_cache()
-            report = run_qualification(
+            report = run_development_evaluation(
                 fixture_path=fixture_path,
                 contract_path=DEFAULT_CONTRACT_PATH,
-                archive_root=archive,
-                write_archive=True,
                 executor=execute_qualified_backends,
-                authoritative=True,
-                approved_execution_sha=runtime_git_sha(),
-                approved_fixture_sha256=sha256_file(fixture_path),
-                real_adapter_mode=True,
+                determinism_executor=execute_qualified_backends,
             )
 
         determinism = report["determinism"]
@@ -77,6 +68,7 @@ def main() -> int:
             version == "1.9.2"
             and manifest["point_count"] == 159
             and report["overall_pass"] is True
+            and report["decision_scope"] == "development"
             and determinism["passed"] is True
             and determinism["mismatches"] == []
             and set(determinism["execution_1"]) == {"Q01", "Q02"}
@@ -85,7 +77,6 @@ def main() -> int:
                 set(snapshot) == set(BACKENDS)
                 for snapshot in determinism["execution_1"].values()
             )
-            and archive_is_successful(archive)
         )
         print(
             json.dumps(
@@ -94,7 +85,7 @@ def main() -> int:
                     "point_count": manifest["point_count"],
                     "determinism_passed": determinism["passed"],
                     "mismatch_count": len(determinism["mismatches"]),
-                    "complete_archive_semantically_verified": archive_is_successful(archive),
+                    "decision_scope": report["decision_scope"],
                     "sealed_holdout_accessed": False,
                 },
                 sort_keys=True,
