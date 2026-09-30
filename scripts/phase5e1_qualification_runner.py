@@ -111,6 +111,7 @@ def load_json(path: Path) -> dict[str, Any]:
 class FixtureSnapshot:
     fixture: dict[str, Any]
     sha256: str
+    raw_bytes: bytes
 
 
 def load_fixture_snapshot(path: Path) -> FixtureSnapshot:
@@ -120,7 +121,7 @@ def load_fixture_snapshot(path: Path) -> FixtureSnapshot:
     value = json.loads(raw.decode("utf-8"))
     if not isinstance(value, dict):
         raise QualificationHarnessError(f"{path}: expected JSON object")
-    return FixtureSnapshot(value, hashlib.sha256(raw).hexdigest())
+    return FixtureSnapshot(value, hashlib.sha256(raw).hexdigest(), raw)
 
 
 def load_contract(path: Path | None = None) -> dict[str, Any]:
@@ -1189,6 +1190,7 @@ REQUIRED_ARCHIVE_ARTIFACTS = frozenset(
         "determinism.json",
         "disposition.json",
         "execution_journal.jsonl",
+        "oracle_fixture.json",
     }
 )
 REQUIRED_ARCHIVE_RAW_FIELDS = frozenset((*CANONICAL_INTERVAL_FIELDS, "packed_fingerprint"))
@@ -1317,6 +1319,45 @@ def archived_deterministic_execution_snapshot(
     return rebuilt
 
 
+def recompute_archived_score_truth(
+    fixture: dict[str, Any],
+    scores: list[dict[str, Any]],
+    backend_scores: list[dict[str, Any]],
+    raw: dict[str, list[dict[str, Any]]],
+    contract: dict[str, Any],
+    provenance_record: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Re-score one archived execution solely from verified oracle bytes/raw rows.
+
+    This deliberately reuses ``score_query`` and ``evaluate_evidence_gates``:
+    the archive verifier is not an independently maintained metric engine.
+    """
+
+    recomputed_scores = []
+    parity = []
+    for index, query in enumerate(fixture["queries"]):
+        canonical = {
+            backend: canonical_raw(raw[backend][index]) for backend in BACKENDS
+        }
+        recomputed_backends = {
+            backend: score_query(query, canonical[backend]) for backend in BACKENDS
+        }
+        if scores[index] != recomputed_backends["cswp_local"]:
+            raise ArchiveEvidenceConflict("archived local score is not raw/oracle truth")
+        if backend_scores[index] != {
+            "query_id": query["query_id"], "backends": recomputed_backends
+        }:
+            raise ArchiveEvidenceConflict("archived backend scores are not raw/oracle truth")
+        recomputed_scores.append(recomputed_backends["cswp_local"])
+        parity.extend(
+            {"query_id": query["query_id"], **m}
+            for m in compare_backends(
+                canonical["cswp_local"], canonical["cswp_qdrant"]
+            )
+        )
+    return recomputed_scores, parity
+
+
 def archive_verification_failure(root: Path) -> str | None:
     """Return a bounded reason when an archive cannot prove authoritative PASS.
 
@@ -1430,6 +1471,20 @@ def archive_verification_failure(root: Path) -> str | None:
     ):
         return "authorization_or_provenance_mismatch"
 
+    try:
+        oracle_snapshot = load_fixture_snapshot(root / "oracle_fixture.json")
+        validate_fixture(oracle_snapshot.fixture)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, QualificationHarnessError):
+        return "oracle_digest_mismatch"
+    if (
+        oracle_snapshot.sha256 != authorization["approved_fixture_sha256"]
+        or oracle_snapshot.sha256 != attempt.get("fixture_sha256")
+        or oracle_snapshot.sha256 != observed.get("fixture_sha256")
+        or [query.get("query_id") for query in oracle_snapshot.fixture["queries"]]
+        != query_ids
+    ):
+        return "oracle_digest_mismatch"
+
     per_query = archive["per_query.json"]
     backend_per_query = archive["backend_per_query.json"]
     parity = archive["parity.json"]
@@ -1502,6 +1557,39 @@ def archive_verification_failure(root: Path) -> str | None:
         or parity.get("determinism") != determinism
     ):
         return "determinism_assertion_conflict"
+    recomputed_aggregates = []
+    for number, raw in enumerate(raw_by_execution, start=1):
+        try:
+            recomputed_scores, recomputed_parity = recompute_archived_score_truth(
+                oracle_snapshot.fixture,
+                per_query[f"execution_{number}"],
+                backend_per_query[f"execution_{number}"], raw, contract,
+                provenance_record,
+            )
+        except (ArchiveEvidenceConflict, KeyError, TypeError, QualificationHarnessError):
+            return "score_truth_mismatch"
+        expected_parity = {"passed": not recomputed_parity, "mismatches": recomputed_parity}
+        if parity.get(f"execution_{number}") != expected_parity:
+            return "qualification_gate_mismatch"
+        recomputed_aggregates.append(
+            evaluate_evidence_gates(
+                oracle_snapshot.fixture["queries"], recomputed_scores, contract,
+                recomputed_parity, provenance_record,
+            )
+        )
+    expected_aggregate = {
+        **recomputed_aggregates[0],
+        "disposition": frozen_pass if recomputed_aggregates[0]["overall_pass"] else None,
+    }
+    if (
+        recomputed_aggregates[0] != recomputed_aggregates[1]
+        or aggregate != expected_aggregate
+        or disposition_aggregate != {
+            "overall_pass": expected_aggregate["overall_pass"],
+            "disposition": expected_aggregate["disposition"],
+        }
+    ):
+        return "aggregate_score_mismatch"
     if not isinstance(journal, list) or not all(isinstance(row, dict) for row in journal):
         return "invalid_execution_journal"
     for number in (1, 2):
@@ -1531,7 +1619,8 @@ def archive_is_successful(root: Path) -> bool:
 
 
 def write_qualification_archive(
-    payload: dict[str, Any], root: Path, *, already_reserved: bool = False
+    payload: dict[str, Any], root: Path, *, fixture_snapshot: FixtureSnapshot,
+    already_reserved: bool = False
 ) -> dict[str, str]:
     """Create a final immutable archive after all retrieval has completed.
 
@@ -1542,6 +1631,12 @@ def write_qualification_archive(
 
     if not already_reserved:
         reserve_archive(root)
+    snapshot = fixture_snapshot
+    if snapshot.sha256 != payload["provenance"]["observed"]["fixture_sha256"]:
+        raise QualificationHarnessError("archive fixture snapshot disagrees with provenance")
+    oracle_path = root / "oracle_fixture.json"
+    with oracle_path.open("xb") as handle:
+        handle.write(snapshot.raw_bytes)
     values = {
         "per_query": {
             "execution_1": payload["per_query"],
@@ -1582,7 +1677,7 @@ def write_qualification_archive(
             },
         },
     }
-    paths = {}
+    paths = {"oracle_fixture": str(oracle_path)}
     for name, value in values.items():
         path = root / f"{name}.json"
         with path.open("x", encoding="utf-8") as handle:
@@ -1605,7 +1700,7 @@ def write_qualification_archive(
             "execution_count": len(payload["executions"]),
             "query_ids": [score["query_id"] for score in payload["per_query"]],
             "backends": list(BACKENDS),
-            "fixture_sha256": payload["provenance"]["observed"]["fixture_sha256"],
+            "fixture_sha256": snapshot.sha256,
             "authorization": payload.get("authorization"),
             "provenance": payload["provenance"]["observed"],
             "contract_identity": payload["contract_identity"],
@@ -2012,7 +2107,7 @@ def run_authoritative_qualification(
             "disposition": evidence["disposition"],
         })
     evidence["archive_paths"] = write_qualification_archive(
-        evidence, resolved_archive, already_reserved=True
+        evidence, resolved_archive, fixture_snapshot=snapshot, already_reserved=True
     )
     if evidence["overall_pass"] and not archive_is_successful(resolved_archive):
         raise QualificationHarnessError(

@@ -112,7 +112,7 @@ def run_qualification(**kwargs):
                 "disposition": evidence["disposition"],
             })
         evidence["archive_paths"] = runner.write_qualification_archive(
-            evidence, archive, already_reserved=True
+            evidence, archive, fixture_snapshot=fixture_snapshot, already_reserved=True
         )
         if evidence["overall_pass"] and not runner.archive_is_successful(archive):
             raise QualificationHarnessError("completed, verified release archive")
@@ -1227,7 +1227,10 @@ def test_second_archive_write_cannot_overwrite(tmp_path, monkeypatch):
     )
     original_summary = (archive / "summary.json").read_bytes()
     with pytest.raises(FileExistsError):
-        write_qualification_archive(report, archive, already_reserved=True)
+        write_qualification_archive(
+            report, archive, fixture_snapshot=runner.load_fixture_snapshot(FIXTURE),
+            already_reserved=True,
+        )
     assert (archive / "summary.json").read_bytes() == original_summary
 
 
@@ -1588,6 +1591,209 @@ def _rebuild_recorded_snapshot(archive, execution_number):
         archive,
         lambda value: value.__setitem__(f"execution_{execution_number}", rebuilt),
     )
+
+
+def _rewrite_local_scores(archive, execution_number, transform):
+    path = archive / "per_query.json"
+    values = json.loads(path.read_text())
+    rows = values[f"execution_{execution_number}"]
+    transform(rows)
+    path.write_text(runner.canonical_json_dumps(values) + "\n")
+    _rewrite_archive_json(
+        archive,
+        "executions.json",
+        lambda executions: [
+            {**execution, "per_query": rows}
+            if execution["execution"] == execution_number
+            else execution
+            for execution in executions
+        ],
+    )
+    return values
+
+
+def _fabricate_both_run_secondary_packed_recall(archive, value=0.123):
+    """Make both attempts internally consistent but false to their raw rows."""
+
+    for execution_number in (1, 2):
+        def mutate_backend(rows):
+            for row in rows:
+                for backend in runner.BACKENDS:
+                    row["backends"][backend]["secondary_metrics"]["packed"][
+                        "evidence_recall_full"
+                    ] = value
+
+        def mutate_local(rows):
+            for row in rows:
+                row["secondary_metrics"]["packed"]["evidence_recall_full"] = value
+
+        _rewrite_backend_scores(archive, execution_number, mutate_backend)
+        _rewrite_local_scores(archive, execution_number, mutate_local)
+        _rebuild_recorded_snapshot(archive, execution_number)
+
+
+def test_score_truth_rejects_two_identical_fabricated_secondary_scores(
+    tmp_path, monkeypatch
+):
+    """D3 determinism can pass while D5B score truth must fail."""
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _fabricate_both_run_secondary_packed_recall(archive)
+    _refresh_archive_manifest(archive)
+    assert archive_verification_failure(archive) == "score_truth_mismatch"
+
+
+def _fabricate_both_run_score_field(archive, mutate_backend, mutate_local=None):
+    for execution_number in (1, 2):
+        backend_values = _rewrite_backend_scores(archive, execution_number, mutate_backend)
+        if mutate_local is not None:
+            _rewrite_local_scores(archive, execution_number, mutate_local)
+        else:
+            backend_rows = backend_values[f"execution_{execution_number}"]
+            _rewrite_local_scores(
+                archive,
+                execution_number,
+                lambda rows: rows.__setitem__(
+                    slice(None),
+                    [copy.deepcopy(row["backends"]["cswp_local"]) for row in backend_rows],
+                ),
+            )
+        _rebuild_recorded_snapshot(archive, execution_number)
+    _refresh_archive_manifest(archive)
+
+
+@pytest.mark.parametrize(
+    "name,mutate_backend,mutate_local",
+    [
+        (
+            "packed_evidence_recall",
+            lambda rows: [
+                row["backends"][backend]["metrics"].__setitem__(
+                    "packed_evidence_recall", 0.123
+                )
+                for row in rows for backend in runner.BACKENDS
+            ],
+            lambda rows: [row["metrics"].__setitem__("packed_evidence_recall", 0.123) for row in rows],
+        ),
+        (
+            "retrieved_evidence_recall",
+            lambda rows: [
+                row["backends"][backend]["metrics"].__setitem__(
+                    "evidence_recall_at_5", 0.123
+                )
+                for row in rows for backend in runner.BACKENDS
+            ],
+            lambda rows: [row["metrics"].__setitem__("evidence_recall_at_5", 0.123) for row in rows],
+        ),
+        (
+            "source_recall",
+            lambda rows: [
+                row["backends"][backend]["secondary_metrics"]["retrieved"]["source_rank_metrics"]["source_recall_at"].__setitem__("5", 0.123)
+                for row in rows if row["backends"]["cswp_local"]["answerability"] != "ABSENT" for backend in runner.BACKENDS
+            ],
+            None,
+        ),
+        (
+            "mrr",
+            lambda rows: [
+                row["backends"][backend]["secondary_metrics"]["retrieved"]["source_rank_metrics"].__setitem__("mrr_at_10", 0.123)
+                for row in rows if row["backends"]["cswp_local"]["answerability"] != "ABSENT" for backend in runner.BACKENDS
+            ],
+            None,
+        ),
+        (
+            "graded_ndcg",
+            lambda rows: [
+                row["backends"][backend]["secondary_metrics"]["retrieved"]["source_rank_metrics"]["graded_ndcg_at"].__setitem__("5", 0.123)
+                for row in rows if row["backends"]["cswp_local"]["answerability"] != "ABSENT" for backend in runner.BACKENDS
+            ],
+            None,
+        ),
+        (
+            "partial_recall",
+            lambda rows: [
+                row["backends"][backend]["metrics"].__setitem__("packed_evidence_recall", 0.123)
+                for row in rows if row["backends"]["cswp_local"]["answerability"] == "PARTIAL" for backend in runner.BACKENDS
+            ],
+            lambda rows: [
+                row["metrics"].__setitem__("packed_evidence_recall", 0.123)
+                for row in rows if row["answerability"] == "PARTIAL"
+            ],
+        ),
+    ],
+)
+def test_score_truth_rejects_hash_valid_fabricated_per_query_metrics(
+    tmp_path, monkeypatch, name, mutate_backend, mutate_local
+):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _fabricate_both_run_score_field(archive, mutate_backend, mutate_local)
+    assert archive_verification_failure(archive) == "score_truth_mismatch", name
+
+
+def test_score_truth_rejects_oracle_bytes_with_refreshed_archive_hashes(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    oracle = json.loads((archive / "oracle_fixture.json").read_text())
+    oracle["queries"][0]["relevant_sources"][0]["evidence"][0]["char_end"] = 19
+    _rewrite_archive_json(archive, "oracle_fixture.json", lambda _value: oracle)
+    _refresh_archive_manifest(archive)
+    assert archive_verification_failure(archive) == "oracle_digest_mismatch"
+
+
+def test_score_truth_rejects_stale_scores_after_equal_raw_evidence_mutation(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    for execution_number in (1, 2):
+        _rewrite_execution_raw(
+            archive, execution_number,
+            lambda raw: [
+                raw[backend][0]["kb_results"][0].__setitem__("source_intervals", [[1, 20]])
+                for backend in runner.BACKENDS
+            ],
+        )
+        _rebuild_recorded_snapshot(archive, execution_number)
+    _refresh_archive_manifest(archive)
+    assert archive_verification_failure(archive) == "score_truth_mismatch"
+
+
+def test_score_truth_rejects_consistently_fabricated_aggregate(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _rewrite_archive_json(
+        archive, "summary.json",
+        lambda value: {
+            **value,
+            "aggregate": {
+                **value["aggregate"],
+                "primary_metric": {**value["aggregate"]["primary_metric"], "observed": 0.123},
+            },
+        },
+    )
+    _refresh_archive_manifest(archive)
+    assert archive_verification_failure(archive) == "aggregate_score_mismatch"
+
+
+@pytest.mark.parametrize(
+    "aggregate_key,mutated_value,expected_reason",
+    [
+        ("primary_metric", {"observed": 0.123}, "aggregate_score_mismatch"),
+        ("answerable_packed_macro", {"observed": 0.123}, "aggregate_score_mismatch"),
+        ("hard_failures", [{"gate": "fabricated_gate"}], "aggregate_disposition_disagreement"),
+    ],
+)
+def test_score_truth_rejects_hash_valid_fabricated_aggregate_or_gate(
+    tmp_path, monkeypatch, aggregate_key, mutated_value, expected_reason
+):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+
+    def mutate(value):
+        aggregate = {**value["aggregate"]}
+        if isinstance(mutated_value, dict):
+            aggregate[aggregate_key] = {**aggregate[aggregate_key], **mutated_value}
+        else:
+            aggregate[aggregate_key] = mutated_value
+        return {**value, "aggregate": aggregate}
+
+    _rewrite_archive_json(archive, "summary.json", mutate)
+    _refresh_archive_manifest(archive)
+    assert archive_verification_failure(archive) == expected_reason
 
 
 @pytest.mark.parametrize("backend", ["cswp_qdrant", "cswp_local"])

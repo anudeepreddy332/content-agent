@@ -35,9 +35,14 @@ from scripts.phase5e1_qualification_runner import (  # noqa: E402
     DEFAULT_CONTRACT_PATH,
     ArchiveEvidenceConflict,
     archived_deterministic_execution_snapshot,
+    archive_verification_failure,
+    canonical_json_dumps,
     compare_deterministic_executions,
     execute_qualified_backends,
+    load_fixture_snapshot,
+    sha256_file,
     run_development_evaluation,
+    write_qualification_archive,
 )
 
 DEVELOPMENT_FIXTURE = ROOT / "evals/fixtures/retrieval_golden_v2.json"
@@ -97,6 +102,82 @@ def _recompute_development_determinism(report: dict) -> tuple[bool, bool]:
     )
 
 
+def _refresh_manifest(archive: Path) -> None:
+    manifest_path = archive / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["artifacts"] = {
+        path.name: {"sha256": sha256_file(path), "bytes": path.stat().st_size}
+        for path in sorted(archive.iterdir())
+        if path.is_file() and path.name != "manifest.json"
+    }
+    manifest_path.write_text(canonical_json_dumps(manifest) + "\n", encoding="utf-8")
+
+
+def _write_public_verification_archive(report: dict, fixture_path: Path, archive: Path) -> None:
+    """Construct a temporary verifier artifact without entering the release API."""
+
+    snapshot = load_fixture_snapshot(fixture_path)
+    report["contract"] = json.loads(DEFAULT_CONTRACT_PATH.read_text(encoding="utf-8"))
+    report["authorization"] = {
+        "approved_execution_sha": report["provenance"]["observed"]["execution_git_sha"],
+        "approved_fixture_sha256": snapshot.sha256,
+    }
+    report["aggregate"]["disposition"] = report["contract"]["disposition_values"][0]
+    report["disposition"] = report["aggregate"]["disposition"]
+    journal = archive / "execution_journal.jsonl"
+    for execution in report["executions"]:
+        number = execution["execution"]
+        with journal.open("a", encoding="utf-8") as handle:
+            handle.write(canonical_json_dumps({"event": "execution_started", "execution": number}) + "\n")
+            for index, score in enumerate(execution["per_query"]):
+                handle.write(canonical_json_dumps({
+                    "event": "query_completed", "execution": number,
+                    "query_id": score["query_id"],
+                    "raw_backend_outputs": {
+                        backend: execution["raw_backend_outputs"][backend][index]
+                        for backend in ("cswp_local", "cswp_qdrant")
+                    },
+                    "per_query": score,
+                }) + "\n")
+            handle.write(canonical_json_dumps({
+                "event": "execution_completed", "execution": number,
+                "terminal_status": execution["status"],
+            }) + "\n")
+    write_qualification_archive(
+        report, archive, fixture_snapshot=snapshot, already_reserved=True
+    )
+
+
+def _fabricate_both_scores(archive: Path) -> None:
+    backend = json.loads((archive / "backend_per_query.json").read_text())
+    per_query = json.loads((archive / "per_query.json").read_text())
+    executions = json.loads((archive / "executions.json").read_text())
+    for key in ("execution_1", "execution_2"):
+        for index, row in enumerate(backend[key]):
+            for backend_name in ("cswp_local", "cswp_qdrant"):
+                row["backends"][backend_name]["secondary_metrics"]["packed"][
+                    "evidence_recall_full"
+                ] = 0.123
+            per_query[key][index] = row["backends"]["cswp_local"]
+            executions[int(key[-1]) - 1]["backend_per_query"] = backend[key]
+            executions[int(key[-1]) - 1]["per_query"] = per_query[key]
+    (archive / "backend_per_query.json").write_text(canonical_json_dumps(backend) + "\n")
+    (archive / "per_query.json").write_text(canonical_json_dumps(per_query) + "\n")
+    (archive / "executions.json").write_text(canonical_json_dumps(executions) + "\n")
+    determinism = json.loads((archive / "determinism.json").read_text())
+    manifest = json.loads((archive / "manifest.json").read_text())
+    for number, raw_name in ((1, "raw_backend_outputs.json"), (2, "execution_2_raw_backend_outputs.json")):
+        determinism[f"execution_{number}"] = archived_deterministic_execution_snapshot(
+            per_query[f"execution_{number}"], backend[f"execution_{number}"],
+            json.loads((archive / raw_name).read_text()), manifest["attempt_identity"]["query_ids"],
+        )
+    (archive / "determinism.json").write_text(canonical_json_dumps(determinism) + "\n")
+    parity = json.loads((archive / "parity.json").read_text())
+    parity["determinism"] = determinism
+    (archive / "parity.json").write_text(canonical_json_dumps(parity) + "\n")
+    _refresh_manifest(archive)
+
+
 def main() -> int:
     if not _docker_available():
         print("PHASE-5E3D2C-REAL-ARCHIVE-INTEGRATION-NOT-RUN: Docker unavailable")
@@ -127,6 +208,16 @@ def main() -> int:
                 determinism_executor=execute_qualified_backends,
             )
         snapshots_match, qdrant_mutation_detected = _recompute_development_determinism(report)
+        archive = temporary_root / "public-verification-archive"
+        archive.mkdir()
+        _write_public_verification_archive(report, fixture_path, archive)
+        archive_score_truth_passed = archive_verification_failure(archive) is None
+        fabricated = temporary_root / "fabricated-both-runs"
+        shutil.copytree(archive, fabricated)
+        _fabricate_both_scores(fabricated)
+        fabricated_score_rejected = (
+            archive_verification_failure(fabricated) == "score_truth_mismatch"
+        )
 
         complete = (
             version == "1.9.2"
@@ -136,6 +227,8 @@ def main() -> int:
             and report["determinism"]["passed"] is True
             and snapshots_match
             and qdrant_mutation_detected
+            and archive_score_truth_passed
+            and fabricated_score_rejected
         )
         print(
             json.dumps(
@@ -145,6 +238,8 @@ def main() -> int:
                     "decision_scope": report["decision_scope"],
                     "snapshots_match_runtime_evidence": snapshots_match,
                     "qdrant_hybrid_mutation_detected": qdrant_mutation_detected,
+                    "archive_score_truth_passed": archive_score_truth_passed,
+                    "fabricated_both_runs_score_truth_rejected": fabricated_score_rejected,
                     "sealed_holdout_accessed": False,
                 },
                 sort_keys=True,

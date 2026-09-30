@@ -1,0 +1,20 @@
+{
+  "phase": "5E3D5B",
+  "starting_sha": "3fa374075f42e939e1eb1d93211baea6fbdbcbbb",
+  "evidence_scope": "temporary public synthetic fixture and archive only; no sealed holdout or provider",
+  "adversarial_mutation": {
+    "field": "secondary_metrics.packed.evidence_recall_full",
+    "value": 0.123,
+    "executions": [1, 2],
+    "backends": ["cswp_local", "cswp_qdrant"],
+    "structured_scores_refreshed": true,
+    "determinism_snapshots_refreshed": true,
+    "artifact_manifest_digests_refreshed": true
+  },
+  "observed_before_repair": {
+    "execution_one_equals_execution_two": true,
+    "archive_verification_failure": null,
+    "archive_is_successful": true
+  },
+  "conclusion": "The pre-D5B verifier proved two-run agreement but did not recompute score truth from archived raw backend evidence and the oracle labels."
+}
