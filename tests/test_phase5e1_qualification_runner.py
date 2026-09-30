@@ -2141,7 +2141,8 @@ def _trusted_approval(tmp_path, monkeypatch, *, fixture=None, execution_sha=None
     }
     approval_path = tmp_path / "operator-approval.json"
     approval_path.write_text(json.dumps(approval))
-    monkeypatch.setenv(runner.RELEASE_APPROVAL_PATH_ENV, str(approval_path))
+    approval_path.chmod(0o600)
+    monkeypatch.setattr(runner, "_fixed_operator_approval_path", lambda: approval_path)
     return fixture_path, approval_path, approval
 
 
@@ -2228,8 +2229,8 @@ def test_authoritative_api_rejects_injected_executor_and_preflight_flags():
 
 def test_missing_designated_fixture_fails_closed_before_retrieval(tmp_path, monkeypatch):
     calls = _counted_authoritative_executor(monkeypatch)
-    monkeypatch.delenv(runner.RELEASE_APPROVAL_PATH_ENV, raising=False)
-    with pytest.raises(QualificationHarnessError, match="not configured"):
+    monkeypatch.setattr(runner, "_fixed_operator_approval_path", lambda: tmp_path / "missing.json")
+    with pytest.raises(QualificationHarnessError, match="unavailable"):
         runner.run_authoritative_qualification()
     assert calls == []
 
@@ -2292,6 +2293,15 @@ def _externally_trusted_archive(tmp_path, monkeypatch):
     archive = _complete_authoritative_archive(tmp_path, monkeypatch)
     _fixture, _approval_path, _approval = _trusted_approval(tmp_path, monkeypatch)
     approval = runner._approval_claim(runner.load_trusted_release_approval())
+    trusted_identity = json.loads(FIXTURE.read_text())["expected_runtime_identity"]
+    monkeypatch.setattr(
+        runner, "derive_trusted_qualified_runtime_identity", lambda _contract: trusted_identity
+    )
+    monkeypatch.setattr(
+        runner,
+        "validate_real_adapter_preflight",
+        lambda identity: ({}, {"trusted": identity}),
+    )
     _rewrite_archive_json(
         archive, "summary.json", lambda value: {**value, "authorization": approval}
     )
@@ -2311,7 +2321,7 @@ def test_generic_synthetic_archive_and_caller_approval_cannot_issue_release_pass
     tmp_path, monkeypatch
 ):
     archive = _complete_authoritative_archive(tmp_path, monkeypatch)
-    monkeypatch.delenv(runner.RELEASE_APPROVAL_PATH_ENV, raising=False)
+    monkeypatch.setattr(runner, "_fixed_operator_approval_path", lambda: tmp_path / "missing.json")
     assert runner.verify_authoritative_release(archive).startswith("approval_or_oracle_failure:")
     with pytest.raises(TypeError):
         runner.verify_authoritative_release(archive, approval={"caller": "owned"})
@@ -2383,3 +2393,60 @@ def test_authoritative_verifier_rejects_identical_fabricated_scores(tmp_path, mo
     _fabricate_both_run_secondary_packed_recall(archive)
     _refresh_archive_manifest(archive)
     assert runner.verify_authoritative_release(archive) == "score_truth_mismatch"
+
+
+def test_environment_and_home_cannot_redirect_fixed_operator_approval(tmp_path, monkeypatch):
+    _fixture, approval_path, _approval = _trusted_approval(tmp_path, monkeypatch)
+    attacker = tmp_path / "attacker-approval.json"
+    attacker.write_text(approval_path.read_text())
+    attacker.chmod(0o600)
+    monkeypatch.setenv("CONTENT_AGENT_RELEASE_APPROVAL_PATH", str(attacker))
+    monkeypatch.setenv("HOME", str(tmp_path / "attacker-home"))
+    assert runner.load_trusted_release_approval().source_path == approval_path.resolve()
+
+
+def test_fixed_approval_rejects_unsafe_permissions_and_symlink(tmp_path, monkeypatch):
+    _fixture, approval_path, _approval = _trusted_approval(tmp_path, monkeypatch)
+    approval_path.chmod(0o644)
+    with pytest.raises(QualificationHarnessError, match="unsafe permissions"):
+        runner.load_trusted_release_approval()
+    approval_path.chmod(0o600)
+    link = tmp_path / "approval-link.json"
+    link.symlink_to(approval_path)
+    monkeypatch.setattr(runner, "_fixed_operator_approval_path", lambda: link)
+    with pytest.raises(QualificationHarnessError, match="unavailable"):
+        runner.load_trusted_release_approval()
+
+
+def test_fixed_approval_rejects_repository_and_archive_locations(tmp_path, monkeypatch):
+    repo_root = tmp_path / "repository"
+    repo_root.mkdir()
+    repo_root.chmod(0o700)
+    repo_file = repo_root / "approval-test.json"
+    repo_file.write_text("{}")
+    repo_file.chmod(0o600)
+    monkeypatch.setattr(runner, "REPO_ROOT", repo_root)
+    monkeypatch.setattr(runner, "_fixed_operator_approval_path", lambda: repo_file)
+    with pytest.raises(QualificationHarnessError, match="inside repository"):
+        runner.load_trusted_release_approval()
+    archive = tmp_path / "archive"
+    archive.mkdir()
+    archive.chmod(0o700)
+    approval = archive / "approval.json"
+    approval.write_text("{}")
+    approval.chmod(0o600)
+    monkeypatch.setattr(runner, "_fixed_operator_approval_path", lambda: approval)
+    with pytest.raises(QualificationHarnessError, match="inside archive"):
+        runner.load_trusted_release_approval(archive_root=archive)
+
+
+def test_fixture_claimed_identity_cannot_replace_trusted_identity(tmp_path, monkeypatch):
+    archive, _approval = _externally_trusted_archive(tmp_path, monkeypatch)
+    forged_identity = {
+        "cswp_local": {"corpus": "synthetic", "index": "synthetic"},
+        "cswp_qdrant": {"corpus": "synthetic", "index": "synthetic"},
+    }
+    monkeypatch.setattr(
+        runner, "derive_trusted_qualified_runtime_identity", lambda _contract: forged_identity
+    )
+    assert runner.verify_authoritative_release(archive) == "trusted_runtime_identity_mismatch"

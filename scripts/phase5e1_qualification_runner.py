@@ -10,6 +10,8 @@ import hashlib
 import json
 import math
 import os
+import pwd
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -30,7 +32,6 @@ DEFAULT_CONTRACT_PATH = (
     REPO_ROOT / "evals/fixtures/phase5e1_qualification_contract.json"
 )
 DEFAULT_ARCHIVE_ROOT = REPO_ROOT / "reports/phase5/phase5e1a/holdout-run-1"
-RELEASE_APPROVAL_PATH_ENV = "CONTENT_AGENT_RELEASE_APPROVAL_PATH"
 RELEASE_APPROVAL_SCHEMA = "phase5e1_release_approval_v1"
 OPERATOR_FILE_FIXTURE_SOURCE = "operator_file"
 EXPECTED_CONTRACT_SHA256 = (
@@ -144,20 +145,44 @@ def _outside_repository(path: Path) -> bool:
     return False
 
 
+def _operator_home_directory() -> Path:
+    """Derive the active account home from the OS UID record, never ``HOME``."""
+
+    return Path(pwd.getpwuid(os.getuid()).pw_dir)
+
+
+def _fixed_operator_approval_path() -> Path:
+    """The sole production trust-root location for this single-operator system."""
+
+    return _operator_home_directory() / ".content-agent/release/phase5e1/approval.json"
+
+
+def _require_operator_owned_private(path: Path, *, directory: bool) -> None:
+    """Validate owner and restrictive local permissions without following links."""
+
+    info = path.lstat()
+    expected_type = stat.S_ISDIR if directory else stat.S_ISREG
+    if not expected_type(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        raise QualificationHarnessError("trusted operator approval path has unsafe file type")
+    if info.st_uid != os.getuid():
+        raise QualificationHarnessError("trusted operator approval path has wrong owner")
+    if stat.S_IMODE(info.st_mode) & 0o077:
+        raise QualificationHarnessError("trusted operator approval path has unsafe permissions")
+
+
 def load_trusted_release_approval(*, archive_root: Path | None = None) -> TrustedReleaseApproval:
     """Read the sole operator-selected approval record exactly once.
 
-    The environment selects a process configuration, not an invocation input.
-    Approval records inside the checkout or target archive are deliberately
-    rejected: archive contents can make claims, never grant release authority.
+    Its location is fixed by the current UID's OS account record, not caller
+    arguments or environment. Archive contents can make claims, never grant
+    release authority.
     """
 
-    configured = os.environ.get(RELEASE_APPROVAL_PATH_ENV)
-    if not configured:
-        raise QualificationHarnessError("trusted operator approval source is not configured")
-    path = Path(configured)
+    path = _fixed_operator_approval_path()
     if not path.is_absolute() or path.is_symlink() or not path.is_file():
-        raise QualificationHarnessError("trusted operator approval source must be an absolute regular non-symlink file")
+        raise QualificationHarnessError("fixed trusted operator approval source is unavailable")
+    _require_operator_owned_private(path.parent, directory=True)
+    _require_operator_owned_private(path, directory=False)
     resolved = path.resolve(strict=True)
     if not _outside_repository(resolved):
         raise QualificationHarnessError("trusted operator approval source resolves inside repository checkout")
@@ -652,6 +677,38 @@ def expected_runtime_identity(
         if expected[backend]["minilm_model_revision"] != required_revision:
             raise QualificationHarnessError("expected MiniLM revision contradicts frozen contract")
     return expected
+
+
+def derive_trusted_qualified_runtime_identity(
+    contract: dict[str, Any],
+) -> dict[str, dict[str, str]]:
+    """Derive qualified backend identity from frozen repository/runtime controls.
+
+    This intentionally never reads fixture, archive, provenance, or caller
+    metadata.  It is shared by the pre-query and final release preflights.
+    """
+
+    from agent.cswp.loader import load_production_index
+    from agent.qualified_rag import _runtime_identity
+    from agent.shadow_qdrant.index import load_index_manifest
+
+    _representation, units, _by_source = load_production_index()
+    if len(units) != QUALIFIED_UNIT_COUNT:
+        raise QualificationHarnessError(
+            f"qualified corpus must contain exactly {QUALIFIED_UNIT_COUNT} units"
+        )
+    local = _runtime_identity(units)
+    qdrant_manifest = load_index_manifest()
+    expected = {
+        "cswp_local": local,
+        "cswp_qdrant": {
+            **local,
+            "collection_name": qdrant_manifest["collection_name"],
+            "live_collection_fingerprint": local["index_fingerprint"],
+        },
+    }
+    # Retain one validation implementation for contract/model/identity fields.
+    return expected_runtime_identity({"expected_runtime_identity": expected}, contract)
 
 
 def validate_real_adapter_preflight(
@@ -2162,11 +2219,16 @@ def _verify_authoritative_release_with_approval(
     ):
         return "archive_approval_identity_mismatch"
     try:
-        trusted_identity = expected_runtime_identity(snapshot.fixture, contract)
+        trusted_identity = derive_trusted_qualified_runtime_identity(contract)
+        _canonical_source_map, final_preflight = validate_real_adapter_preflight(
+            trusted_identity
+        )
     except QualificationHarnessError:
         return "trusted_runtime_identity_mismatch"
     if observed.get("expected_runtime_identity") != trusted_identity:
         return "trusted_runtime_identity_mismatch"
+    if not final_preflight:
+        return "final_preflight_failure"
     evidence_failure = verify_archive_evidence_failure(root, verified_fixture=snapshot)
     if evidence_failure is not None:
         return evidence_failure
@@ -2211,7 +2273,7 @@ def run_authoritative_qualification(
     contract = load_contract(DEFAULT_CONTRACT_PATH)
     if contract_sha256(contract) != approval.frozen_contract_identity:
         raise QualificationHarnessError("frozen contract identity disagrees with trusted approval")
-    expected_identity = expected_runtime_identity(snapshot.fixture, contract)
+    expected_identity = derive_trusted_qualified_runtime_identity(contract)
     # This must finish before the archive is reserved and before query one.
     canonical_source_map, preflight = validate_real_adapter_preflight(expected_identity)
     reserve_archive(resolved_archive)

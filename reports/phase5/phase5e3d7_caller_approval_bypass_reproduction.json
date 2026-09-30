@@ -1,0 +1,13 @@
+{
+  "phase": "5E3D7",
+  "starting_sha": "a86b4998f5f447e9d6c3adfc9b6842ba875cd6e1",
+  "scope": "public synthetic fixture and caller-created archive only",
+  "pre_repair_attack": {
+    "caller_created_approval": true,
+    "caller_created_fixture": true,
+    "content_agent_release_approval_path_selected_approval": true,
+    "truthful_synthetic_archive_returned": "PHASE-5E1A-HOLDOUT-PASS"
+  },
+  "root_cause": "the production authoritative verifier treated an environment-selected approval record as its trust source",
+  "post_repair_expected": "the environment variable is ignored and only the UID-derived fixed operator approval path is eligible"
+}
