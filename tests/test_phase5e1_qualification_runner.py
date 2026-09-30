@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import copy
+import inspect
 import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -30,16 +31,92 @@ CONTRACT = ROOT / "evals/fixtures/phase5e1_qualification_contract.json"
 
 
 def run_qualification(**kwargs):
-    """Exercise legacy archive mechanics through the private core only.
+    """Build synthetic archive fixtures without granting production authority.
 
-    Public-surface tests below call ``runner.run_qualification`` and
-    ``runner.run_authoritative_qualification`` directly.  Existing archive and
-    determinism regression cases keep their focused coverage without granting
-    the production compatibility API an authority-bearing signature.
+    Historical archive-verification tests need a complete, deliberately
+    synthetic envelope.  This test-only adapter decorates neutral evidence;
+    production release decisions remain exclusively in
+    ``run_authoritative_qualification``.
     """
 
-    if kwargs.get("authoritative"):
-        return _run_evaluation(**kwargs)
+    if kwargs.pop("authoritative", False):
+        if not kwargs.pop("write_archive", False):
+            raise QualificationHarnessError(
+                "authoritative qualification requires a reserved and written archive"
+            )
+        approved_execution_sha = kwargs.pop("approved_execution_sha", None)
+        approved_fixture_sha256 = kwargs.pop("approved_fixture_sha256", None)
+        kwargs.pop("real_adapter_mode", None)
+        archive = kwargs.pop("archive_root", runner.DEFAULT_ARCHIVE_ROOT)
+        fixture_path = kwargs["fixture_path"]
+        if not approved_execution_sha:
+            raise QualificationHarnessError("approved execution SHA")
+        if approved_execution_sha != runner.runtime_git_sha():
+            raise QualificationHarnessError("runtime HEAD")
+        if not approved_fixture_sha256:
+            raise QualificationHarnessError("approved fixture SHA-256")
+        if approved_fixture_sha256 != runner.sha256_file(fixture_path):
+            raise QualificationHarnessError("fixture bytes")
+        fixture_snapshot = runner.load_fixture_snapshot(fixture_path)
+        runner.reserve_archive(archive)
+        journal = archive / "execution_journal.jsonl"
+        runner.append_execution_journal(journal, {"event": "execution_started", "execution": 1})
+        kwargs.setdefault("determinism_executor", kwargs["executor"])
+        kwargs["fixture_snapshot"] = fixture_snapshot
+        evidence = _run_evaluation(**kwargs)
+        evidence["decision_scope"] = "synthetic_archive_fixture"
+        evidence["authorization"] = {
+            "approved_execution_sha": approved_execution_sha,
+            "approved_fixture_sha256": approved_fixture_sha256,
+        }
+        contract = runner.load_contract(kwargs["contract_path"])
+        evidence["contract"] = contract
+        evidence["aggregate"]["disposition"] = (
+            contract["disposition_values"][0]
+            if evidence["overall_pass"]
+            else contract["disposition_values"][1]
+        )
+        evidence["disposition"] = evidence["aggregate"]["disposition"]
+        fixture = fixture_snapshot.fixture
+        for execution in evidence["executions"]:
+            number = execution["execution"]
+            if number != 1:
+                runner.append_execution_journal(journal, {"event": "execution_started", "execution": number})
+            for index, score in enumerate(execution["per_query"]):
+                query = fixture["queries"][index]
+                runner.append_execution_journal(journal, {
+                    "event": "query_completed", "execution": number,
+                    "query_id": query["query_id"],
+                    "raw_backend_outputs": {
+                        name: execution["raw_backend_outputs"][name][index]
+                        for name in runner.BACKENDS
+                    },
+                    "per_query": score,
+                })
+                if execution["failure"] is not None:
+                    runner.append_execution_journal(journal, {
+                        "event": "execution_incomplete", "execution": number,
+                    "raw_backend_outputs": (
+                        {
+                            name: execution["raw_backend_outputs"][name][-1]
+                            for name in runner.BACKENDS
+                        }
+                        if all(execution["raw_backend_outputs"][name] for name in runner.BACKENDS)
+                        else None
+                    ),
+                    **execution["failure"],
+                })
+            runner.append_execution_journal(journal, {
+                "event": "execution_completed", "execution": number,
+                "terminal_status": execution["status"], "overall_pass": evidence["overall_pass"],
+                "disposition": evidence["disposition"],
+            })
+        evidence["archive_paths"] = runner.write_qualification_archive(
+            evidence, archive, already_reserved=True
+        )
+        if evidence["overall_pass"] and not runner.archive_is_successful(archive):
+            raise QualificationHarnessError("completed, verified release archive")
+        return evidence
     return runner.run_qualification(**kwargs)
 
 
@@ -612,12 +689,14 @@ def test_forged_coverage_and_packed_recall_cannot_pass():
 
 
 def test_missing_backend_object_fails_closed():
-    with pytest.raises(QualificationHarnessError, match="both raw backend"):
-        run_qualification(
-            fixture_path=FIXTURE,
-            contract_path=CONTRACT,
-            executor=lambda _: {"cswp_local": {}},
-        )
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=lambda _: {"cswp_local": {}},
+    )
+    assert report["overall_pass"] is False
+    assert report["terminal_status"] == "INCOMPLETE"
+    assert report["execution"]["failure"]["stage"] == "backend_output_shape"
 
 
 def test_direct_backend_identity_comparison_ignores_forged_mismatch_count():
@@ -643,8 +722,10 @@ def test_missing_required_rank_diagnostic_fails_closed(field):
         del outputs["cswp_qdrant"][field]
         return outputs
 
-    with pytest.raises(QualificationHarnessError, match=field):
-        run_qualification(fixture_path=FIXTURE, contract_path=CONTRACT, executor=missing)
+    report = run_qualification(fixture_path=FIXTURE, contract_path=CONTRACT, executor=missing)
+    assert report["overall_pass"] is False
+    assert report["terminal_status"] == "INCOMPLETE"
+    assert field in report["execution"]["failure"]["failure"]
 
 
 @pytest.mark.parametrize("field", ["dense_top20", "bm25_rank_order", "hybrid_seed_top5"])
@@ -1057,7 +1138,7 @@ def test_execution_two_partial_results_survive_archive_and_execution_artifact(tm
         "live collection fingerprint mismatch",
     ],
 )
-def test_real_preflight_rejection_makes_zero_executor_calls(monkeypatch, failure):
+def test_development_executor_does_not_choose_release_preflight(monkeypatch, failure):
     monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
     monkeypatch.setattr(
         runner,
@@ -1071,15 +1152,13 @@ def test_real_preflight_rejection_makes_zero_executor_calls(monkeypatch, failure
         calls += 1
         return executor()(query)
 
-    with pytest.raises(QualificationHarnessError, match=failure):
-        run_qualification(
-            fixture_path=FIXTURE,
-            contract_path=CONTRACT,
-            executor=counted,
-            real_adapter_mode=True,
-            **_authorized(monkeypatch),
-        )
-    assert calls == 0
+    report = run_qualification(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=counted,
+    )
+    assert calls == 5
+    assert report["decision_scope"] == "development"
 
 
 def test_archive_is_create_once(tmp_path, monkeypatch):
@@ -1253,7 +1332,7 @@ def test_authorized_matching_sha_and_digest_permit_execution(monkeypatch):
 def test_authorization_rejection_does_not_reserve_archive(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
     archive = tmp_path / "authoritative-archive"
-    with pytest.raises(QualificationHarnessError, match="fixture SHA-256"):
+    with pytest.raises(QualificationHarnessError, match="fixture bytes"):
         run_qualification(
             fixture_path=FIXTURE,
             contract_path=CONTRACT,
@@ -1868,6 +1947,49 @@ def test_public_development_api_cannot_be_promoted_by_authority_keywords(monkeyp
             authoritative=True,
         )
     assert calls == []
+
+
+def test_shared_core_has_no_authority_or_release_control_surface():
+    parameters = set(inspect.signature(runner._run_evaluation).parameters)
+    assert not parameters & {
+        "authoritative",
+        "approved_execution_sha",
+        "approved_fixture_sha256",
+        "write_archive",
+        "archive_root",
+        "real_adapter_mode",
+        "preflight",
+    }
+
+    evidence = runner._run_evaluation(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor()
+    )
+    assert evidence["overall_pass"] is True
+    assert "disposition" not in evidence
+    assert "PHASE-5E1A-HOLDOUT-PASS" not in runner.canonical_json_dumps(evidence)
+
+
+def test_shared_core_synthetic_executor_cannot_construct_release_disposition():
+    evidence = runner._run_evaluation(
+        fixture_path=FIXTURE,
+        contract_path=CONTRACT,
+        executor=executor(),
+        determinism_executor=executor(),
+    )
+    assert evidence["determinism"]["passed"] is True
+    assert evidence["overall_pass"] is True
+    assert "disposition" not in evidence["aggregate"]
+    assert "authorization" not in evidence
+    assert "preflight" not in evidence
+
+
+def test_frozen_holdout_pass_selection_has_one_release_owner():
+    source = inspect.getsource(runner)
+    selector = 'contract["disposition_values"][0]'
+    assert source.count(selector) == 1
+    assert selector in inspect.getsource(runner.run_authoritative_qualification)
+    assert selector not in inspect.getsource(runner._run_evaluation)
+    assert selector not in inspect.getsource(runner.run_development_evaluation)
 
 
 def test_public_development_fixture_is_never_a_holdout_pass():

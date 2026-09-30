@@ -1,0 +1,25 @@
+{
+  "phase": "5E3D5A",
+  "purpose": "Required reproduction of the importable-core authoritative disposition bypass before refactoring",
+  "starting_sha": "b15d92554fa93813fed9f941fc9a7e218a208ea6",
+  "fixture": "evals/fixtures/phase5e1_qualification_synthetic_oracle.json",
+  "fixture_sha256": "d22e366ddc32579d218011f79333d4687374396f3033e8c54e1f2fac154676e6",
+  "invocation": {
+    "imported_callable": "scripts.phase5e1_qualification_runner._run_evaluation",
+    "caller_authoritative": true,
+    "caller_execution_sha": "b15d92554fa93813fed9f941fc9a7e218a208ea6",
+    "caller_fixture_digest_matches": true,
+    "injected_executor": "synthetic public-development executor",
+    "caller_real_adapter_mode": false,
+    "archive": "fresh temporary archive",
+    "paid_provider_calls": 0,
+    "sealed_holdout_accessed": false
+  },
+  "observed": {
+    "preflight": null,
+    "disposition": "PHASE-5E1A-HOLDOUT-PASS",
+    "overall_pass": true,
+    "archive_is_successful": true
+  },
+  "conclusion": "At the required starting SHA, a direct import of the generic core could bypass real preflight and create an accepted authoritative release archive from public synthetic evidence."
+}

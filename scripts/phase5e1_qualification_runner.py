@@ -58,6 +58,7 @@ SECONDARY_K_VALUES = (1, 3, 5)
 MRR_DEPTH = 10
 EVIDENCE_BEARING = frozenset(("ANSWERABLE", "PARTIAL"))
 DEVELOPMENT_PASS_DISPOSITION = "PHASE-5E1A-DEVELOPMENT-EVALUATION-PASS"
+DEVELOPMENT_FAILURE_DISPOSITION = "PHASE-5E1A-DEVELOPMENT-EVALUATION-FAIL"
 REQUIRED_RUNTIME_IDENTITY = {
     "cswp_local": (
         "source_corpus_fingerprint",
@@ -1069,15 +1070,19 @@ def compare_deterministic_executions(
     return mismatches
 
 
-def disposition(
+def evaluate_evidence_gates(
     queries: list[dict[str, Any]],
     scores: list[dict[str, Any]],
     contract: dict[str, Any],
     parity: list[dict[str, Any]],
     prov: dict[str, Any],
-    *,
-    authoritative: bool = False,
 ) -> dict[str, Any]:
+    """Evaluate neutral retrieval evidence against the frozen metric gates.
+
+    This shared routine deliberately returns no release disposition.  A
+    successful evidence assessment is not a holdout qualification: only the
+    public authoritative entry point may turn it into a release decision.
+    """
     failures = []
     if parity:
         failures.append({"gate": "backend_identity_mismatch", "detail": parity})
@@ -1143,15 +1148,6 @@ def disposition(
         },
         "hard_failures": failures,
         "overall_pass": not failures,
-        "disposition": (
-            contract["disposition_values"][0]
-            if authoritative and not failures
-            else (
-                DEVELOPMENT_PASS_DISPOSITION
-                if not failures
-                else contract["disposition_values"][1]
-            )
-        ),
     }
 
 
@@ -1635,21 +1631,19 @@ def _run_evaluation(
     *,
     fixture_path: Path,
     contract_path: Path | None = None,
-    archive_root: Path | None = None,
-    write_archive: bool = False,
     executor: Callable[[str], dict[str, dict[str, Any]]] = execute_qualified_backends,
     determinism_executor: Callable[[str], dict[str, dict[str, Any]]] | None = None,
-    authoritative: bool = False,
-    approved_execution_sha: str | None = None,
-    approved_fixture_sha256: str | None = None,
-    real_adapter_mode: bool | None = None,
-    _canonical_source_map: dict[str, dict[str, Any]] | None = None,
-    _preflight: dict[str, dict[str, Any]] | None = None,
-    _fixture_snapshot: FixtureSnapshot | None = None,
-    _journal: Path | None = None,
+    canonical_source_map: dict[str, dict[str, Any]] | None = None,
+    fixture_snapshot: FixtureSnapshot | None = None,
     _execution_number: int = 1,
-    _archive_reserved: bool = False,
 ) -> dict[str, Any]:
+    """Run reusable retrieval evaluation mechanics and return neutral evidence.
+
+    No argument can select release authority, a release archive, preflight
+    policy, or a HOLDOUT disposition.  Callers may use injected executors for
+    development-only evaluation, but those results are evidence, not release
+    decisions.
+    """
     contract = load_contract(contract_path)
     resolved_contract_path = contract_path or DEFAULT_CONTRACT_PATH
     contract_identity = {
@@ -1657,47 +1651,12 @@ def _run_evaluation(
         "contract_file_sha256": sha256_file(resolved_contract_path),
         "historical_embedded_digest": contract.get("contract_sha256"),
     }
-    if write_archive and not authoritative:
-        raise QualificationHarnessError("archive qualification requires authoritative authorization")
-    if authoritative:
-        if not approved_execution_sha:
-            raise QualificationHarnessError("authoritative qualification requires approved execution SHA")
-        if approved_execution_sha != runtime_git_sha():
-            raise QualificationHarnessError("approved execution SHA does not match runtime HEAD")
-        if not approved_fixture_sha256:
-            raise QualificationHarnessError("authoritative qualification requires approved fixture SHA-256")
-    snapshot = _fixture_snapshot or load_fixture_snapshot(fixture_path)
+    snapshot = fixture_snapshot or load_fixture_snapshot(fixture_path)
     fixture = snapshot.fixture
-    if authoritative and approved_fixture_sha256 != snapshot.sha256:
-        raise QualificationHarnessError("approved fixture SHA-256 does not match fixture bytes")
-    if authoritative:
-        if not write_archive:
-            raise QualificationHarnessError(
-                "authoritative qualification requires a reserved and written archive before retrieval"
-            )
-        if _execution_number > 1 and not _archive_reserved:
-            raise QualificationHarnessError(
-                "authoritative repeat requires the already-reserved release archive"
-            )
     validate_fixture(fixture)
     expected_identity = expected_runtime_identity(fixture, contract)
-    if real_adapter_mode is None:
-        real_adapter_mode = executor is execute_qualified_backends
-    canonical_source_map = _canonical_source_map
-    preflight = _preflight
-    if real_adapter_mode:
-        if authoritative and canonical_source_map is None:
-            canonical_source_map, preflight = validate_real_adapter_preflight(
-                expected_identity
-            )
-        elif not authoritative and canonical_source_map is None:
-            canonical_source_map = qualified_canonical_source_map()
-    resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
-    if authoritative and _execution_number == 1:
-        reserve_archive(resolved_archive)
-        _journal = resolved_archive / "execution_journal.jsonl"
-    if _journal is not None:
-        append_execution_journal(_journal, {"event": "execution_started", "execution": _execution_number})
+    if executor is execute_qualified_backends and canonical_source_map is None:
+        canonical_source_map = qualified_canonical_source_map()
     raw = {name: [] for name in BACKENDS}
     scores = []
     backend_per_query: list[dict[str, Any]] = []
@@ -1768,32 +1727,17 @@ def _run_evaluation(
                     },
                 }
             )
-            if _journal is not None:
-                stage = "journal_persistence"
-                append_execution_journal(_journal, {
-                    "event": "query_completed", "execution": _execution_number,
-                    "query_id": query["query_id"],
-                    "raw_backend_outputs": {name: canonical[name]["raw"] for name in BACKENDS},
-                    "per_query": score,
-                })
         except Exception as exc:
             execution_failure = {
                 "query_id": query["query_id"],
                 "stage": stage,
                 "failure": sanitized_failure(exc),
             }
-            if _journal is not None:
-                append_execution_journal(_journal, {
-                    "event": "execution_incomplete", "execution": _execution_number,
-                    "raw_backend_outputs": outputs if isinstance(outputs, dict) else None,
-                    **execution_failure,
-                })
-                # The reserved authoritative attempt must be finalized as an
-                # explicit INCOMPLETE record rather than losing earlier durable
-                # observations.  Non-journaled developer calls retain the
-                # previous exception behavior.
-                break
-            raise
+            # Evidence collection is neutral even when an execution is
+            # incomplete.  The caller receives the partial raw evidence and a
+            # failed assessment; only the authoritative owner decides how to
+            # persist or dispose of that result.
+            break
     prov = provenance(
         fixture,
         snapshot.sha256,
@@ -1802,15 +1746,12 @@ def _run_evaluation(
         frozen_runtime_identity,
         runtime_failures,
     )
-    aggregate = disposition(
-        fixture["queries"], scores, contract, parity, prov, authoritative=authoritative
-    )
+    aggregate = evaluate_evidence_gates(fixture["queries"], scores, contract, parity, prov)
     if execution_failure is not None:
         aggregate["hard_failures"].append(
             {"gate": "execution_incomplete", "detail": execution_failure}
         )
     payload = {
-        "contract": contract,
         "contract_identity": contract_identity,
         "fixture_sha256": snapshot.sha256,
         "raw_backend_outputs": raw,
@@ -1820,16 +1761,8 @@ def _run_evaluation(
         "backend_parity": {"passed": not parity, "mismatches": parity},
         "provenance": prov,
         "aggregate": aggregate,
-        "decision_scope": "authoritative_release" if authoritative else "development",
         **aggregate,
     }
-    if preflight is not None:
-        payload["preflight"] = preflight
-    if authoritative:
-        payload["authorization"] = {
-            "approved_execution_sha": approved_execution_sha,
-            "approved_fixture_sha256": approved_fixture_sha256,
-        }
     payload["execution"] = {
         "execution": _execution_number,
         "status": "INCOMPLETE" if execution_failure else "COMPLETE",
@@ -1841,9 +1774,6 @@ def _run_evaluation(
         "provenance": prov,
     }
     payload["executions"] = [payload["execution"]]
-    # Authoritative qualification always performs two complete executions.
-    if authoritative and determinism_executor is None:
-        determinism_executor = executor
     canonical_payload = {
         "backend_evidence": deterministic_execution_snapshot(determinism_rows),
     }
@@ -1851,26 +1781,12 @@ def _run_evaluation(
         "execution_1": canonical_payload["backend_evidence"],
         "run_a_fingerprint": sha256_json(canonical_payload),
     }
-    if _journal is not None and _execution_number == 1 and execution_failure is None:
-        append_execution_journal(
-            _journal,
-            {"event": "execution_queries_completed", "execution": _execution_number},
-        )
     if _execution_number == 1 and execution_failure is None and determinism_executor is not None:
         try:
             repeat = _run_evaluation(
                 fixture_path=fixture_path, contract_path=contract_path,
-                executor=determinism_executor, _fixture_snapshot=snapshot,
-                _journal=_journal, _execution_number=2,
-                authoritative=authoritative,
-                approved_execution_sha=approved_execution_sha,
-                approved_fixture_sha256=approved_fixture_sha256,
-                real_adapter_mode=real_adapter_mode,
-                _canonical_source_map=canonical_source_map,
-                _preflight=preflight,
-                write_archive=write_archive,
-                archive_root=resolved_archive,
-                _archive_reserved=authoritative,
+                executor=determinism_executor, fixture_snapshot=snapshot,
+                _execution_number=2, canonical_source_map=canonical_source_map,
             )
             payload["execution_2"] = repeat
             payload["executions"].append(repeat["execution"])
@@ -1910,42 +1826,13 @@ def _run_evaluation(
         payload["determinism"].update(
             {"passed": False, "status": "INCOMPLETE", "failure": execution_failure}
         )
-    if authoritative and not payload["determinism"].get("passed"):
-        payload["aggregate"]["hard_failures"].append(
-            {"gate": "second_execution_missing", "detail": payload["determinism"]}
-        )
     payload["aggregate"]["overall_pass"] = not payload["aggregate"]["hard_failures"]
-    if not payload["aggregate"]["overall_pass"]:
-        payload["aggregate"]["disposition"] = contract["disposition_values"][1]
     payload["overall_pass"] = payload["aggregate"]["overall_pass"]
-    payload["disposition"] = payload["aggregate"]["disposition"]
     payload["terminal_status"] = (
         "INCOMPLETE"
         if execution_failure is not None or payload["determinism"].get("status") == "INCOMPLETE"
         else "COMPLETE"
     )
-    if _journal is not None:
-        append_execution_journal(_journal, {
-            "event": "execution_completed", "execution": _execution_number,
-            "terminal_status": payload["terminal_status"],
-            "overall_pass": payload["overall_pass"], "disposition": payload["disposition"],
-        })
-    if authoritative and _execution_number == 1:
-        try:
-            payload["archive_paths"] = write_qualification_archive(
-                payload, resolved_archive, already_reserved=True
-            )
-            if payload["overall_pass"] and not archive_is_successful(resolved_archive):
-                raise QualificationHarnessError(
-                    "authoritative PASS requires a completed, verified release archive"
-                )
-        except Exception as exc:
-            append_execution_journal(_journal, {
-                "event": "archive_finalization_incomplete",
-                "execution": _execution_number,
-                "failure": sanitized_failure(exc),
-            })
-            raise
     return payload
 
 
@@ -1963,14 +1850,20 @@ def run_development_evaluation(
     or write a release archive.
     """
 
-    return _run_evaluation(
+    evidence = _run_evaluation(
         fixture_path=fixture_path,
         contract_path=contract_path,
         executor=executor,
         determinism_executor=determinism_executor,
-        authoritative=False,
-        write_archive=False,
     )
+    evidence["decision_scope"] = "development"
+    evidence["aggregate"]["disposition"] = (
+        DEVELOPMENT_PASS_DISPOSITION
+        if evidence["overall_pass"]
+        else DEVELOPMENT_FAILURE_DISPOSITION
+    )
+    evidence["disposition"] = evidence["aggregate"]["disposition"]
+    return evidence
 
 
 def run_qualification(
@@ -2057,20 +1950,75 @@ def run_authoritative_qualification(
     expected_identity = expected_runtime_identity(snapshot.fixture, contract)
     # This must finish before the archive is reserved and before query one.
     canonical_source_map, preflight = validate_real_adapter_preflight(expected_identity)
-    return _run_evaluation(
+    resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
+    reserve_archive(resolved_archive)
+    evidence = _run_evaluation(
         fixture_path=AUTHORITATIVE_HOLDOUT_PATH,
         contract_path=DEFAULT_CONTRACT_PATH,
-        archive_root=archive_root,
-        write_archive=True,
         executor=execute_qualified_backends,
-        authoritative=True,
-        approved_execution_sha=approved_execution_sha,
-        approved_fixture_sha256=AUTHORITATIVE_HOLDOUT_SHA256,
-        real_adapter_mode=True,
-        _fixture_snapshot=snapshot,
-        _canonical_source_map=canonical_source_map,
-        _preflight=preflight,
+        determinism_executor=execute_qualified_backends,
+        fixture_snapshot=snapshot,
+        canonical_source_map=canonical_source_map,
     )
+    evidence["decision_scope"] = "authoritative_release"
+    evidence["preflight"] = preflight
+    evidence["authorization"] = {
+        "approved_execution_sha": approved_execution_sha,
+        "approved_fixture_sha256": AUTHORITATIVE_HOLDOUT_SHA256,
+    }
+    evidence["contract"] = contract
+    evidence["aggregate"]["disposition"] = (
+        contract["disposition_values"][0]
+        if evidence["overall_pass"]
+        else contract["disposition_values"][1]
+    )
+    evidence["disposition"] = evidence["aggregate"]["disposition"]
+
+    journal = resolved_archive / "execution_journal.jsonl"
+    for execution in evidence["executions"]:
+        number = execution["execution"]
+        append_execution_journal(journal, {"event": "execution_started", "execution": number})
+        for index, score in enumerate(execution["per_query"]):
+            query = snapshot.fixture["queries"][index]
+            append_execution_journal(journal, {
+                "event": "query_completed",
+                "execution": number,
+                "query_id": query["query_id"],
+                "raw_backend_outputs": {
+                    name: execution["raw_backend_outputs"][name][index]
+                    for name in BACKENDS
+                },
+                "per_query": score,
+            })
+        if execution["failure"] is not None:
+            append_execution_journal(journal, {
+                "event": "execution_incomplete",
+                "execution": number,
+                "raw_backend_outputs": (
+                    {
+                        name: execution["raw_backend_outputs"][name][-1]
+                        for name in BACKENDS
+                    }
+                    if all(execution["raw_backend_outputs"][name] for name in BACKENDS)
+                    else None
+                ),
+                **execution["failure"],
+            })
+        append_execution_journal(journal, {
+            "event": "execution_completed",
+            "execution": number,
+            "terminal_status": execution["status"],
+            "overall_pass": evidence["overall_pass"],
+            "disposition": evidence["disposition"],
+        })
+    evidence["archive_paths"] = write_qualification_archive(
+        evidence, resolved_archive, already_reserved=True
+    )
+    if evidence["overall_pass"] and not archive_is_successful(resolved_archive):
+        raise QualificationHarnessError(
+            "authoritative PASS requires a completed, verified release archive"
+        )
+    return evidence
 
 
 def main(argv: list[str] | None = None) -> int:
