@@ -716,8 +716,27 @@ def validate_real_adapter_preflight(
 ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
     """Validate the qualified corpus and live serving target before query one."""
 
-    from agent.cswp.loader import load_production_index
     from agent.kb_backend.qdrant_serving import validate_startup
+    return _validate_qualified_preflight(expected, validate_startup)
+
+
+def validate_fresh_release_qdrant_preflight(
+    expected: dict[str, dict[str, str]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Validate final release state through a new Qdrant network interaction."""
+
+    from agent.kb_backend.qdrant_serving import validate_fresh_release_preflight
+
+    return _validate_qualified_preflight(expected, validate_fresh_release_preflight)
+
+
+def _validate_qualified_preflight(
+    expected: dict[str, dict[str, str]],
+    qdrant_validator: Callable[[], dict[str, Any]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Shared qualified identity checks for cached-startup and fresh-release modes."""
+
+    from agent.cswp.loader import load_production_index
     from agent.qualified_rag import _runtime_identity
 
     canonical_source_map = qualified_canonical_source_map()
@@ -728,7 +747,7 @@ def validate_real_adapter_preflight(
             "qualified local corpus/model/index identity disagrees with frozen expectation"
         )
 
-    qdrant = validate_startup()
+    qdrant = qdrant_validator()
     if qdrant.get("point_count") != QUALIFIED_UNIT_COUNT:
         raise QualificationHarnessError(
             f"live Qdrant serving collection must contain exactly {QUALIFIED_UNIT_COUNT} units"
@@ -2220,15 +2239,18 @@ def _verify_authoritative_release_with_approval(
         return "archive_approval_identity_mismatch"
     try:
         trusted_identity = derive_trusted_qualified_runtime_identity(contract)
-        _canonical_source_map, final_preflight = validate_real_adapter_preflight(
-            trusted_identity
-        )
     except QualificationHarnessError:
         return "trusted_runtime_identity_mismatch"
     if observed.get("expected_runtime_identity") != trusted_identity:
         return "trusted_runtime_identity_mismatch"
+    try:
+        _canonical_source_map, final_preflight = validate_fresh_release_qdrant_preflight(
+            trusted_identity
+        )
+    except QualificationHarnessError:
+        return "final_live_preflight_failure"
     if not final_preflight:
-        return "final_preflight_failure"
+        return "final_live_preflight_failure"
     evidence_failure = verify_archive_evidence_failure(root, verified_fixture=snapshot)
     if evidence_failure is not None:
         return evidence_failure

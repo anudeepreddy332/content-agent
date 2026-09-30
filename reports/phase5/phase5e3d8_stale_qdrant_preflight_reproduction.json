@@ -1,0 +1,12 @@
+{
+  "phase": "5E3D8",
+  "starting_sha": "b304c246fc2f72f44877a90683ff70ff4cdea494",
+  "scope": "public development Q01/Q02 evidence and test-only approval seam",
+  "pre_repair_bypass": {
+    "ordinary_validate_startup_cache": "warm",
+    "qdrant_network_after_stop": "fails",
+    "final_verifier_pre_repair": "PHASE-5E1A-HOLDOUT-PASS",
+    "cause": "final verifier invoked cache-capable validate_startup through validate_real_adapter_preflight"
+  },
+  "post_repair_expected": "final verifier invokes an explicit uncached Qdrant network validation and fails closed"
+}

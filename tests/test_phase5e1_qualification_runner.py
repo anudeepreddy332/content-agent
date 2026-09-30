@@ -2302,6 +2302,11 @@ def _externally_trusted_archive(tmp_path, monkeypatch):
         "validate_real_adapter_preflight",
         lambda identity: ({}, {"trusted": identity}),
     )
+    monkeypatch.setattr(
+        runner,
+        "validate_fresh_release_qdrant_preflight",
+        lambda identity: ({}, {"trusted": identity}),
+    )
     _rewrite_archive_json(
         archive, "summary.json", lambda value: {**value, "authorization": approval}
     )
@@ -2450,3 +2455,25 @@ def test_fixture_claimed_identity_cannot_replace_trusted_identity(tmp_path, monk
         runner, "derive_trusted_qualified_runtime_identity", lambda _contract: forged_identity
     )
     assert runner.verify_authoritative_release(archive) == "trusted_runtime_identity_mismatch"
+
+
+@pytest.mark.parametrize("event", ["outage", "alias_change", "fingerprint_change"])
+def test_final_release_preflight_rejects_live_qdrant_change_after_evidence(
+    tmp_path, monkeypatch, event
+):
+    archive, _approval = _externally_trusted_archive(tmp_path, monkeypatch)
+    # The ordinary startup path may still have a truthful cached state.  Final
+    # release verification must invoke this separate fresh network path.
+    monkeypatch.setattr(
+        runner,
+        "validate_fresh_release_qdrant_preflight",
+        lambda _identity: (_ for _ in ()).throw(
+            QualificationHarnessError(f"fresh Qdrant {event}")
+        ),
+    )
+    assert runner.verify_authoritative_release(archive) == "final_live_preflight_failure"
+
+
+def test_final_release_preflight_uses_fresh_healthy_qdrant_path(tmp_path, monkeypatch):
+    archive, _approval = _externally_trusted_archive(tmp_path, monkeypatch)
+    assert runner.verify_authoritative_release(archive) == "PHASE-5E1A-HOLDOUT-PASS"

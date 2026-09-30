@@ -14,9 +14,12 @@ from agent.cswp.offline import install_offline_guard
 from agent.kb_backend import retrieve_kb, warmup
 from agent.kb_backend.qdrant_serving import (
     BACKEND_NAME as QDRANT_BACKEND,
+    QdrantServingError,
     clear_serving_cache,
     create_serving_alias,
     payload_to_unit,
+    validate_fresh_release_preflight,
+    validate_startup,
 )
 from agent.kb_backend.selector import KBBackendConfigError, resolve_kb_backend
 from agent.qualified_rag import retrieve_qualified_kb
@@ -99,6 +102,18 @@ def test_qdrant_backend_requires_serving_alias(memory_client, minilm_ready, tmp_
     assert result["collection_name"] == manifest["collection_name"]
     assert result["serving_alias"] == SERVING_ALIAS
     assert PRODUCTION_COLLECTION not in result["collection_name"]
+
+
+def test_fresh_release_preflight_never_uses_cached_serving_state(built_index, monkeypatch):
+    """A final release check must rebuild state even when startup cache is warm."""
+
+    validate_startup()  # Populate ordinary retrieval/startup cache first.
+    monkeypatch.setattr(
+        "agent.kb_backend.qdrant_serving._build_live_serving_state",
+        lambda: (_ for _ in ()).throw(QdrantServingError("Qdrant unreachable")),
+    )
+    with pytest.raises(QdrantServingError, match="unreachable"):
+        validate_fresh_release_preflight()
 
 
 def test_payload_hydration_without_local_units_jsonl(built_index, monkeypatch):

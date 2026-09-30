@@ -425,9 +425,8 @@ def _hybrid_top5(
     }
 
 
-@lru_cache(maxsize=1)
-def _serving_state(client_key: str):
-    del client_key
+def _build_live_serving_state() -> dict[str, Any]:
+    """Query Qdrant and rebuild serving state without consulting the cache."""
     t0 = time.perf_counter()
     client = _serving_client()
     collection = _resolve_serving_collection(client)
@@ -483,10 +482,17 @@ def _serving_state(client_key: str):
     }
 
 
-def validate_startup() -> dict[str, Any]:
-    """Fail-closed startup validation for the Qdrant serving backend."""
+@lru_cache(maxsize=1)
+def _serving_state(client_key: str) -> dict[str, Any]:
+    """Cached serving state for ordinary retrieval only."""
 
-    state = _serving_state(str(id(_serving_client())))
+    del client_key
+    return _build_live_serving_state()
+
+
+def _startup_record(state: dict[str, Any]) -> dict[str, Any]:
+    """Return validated serving identity from a state built by either path."""
+
     manifest = state["manifest"]
     return {
         "kb_backend": BACKEND_NAME,
@@ -506,6 +512,24 @@ def validate_startup() -> dict[str, Any]:
         "startup_validated": True,
         "hydrate_ms": state["hydrate_ms"],
     }
+
+
+def validate_startup() -> dict[str, Any]:
+    """Fail-closed startup validation for the Qdrant serving backend."""
+
+    state = _serving_state(str(id(_serving_client())))
+    return _startup_record(state)
+
+
+def validate_fresh_release_preflight() -> dict[str, Any]:
+    """Require a new network-backed Qdrant validation for a release verdict.
+
+    This deliberately bypasses ``_serving_state`` rather than clearing it. A
+    stale alias, stopped server, repointed collection, or changed payload must
+    fail here even while ordinary serving state remains cached in-process.
+    """
+
+    return _startup_record(_build_live_serving_state())
 
 
 def retrieve(query: str, *, n_seeds: int = 5) -> dict[str, Any]:
