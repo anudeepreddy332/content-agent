@@ -30,13 +30,9 @@ DEFAULT_CONTRACT_PATH = (
     REPO_ROOT / "evals/fixtures/phase5e1_qualification_contract.json"
 )
 DEFAULT_ARCHIVE_ROOT = REPO_ROOT / "reports/phase5/phase5e1a/holdout-run-1"
-AUTHORITATIVE_HOLDOUT_PATH = REPO_ROOT / "evals/fixtures/retrieval_holdout_v1.json"
-AUTHORITATIVE_HOLDOUT_SCHEMA = "retrieval_holdout_v1"
-# This is the externally approved byte digest of the designated sealed fixture.
-# The fixture is intentionally not checked into this release worktree.
-AUTHORITATIVE_HOLDOUT_SHA256 = (
-    "9d45c7255886c5dcd3060260a470080c2f1ca5080361c37274dbbab24167874f"
-)
+RELEASE_APPROVAL_PATH_ENV = "CONTENT_AGENT_RELEASE_APPROVAL_PATH"
+RELEASE_APPROVAL_SCHEMA = "phase5e1_release_approval_v1"
+OPERATOR_FILE_FIXTURE_SOURCE = "operator_file"
 EXPECTED_CONTRACT_SHA256 = (
     "7c19cb7b0ae6126be19816615a8976e0685be18b1f8686c31658338afdf38b47"
 )
@@ -88,6 +84,20 @@ class ArchiveEvidenceConflict(QualificationHarnessError):
     """Archived structured evidence conflicts with its raw execution record."""
 
 
+@dataclass(frozen=True)
+class TrustedReleaseApproval:
+    """One immutable approval snapshot read from the operator trust root."""
+
+    source_path: Path
+    raw_bytes: bytes
+    approved_execution_sha: str
+    approved_fixture_sha256: str
+    fixture_source: str
+    fixture_path: Path
+    fixture_schema: str
+    frozen_contract_identity: str
+
+
 def canonical_json_dumps(value: Any) -> str:
     return json.dumps(value, sort_keys=True, ensure_ascii=True, separators=(",", ":"))
 
@@ -122,6 +132,107 @@ def load_fixture_snapshot(path: Path) -> FixtureSnapshot:
     if not isinstance(value, dict):
         raise QualificationHarnessError(f"{path}: expected JSON object")
     return FixtureSnapshot(value, hashlib.sha256(raw).hexdigest(), raw)
+
+
+def _outside_repository(path: Path) -> bool:
+    """Return whether a resolved path is outside this checkout."""
+
+    try:
+        path.relative_to(REPO_ROOT.resolve())
+    except ValueError:
+        return True
+    return False
+
+
+def load_trusted_release_approval(*, archive_root: Path | None = None) -> TrustedReleaseApproval:
+    """Read the sole operator-selected approval record exactly once.
+
+    The environment selects a process configuration, not an invocation input.
+    Approval records inside the checkout or target archive are deliberately
+    rejected: archive contents can make claims, never grant release authority.
+    """
+
+    configured = os.environ.get(RELEASE_APPROVAL_PATH_ENV)
+    if not configured:
+        raise QualificationHarnessError("trusted operator approval source is not configured")
+    path = Path(configured)
+    if not path.is_absolute() or path.is_symlink() or not path.is_file():
+        raise QualificationHarnessError("trusted operator approval source must be an absolute regular non-symlink file")
+    resolved = path.resolve(strict=True)
+    if not _outside_repository(resolved):
+        raise QualificationHarnessError("trusted operator approval source resolves inside repository checkout")
+    if archive_root is not None:
+        try:
+            resolved.relative_to(archive_root.resolve())
+        except ValueError:
+            pass
+        else:
+            raise QualificationHarnessError("trusted operator approval source resolves inside archive")
+    raw = path.read_bytes()
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise QualificationHarnessError("trusted operator approval record is invalid JSON") from exc
+    if not isinstance(value, dict) or set(value) != {
+        "schema_version", "approved_execution_sha", "approved_fixture_sha256",
+        "fixture_source", "fixture_path", "fixture_schema",
+        "frozen_contract_identity",
+    }:
+        raise QualificationHarnessError("trusted operator approval record has invalid schema")
+    if value["schema_version"] != RELEASE_APPROVAL_SCHEMA:
+        raise QualificationHarnessError("unsupported trusted operator approval schema")
+    if (
+        not isinstance(value["approved_execution_sha"], str)
+        or len(value["approved_execution_sha"]) != 40
+        or any(char not in "0123456789abcdef" for char in value["approved_execution_sha"])
+        or not isinstance(value["approved_fixture_sha256"], str)
+        or len(value["approved_fixture_sha256"]) != 64
+        or any(char not in "0123456789abcdef" for char in value["approved_fixture_sha256"])
+        or value["fixture_source"] != OPERATOR_FILE_FIXTURE_SOURCE
+        or not isinstance(value["fixture_schema"], str)
+        or not value["fixture_schema"]
+        or value["frozen_contract_identity"] != EXPECTED_CONTRACT_SHA256
+    ):
+        raise QualificationHarnessError("trusted operator approval record has invalid values")
+    fixture_path = Path(value["fixture_path"])
+    if not fixture_path.is_absolute() or fixture_path.is_symlink() or not fixture_path.is_file():
+        raise QualificationHarnessError("approved fixture must be an absolute regular non-symlink file")
+    fixture_resolved = fixture_path.resolve(strict=True)
+    if not _outside_repository(fixture_resolved):
+        raise QualificationHarnessError("approved fixture resolves inside repository checkout")
+    return TrustedReleaseApproval(
+        source_path=resolved,
+        raw_bytes=raw,
+        approved_execution_sha=value["approved_execution_sha"],
+        approved_fixture_sha256=value["approved_fixture_sha256"],
+        fixture_source=value["fixture_source"],
+        fixture_path=fixture_resolved,
+        fixture_schema=value["fixture_schema"],
+        frozen_contract_identity=value["frozen_contract_identity"],
+    )
+
+
+def _parse_verified_fixture_bytes(raw: bytes) -> dict[str, Any]:
+    """Dedicated parse hook: digest checks must happen before this is called."""
+
+    value = json.loads(raw.decode("utf-8"))
+    if not isinstance(value, dict):
+        raise QualificationHarnessError("approved fixture: expected JSON object")
+    return value
+
+
+def load_approved_fixture_snapshot(approval: TrustedReleaseApproval) -> FixtureSnapshot:
+    """Hash exact oracle bytes before decoding or inspecting any oracle labels."""
+
+    raw = approval.fixture_path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != approval.approved_fixture_sha256:
+        raise QualificationHarnessError("approved fixture byte SHA-256 mismatch")
+    value = _parse_verified_fixture_bytes(raw)
+    if value.get("schema_version") != approval.fixture_schema:
+        raise QualificationHarnessError("approved fixture schema disagrees with trusted approval")
+    validate_fixture(value)
+    return FixtureSnapshot(value, digest, raw)
 
 
 def load_contract(path: Path | None = None) -> dict[str, Any]:
@@ -1358,12 +1469,14 @@ def recompute_archived_score_truth(
     return recomputed_scores, parity
 
 
-def archive_verification_failure(root: Path) -> str | None:
-    """Return a bounded reason when an archive cannot prove authoritative PASS.
+def verify_archive_evidence_failure(
+    root: Path, *, verified_fixture: FixtureSnapshot | None = None
+) -> str | None:
+    """Return a bounded evidence-integrity failure, never a release verdict.
 
-    The verifier is deliberately read-only.  It treats the terminal manifest as
-    an integrity envelope, then proves the archived attempts, score evidence,
-    parity, determinism, and approved identities agree with that envelope.
+    Archive-local authorization and disposition are claims.  If a fixture was
+    established by the operator trust root, score truth is recomputed against
+    that snapshot; otherwise this checks only the archive's self-consistency.
     """
 
     try:
@@ -1414,7 +1527,7 @@ def archive_verification_failure(root: Path) -> str | None:
         or any(value.get("overall_pass") is not True for value in terminal_values)
         or any(value.get("disposition") != frozen_pass for value in terminal_values)
     ):
-        return "terminal_outcome_not_authoritative_pass"
+        return "terminal_outcome_not_semantic_pass"
     if (
         not isinstance(aggregate, dict)
         or not isinstance(disposition_aggregate, dict)
@@ -1472,8 +1585,13 @@ def archive_verification_failure(root: Path) -> str | None:
         return "authorization_or_provenance_mismatch"
 
     try:
-        oracle_snapshot = load_fixture_snapshot(root / "oracle_fixture.json")
-        validate_fixture(oracle_snapshot.fixture)
+        if verified_fixture is None:
+            oracle_snapshot = load_fixture_snapshot(root / "oracle_fixture.json")
+            validate_fixture(oracle_snapshot.fixture)
+        else:
+            if sha256_file(root / "oracle_fixture.json") != verified_fixture.sha256:
+                return "oracle_digest_mismatch"
+            oracle_snapshot = verified_fixture
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, QualificationHarnessError):
         return "oracle_digest_mismatch"
     if (
@@ -1612,8 +1730,19 @@ def archive_verification_failure(root: Path) -> str | None:
     return None
 
 
+def archive_verification_failure(root: Path) -> str | None:
+    """Compatibility wrapper for evidence-only archive verification.
+
+    A ``None`` result means the archive's evidence is internally coherent. It
+    never means an authoritative HOLDOUT PASS; use
+    :func:`verify_authoritative_release` for that decision.
+    """
+
+    return verify_archive_evidence_failure(root)
+
+
 def archive_is_successful(root: Path) -> bool:
-    """Return true only when the archive semantically proves authoritative PASS."""
+    """Compatibility predicate for complete, internally coherent evidence only."""
 
     return archive_verification_failure(root) is None
 
@@ -1649,6 +1778,7 @@ def write_qualification_archive(
         "summary": {
             "terminal_status": payload["terminal_status"],
             "overall_pass": payload["overall_pass"],
+            "claimed_disposition": payload["disposition"],
             "disposition": payload["disposition"],
             "aggregate": payload["aggregate"],
             "authorization": payload.get("authorization"),
@@ -1669,6 +1799,7 @@ def write_qualification_archive(
         "determinism": payload["determinism"],
         "disposition": {
             "terminal_status": payload["terminal_status"],
+            "claimed_disposition": payload["disposition"],
             "disposition": payload["disposition"],
             "overall_pass": payload["overall_pass"],
             "aggregate": {
@@ -1691,6 +1822,7 @@ def write_qualification_archive(
     manifest = {
         "terminal_status": payload["terminal_status"],
         "overall_pass": payload["overall_pass"],
+        "claimed_disposition": payload["disposition"],
         "disposition": payload["disposition"],
         "artifacts": inventory,
         "manifest_inventory_excludes_self": True,
@@ -1983,46 +2115,78 @@ def run_qualification(
     )
 
 
-def _load_authoritative_holdout_snapshot() -> FixtureSnapshot:
-    """Load only the designated fixture and verify its external release identity."""
+def _approval_claim(approval: TrustedReleaseApproval) -> dict[str, str]:
+    """The complete external approval identity that archives may only claim."""
 
-    if not AUTHORITATIVE_HOLDOUT_PATH.is_file():
-        raise QualificationHarnessError(
-            "designated authoritative holdout fixture is unavailable; fail closed before retrieval"
-        )
-    snapshot = load_fixture_snapshot(AUTHORITATIVE_HOLDOUT_PATH)
-    fixture = snapshot.fixture
-    if fixture.get("schema_version") != AUTHORITATIVE_HOLDOUT_SCHEMA:
-        raise QualificationHarnessError("designated authoritative holdout has an invalid schema")
-    if fixture.get("holdout") is not True:
-        raise QualificationHarnessError("designated authoritative fixture is not marked as holdout")
-    if snapshot.sha256 != AUTHORITATIVE_HOLDOUT_SHA256:
-        raise QualificationHarnessError(
-            "designated authoritative holdout byte SHA-256 does not match release approval"
-        )
-    validate_fixture(fixture)
-    return snapshot
+    return {
+        "approved_execution_sha": approval.approved_execution_sha,
+        "approved_fixture_sha256": approval.approved_fixture_sha256,
+        "fixture_source": approval.fixture_source,
+        "fixture_path": str(approval.fixture_path),
+        "fixture_schema": approval.fixture_schema,
+        "frozen_contract_identity": approval.frozen_contract_identity,
+    }
 
 
-def approved_authoritative_execution_sha(fixture: dict[str, Any]) -> str:
-    """Read the execution SHA from a fixture already verified by byte digest.
+def _verify_authoritative_release_with_approval(
+    root: Path, approval: TrustedReleaseApproval, snapshot: FixtureSnapshot
+) -> str:
+    """Combine independently loaded approval, trusted oracle, and archive evidence."""
 
-    The value is release authority only after ``_load_authoritative_holdout_snapshot``
-    establishes the exact fixture bytes against the independently approved
-    digest.  It therefore cannot be supplied or changed by an invocation
-    caller, while avoiding an impossible source-file self-hash pin.
+    if runtime_git_sha() != approval.approved_execution_sha:
+        return "approved_execution_sha_mismatch"
+    try:
+        contract = load_contract(DEFAULT_CONTRACT_PATH)
+    except QualificationHarnessError:
+        return "frozen_contract_identity_mismatch"
+    if contract_sha256(contract) != approval.frozen_contract_identity:
+        return "frozen_contract_identity_mismatch"
+    try:
+        summary = _archive_json(root / "summary.json")
+        manifest = _archive_json(root / "manifest.json")
+        provenance_record = _archive_json(root / "provenance.json")
+    except (OSError, json.JSONDecodeError):
+        return "unreadable_required_artifact"
+    claim = _approval_claim(approval)
+    attempt = manifest.get("attempt_identity") if isinstance(manifest, dict) else None
+    observed = provenance_record.get("observed") if isinstance(provenance_record, dict) else None
+    if (
+        not isinstance(summary, dict)
+        or summary.get("authorization") != claim
+        or not isinstance(attempt, dict)
+        or attempt.get("authorization") != claim
+        or not isinstance(observed, dict)
+        or observed.get("execution_git_sha") != approval.approved_execution_sha
+        or observed.get("fixture_sha256") != approval.approved_fixture_sha256
+        or observed.get("contract_sha256") != approval.frozen_contract_identity
+    ):
+        return "archive_approval_identity_mismatch"
+    try:
+        trusted_identity = expected_runtime_identity(snapshot.fixture, contract)
+    except QualificationHarnessError:
+        return "trusted_runtime_identity_mismatch"
+    if observed.get("expected_runtime_identity") != trusted_identity:
+        return "trusted_runtime_identity_mismatch"
+    evidence_failure = verify_archive_evidence_failure(root, verified_fixture=snapshot)
+    if evidence_failure is not None:
+        return evidence_failure
+    return contract["disposition_values"][0]
+
+
+def verify_authoritative_release(root: Path) -> str:
+    """The sole public owner of an authoritative HOLDOUT release verdict.
+
+    This API has no caller-provided approval object, bytes, fixture path, or
+    executor.  It resolves the configured operator record, reads it once, and
+    then binds all archive claims to that independent snapshot.
     """
 
-    value = fixture.get("approved_execution_sha")
-    if (
-        not isinstance(value, str)
-        or len(value) != 40
-        or any(char not in "0123456789abcdef" for char in value)
-    ):
-        raise QualificationHarnessError(
-            "designated authoritative holdout is missing an approved execution Git SHA"
-        )
-    return value
+    try:
+        approval = load_trusted_release_approval(archive_root=root)
+        snapshot = load_approved_fixture_snapshot(approval)
+    except QualificationHarnessError as exc:
+        return f"approval_or_oracle_failure:{exc}"
+    return _verify_authoritative_release_with_approval(root, approval, snapshot)
 
 
 def run_authoritative_qualification(
@@ -2035,20 +2199,24 @@ def run_authoritative_qualification(
     expected fail-closed state until the separately authorized integration.
     """
 
-    snapshot = _load_authoritative_holdout_snapshot()
-    approved_execution_sha = approved_authoritative_execution_sha(snapshot.fixture)
-    if runtime_git_sha() != approved_execution_sha:
+    resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
+    approval = load_trusted_release_approval(archive_root=resolved_archive)
+    snapshot = load_approved_fixture_snapshot(approval)
+    if snapshot.fixture.get("holdout") is not True:
+        raise QualificationHarnessError("approved authoritative fixture is not marked as holdout")
+    if runtime_git_sha() != approval.approved_execution_sha:
         raise QualificationHarnessError(
             "runtime HEAD does not match the approved authoritative execution SHA"
         )
     contract = load_contract(DEFAULT_CONTRACT_PATH)
+    if contract_sha256(contract) != approval.frozen_contract_identity:
+        raise QualificationHarnessError("frozen contract identity disagrees with trusted approval")
     expected_identity = expected_runtime_identity(snapshot.fixture, contract)
     # This must finish before the archive is reserved and before query one.
     canonical_source_map, preflight = validate_real_adapter_preflight(expected_identity)
-    resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
     reserve_archive(resolved_archive)
     evidence = _run_evaluation(
-        fixture_path=AUTHORITATIVE_HOLDOUT_PATH,
+        fixture_path=approval.fixture_path,
         contract_path=DEFAULT_CONTRACT_PATH,
         executor=execute_qualified_backends,
         determinism_executor=execute_qualified_backends,
@@ -2057,10 +2225,7 @@ def run_authoritative_qualification(
     )
     evidence["decision_scope"] = "authoritative_release"
     evidence["preflight"] = preflight
-    evidence["authorization"] = {
-        "approved_execution_sha": approved_execution_sha,
-        "approved_fixture_sha256": AUTHORITATIVE_HOLDOUT_SHA256,
-    }
+    evidence["authorization"] = _approval_claim(approval)
     evidence["contract"] = contract
     evidence["aggregate"]["disposition"] = (
         contract["disposition_values"][0]
@@ -2109,9 +2274,13 @@ def run_authoritative_qualification(
     evidence["archive_paths"] = write_qualification_archive(
         evidence, resolved_archive, fixture_snapshot=snapshot, already_reserved=True
     )
-    if evidence["overall_pass"] and not archive_is_successful(resolved_archive):
+    release_verdict = _verify_authoritative_release_with_approval(
+        resolved_archive, approval, snapshot
+    )
+    evidence["release_verdict"] = release_verdict
+    if evidence["overall_pass"] and release_verdict != contract["disposition_values"][0]:
         raise QualificationHarnessError(
-            "authoritative PASS requires a completed, verified release archive"
+            "authoritative PASS requires trusted approval and verified release evidence"
         )
     return evidence
 

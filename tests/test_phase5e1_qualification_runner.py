@@ -909,11 +909,12 @@ def test_legacy_fingerprint_name_cannot_satisfy_canonical_contract():
 
 
 def _authorized(monkeypatch):
-    monkeypatch.setattr(runner, "runtime_git_sha", lambda: "authorized")
+    approved = "a" * 40
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: approved)
     return {
         "authoritative": True,
         "write_archive": True,
-        "approved_execution_sha": "authorized",
+        "approved_execution_sha": approved,
         "approved_fixture_sha256": runner.sha256_file(FIXTURE),
     }
 
@@ -1302,7 +1303,7 @@ def test_authorized_fixture_snapshot_is_scored_after_file_mutation(tmp_path, mon
         nonlocal calls
         calls += 1
         if calls == 1:
-            fixture.write_text('{"schema_version":"retrieval_holdout_v1","queries":[]}')
+            fixture.write_text('{"schema_version":"retired_fixture_never_parsed","queries":[]}')
         return executor()(query)
 
     report = run_qualification(
@@ -1975,7 +1976,7 @@ def test_semantic_verifier_rejects_hard_failure_and_outcome_contradictions(tmp_p
         "disposition.json",
         lambda value: {**value, "overall_pass": False},
     )
-    _assert_semantic_rejection(archive, "terminal_outcome_not_authoritative_pass")
+    _assert_semantic_rejection(archive, "terminal_outcome_not_semantic_pass")
 
 
 def test_semantic_verifier_rejects_failed_parity_and_identity_mismatch(tmp_path, monkeypatch):
@@ -2120,16 +2121,28 @@ def test_missing_or_incomplete_terminal_artifacts_never_count_as_success(tmp_pat
     assert archive_is_successful(archive) is False
 
 
-def _authoritative_fixture(tmp_path, *, holdout=True, approved_execution_sha="a" * 40):
-    """Create test-only public bytes with the authoritative schema shape."""
+def _trusted_approval(tmp_path, monkeypatch, *, fixture=None, execution_sha=None):
+    """Create a public test-only operator source outside the repository."""
 
-    fixture = json.loads(FIXTURE.read_text())
-    fixture["schema_version"] = runner.AUTHORITATIVE_HOLDOUT_SCHEMA
-    fixture["holdout"] = holdout
-    fixture["approved_execution_sha"] = approved_execution_sha
-    path = tmp_path / "authoritative-fixture.json"
-    path.write_text(json.dumps(fixture))
-    return path
+    value = fixture or json.loads(FIXTURE.read_text())
+    fixture_path = tmp_path / "operator-fixture.json"
+    if fixture is None:
+        fixture_path.write_bytes(FIXTURE.read_bytes())
+    else:
+        fixture_path.write_text(json.dumps(value))
+    approval = {
+        "schema_version": runner.RELEASE_APPROVAL_SCHEMA,
+        "approved_execution_sha": execution_sha or runner.runtime_git_sha(),
+        "approved_fixture_sha256": runner.sha256_file(fixture_path),
+        "fixture_source": runner.OPERATOR_FILE_FIXTURE_SOURCE,
+        "fixture_path": str(fixture_path),
+        "fixture_schema": value["schema_version"],
+        "frozen_contract_identity": runner.EXPECTED_CONTRACT_SHA256,
+    }
+    approval_path = tmp_path / "operator-approval.json"
+    approval_path.write_text(json.dumps(approval))
+    monkeypatch.setenv(runner.RELEASE_APPROVAL_PATH_ENV, str(approval_path))
+    return fixture_path, approval_path, approval
 
 
 def _counted_authoritative_executor(monkeypatch):
@@ -2190,12 +2203,11 @@ def test_shared_core_synthetic_executor_cannot_construct_release_disposition():
 
 
 def test_frozen_holdout_pass_selection_has_one_release_owner():
-    source = inspect.getsource(runner)
-    selector = 'contract["disposition_values"][0]'
-    assert source.count(selector) == 1
-    assert selector in inspect.getsource(runner.run_authoritative_qualification)
-    assert selector not in inspect.getsource(runner._run_evaluation)
-    assert selector not in inspect.getsource(runner.run_development_evaluation)
+    assert 'contract["disposition_values"][0]' in inspect.getsource(
+        runner._verify_authoritative_release_with_approval
+    )
+    assert "PHASE-5E1A-HOLDOUT-PASS" not in inspect.getsource(runner._run_evaluation)
+    assert "PHASE-5E1A-HOLDOUT-PASS" not in inspect.getsource(runner.run_development_evaluation)
 
 
 def test_public_development_fixture_is_never_a_holdout_pass():
@@ -2216,8 +2228,8 @@ def test_authoritative_api_rejects_injected_executor_and_preflight_flags():
 
 def test_missing_designated_fixture_fails_closed_before_retrieval(tmp_path, monkeypatch):
     calls = _counted_authoritative_executor(monkeypatch)
-    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", tmp_path / "missing.json")
-    with pytest.raises(QualificationHarnessError, match="unavailable"):
+    monkeypatch.delenv(runner.RELEASE_APPROVAL_PATH_ENV, raising=False)
+    with pytest.raises(QualificationHarnessError, match="not configured"):
         runner.run_authoritative_qualification()
     assert calls == []
 
@@ -2226,10 +2238,10 @@ def test_incorrect_authoritative_fixture_identity_fails_before_retrieval(
     tmp_path, monkeypatch
 ):
     calls = _counted_authoritative_executor(monkeypatch)
-    fixture = _authoritative_fixture(tmp_path, holdout=False)
-    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", fixture)
-    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_SHA256", runner.sha256_file(fixture))
-    with pytest.raises(QualificationHarnessError, match="not marked as holdout"):
+    fixture = json.loads(FIXTURE.read_text())
+    fixture["schema_version"] = "unsupported_test_schema"
+    _trusted_approval(tmp_path, monkeypatch, fixture=fixture)
+    with pytest.raises(QualificationHarnessError, match="unsupported fixture schema"):
         runner.run_authoritative_qualification()
     assert calls == []
 
@@ -2238,9 +2250,9 @@ def test_incorrect_authoritative_fixture_digest_fails_before_retrieval(
     tmp_path, monkeypatch
 ):
     calls = _counted_authoritative_executor(monkeypatch)
-    fixture = _authoritative_fixture(tmp_path)
-    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", fixture)
-    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_SHA256", "incorrect")
+    fixture, approval_path, approval = _trusted_approval(tmp_path, monkeypatch)
+    approval["approved_fixture_sha256"] = "0" * 64
+    approval_path.write_text(json.dumps(approval))
     with pytest.raises(QualificationHarnessError, match="byte SHA-256"):
         runner.run_authoritative_qualification()
     assert calls == []
@@ -2249,10 +2261,10 @@ def test_incorrect_authoritative_fixture_digest_fails_before_retrieval(
 def test_failed_mandatory_real_preflight_makes_zero_retrieval_calls(tmp_path, monkeypatch):
     calls = _counted_authoritative_executor(monkeypatch)
     approved = "a" * 40
-    fixture = _authoritative_fixture(tmp_path, approved_execution_sha=approved)
     monkeypatch.setattr(runner, "runtime_git_sha", lambda: approved)
-    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", fixture)
-    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_SHA256", runner.sha256_file(fixture))
+    fixture = json.loads(FIXTURE.read_text())
+    fixture["holdout"] = True
+    _trusted_approval(tmp_path, monkeypatch, fixture=fixture, execution_sha=approved)
     monkeypatch.setattr(
         runner,
         "validate_real_adapter_preflight",
@@ -2265,10 +2277,109 @@ def test_failed_mandatory_real_preflight_makes_zero_retrieval_calls(tmp_path, mo
 
 def test_authoritative_execution_sha_mismatch_fails_before_retrieval(tmp_path, monkeypatch):
     calls = _counted_authoritative_executor(monkeypatch)
-    fixture = _authoritative_fixture(tmp_path, approved_execution_sha="a" * 40)
     monkeypatch.setattr(runner, "runtime_git_sha", lambda: "b" * 40)
-    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_PATH", fixture)
-    monkeypatch.setattr(runner, "AUTHORITATIVE_HOLDOUT_SHA256", runner.sha256_file(fixture))
+    fixture = json.loads(FIXTURE.read_text())
+    fixture["holdout"] = True
+    _trusted_approval(tmp_path, monkeypatch, fixture=fixture, execution_sha="a" * 40)
     with pytest.raises(QualificationHarnessError, match="runtime HEAD"):
         runner.run_authoritative_qualification()
     assert calls == []
+
+
+def _externally_trusted_archive(tmp_path, monkeypatch):
+    """Bind a complete public synthetic archive to the real operator loader."""
+
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    _fixture, _approval_path, _approval = _trusted_approval(tmp_path, monkeypatch)
+    approval = runner._approval_claim(runner.load_trusted_release_approval())
+    _rewrite_archive_json(
+        archive, "summary.json", lambda value: {**value, "authorization": approval}
+    )
+    _rewrite_archive_json(
+        archive,
+        "manifest.json",
+        lambda value: {
+            **value,
+            "attempt_identity": {**value["attempt_identity"], "authorization": approval},
+        },
+    )
+    _refresh_archive_manifest(archive)
+    return archive, approval
+
+
+def test_generic_synthetic_archive_and_caller_approval_cannot_issue_release_pass(
+    tmp_path, monkeypatch
+):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    monkeypatch.delenv(runner.RELEASE_APPROVAL_PATH_ENV, raising=False)
+    assert runner.verify_authoritative_release(archive).startswith("approval_or_oracle_failure:")
+    with pytest.raises(TypeError):
+        runner.verify_authoritative_release(archive, approval={"caller": "owned"})
+
+
+def test_approved_fixture_digest_is_checked_before_parser(monkeypatch, tmp_path):
+    fixture, _approval_path, _approval = _trusted_approval(tmp_path, monkeypatch)
+    fixture.write_bytes(fixture.read_bytes() + b"\nchanged")
+    parsed = []
+    monkeypatch.setattr(
+        runner, "_parse_verified_fixture_bytes", lambda raw: parsed.append(raw) or {}
+    )
+    approval = runner.load_trusted_release_approval()
+    with pytest.raises(QualificationHarnessError, match="byte SHA-256 mismatch"):
+        runner.load_approved_fixture_snapshot(approval)
+    assert parsed == []
+
+
+def test_truthful_public_archive_requires_external_approval_and_then_passes(
+    tmp_path, monkeypatch
+):
+    archive, _approval = _externally_trusted_archive(tmp_path, monkeypatch)
+    assert runner.verify_authoritative_release(archive) == "PHASE-5E1A-HOLDOUT-PASS"
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("approved_execution_sha", "0" * 40),
+        ("approved_fixture_sha256", "0" * 64),
+        ("fixture_path", "/private/tmp/not-the-approved-fixture.json"),
+        ("fixture_schema", "other_schema"),
+        ("frozen_contract_identity", "0" * 64),
+    ],
+)
+def test_authoritative_verifier_rejects_each_archive_approval_identity_claim(
+    tmp_path, monkeypatch, field, value
+):
+    archive, approval = _externally_trusted_archive(tmp_path, monkeypatch)
+    forged = {**approval, field: value}
+    _rewrite_archive_json(
+        archive, "summary.json", lambda record: {**record, "authorization": forged}
+    )
+    _rewrite_archive_json(
+        archive,
+        "manifest.json",
+        lambda record: {
+            **record,
+            "attempt_identity": {**record["attempt_identity"], "authorization": forged},
+        },
+    )
+    _refresh_archive_manifest(archive)
+    assert runner.verify_authoritative_release(archive) == "archive_approval_identity_mismatch"
+
+
+def test_authoritative_verifier_rejects_archive_oracle_substitution_before_scoring(
+    tmp_path, monkeypatch
+):
+    archive, _approval = _externally_trusted_archive(tmp_path, monkeypatch)
+    oracle = json.loads((archive / "oracle_fixture.json").read_text())
+    oracle["queries"][0]["relevant_sources"][0]["evidence"][0]["char_end"] = 19
+    _rewrite_archive_json(archive, "oracle_fixture.json", lambda _value: oracle)
+    _refresh_archive_manifest(archive)
+    assert runner.verify_authoritative_release(archive) == "oracle_digest_mismatch"
+
+
+def test_authoritative_verifier_rejects_identical_fabricated_scores(tmp_path, monkeypatch):
+    archive, _approval = _externally_trusted_archive(tmp_path, monkeypatch)
+    _fabricate_both_run_secondary_packed_recall(archive)
+    _refresh_archive_manifest(archive)
+    assert runner.verify_authoritative_release(archive) == "score_truth_mismatch"
