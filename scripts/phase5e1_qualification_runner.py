@@ -1363,6 +1363,158 @@ def sanitized_failure(exc: Exception) -> str:
     return f"{type(exc).__name__}: {str(exc)[:300]}"
 
 
+# PHASE5-AUTH-PROTOCOL-1 deliberately uses a new artifact namespace rather
+# than trying to reinterpret legacy development archives as release evidence.
+# A completed release archive is private, create-once, and never carries oracle
+# bytes.  The only copy of a sealed oracle remains at the operator-controlled
+# path described by the approval record.
+AUTH_PROTOCOL_ID = "PHASE5-AUTH-PROTOCOL-1"
+AUTH_PROTOCOL_ARTIFACTS = (
+    "attempt.json",
+    "oracle_identity.json",
+    "contract.json",
+    "pre_retrieval_preflight.json",
+    "execution_journal.jsonl",
+    "executions.json",
+    "raw_backend_outputs.json",
+    "execution_2_raw_backend_outputs.json",
+    "backend_per_query.json",
+    "per_query.json",
+    "parity.json",
+    "provenance.json",
+    "determinism.json",
+    "score_truth.json",
+    "summary.json",
+    "final_live_preflight.json",
+    "authoritative_verification.json",
+    "terminal_state.json",
+    "disposition.json",
+)
+AUTH_PROTOCOL_MANIFEST = "manifest.json"
+AUTH_PROTOCOL_STATES = (
+    "NO_ATTEMPT", "AUTHORIZED", "CONTROL_BOUND", "ORACLE_IDENTIFIED",
+    "PREFLIGHTED", "RESERVED", "ATTEMPT_MATERIALIZED", "EXECUTION_1",
+    "EXECUTION_1_DURABLE", "EXECUTION_2", "EXECUTION_2_DURABLE", "SCORED",
+    "GATED", "FINAL_PREFLIGHTED", "READY_TO_COMMIT", "VERIFICATION_PERSISTED",
+    "TERMINALIZED", "COMMITTED_UNVERIFIED", "REVERIFIED", "PASS",
+)
+
+
+def _fsync_directory(path: Path) -> None:
+    """Sync a directory entry after an exclusive protocol write."""
+
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _require_private_archive_directory(root: Path) -> None:
+    info = root.lstat()
+    if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        raise QualificationHarnessError("protocol archive must be a regular directory")
+    if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o077:
+        raise QualificationHarnessError("protocol archive must be operator-owned and private")
+
+
+def reserve_protocol_archive(root: Path) -> None:
+    """Exclusively reserve and durably publish a private protocol archive."""
+
+    try:
+        os.mkdir(root, 0o700)
+    except FileExistsError as exc:
+        raise QualificationHarnessError("protocol archive already exists; retrieval is forbidden") from exc
+    try:
+        _require_private_archive_directory(root)
+        _fsync_directory(root.parent)
+    except Exception:
+        # The directory remains as truthful evidence of a failed reservation;
+        # it must never be reused as a new attempt.
+        raise
+
+
+def _protocol_path(root: Path, name: str) -> Path:
+    _require_private_archive_directory(root)
+    if "/" in name or name in {"", ".", ".."}:
+        raise QualificationHarnessError("unsafe protocol artifact name")
+    path = root / name
+    if path.exists() and path.is_symlink():
+        raise QualificationHarnessError("protocol archive contains a symlink")
+    return path
+
+
+def _durable_exclusive_bytes(root: Path, name: str, data: bytes) -> Path:
+    """Create a private immutable file and fsync both file and directory."""
+
+    if (root / AUTH_PROTOCOL_MANIFEST).exists():
+        raise QualificationHarnessError("protocol archive is committed; post-manifest mutation is forbidden")
+    path = _protocol_path(root, name)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(path, flags, 0o600)
+    try:
+        written = 0
+        while written < len(data):
+            count = os.write(fd, data[written:])
+            if count <= 0:
+                raise OSError("short protocol artifact write")
+            written += count
+        os.fsync(fd)
+    except Exception:
+        # Retain a partial private artifact as evidence of failure.  It cannot
+        # be replaced and therefore cannot become a completed archive.
+        raise
+    finally:
+        os.close(fd)
+    _fsync_directory(root)
+    return path
+
+
+def write_durable_protocol_json(root: Path, name: str, value: Any) -> Path:
+    return _durable_exclusive_bytes(root, name, (canonical_json_dumps(value) + "\n").encode("utf-8"))
+
+
+def append_durable_protocol_journal(root: Path, record: dict[str, Any]) -> Path:
+    """Append a journal record durably before its dependent transition."""
+
+    if (root / AUTH_PROTOCOL_MANIFEST).exists():
+        raise QualificationHarnessError("protocol archive is committed; journal mutation is forbidden")
+    path = _protocol_path(root, "execution_journal.jsonl")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    fd = os.open(path, flags, 0o600)
+    try:
+        data = (canonical_json_dumps(record) + "\n").encode("utf-8")
+        written = 0
+        while written < len(data):
+            count = os.write(fd, data[written:])
+            if count <= 0:
+                raise OSError("short protocol journal write")
+            written += count
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    _fsync_directory(root)
+    return path
+
+
+def _protocol_read_json(root: Path, name: str) -> Any:
+    path = _protocol_path(root, name)
+    info = path.lstat()
+    if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        raise QualificationHarnessError("protocol artifact has unsafe file type")
+    with path.open("rb") as handle:
+        before = os.fstat(handle.fileno())
+        raw = handle.read()
+        after = os.fstat(handle.fileno())
+    if before.st_ino != after.st_ino or before.st_size != after.st_size:
+        raise QualificationHarnessError("protocol artifact changed while being read")
+    return json.loads(raw.decode("utf-8"))
+
+
 REQUIRED_ARCHIVE_ARTIFACTS = frozenset(
     {
         "backend_per_query.json",
@@ -2347,6 +2499,484 @@ def _approval_claim(approval: TrustedReleaseApproval) -> dict[str, str]:
     }
 
 
+def _protocol_approval_identity(approval: TrustedReleaseApproval) -> dict[str, str]:
+    """Archive-safe approval identity; deliberately excludes the sealed path."""
+
+    return {
+        "approved_execution_sha": approval.approved_execution_sha,
+        "approved_fixture_sha256": approval.approved_fixture_sha256,
+        "fixture_source": approval.fixture_source,
+        "fixture_schema": approval.fixture_schema,
+        "frozen_contract_identity": approval.frozen_contract_identity,
+    }
+
+
+def _execute_authoritative_backend(backend: str, query: str) -> dict[str, Any]:
+    """Call one production adapter once; the query protocol owns ordering."""
+
+    if backend == "cswp_local":
+        from agent.kb_backend import local
+
+        return local.retrieve(query, n_seeds=5)
+    if backend == "cswp_qdrant":
+        from agent.kb_backend import qdrant_serving
+
+        return qdrant_serving.retrieve(query, n_seeds=5)
+    raise QualificationHarnessError(f"unknown qualified backend {backend}")
+
+
+def _protocol_execution(
+    *, root: Path, fixture: dict[str, Any], snapshot: FixtureSnapshot,
+    contract: dict[str, Any], expected_identity: dict[str, dict[str, Any]],
+    canonical_source_map: dict[str, dict[str, Any]], execution_number: int,
+    backend_executor: Callable[[str, str], dict[str, Any]],
+) -> dict[str, Any]:
+    """Run one execution under the durable per-query protocol.
+
+    Each backend result is journaled before canonicalization.  Consequently a
+    local success followed by a Qdrant exception is observable and cannot be
+    silently retried or transformed into a completed query.
+    """
+
+    raw = {backend: [] for backend in BACKENDS}
+    scores: list[dict[str, Any]] = []
+    backend_scores: list[dict[str, Any]] = []
+    parity: list[dict[str, Any]] = []
+    snapshots: list[dict[str, Any]] = []
+    runtime_failures: list[dict[str, Any]] = []
+    frozen_runtime_identity: dict[str, dict[str, Any]] | None = None
+    failure: dict[str, Any] | None = None
+    append_durable_protocol_journal(root, {
+        "event": "execution_started", "execution": execution_number,
+    })
+    for query in fixture["queries"]:
+        query_id = query["query_id"]
+        append_durable_protocol_journal(root, {
+            "event": "query_started", "execution": execution_number,
+            "query_id": query_id,
+        })
+        outputs: dict[str, Any] = {}
+        stage = "local_invocation"
+        try:
+            for backend in BACKENDS:
+                stage = f"{backend}_invocation"
+                append_durable_protocol_journal(root, {
+                    "event": "backend_invocation_intent", "execution": execution_number,
+                    "query_id": query_id, "backend": backend,
+                })
+                result = backend_executor(backend, query["query"])
+                outputs[backend] = result
+                raw[backend].append(result)
+                append_durable_protocol_journal(root, {
+                    "event": "backend_raw_result", "execution": execution_number,
+                    "query_id": query_id, "backend": backend,
+                    "raw": result,
+                })
+            stage = "canonicalization"
+            canonical = {
+                backend: canonical_raw(outputs[backend], canonical_source_map=canonical_source_map)
+                for backend in BACKENDS
+            }
+            stage = "runtime_identity"
+            _observed, observed_failures, frozen_runtime_identity = validate_runtime_identity(
+                query_id=query_id,
+                outputs={backend: canonical[backend]["raw"] for backend in BACKENDS},
+                expected=expected_identity,
+                frozen=frozen_runtime_identity,
+            )
+            runtime_failures.extend(observed_failures)
+            for backend in BACKENDS:
+                raw[backend][-1] = canonical[backend]["raw"]
+            stage = "score_and_parity"
+            per_backend = {
+                backend: score_query(query, canonical[backend]) for backend in BACKENDS
+            }
+            score = per_backend["cswp_local"]
+            query_parity = [
+                {"query_id": query_id, **item}
+                for item in compare_backends(canonical["cswp_local"], canonical["cswp_qdrant"])
+            ]
+            parity.extend(query_parity)
+            scores.append(score)
+            backend_scores.append({"query_id": query_id, "backends": per_backend})
+            snapshots.append({
+                "query_id": query_id,
+                "backends": {
+                    backend: deterministic_backend_snapshot(canonical[backend], per_backend[backend], backend)
+                    for backend in BACKENDS
+                },
+            })
+            append_durable_protocol_journal(root, {
+                "event": "query_completed", "execution": execution_number,
+                "query_id": query_id,
+                "raw_backend_outputs": {backend: raw[backend][-1] for backend in BACKENDS},
+                "per_query": score,
+                "backend_per_query": {"query_id": query_id, "backends": per_backend},
+                "parity": query_parity,
+            })
+        except Exception as exc:
+            failure = {"query_id": query_id, "stage": stage, "failure": sanitized_failure(exc)}
+            append_durable_protocol_journal(root, {
+                "event": "execution_incomplete", "execution": execution_number,
+                **failure,
+                "observed_backends": list(outputs),
+            })
+            break
+    prov = provenance(
+        fixture, snapshot.sha256, contract, expected_identity,
+        frozen_runtime_identity, runtime_failures,
+    )
+    aggregate = evaluate_evidence_gates(fixture["queries"], scores, contract, parity, prov)
+    if failure is not None:
+        aggregate["hard_failures"].append({"gate": "execution_incomplete", "detail": failure})
+    aggregate["overall_pass"] = not aggregate["hard_failures"]
+    status = "INCOMPLETE" if failure else "COMPLETE"
+    evidence = {
+        "execution": execution_number, "status": status, "failure": failure,
+        "raw_backend_outputs": raw, "per_query": scores,
+        "backend_per_query": backend_scores,
+        "backend_parity": {"passed": not parity, "mismatches": parity},
+        "determinism_evidence": snapshots, "provenance": prov,
+        "aggregate": aggregate,
+    }
+    append_durable_protocol_journal(root, {
+        "event": "execution_completed", "execution": execution_number,
+        "terminal_status": status, "overall_pass": aggregate["overall_pass"],
+    })
+    return evidence
+
+
+def _protocol_attempt_identity(
+    approval: TrustedReleaseApproval, snapshot: FixtureSnapshot, contract: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "protocol": AUTH_PROTOCOL_ID,
+        "authorization": _protocol_approval_identity(approval),
+        "fixture_sha256": snapshot.sha256,
+        "query_ids": [query["query_id"] for query in snapshot.fixture["queries"]],
+        "backends": list(BACKENDS), "execution_count": 2,
+        "contract_identity": sha256_json(contract),
+    }
+
+
+def _protocol_manifest(root: Path) -> dict[str, Any]:
+    inventory = {}
+    for name in AUTH_PROTOCOL_ARTIFACTS:
+        path = _protocol_path(root, name)
+        if not path.is_file() or path.is_symlink():
+            raise QualificationHarnessError(f"missing durable protocol artifact {name}")
+        inventory[name] = {"sha256": sha256_file(path), "bytes": path.stat().st_size}
+    return {
+        "protocol": AUTH_PROTOCOL_ID,
+        "terminal_artifact": AUTH_PROTOCOL_MANIFEST,
+        "manifest_inventory_excludes_self": True,
+        "artifacts": inventory,
+    }
+
+
+def _persist_protocol_terminal_failure(root: Path, *, state: str, failure: str) -> None:
+    """Best-effort, create-once failure evidence; never manufactures a manifest."""
+
+    for name, value in (
+        ("terminal_state.json", {"protocol": AUTH_PROTOCOL_ID, "state": state, "pass": False, "failure": failure}),
+        ("disposition.json", {"protocol": AUTH_PROTOCOL_ID, "state": state, "disposition": "INCOMPLETE", "pass": False}),
+    ):
+        try:
+            if not (root / name).exists():
+                write_durable_protocol_json(root, name, value)
+        except OSError:
+            # A persistence fault cannot be repaired by overwriting evidence.
+            return
+
+
+def _run_authoritative_protocol_attempt(
+    *, root: Path, approval: TrustedReleaseApproval, snapshot: FixtureSnapshot,
+    contract: dict[str, Any], canonical_source_map: dict[str, dict[str, Any]],
+    initial_preflight: dict[str, Any], backend_executor: Callable[[str, str], dict[str, Any]],
+    final_preflight: Callable[[dict[str, dict[str, Any]]], dict[str, Any]],
+) -> dict[str, Any]:
+    """The testable production state machine through COMMITTED_UNVERIFIED.
+
+    It intentionally returns `READY_TO_COMMIT` or an honest failed state.  It
+    cannot emit PASS because A21 is a fresh, post-manifest verifier result.
+    """
+
+    expected_identity = derive_trusted_qualified_runtime_identity(contract)
+    reserve_protocol_archive(root)
+    attempt = _protocol_attempt_identity(approval, snapshot, contract)
+    try:
+        write_durable_protocol_json(root, "attempt.json", attempt)
+        write_durable_protocol_json(root, "oracle_identity.json", {
+            "protocol": AUTH_PROTOCOL_ID,
+            "fixture_sha256": snapshot.sha256,
+            "fixture_schema": approval.fixture_schema,
+            "fixture_source": approval.fixture_source,
+            "oracle_reference": "operator-controlled approval fixture",
+        })
+        write_durable_protocol_json(root, "contract.json", contract)
+        write_durable_protocol_json(root, "pre_retrieval_preflight.json", {
+            "protocol": AUTH_PROTOCOL_ID, "passed": True, "evidence": initial_preflight,
+        })
+        append_durable_protocol_journal(root, {"event": "attempt_materialized", "attempt": attempt})
+        execution_1 = _protocol_execution(
+            root=root, fixture=snapshot.fixture, snapshot=snapshot, contract=contract,
+            expected_identity=expected_identity, canonical_source_map=canonical_source_map,
+            execution_number=1, backend_executor=backend_executor,
+        )
+        execution_2 = _protocol_execution(
+            root=root, fixture=snapshot.fixture, snapshot=snapshot, contract=contract,
+            expected_identity=expected_identity, canonical_source_map=canonical_source_map,
+            execution_number=2, backend_executor=backend_executor,
+        ) if execution_1["status"] == "COMPLETE" else None
+        first_snapshot = deterministic_execution_snapshot(execution_1["determinism_evidence"])
+        second_snapshot = (
+            deterministic_execution_snapshot(execution_2["determinism_evidence"])
+            if execution_2 is not None else None
+        )
+        mismatches = (
+            compare_deterministic_executions(first_snapshot, second_snapshot)
+            if second_snapshot is not None else [{"reason": "second_execution_not_complete"}]
+        )
+        determinism = {
+            "execution_1": first_snapshot, "execution_2": second_snapshot,
+            "mismatches": mismatches, "passed": execution_2 is not None and not mismatches,
+        }
+        combined_failures = list(execution_1["aggregate"]["hard_failures"])
+        if execution_2 is None:
+            combined_failures.append({"gate": "second_execution_incomplete", "detail": execution_1["failure"]})
+        else:
+            combined_failures.extend(execution_2["aggregate"]["hard_failures"])
+        if mismatches:
+            combined_failures.append({"gate": "determinism_mismatch", "detail": mismatches})
+        complete = execution_1["status"] == "COMPLETE" and execution_2 is not None and execution_2["status"] == "COMPLETE"
+        readiness = complete and not combined_failures
+        terminal_state = "READY_TO_COMMIT" if readiness else ("INCOMPLETE" if not complete else "FAIL")
+        score_truth = {
+            "passed": readiness,
+            "execution_1": execution_1["per_query"],
+            "execution_2": execution_2["per_query"] if execution_2 else None,
+            "aggregate_hard_failures": combined_failures,
+        }
+        values = {
+            "executions.json": [execution_1, execution_2],
+            "raw_backend_outputs.json": execution_1["raw_backend_outputs"],
+            "execution_2_raw_backend_outputs.json": execution_2["raw_backend_outputs"] if execution_2 else {},
+            "backend_per_query.json": {"execution_1": execution_1["backend_per_query"], "execution_2": execution_2["backend_per_query"] if execution_2 else []},
+            "per_query.json": {"execution_1": execution_1["per_query"], "execution_2": execution_2["per_query"] if execution_2 else []},
+            "parity.json": {"execution_1": execution_1["backend_parity"], "execution_2": execution_2["backend_parity"] if execution_2 else {"passed": False, "mismatches": []}},
+            "provenance.json": {"execution_1": execution_1["provenance"], "execution_2": execution_2["provenance"] if execution_2 else None, "expected_runtime_identity": expected_identity},
+            "determinism.json": determinism,
+            "score_truth.json": score_truth,
+            "summary.json": {"protocol": AUTH_PROTOCOL_ID, "state": terminal_state, "overall_pass": False, "readiness": readiness, "hard_failures": combined_failures},
+        }
+        for name, value in values.items():
+            write_durable_protocol_json(root, name, value)
+        if not readiness:
+            _persist_protocol_terminal_failure(root, state=terminal_state, failure="preterminal qualification failed")
+            return {"state": terminal_state, "overall_pass": False, "archive_root": str(root)}
+        fresh = final_preflight(expected_identity)
+        write_durable_protocol_json(root, "final_live_preflight.json", {
+            "protocol": AUTH_PROTOCOL_ID, "passed": True, "evidence": fresh,
+        })
+        write_durable_protocol_json(root, "authoritative_verification.json", {
+            "protocol": AUTH_PROTOCOL_ID, "state": "READY_TO_COMMIT", "passed": False,
+            "verdict": "READY_TO_COMMIT",
+        })
+        write_durable_protocol_json(root, "terminal_state.json", {
+            "protocol": AUTH_PROTOCOL_ID, "state": "COMMITTED_UNVERIFIED", "pass": False,
+        })
+        write_durable_protocol_json(root, "disposition.json", {
+            "protocol": AUTH_PROTOCOL_ID, "state": "COMMITTED_UNVERIFIED",
+            "disposition": "READY_TO_COMMIT", "pass": False,
+        })
+        # A20 is the irreversible final write.  It excludes itself by design.
+        _durable_exclusive_bytes(root, AUTH_PROTOCOL_MANIFEST, (canonical_json_dumps(_protocol_manifest(root)) + "\n").encode("utf-8"))
+        _fsync_directory(root)
+        return {"state": "COMMITTED_UNVERIFIED", "overall_pass": False, "archive_root": str(root)}
+    except Exception as exc:
+        _persist_protocol_terminal_failure(root, state="INCOMPLETE", failure=sanitized_failure(exc))
+        raise
+
+
+def verify_completed_protocol_archive(
+    root: Path, *, approval: TrustedReleaseApproval, snapshot: FixtureSnapshot,
+    contract: dict[str, Any], canonical_source_map: dict[str, dict[str, Any]],
+    current_final_preflight: dict[str, Any] | None = None,
+) -> str:
+    """A21: independently reopen a committed protocol archive and recompute truth.
+
+    This verifier never trusts stored `passed`, provenance, aggregate, or
+    disposition flags.  It is intentionally separate from materialization and
+    is the only code path that returns the authoritative PASS token.
+    """
+
+    try:
+        _require_private_archive_directory(root)
+        actual = {path.name for path in root.iterdir() if path.is_file()}
+        expected = set(AUTH_PROTOCOL_ARTIFACTS) | {AUTH_PROTOCOL_MANIFEST}
+        if actual != expected:
+            return "missing_or_unexpected_protocol_artifact"
+        manifest = _protocol_read_json(root, AUTH_PROTOCOL_MANIFEST)
+        if (
+            not isinstance(manifest, dict)
+            or manifest.get("protocol") != AUTH_PROTOCOL_ID
+            or manifest.get("terminal_artifact") != AUTH_PROTOCOL_MANIFEST
+            or manifest.get("manifest_inventory_excludes_self") is not True
+            or set(manifest.get("artifacts", {})) != set(AUTH_PROTOCOL_ARTIFACTS)
+        ):
+            return "invalid_protocol_manifest"
+        for name, entry in manifest["artifacts"].items():
+            path = _protocol_path(root, name)
+            if (
+                not isinstance(entry, dict)
+                or entry.get("sha256") != sha256_file(path)
+                or entry.get("bytes") != path.stat().st_size
+            ):
+                return "protocol_manifest_digest_mismatch"
+        artifacts = {name: _protocol_read_json(root, name) for name in AUTH_PROTOCOL_ARTIFACTS if name != "execution_journal.jsonl"}
+        journal_path = _protocol_path(root, "execution_journal.jsonl")
+        journal = [json.loads(line) for line in journal_path.read_text(encoding="utf-8").splitlines()]
+    except (OSError, ValueError, TypeError, json.JSONDecodeError, QualificationHarnessError):
+        return "unreadable_protocol_archive"
+
+    attempt = artifacts["attempt.json"]
+    oracle = artifacts["oracle_identity.json"]
+    if (
+        not isinstance(attempt, dict)
+        or attempt.get("protocol") != AUTH_PROTOCOL_ID
+        or attempt.get("authorization") != _protocol_approval_identity(approval)
+        or attempt.get("fixture_sha256") != snapshot.sha256
+        or attempt.get("query_ids") != [query["query_id"] for query in snapshot.fixture["queries"]]
+        or attempt.get("contract_identity") != sha256_json(contract)
+        or not isinstance(oracle, dict)
+        or oracle.get("fixture_sha256") != snapshot.sha256
+        or oracle.get("fixture_schema") != approval.fixture_schema
+        or "raw_bytes" in oracle or "queries" in oracle
+    ):
+        return "protocol_authorization_or_oracle_identity_mismatch"
+    if artifacts["contract.json"] != contract:
+        return "protocol_contract_mismatch"
+    if not artifacts["pre_retrieval_preflight.json"].get("passed"):
+        return "protocol_initial_preflight_failure"
+    if not artifacts["final_live_preflight.json"].get("passed"):
+        return "protocol_final_preflight_failure"
+    if (
+        current_final_preflight is not None
+        and artifacts["final_live_preflight.json"].get("evidence") != current_final_preflight
+    ):
+        return "protocol_final_preflight_stale"
+    if artifacts["authoritative_verification.json"] != {
+        "protocol": AUTH_PROTOCOL_ID, "state": "READY_TO_COMMIT", "passed": False,
+        "verdict": "READY_TO_COMMIT",
+    }:
+        return "protocol_readiness_verification_mismatch"
+    if artifacts["terminal_state.json"] != {
+        "protocol": AUTH_PROTOCOL_ID, "state": "COMMITTED_UNVERIFIED", "pass": False,
+    } or artifacts["disposition.json"] != {
+        "protocol": AUTH_PROTOCOL_ID, "state": "COMMITTED_UNVERIFIED",
+        "disposition": "READY_TO_COMMIT", "pass": False,
+    }:
+        return "protocol_terminal_state_mismatch"
+
+    executions = artifacts["executions.json"]
+    raw_runs = (artifacts["raw_backend_outputs.json"], artifacts["execution_2_raw_backend_outputs.json"])
+    score_runs = artifacts["per_query.json"]
+    backend_score_runs = artifacts["backend_per_query.json"]
+    parity_runs = artifacts["parity.json"]
+    query_ids = attempt["query_ids"]
+    if not isinstance(executions, list) or len(executions) != 2 or any(not isinstance(row, dict) for row in executions):
+        return "protocol_execution_count_mismatch"
+    rebuilt_snapshots = []
+    all_failures = []
+    for number, (execution, raw) in enumerate(zip(executions, raw_runs, strict=True), start=1):
+        scores = score_runs.get(f"execution_{number}") if isinstance(score_runs, dict) else None
+        backend_scores = backend_score_runs.get(f"execution_{number}") if isinstance(backend_score_runs, dict) else None
+        if (
+            execution.get("execution") != number or execution.get("status") != "COMPLETE"
+            or execution.get("failure") is not None or execution.get("raw_backend_outputs") != raw
+            or execution.get("per_query") != scores or execution.get("backend_per_query") != backend_scores
+            or not _complete_archive_scores(scores, query_ids)
+            or not _complete_archive_backend_scores(backend_scores, query_ids)
+            or not _complete_archive_raw(raw, query_ids)
+        ):
+            return "protocol_incomplete_execution"
+        recomputed_scores = []
+        recomputed_parity = []
+        for index, query in enumerate(snapshot.fixture["queries"]):
+            try:
+                canonical = {
+                    backend: canonical_raw(raw[backend][index], canonical_source_map=canonical_source_map)
+                    for backend in BACKENDS
+                }
+                per_backend = {backend: score_query(query, canonical[backend]) for backend in BACKENDS}
+            except (KeyError, TypeError, QualificationHarnessError):
+                return "protocol_raw_evidence_mismatch"
+            if backend_scores[index] != {"query_id": query["query_id"], "backends": per_backend} or scores[index] != per_backend["cswp_local"]:
+                return "protocol_score_truth_mismatch"
+            recomputed_scores.append(per_backend["cswp_local"])
+            recomputed_parity.extend({"query_id": query["query_id"], **item} for item in compare_backends(canonical["cswp_local"], canonical["cswp_qdrant"]))
+        expected_parity = {"passed": not recomputed_parity, "mismatches": recomputed_parity}
+        if parity_runs.get(f"execution_{number}") != expected_parity:
+            return "protocol_parity_mismatch"
+        try:
+            rebuilt_snapshots.append(archived_deterministic_execution_snapshot(scores, backend_scores, raw, query_ids))
+        except (KeyError, TypeError, QualificationHarnessError, ArchiveEvidenceConflict):
+            return "protocol_determinism_evidence_mismatch"
+        all_failures.extend(execution.get("aggregate", {}).get("hard_failures", []))
+    determinism = artifacts["determinism.json"]
+    expected_mismatches = compare_deterministic_executions(rebuilt_snapshots[0], rebuilt_snapshots[1])
+    if (
+        not isinstance(determinism, dict)
+        or determinism.get("execution_1") != rebuilt_snapshots[0]
+        or determinism.get("execution_2") != rebuilt_snapshots[1]
+        or determinism.get("mismatches") != expected_mismatches
+        or determinism.get("passed") is not (not expected_mismatches)
+        or expected_mismatches
+    ):
+        return "protocol_determinism_mismatch"
+    score_truth = artifacts["score_truth.json"]
+    if (
+        not isinstance(score_truth, dict) or score_truth.get("passed") is not True
+        or score_truth.get("execution_1") != score_runs["execution_1"]
+        or score_truth.get("execution_2") != score_runs["execution_2"]
+        or score_truth.get("aggregate_hard_failures") != []
+    ):
+        return "protocol_score_truth_mismatch"
+    provenance_records = artifacts["provenance.json"]
+    expected_identity = derive_trusted_qualified_runtime_identity(contract)
+    if (
+        provenance_records.get("expected_runtime_identity") != expected_identity
+        or any(
+            execution.get("provenance", {}).get("observed", {}).get("expected_runtime_identity") != expected_identity
+            or execution.get("provenance", {}).get("passed") is not True
+            for execution in executions
+        )
+    ):
+        return "protocol_provenance_mismatch"
+    completed = [row for row in journal if row.get("event") == "query_completed"]
+    raw_events = [row for row in journal if row.get("event") == "backend_raw_result"]
+    if (
+        [row.get("execution") for row in completed] != [1] * len(query_ids) + [2] * len(query_ids)
+        or [row.get("query_id") for row in completed] != query_ids + query_ids
+        or len(raw_events) != len(query_ids) * len(BACKENDS) * 2
+        or any(row.get("event") == "execution_incomplete" for row in journal)
+    ):
+        return "protocol_journal_incomplete"
+    # Match durable query records directly to final archived raw results.
+    for execution_no, raw in enumerate(raw_runs, start=1):
+        rows = [row for row in completed if row["execution"] == execution_no]
+        for index, row in enumerate(rows):
+            if row.get("raw_backend_outputs") != {backend: raw[backend][index] for backend in BACKENDS}:
+                return "protocol_journal_raw_disagreement"
+    summary = artifacts["summary.json"]
+    if summary != {
+        "protocol": AUTH_PROTOCOL_ID, "state": "READY_TO_COMMIT", "overall_pass": False,
+        "readiness": True, "hard_failures": [],
+    }:
+        return "protocol_summary_mismatch"
+    return contract["disposition_values"][0]
+
+
 def _verify_authoritative_release_with_approval(
     root: Path, approval: TrustedReleaseApproval, snapshot: FixtureSnapshot,
     *, allow_preterminal: bool = False,
@@ -2416,15 +3046,30 @@ def verify_authoritative_release(root: Path) -> str:
 
     try:
         approval = load_trusted_release_approval(archive_root=root)
+        # Bind executable controls before reading any approved oracle bytes.
+        if runtime_git_sha() != approval.approved_execution_sha:
+            return "approved_execution_sha_mismatch"
+        contract = load_contract(DEFAULT_CONTRACT_PATH)
+        if contract_sha256(contract) != approval.frozen_contract_identity:
+            return "frozen_contract_identity_mismatch"
         snapshot = load_approved_fixture_snapshot(approval)
     except QualificationHarnessError as exc:
         return f"approval_or_oracle_failure:{exc}"
+    if (root / "attempt.json").is_file():
+        try:
+            expected = derive_trusted_qualified_runtime_identity(contract)
+            canonical_source_map, current_final_preflight = validate_fresh_release_qdrant_preflight(expected)
+        except QualificationHarnessError:
+            return "final_live_preflight_failure"
+        return verify_completed_protocol_archive(
+            root, approval=approval, snapshot=snapshot, contract=contract,
+            canonical_source_map=canonical_source_map,
+            current_final_preflight=current_final_preflight,
+        )
     return _verify_authoritative_release_with_approval(root, approval, snapshot)
 
 
-def run_authoritative_qualification(
-    *, archive_root: Path | None = None
-) -> dict[str, Any]:
+def run_authoritative_qualification() -> dict[str, Any]:
     """Run the only authoritative Phase-5 qualification path.
 
     Fixture selection, runtime SHA, adapters, and real preflight are release
@@ -2432,11 +3077,10 @@ def run_authoritative_qualification(
     expected fail-closed state until the separately authorized integration.
     """
 
-    resolved_archive = archive_root or DEFAULT_ARCHIVE_ROOT
+    # The fixed archive path is part of the production authority boundary.
+    # Test-only public seams call `_run_authoritative_protocol_attempt` directly.
+    resolved_archive = DEFAULT_ARCHIVE_ROOT
     approval = load_trusted_release_approval(archive_root=resolved_archive)
-    snapshot = load_approved_fixture_snapshot(approval)
-    if snapshot.fixture.get("holdout") is not True:
-        raise QualificationHarnessError("approved authoritative fixture is not marked as holdout")
     if runtime_git_sha() != approval.approved_execution_sha:
         raise QualificationHarnessError(
             "runtime HEAD does not match the approved authoritative execution SHA"
@@ -2444,85 +3088,34 @@ def run_authoritative_qualification(
     contract = load_contract(DEFAULT_CONTRACT_PATH)
     if contract_sha256(contract) != approval.frozen_contract_identity:
         raise QualificationHarnessError("frozen contract identity disagrees with trusted approval")
+    snapshot = load_approved_fixture_snapshot(approval)
+    if snapshot.fixture.get("holdout") is not True:
+        raise QualificationHarnessError("approved authoritative fixture is not marked as holdout")
     expected_identity = derive_trusted_qualified_runtime_identity(contract)
-    # This must finish before the archive is reserved and before query one.
+    # This real preflight happens before reservation and every sealed query.
     canonical_source_map, preflight = validate_real_adapter_preflight(expected_identity)
-    reserve_archive(resolved_archive)
-    journal = resolved_archive / "execution_journal.jsonl"
-    evidence = _run_evaluation(
-        fixture_path=approval.fixture_path,
-        contract_path=DEFAULT_CONTRACT_PATH,
-        executor=execute_qualified_backends,
-        determinism_executor=execute_qualified_backends,
-        fixture_snapshot=snapshot,
-        canonical_source_map=canonical_source_map,
-        _journal_path=journal,
+    report = _run_authoritative_protocol_attempt(
+        root=resolved_archive, approval=approval, snapshot=snapshot, contract=contract,
+        canonical_source_map=canonical_source_map, initial_preflight=preflight,
+        backend_executor=_execute_authoritative_backend,
+        final_preflight=lambda identity: validate_fresh_release_qdrant_preflight(identity)[1],
     )
-    evidence["decision_scope"] = "authoritative_release"
-    evidence["preflight"] = preflight
-    evidence["authorization"] = _approval_claim(approval)
-    evidence["contract"] = contract
-    evidence["aggregate"]["disposition"] = (
-        contract["disposition_values"][0]
-        if evidence["overall_pass"]
-        else contract["disposition_values"][1]
-    )
-    evidence["disposition"] = evidence["aggregate"]["disposition"]
-
-    # _run_evaluation writes each completed query before it begins the next
-    # one. Do not reconstruct this evidence after execution has returned.
-    # The authoritative call above owns the only production journal path.
-    # Persist execution, score, determinism, and gate evidence first. The
-    # terminal disposition and manifest are deliberately excluded here.
-    evidence["archive_paths"] = write_qualification_archive(
-        evidence, resolved_archive, fixture_snapshot=snapshot,
-        already_reserved=True, terminal=False,
-    )
-    try:
-        # This is a new uncached live read, separate from the pre-retrieval
-        # preflight. It is recorded only after all sealed executions complete.
-        _unused, final_preflight = validate_fresh_release_qdrant_preflight(expected_identity)
-        if not final_preflight:
-            raise QualificationHarnessError("fresh final Qdrant preflight returned no evidence")
-        evidence["final_live_preflight"] = {
-            "stage": "fresh_final_live_qdrant_preflight",
-            "passed": True,
-            "evidence": final_preflight,
-        }
-        release_verdict = _verify_authoritative_release_with_approval(
-            resolved_archive, approval, snapshot, allow_preterminal=True,
-        )
-        evidence["release_verdict"] = release_verdict
-        evidence["authoritative_verification"] = {
-            "stage": "authoritative_release_verification",
-            "verdict": release_verdict,
-            "passed": release_verdict == contract["disposition_values"][0],
-        }
-        if evidence["overall_pass"] and release_verdict != contract["disposition_values"][0]:
-            raise QualificationHarnessError(
-                "authoritative PASS requires trusted approval and verified release evidence"
-            )
-        evidence["archive_paths"].update(finalize_qualification_archive(
-            evidence, resolved_archive, fixture_snapshot=snapshot,
-        ))
-    except Exception as exc:
-        append_execution_journal(journal, {
-            "event": "archive_finalization_incomplete",
-            "failure": sanitized_failure(exc),
-        })
-        evidence["overall_pass"] = False
-        evidence["aggregate"]["overall_pass"] = False
-        evidence["release_verdict"] = "archive_finalization_incomplete"
-        raise
-    return evidence
+    if report["state"] != "COMMITTED_UNVERIFIED":
+        return report
+    # A21 uses fresh authority, oracle bytes, trusted runtime identity, and a
+    # second live Qdrant read via `verify_authoritative_release`.
+    verdict = verify_authoritative_release(resolved_archive)
+    if verdict != contract["disposition_values"][0]:
+        return {"state": "COMMITTED_UNVERIFIED", "overall_pass": False, "verdict": verdict}
+    return {"state": "PASS", "overall_pass": True, "verdict": verdict}
 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--archive-root", type=Path)
-    a = p.parse_args(argv)
-    report = run_authoritative_qualification(archive_root=a.archive_root)
-    print(canonical_json_dumps(report))
+    p.parse_args(argv)
+    report = run_authoritative_qualification()
+    # Do not expose the operator fixture path or archive details in CLI output.
+    print(canonical_json_dumps({key: report.get(key) for key in ("state", "overall_pass", "verdict")}))
     return 0 if report["overall_pass"] else 1
 
 

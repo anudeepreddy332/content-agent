@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import inspect
 import json
+import shutil
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import pytest
@@ -945,15 +946,15 @@ def test_cli_exposes_no_caller_control_over_authoritative_inputs(monkeypatch, ca
 
     def invoked(**kwargs):
         recorded.update(kwargs)
-        return {"overall_pass": True}
+        return {"overall_pass": True, "state": "PASS"}
 
     monkeypatch.setattr(runner, "run_authoritative_qualification", invoked)
-    assert runner.main(["--archive-root", "temporary-release-archive"]) == 0
-    assert recorded["archive_root"] == Path("temporary-release-archive")
+    assert runner.main([]) == 0
+    assert recorded == {}
     with pytest.raises(SystemExit):
         runner.main(
             [
-                "--fixture", str(FIXTURE),
+                "--archive-root", "temporary-release-archive",
             ]
         )
     capsys.readouterr()
@@ -2381,25 +2382,38 @@ def test_authoritative_orchestration_journals_each_public_query_and_finalizes_la
     fixture["holdout"] = True
     _trusted_approval(tmp_path, monkeypatch, fixture=fixture, execution_sha=approved)
     identity = fixture["expected_runtime_identity"]
-    monkeypatch.setattr(runner, "expected_runtime_identity", lambda _fixture, _contract: identity)
     monkeypatch.setattr(runner, "derive_trusted_qualified_runtime_identity", lambda _contract: identity)
-    monkeypatch.setattr(runner, "qualified_canonical_source_map", lambda: None)
-    monkeypatch.setattr(runner, "validate_real_adapter_preflight", lambda _identity: (None, {"public": "pre"}))
-    monkeypatch.setattr(runner, "validate_fresh_release_qdrant_preflight", lambda _identity: ({}, {"public": "fresh"}))
-    monkeypatch.setattr(runner, "execute_qualified_backends", executor())
     archive = tmp_path / "public-orchestration"
-
-    report = runner.run_authoritative_qualification(archive_root=archive)
+    approval = runner.load_trusted_release_approval()
+    snapshot = runner.load_approved_fixture_snapshot(approval)
+    calls = executor()
+    report = runner._run_authoritative_protocol_attempt(
+        root=archive,
+        approval=approval,
+        snapshot=snapshot,
+        contract=runner.load_contract(),
+        canonical_source_map=None,
+        initial_preflight={"public": "pre"},
+        backend_executor=lambda backend, query: calls(query)[backend],
+        final_preflight=lambda _identity: {"public": "fresh"},
+    )
 
     journal = [json.loads(line) for line in (archive / "execution_journal.jsonl").read_text().splitlines()]
     assert [row["query_id"] for row in journal if row["event"] == "query_completed"] == [
         "SYN-A1", "SYN-A2", "SYN-A3", "SYN-P1", "SYN-ABS1",
         "SYN-A1", "SYN-A2", "SYN-A3", "SYN-P1", "SYN-ABS1",
     ], journal
-    assert report["release_verdict"] == runner.load_contract()["disposition_values"][0]
-    assert archive_is_successful(archive) is True
+    assert report["state"] == "COMMITTED_UNVERIFIED"
+    assert runner.verify_completed_protocol_archive(
+        archive,
+        approval=approval,
+        snapshot=snapshot,
+        contract=runner.load_contract(),
+        canonical_source_map=None,
+    ) == runner.load_contract()["disposition_values"][0]
     manifest = json.loads((archive / "manifest.json").read_text())
-    assert {"final_live_preflight.json", "authoritative_verification.json", "disposition.json"} <= set(manifest["artifacts"])
+    assert set(runner.AUTH_PROTOCOL_ARTIFACTS) == set(manifest["artifacts"])
+    assert not (archive / "oracle_fixture.json").exists()
 
 
 def test_authoritative_execution_sha_mismatch_fails_before_retrieval(tmp_path, monkeypatch):
@@ -2603,3 +2617,137 @@ def test_final_release_preflight_rejects_live_qdrant_change_after_evidence(
 def test_final_release_preflight_uses_fresh_healthy_qdrant_path(tmp_path, monkeypatch):
     archive, _approval = _externally_trusted_archive(tmp_path, monkeypatch)
     assert runner.verify_authoritative_release(archive) == "PHASE-5E1A-HOLDOUT-PASS"
+
+
+def _complete_public_protocol_archive(tmp_path, monkeypatch):
+    """One truthful public execution of the real protocol state machine."""
+
+    approved = "a" * 40
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: approved)
+    fixture = json.loads(FIXTURE.read_text())
+    fixture["holdout"] = True
+    _trusted_approval(tmp_path, monkeypatch, fixture=fixture, execution_sha=approved)
+    identity = fixture["expected_runtime_identity"]
+    monkeypatch.setattr(runner, "derive_trusted_qualified_runtime_identity", lambda _contract: identity)
+    approval = runner.load_trusted_release_approval()
+    snapshot = runner.load_approved_fixture_snapshot(approval)
+    adapter = executor()
+    archive = tmp_path / "protocol-seed"
+    report = runner._run_authoritative_protocol_attempt(
+        root=archive,
+        approval=approval,
+        snapshot=snapshot,
+        contract=runner.load_contract(),
+        canonical_source_map=None,
+        initial_preflight={"public": "initial"},
+        backend_executor=lambda backend, query: adapter(query)[backend],
+        final_preflight=lambda _identity: {"public": "final"},
+    )
+    assert report["state"] == "COMMITTED_UNVERIFIED"
+    assert runner.verify_completed_protocol_archive(
+        archive, approval=approval, snapshot=snapshot, contract=runner.load_contract(),
+        canonical_source_map=None,
+    ) == runner.load_contract()["disposition_values"][0]
+    return archive, approval, snapshot
+
+
+def _refresh_protocol_manifest(archive):
+    manifest_path = archive / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["artifacts"] = {
+        name: {"sha256": runner.sha256_file(archive / name), "bytes": (archive / name).stat().st_size}
+        for name in runner.AUTH_PROTOCOL_ARTIFACTS
+        if (archive / name).is_file()
+    }
+    manifest_path.write_text(runner.canonical_json_dumps(manifest) + "\n")
+
+
+def test_protocol_artifact_mutation_matrix_rejects_all_a01_a19_cases(tmp_path, monkeypatch):
+    """A01–A19: digest-valid semantic tampering never creates a false PASS."""
+
+    seed, approval, snapshot = _complete_public_protocol_archive(tmp_path, monkeypatch)
+    cases = ("missing", "corrupt", "wrong_identity", "stale", "contradictory", "excluded", "changed_after_manifest")
+    for name in runner.AUTH_PROTOCOL_ARTIFACTS:
+        for case in cases:
+            archive = tmp_path / f"attack-{name.replace('.', '-')}-{case}"
+            shutil.copytree(seed, archive)
+            path = archive / name
+            if case == "missing":
+                path.unlink()
+            elif case == "corrupt":
+                path.write_bytes(b"{not-json\n" if name != "execution_journal.jsonl" else b"not-json\n")
+                _refresh_protocol_manifest(archive)
+            elif case in {"wrong_identity", "stale", "contradictory"}:
+                if name == "execution_journal.jsonl":
+                    path.write_text(path.read_text() + runner.canonical_json_dumps({"event": "query_completed", "execution": 9, "query_id": case}) + "\n")
+                else:
+                    path.write_text(runner.canonical_json_dumps({"tamper": case, "artifact": name}) + "\n")
+                _refresh_protocol_manifest(archive)
+            elif case == "excluded":
+                manifest = json.loads((archive / "manifest.json").read_text())
+                manifest["artifacts"].pop(name)
+                (archive / "manifest.json").write_text(runner.canonical_json_dumps(manifest) + "\n")
+            else:
+                path.write_bytes(path.read_bytes() + b"\n")
+            assert runner.verify_completed_protocol_archive(
+                archive, approval=approval, snapshot=snapshot, contract=runner.load_contract(),
+                canonical_source_map=None,
+            ) != runner.load_contract()["disposition_values"][0], (name, case)
+
+
+@pytest.mark.parametrize("failure_stage", ["journal", "local", "qdrant", "final_preflight", "manifest"])
+def test_protocol_transition_failures_are_never_committed_as_pass(
+    tmp_path, monkeypatch, failure_stage
+):
+    """Public failure-injection covers durable and lifecycle boundaries."""
+
+    approved = "a" * 40
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: approved)
+    fixture = json.loads(FIXTURE.read_text())
+    fixture["holdout"] = True
+    _trusted_approval(tmp_path, monkeypatch, fixture=fixture, execution_sha=approved)
+    identity = fixture["expected_runtime_identity"]
+    monkeypatch.setattr(runner, "derive_trusted_qualified_runtime_identity", lambda _contract: identity)
+    approval = runner.load_trusted_release_approval()
+    snapshot = runner.load_approved_fixture_snapshot(approval)
+    archive = tmp_path / f"failure-{failure_stage}"
+    adapter = executor()
+    if failure_stage == "journal":
+        monkeypatch.setattr(
+            runner, "append_durable_protocol_journal",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("journal fsync failed")),
+        )
+    if failure_stage == "manifest":
+        original = runner._durable_exclusive_bytes
+        monkeypatch.setattr(
+            runner, "_durable_exclusive_bytes",
+            lambda root, name, data: (_ for _ in ()).throw(OSError("manifest fsync failed"))
+            if name == "manifest.json" else original(root, name, data),
+        )
+
+    def backend(backend_name, query):
+        if backend_name == f"cswp_{failure_stage}":
+            raise OSError(f"{failure_stage} backend failure")
+        return adapter(query)[backend_name]
+
+    if failure_stage == "final_preflight":
+        def final(_identity):
+            raise OSError("final preflight failed")
+    else:
+        def final(_identity):
+            return {"public": "final"}
+    if failure_stage in {"local", "qdrant"}:
+        report = runner._run_authoritative_protocol_attempt(
+            root=archive, approval=approval, snapshot=snapshot, contract=runner.load_contract(),
+            canonical_source_map=None, initial_preflight={"public": "initial"},
+            backend_executor=backend, final_preflight=final,
+        )
+        assert report["state"] == "INCOMPLETE"
+    else:
+        with pytest.raises(OSError):
+            runner._run_authoritative_protocol_attempt(
+                root=archive, approval=approval, snapshot=snapshot, contract=runner.load_contract(),
+                canonical_source_map=None, initial_preflight={"public": "initial"},
+                backend_executor=backend, final_preflight=final,
+            )
+    assert not (archive / "manifest.json").exists()
