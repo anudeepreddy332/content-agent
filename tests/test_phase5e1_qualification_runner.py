@@ -2055,6 +2055,100 @@ def test_first_execution_failure_retains_prior_journal_evidence(tmp_path, monkey
     assert archive_is_successful(archive) is False
 
 
+def test_query_journal_is_fsynced_before_a_crash_can_start_the_next_query(tmp_path, monkeypatch):
+    """Public synthetic crash seam: Q01/Q02 survive, Q03 never starts."""
+
+    archive = tmp_path / "crash-after-query"
+    archive.mkdir()
+    journal = archive / "execution_journal.jsonl"
+    original_append = runner.append_execution_journal
+
+    def crash_after_q02(path, record):
+        original_append(path, record)
+        if record.get("event") == "query_completed" and record.get("query_id") == "SYN-A2":
+            raise SystemExit("synthetic crash after durable SYN-A2")
+
+    monkeypatch.setattr(runner, "append_execution_journal", crash_after_q02)
+    with pytest.raises(SystemExit, match="durable SYN-A2"):
+        _run_evaluation(
+            fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor(),
+            _journal_path=journal,
+        )
+    records = [json.loads(line) for line in journal.read_text().splitlines()]
+    completed = [row["query_id"] for row in records if row["event"] == "query_completed"]
+    assert completed == ["SYN-A1", "SYN-A2"]
+    assert "SYN-A3" not in completed
+    assert not (archive / "manifest.json").exists()
+    assert archive_is_successful(archive) is False
+
+
+def test_terminal_finalization_writes_manifest_after_final_evidence(tmp_path, monkeypatch):
+    """Public fixture regression for the terminal archive write order."""
+
+    archive = tmp_path / "manifest-last"
+    fixture_snapshot = runner.load_fixture_snapshot(FIXTURE)
+    authorization = _authorized(monkeypatch)
+    evidence = _run_evaluation(
+        fixture_path=FIXTURE, contract_path=CONTRACT, executor=executor(),
+        determinism_executor=executor(), fixture_snapshot=fixture_snapshot,
+    )
+    contract = runner.load_contract(CONTRACT)
+    evidence.update({
+        "authorization": {
+            "approved_execution_sha": authorization["approved_execution_sha"],
+            "approved_fixture_sha256": fixture_snapshot.sha256,
+        },
+        "contract": contract,
+        "disposition": contract["disposition_values"][0],
+        "final_live_preflight": {"stage": "fresh_final_live_qdrant_preflight", "passed": True, "evidence": {"public": True}},
+        "authoritative_verification": {"stage": "authoritative_release_verification", "verdict": contract["disposition_values"][0], "passed": True},
+    })
+    evidence["aggregate"]["disposition"] = evidence["disposition"]
+    runner.write_qualification_archive(
+        evidence, archive, fixture_snapshot=fixture_snapshot, terminal=False,
+    )
+    journal = archive / "execution_journal.jsonl"
+    for execution in evidence["executions"]:
+        runner.append_execution_journal(journal, {"event": "execution_started", "execution": execution["execution"]})
+        for index, score in enumerate(execution["per_query"]):
+            runner.append_execution_journal(journal, {
+                "event": "query_completed", "execution": execution["execution"],
+                "query_id": fixture_snapshot.fixture["queries"][index]["query_id"],
+                "raw_backend_outputs": {name: execution["raw_backend_outputs"][name][index] for name in runner.BACKENDS},
+                "per_query": score,
+            })
+        runner.append_execution_journal(journal, {
+            "event": "execution_completed", "execution": execution["execution"],
+            "terminal_status": "COMPLETE", "overall_pass": True,
+        })
+    observed = []
+    original_dumps = runner.canonical_json_dumps
+
+    def record_terminal_write(value):
+        if isinstance(value, dict):
+            observed.append(value.get("stage", value.get("terminal_artifact")))
+        return original_dumps(value)
+
+    monkeypatch.setattr(runner, "canonical_json_dumps", record_terminal_write)
+    runner.finalize_qualification_archive(evidence, archive, fixture_snapshot=fixture_snapshot)
+    assert observed[-4:] == [
+        "fresh_final_live_qdrant_preflight",
+        "authoritative_release_verification",
+        None,
+        "manifest.json",
+    ]
+    manifest = json.loads((archive / "manifest.json").read_text())
+    assert {"final_live_preflight.json", "authoritative_verification.json", "disposition.json"} <= set(manifest["artifacts"])
+    assert archive_verification_failure(archive) is None
+
+
+def test_terminal_archive_rejects_missing_final_evidence_and_early_manifest(tmp_path, monkeypatch):
+    archive = _complete_authoritative_archive(tmp_path, monkeypatch)
+    (archive / "final_live_preflight.json").unlink()
+    assert archive_verification_failure(archive) == "missing_required_artifact"
+    assert archive_is_successful(archive) is False
+
+
 def test_second_execution_failure_retains_both_execution_evidence(tmp_path, monkeypatch):
     archive = tmp_path / "journal"
     calls = 0
@@ -2274,6 +2368,38 @@ def test_failed_mandatory_real_preflight_makes_zero_retrieval_calls(tmp_path, mo
     with pytest.raises(QualificationHarnessError, match="live Qdrant unavailable"):
         runner.run_authoritative_qualification()
     assert calls == []
+
+
+def test_authoritative_orchestration_journals_each_public_query_and_finalizes_last(
+    tmp_path, monkeypatch
+):
+    """Exercise the sealed-run orchestration with a public test-only fixture."""
+
+    approved = "a" * 40
+    monkeypatch.setattr(runner, "runtime_git_sha", lambda: approved)
+    fixture = json.loads(FIXTURE.read_text())
+    fixture["holdout"] = True
+    _trusted_approval(tmp_path, monkeypatch, fixture=fixture, execution_sha=approved)
+    identity = fixture["expected_runtime_identity"]
+    monkeypatch.setattr(runner, "expected_runtime_identity", lambda _fixture, _contract: identity)
+    monkeypatch.setattr(runner, "derive_trusted_qualified_runtime_identity", lambda _contract: identity)
+    monkeypatch.setattr(runner, "qualified_canonical_source_map", lambda: None)
+    monkeypatch.setattr(runner, "validate_real_adapter_preflight", lambda _identity: (None, {"public": "pre"}))
+    monkeypatch.setattr(runner, "validate_fresh_release_qdrant_preflight", lambda _identity: ({}, {"public": "fresh"}))
+    monkeypatch.setattr(runner, "execute_qualified_backends", executor())
+    archive = tmp_path / "public-orchestration"
+
+    report = runner.run_authoritative_qualification(archive_root=archive)
+
+    journal = [json.loads(line) for line in (archive / "execution_journal.jsonl").read_text().splitlines()]
+    assert [row["query_id"] for row in journal if row["event"] == "query_completed"] == [
+        "SYN-A1", "SYN-A2", "SYN-A3", "SYN-P1", "SYN-ABS1",
+        "SYN-A1", "SYN-A2", "SYN-A3", "SYN-P1", "SYN-ABS1",
+    ], journal
+    assert report["release_verdict"] == runner.load_contract()["disposition_values"][0]
+    assert archive_is_successful(archive) is True
+    manifest = json.loads((archive / "manifest.json").read_text())
+    assert {"final_live_preflight.json", "authoritative_verification.json", "disposition.json"} <= set(manifest["artifacts"])
 
 
 def test_authoritative_execution_sha_mismatch_fails_before_retrieval(tmp_path, monkeypatch):
