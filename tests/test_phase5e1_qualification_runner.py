@@ -126,6 +126,9 @@ def isolated_default_release_archive(monkeypatch, tmp_path):
     monkeypatch.setattr(
         runner, "DEFAULT_ARCHIVE_ROOT", tmp_path / "default-authoritative-archive"
     )
+    # Historical public approval fixtures use deliberately synthetic Git SHAs.
+    # Byte/control binding has its own production-path drift regression.
+    monkeypatch.setattr(runner, "validate_approved_execution_controls", lambda _approval: None)
 
 
 def row(source, chunk, start=0, end=20):
@@ -2225,6 +2228,7 @@ def _trusted_approval(tmp_path, monkeypatch, *, fixture=None, execution_sha=None
         fixture_path.write_bytes(FIXTURE.read_bytes())
     else:
         fixture_path.write_text(json.dumps(value))
+    fixture_path.chmod(0o600)
     approval = {
         "schema_version": runner.RELEASE_APPROVAL_SCHEMA,
         "approved_execution_sha": execution_sha or runner.runtime_git_sha(),

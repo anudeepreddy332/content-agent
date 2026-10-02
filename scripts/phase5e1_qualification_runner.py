@@ -170,6 +170,23 @@ def _require_operator_owned_private(path: Path, *, directory: bool) -> None:
         raise QualificationHarnessError("trusted operator approval path has unsafe permissions")
 
 
+def _read_private_operator_snapshot(path: Path) -> bytes:
+    _require_operator_owned_private(path.parent, directory=True)
+    _require_operator_owned_private(path, directory=False)
+    fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    with os.fdopen(fd, "rb") as handle:
+        before = os.fstat(handle.fileno())
+        raw = handle.read()
+        after = os.fstat(handle.fileno())
+    if (
+        (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns)
+        != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+        or (path.lstat().st_dev, path.lstat().st_ino) != (before.st_dev, before.st_ino)
+    ):
+        raise QualificationHarnessError("operator snapshot changed during verified read")
+    return raw
+
+
 def load_trusted_release_approval(*, archive_root: Path | None = None) -> TrustedReleaseApproval:
     """Read the sole operator-selected approval record exactly once.
 
@@ -193,7 +210,7 @@ def load_trusted_release_approval(*, archive_root: Path | None = None) -> Truste
             pass
         else:
             raise QualificationHarnessError("trusted operator approval source resolves inside archive")
-    raw = path.read_bytes()
+    raw = _read_private_operator_snapshot(path)
     try:
         value = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -249,7 +266,7 @@ def _parse_verified_fixture_bytes(raw: bytes) -> dict[str, Any]:
 def load_approved_fixture_snapshot(approval: TrustedReleaseApproval) -> FixtureSnapshot:
     """Hash exact oracle bytes before decoding or inspecting any oracle labels."""
 
-    raw = approval.fixture_path.read_bytes()
+    raw = _read_private_operator_snapshot(approval.fixture_path)
     digest = hashlib.sha256(raw).hexdigest()
     if digest != approval.approved_fixture_sha256:
         raise QualificationHarnessError("approved fixture byte SHA-256 mismatch")
@@ -510,6 +527,8 @@ def qualified_canonical_source_map() -> dict[str, dict[str, Any]]:
     mapping = _canonical_source_intervals(units_list)
     if len(mapping) != QUALIFIED_UNIT_COUNT or set(mapping) != set(units):
         raise QualificationHarnessError("qualified CSWP chunk mapping is incomplete or inconsistent")
+    for chunk_id in mapping:
+        mapping[chunk_id]["qualified_unit"] = units[chunk_id]
     return mapping
 
 
@@ -572,6 +591,13 @@ def hydrate_canonical_source_intervals(
                     "source_intervals": [list(interval) for interval in expected],
                 }
             )
+            unit = canonical.get("qualified_unit")
+            if unit is not None:
+                if row.get("text") is not None and row["text"] != unit["retrieval_text"]:
+                    raise QualificationHarnessError("raw content disagrees with canonical qualified unit")
+                for identity_field in ("source_path", "document_id", "document_version", "source_sha256"):
+                    if identity_field in row and identity_field in unit and row[identity_field] != unit[identity_field]:
+                        raise QualificationHarnessError("raw source identity disagrees with canonical qualified unit")
         hydrated[field] = hydrated_rows
     return hydrated
 
@@ -583,6 +609,22 @@ def canonical_raw(
         raw = hydrate_canonical_source_intervals(
             raw, canonical_source_map=canonical_source_map
         )
+        if canonical_source_map and all("qualified_unit" in item for item in canonical_source_map.values()):
+            from agent.drafter_packed_evidence import (
+                packed_identity_fingerprint,
+                serialize_drafter_packed_evidence_v1,
+            )
+
+            units = {chunk_id: item["qualified_unit"] for chunk_id, item in canonical_source_map.items()}
+            try:
+                packed_rows = raw["packed_rows"]
+                if [item["chunk_id"] for item in packed_rows] != [item["chunk_id"] for item in raw["kb_results"]]:
+                    raise QualificationHarnessError("packed rows disagree with packed evidence order")
+                serialized = serialize_drafter_packed_evidence_v1(packed_rows, units)
+                if raw.get("serialized_groups") != serialized or raw.get("packed_fingerprint") != packed_identity_fingerprint(serialized):
+                    raise QualificationHarnessError("packed serialization or fingerprint is not canonical truth")
+            except (KeyError, TypeError) as exc:
+                raise QualificationHarnessError("missing canonical packed evidence") from exc
     if (
         not isinstance(raw.get("packed_fingerprint"), str)
         or not raw["packed_fingerprint"]
@@ -716,8 +758,8 @@ def validate_real_adapter_preflight(
 ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
     """Validate the qualified corpus and live serving target before query one."""
 
-    from agent.kb_backend.qdrant_serving import validate_startup
-    return _validate_qualified_preflight(expected, validate_startup)
+    from agent.kb_backend.qdrant_serving import validate_fresh_release_preflight
+    return _validate_qualified_preflight(expected, validate_fresh_release_preflight)
 
 
 def validate_fresh_release_qdrant_preflight(
@@ -734,7 +776,7 @@ def _validate_qualified_preflight(
     expected: dict[str, dict[str, str]],
     qdrant_validator: Callable[[], dict[str, Any]],
 ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
-    """Shared qualified identity checks for cached-startup and fresh-release modes."""
+    """Shared qualified identity checks for fresh initial and final live checks."""
 
     from agent.cswp.loader import load_production_index
     from agent.qualified_rag import _runtime_identity
@@ -1501,18 +1543,30 @@ def append_durable_protocol_journal(root: Path, record: dict[str, Any]) -> Path:
     return path
 
 
-def _protocol_read_json(root: Path, name: str) -> Any:
+def _protocol_read_bytes(root: Path, name: str) -> bytes:
     path = _protocol_path(root, name)
     info = path.lstat()
     if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
         raise QualificationHarnessError("protocol artifact has unsafe file type")
-    with path.open("rb") as handle:
+    if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o077:
+        raise QualificationHarnessError("protocol artifact must be operator-owned and private")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags)
+    with os.fdopen(fd, "rb") as handle:
         before = os.fstat(handle.fileno())
         raw = handle.read()
         after = os.fstat(handle.fileno())
-    if before.st_ino != after.st_ino or before.st_size != after.st_size:
+    if (
+        before.st_ino != after.st_ino or before.st_size != after.st_size
+        or before.st_mtime_ns != after.st_mtime_ns or before.st_ctime_ns != after.st_ctime_ns
+        or (path.lstat().st_dev, path.lstat().st_ino) != (before.st_dev, before.st_ino)
+    ):
         raise QualificationHarnessError("protocol artifact changed while being read")
-    return json.loads(raw.decode("utf-8"))
+    return raw
+
+
+def _protocol_read_json(root: Path, name: str) -> Any:
+    return json.loads(_protocol_read_bytes(root, name).decode("utf-8"))
 
 
 REQUIRED_ARCHIVE_ARTIFACTS = frozenset(
@@ -2525,6 +2579,24 @@ def _execute_authoritative_backend(backend: str, query: str) -> dict[str, Any]:
     raise QualificationHarnessError(f"unknown qualified backend {backend}")
 
 
+def validate_approved_execution_controls(approval: TrustedReleaseApproval) -> None:
+    """Bind tracked implementation/control bytes to the approved execution tree.
+
+    HEAD identity alone cannot authorize edited implementation bytes. The
+    explicit path list excludes sealed oracles and approval records.
+    """
+
+    result = subprocess.run(
+        ["git", "diff", "--quiet", approval.approved_execution_sha, "--",
+         "agent", "scripts", "kb", "pyproject.toml", "uv.lock",
+         "evals/fixtures/phase5e1_qualification_contract.json",
+         "evals/fixtures/phase5a1_minilm_tokenizer"],
+        cwd=REPO_ROOT, capture_output=True, check=False,
+    )
+    if result.returncode != 0:
+        raise QualificationHarnessError("approved implementation or control bytes disagree with execution tree")
+
+
 def _protocol_execution(
     *, root: Path, fixture: dict[str, Any], snapshot: FixtureSnapshot,
     contract: dict[str, Any], expected_identity: dict[str, dict[str, Any]],
@@ -2572,6 +2644,15 @@ def _protocol_execution(
                     "query_id": query_id, "backend": backend,
                     "raw": result,
                 })
+                # Validate the completed local call before granting permission
+                # to advance to the one-shot Qdrant invocation.
+                stage = f"{backend}_validation"
+                canonical_result = canonical_raw(result, canonical_source_map=canonical_source_map)
+                if any(
+                    canonical_result["raw"].get(field) != expected_identity[backend][field]
+                    for field in REQUIRED_RUNTIME_IDENTITY[backend]
+                ):
+                    raise QualificationHarnessError("backend runtime identity disagrees with trusted expectation")
             stage = "canonicalization"
             canonical = {
                 backend: canonical_raw(outputs[backend], canonical_source_map=canonical_source_map)
@@ -2679,7 +2760,7 @@ def _persist_protocol_terminal_failure(root: Path, *, state: str, failure: str) 
 
     for name, value in (
         ("terminal_state.json", {"protocol": AUTH_PROTOCOL_ID, "state": state, "pass": False, "failure": failure}),
-        ("disposition.json", {"protocol": AUTH_PROTOCOL_ID, "state": state, "disposition": "INCOMPLETE", "pass": False}),
+        ("disposition.json", {"protocol": AUTH_PROTOCOL_ID, "state": state, "disposition": state, "pass": False}),
     ):
         try:
             if not (root / name).exists():
@@ -2778,6 +2859,13 @@ def _run_authoritative_protocol_attempt(
         write_durable_protocol_json(root, "final_live_preflight.json", {
             "protocol": AUTH_PROTOCOL_ID, "passed": True, "evidence": fresh,
         })
+        readiness_verdict = _verify_protocol_archive(
+            root, approval=approval, snapshot=snapshot, contract=contract,
+            canonical_source_map=canonical_source_map, current_final_preflight=fresh,
+            _preterminal=True,
+        )
+        if readiness_verdict != "READY_TO_COMMIT":
+            raise QualificationHarnessError("persisted readiness evidence failed verification")
         write_durable_protocol_json(root, "authoritative_verification.json", {
             "protocol": AUTH_PROTOCOL_ID, "state": "READY_TO_COMMIT", "passed": False,
             "verdict": "READY_TO_COMMIT",
@@ -2794,14 +2882,52 @@ def _run_authoritative_protocol_attempt(
         _fsync_directory(root)
         return {"state": "COMMITTED_UNVERIFIED", "overall_pass": False, "archive_root": str(root)}
     except Exception as exc:
+        # A manifest whose persistence failed is not a committed completion
+        # witness. Preserve its bytes under a failure name, never overwrite or
+        # retry the one-shot attempt. Completed verification rejects it.
+        manifest_path = root / AUTH_PROTOCOL_MANIFEST
+        failed_manifest = root / "manifest.incomplete.json"
+        if manifest_path.exists() and not failed_manifest.exists():
+            os.rename(manifest_path, failed_manifest)
+            _fsync_directory(root)
         _persist_protocol_terminal_failure(root, state="INCOMPLETE", failure=sanitized_failure(exc))
         raise
 
 
-def verify_completed_protocol_archive(
+def _protocol_preflight_identity(evidence: Any) -> Any:
+    """Fresh checks must agree on identity, not elapsed hydration time."""
+
+    if not isinstance(evidence, dict):
+        return evidence
+    return {
+        key: ({field: value for field, value in record.items() if field != "hydrate_ms"}
+              if isinstance(record, dict) else record)
+        for key, record in evidence.items()
+    }
+
+
+def _protocol_preflight_matches(evidence: Any, expected: dict[str, dict[str, Any]]) -> bool:
+    from agent.kb_backend.qdrant_serving import SERVING_ALIAS
+
+    if not isinstance(evidence, dict) or set(evidence) != set(BACKENDS):
+        return False
+    local, qdrant = evidence["cswp_local"], evidence["cswp_qdrant"]
+    return (
+        isinstance(local, dict) and isinstance(qdrant, dict)
+        and local.get("unit_count") == QUALIFIED_UNIT_COUNT
+        and qdrant.get("point_count") == QUALIFIED_UNIT_COUNT
+        and qdrant.get("serving_alias") == SERVING_ALIAS
+        and qdrant.get("startup_validated") is True
+        and all(local.get(field) == value for field, value in expected["cswp_local"].items())
+        and all(qdrant.get(field) == value for field, value in expected["cswp_qdrant"].items() if field != "qualified_contract")
+    )
+
+
+def _verify_protocol_archive(
     root: Path, *, approval: TrustedReleaseApproval, snapshot: FixtureSnapshot,
     contract: dict[str, Any], canonical_source_map: dict[str, dict[str, Any]],
     current_final_preflight: dict[str, Any] | None = None,
+    _preterminal: bool = False,
 ) -> str:
     """A21: independently reopen a committed protocol archive and recompute truth.
 
@@ -2813,29 +2939,35 @@ def verify_completed_protocol_archive(
     try:
         _require_private_archive_directory(root)
         actual = {path.name for path in root.iterdir() if path.is_file()}
-        expected = set(AUTH_PROTOCOL_ARTIFACTS) | {AUTH_PROTOCOL_MANIFEST}
+        required = set(AUTH_PROTOCOL_ARTIFACTS)
+        if _preterminal:
+            required -= {"authoritative_verification.json", "terminal_state.json", "disposition.json"}
+        expected = required | ({AUTH_PROTOCOL_MANIFEST} if not _preterminal else set())
         if actual != expected:
             return "missing_or_unexpected_protocol_artifact"
-        manifest = _protocol_read_json(root, AUTH_PROTOCOL_MANIFEST)
+        manifest = _protocol_read_json(root, AUTH_PROTOCOL_MANIFEST) if not _preterminal else {
+            "protocol": AUTH_PROTOCOL_ID, "terminal_artifact": AUTH_PROTOCOL_MANIFEST,
+            "manifest_inventory_excludes_self": True, "artifacts": {},
+        }
         if (
             not isinstance(manifest, dict)
             or manifest.get("protocol") != AUTH_PROTOCOL_ID
             or manifest.get("terminal_artifact") != AUTH_PROTOCOL_MANIFEST
             or manifest.get("manifest_inventory_excludes_self") is not True
-            or set(manifest.get("artifacts", {})) != set(AUTH_PROTOCOL_ARTIFACTS)
+            or (not _preterminal and set(manifest.get("artifacts", {})) != set(AUTH_PROTOCOL_ARTIFACTS))
         ):
             return "invalid_protocol_manifest"
+        verified_bytes = {name: _protocol_read_bytes(root, name) for name in required}
         for name, entry in manifest["artifacts"].items():
-            path = _protocol_path(root, name)
+            raw_bytes = verified_bytes[name]
             if (
                 not isinstance(entry, dict)
-                or entry.get("sha256") != sha256_file(path)
-                or entry.get("bytes") != path.stat().st_size
+                or entry.get("sha256") != hashlib.sha256(raw_bytes).hexdigest()
+                or entry.get("bytes") != len(raw_bytes)
             ):
                 return "protocol_manifest_digest_mismatch"
-        artifacts = {name: _protocol_read_json(root, name) for name in AUTH_PROTOCOL_ARTIFACTS if name != "execution_journal.jsonl"}
-        journal_path = _protocol_path(root, "execution_journal.jsonl")
-        journal = [json.loads(line) for line in journal_path.read_text(encoding="utf-8").splitlines()]
+        artifacts = {name: json.loads(verified_bytes[name].decode("utf-8")) for name in required if name != "execution_journal.jsonl"}
+        journal = [json.loads(line) for line in verified_bytes["execution_journal.jsonl"].decode("utf-8").splitlines()]
     except (OSError, ValueError, TypeError, json.JSONDecodeError, QualificationHarnessError):
         return "unreadable_protocol_archive"
 
@@ -2856,26 +2988,32 @@ def verify_completed_protocol_archive(
         return "protocol_authorization_or_oracle_identity_mismatch"
     if artifacts["contract.json"] != contract:
         return "protocol_contract_mismatch"
+    if canonical_source_map is not None:
+        expected_preflight_identity = derive_trusted_qualified_runtime_identity(contract)
+        for name in ("pre_retrieval_preflight.json", "final_live_preflight.json"):
+            if not _protocol_preflight_matches(artifacts[name].get("evidence"), expected_preflight_identity):
+                return "protocol_preflight_identity_mismatch"
     if not artifacts["pre_retrieval_preflight.json"].get("passed"):
         return "protocol_initial_preflight_failure"
     if not artifacts["final_live_preflight.json"].get("passed"):
         return "protocol_final_preflight_failure"
     if (
         current_final_preflight is not None
-        and artifacts["final_live_preflight.json"].get("evidence") != current_final_preflight
+        and _protocol_preflight_identity(artifacts["final_live_preflight.json"].get("evidence"))
+        != _protocol_preflight_identity(current_final_preflight)
     ):
         return "protocol_final_preflight_stale"
-    if artifacts["authoritative_verification.json"] != {
+    if not _preterminal and artifacts["authoritative_verification.json"] != {
         "protocol": AUTH_PROTOCOL_ID, "state": "READY_TO_COMMIT", "passed": False,
         "verdict": "READY_TO_COMMIT",
     }:
         return "protocol_readiness_verification_mismatch"
-    if artifacts["terminal_state.json"] != {
+    if not _preterminal and (artifacts["terminal_state.json"] != {
         "protocol": AUTH_PROTOCOL_ID, "state": "COMMITTED_UNVERIFIED", "pass": False,
     } or artifacts["disposition.json"] != {
         "protocol": AUTH_PROTOCOL_ID, "state": "COMMITTED_UNVERIFIED",
         "disposition": "READY_TO_COMMIT", "pass": False,
-    }:
+    }):
         return "protocol_terminal_state_mismatch"
 
     executions = artifacts["executions.json"]
@@ -2888,6 +3026,7 @@ def verify_completed_protocol_archive(
         return "protocol_execution_count_mismatch"
     rebuilt_snapshots = []
     all_failures = []
+    expected_identity = derive_trusted_qualified_runtime_identity(contract)
     for number, (execution, raw) in enumerate(zip(executions, raw_runs, strict=True), start=1):
         scores = score_runs.get(f"execution_{number}") if isinstance(score_runs, dict) else None
         backend_scores = backend_score_runs.get(f"execution_{number}") if isinstance(backend_score_runs, dict) else None
@@ -2902,6 +3041,8 @@ def verify_completed_protocol_archive(
             return "protocol_incomplete_execution"
         recomputed_scores = []
         recomputed_parity = []
+        frozen_identity = None
+        runtime_failures = []
         for index, query in enumerate(snapshot.fixture["queries"]):
             try:
                 canonical = {
@@ -2909,6 +3050,12 @@ def verify_completed_protocol_archive(
                     for backend in BACKENDS
                 }
                 per_backend = {backend: score_query(query, canonical[backend]) for backend in BACKENDS}
+                _observed, failures, frozen_identity = validate_runtime_identity(
+                    query_id=query["query_id"],
+                    outputs={backend: canonical[backend]["raw"] for backend in BACKENDS},
+                    expected=expected_identity, frozen=frozen_identity,
+                )
+                runtime_failures.extend(failures)
             except (KeyError, TypeError, QualificationHarnessError):
                 return "protocol_raw_evidence_mismatch"
             if backend_scores[index] != {"query_id": query["query_id"], "backends": per_backend} or scores[index] != per_backend["cswp_local"]:
@@ -2918,6 +3065,22 @@ def verify_completed_protocol_archive(
         expected_parity = {"passed": not recomputed_parity, "mismatches": recomputed_parity}
         if parity_runs.get(f"execution_{number}") != expected_parity:
             return "protocol_parity_mismatch"
+        rebuilt_provenance = provenance(
+            snapshot.fixture, snapshot.sha256, contract, expected_identity,
+            frozen_identity, runtime_failures,
+        )
+        if (
+            execution.get("provenance") != rebuilt_provenance
+            or artifacts["provenance.json"].get(f"execution_{number}") != rebuilt_provenance
+            or runtime_failures
+        ):
+            return "protocol_provenance_mismatch"
+        rebuilt_aggregate = evaluate_evidence_gates(
+            snapshot.fixture["queries"], recomputed_scores, contract,
+            recomputed_parity, rebuilt_provenance,
+        )
+        if execution.get("aggregate") != rebuilt_aggregate or not rebuilt_aggregate["overall_pass"]:
+            return "protocol_aggregate_mismatch"
         try:
             rebuilt_snapshots.append(archived_deterministic_execution_snapshot(scores, backend_scores, raw, query_ids))
         except (KeyError, TypeError, QualificationHarnessError, ArchiveEvidenceConflict):
@@ -2962,6 +3125,59 @@ def verify_completed_protocol_archive(
         or any(row.get("event") == "execution_incomplete" for row in journal)
     ):
         return "protocol_journal_incomplete"
+    # Replay the causal grammar, including every one-shot invocation intent.
+    cursor = 1
+    if not journal or journal[0] != {"event": "attempt_materialized", "attempt": attempt}:
+        return "protocol_journal_grammar_mismatch"
+    for execution_no, raw in enumerate(raw_runs, start=1):
+        if cursor >= len(journal) or journal[cursor] != {
+            "event": "execution_started", "execution": execution_no,
+        }:
+            return "protocol_journal_grammar_mismatch"
+        cursor += 1
+        for index, query_id in enumerate(query_ids):
+            if cursor >= len(journal) or journal[cursor] != {
+                "event": "query_started", "execution": execution_no, "query_id": query_id,
+            }:
+                return "protocol_journal_grammar_mismatch"
+            cursor += 1
+            for backend in BACKENDS:
+                if cursor >= len(journal) or journal[cursor] != {
+                    "event": "backend_invocation_intent", "execution": execution_no,
+                    "query_id": query_id, "backend": backend,
+                }:
+                    return "protocol_journal_grammar_mismatch"
+                cursor += 1
+                if cursor >= len(journal):
+                    return "protocol_journal_grammar_mismatch"
+                result_record = journal[cursor]
+                if (
+                    result_record.get("event") != "backend_raw_result"
+                    or result_record.get("execution") != execution_no
+                    or result_record.get("query_id") != query_id
+                    or result_record.get("backend") != backend
+                    or canonical_raw(result_record.get("raw"), canonical_source_map=canonical_source_map)["raw"] != raw[backend][index]
+                ):
+                    return "protocol_journal_raw_disagreement"
+                cursor += 1
+            if cursor >= len(journal) or journal[cursor] != {
+                "event": "query_completed", "execution": execution_no,
+                "query_id": query_id,
+                "raw_backend_outputs": {backend: raw[backend][index] for backend in BACKENDS},
+                "per_query": score_runs[f"execution_{execution_no}"][index],
+                "backend_per_query": backend_score_runs[f"execution_{execution_no}"][index],
+                "parity": [],
+            }:
+                return "protocol_journal_grammar_mismatch"
+            cursor += 1
+        if cursor >= len(journal) or journal[cursor] != {
+            "event": "execution_completed", "execution": execution_no,
+            "terminal_status": "COMPLETE", "overall_pass": True,
+        }:
+            return "protocol_journal_grammar_mismatch"
+        cursor += 1
+    if cursor != len(journal):
+        return "protocol_journal_grammar_mismatch"
     # Match durable query records directly to final archived raw results.
     for execution_no, raw in enumerate(raw_runs, start=1):
         rows = [row for row in completed if row["execution"] == execution_no]
@@ -2974,7 +3190,24 @@ def verify_completed_protocol_archive(
         "readiness": True, "hard_failures": [],
     }:
         return "protocol_summary_mismatch"
-    return contract["disposition_values"][0]
+    return "READY_TO_COMMIT" if _preterminal else contract["disposition_values"][0]
+
+
+def verify_completed_protocol_archive(
+    root: Path, *, approval: TrustedReleaseApproval, snapshot: FixtureSnapshot,
+    contract: dict[str, Any], canonical_source_map: dict[str, dict[str, Any]],
+    current_final_preflight: dict[str, Any] | None = None,
+) -> str:
+    """Fail closed on malformed completed artifacts without repairing them."""
+
+    try:
+        return _verify_protocol_archive(
+            root, approval=approval, snapshot=snapshot, contract=contract,
+            canonical_source_map=canonical_source_map,
+            current_final_preflight=current_final_preflight,
+        )
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return "unreadable_protocol_archive"
 
 
 def _verify_authoritative_release_with_approval(
@@ -3049,6 +3282,7 @@ def verify_authoritative_release(root: Path) -> str:
         # Bind executable controls before reading any approved oracle bytes.
         if runtime_git_sha() != approval.approved_execution_sha:
             return "approved_execution_sha_mismatch"
+        validate_approved_execution_controls(approval)
         contract = load_contract(DEFAULT_CONTRACT_PATH)
         if contract_sha256(contract) != approval.frozen_contract_identity:
             return "frozen_contract_identity_mismatch"
@@ -3059,7 +3293,7 @@ def verify_authoritative_release(root: Path) -> str:
         try:
             expected = derive_trusted_qualified_runtime_identity(contract)
             canonical_source_map, current_final_preflight = validate_fresh_release_qdrant_preflight(expected)
-        except QualificationHarnessError:
+        except (QualificationHarnessError, OSError):
             return "final_live_preflight_failure"
         return verify_completed_protocol_archive(
             root, approval=approval, snapshot=snapshot, contract=contract,
@@ -3085,6 +3319,7 @@ def run_authoritative_qualification() -> dict[str, Any]:
         raise QualificationHarnessError(
             "runtime HEAD does not match the approved authoritative execution SHA"
         )
+    validate_approved_execution_controls(approval)
     contract = load_contract(DEFAULT_CONTRACT_PATH)
     if contract_sha256(contract) != approval.frozen_contract_identity:
         raise QualificationHarnessError("frozen contract identity disagrees with trusted approval")
