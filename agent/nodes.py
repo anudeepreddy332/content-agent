@@ -1924,6 +1924,7 @@ def hitl_html_node(state: AgentState) -> dict:
             if note:
                 # Layout/design/positioning only — content is frozen after the draft gate.
                 return {"html_review_status": "changes", "html_feedback": note}
+        return {"html_review_status": "rejected"}
 
     # CLI interactive
     from rich.console import Console
