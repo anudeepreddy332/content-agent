@@ -3612,3 +3612,195 @@ Evidence: draft_node signature (topic/series/feedback only) + graph.py edge orde
 Tradeoffs: M1 must run first to size how much of the gap M2 must close; do not start M2 before M1 returns.
 
 Status: Accepted as priority (locked); execution gated on M1 outcome.
+
+
+---
+Decision ID: D-2026-10-05-01
+Date: 2026-10-05 (canonical reconciliation of completed qualification)
+
+Decision: **Phase-5 authoritative qualification protocol CLOSED; one-shot
+HOLDOUT-V2 PASS belongs only to the exact qualified base.**
+
+Evidence: `PHASE5-AUTH-PROTOCOL-1`, frozen checklist/validation documents;
+qualified SHA `e0cfe0b566134f848feb731a777f315eb1456dd2`; historical exact-SHA
+CI `36997080859`; immutable attempt archive
+`reports/phase5/phase5e1a/holdout-run-1` (20 artifacts). Exactly one production
+V2 attempt executed, with its protocol-required executions inside that attempt;
+no retry or tuning. Evidence-bearing macro packed recall `0.93333333`,
+ANSWERABLE `0.91666667`, every PARTIAL available-evidence gate PASS;
+determinism, local/Qdrant parity, score truth and independent completed
+verification PASS. See ledger `VAL-2026-10-05-01`.
+
+Reason: Protocol readiness, public parity, finalized archive, and independently
+verified completed qualification are distinct authorities. The completed V2
+attempt is authoritative retrieval qualification for that code SHA only.
+Application-only descendants require separate review/CI/application evidence;
+they are not retroactively holdout-tested. Neither retrieval qualification nor
+CI establishes application E2E PASS, deployment identity, or pilot readiness.
+
+Status: **CLOSED / PHASE-5-HOLDOUT-V2-PASS**, qualified base only. No holdout
+execution/access, evidence regeneration, approval mutation, or retrieval change
+is authorized by this reconciliation.
+
+Supersession: Closes pending authoritative Phase-5 qualification status, not
+historical failed/invalid evidence or unrelated application-quality questions.
+
+---
+Decision ID: D-2026-10-05-02
+Date: 2026-10-05
+
+Decision: **Post-qualification HTML API rejection correction accepted,
+independently audited and fast-forward integrated with exact-SHA CI.**
+
+Defect: Real FastAPI reject endpoints construct dictionary resume values
+`{"action":"reject"}`. In API mode, the production HTML review node previously
+fell through to forbidden CLI `input()` for that rejection.
+
+Correction: Candidate `2a1d95f98b2b240750288924116f8a77b3492250`, single parent
+`e0cfe0b566134f848feb731a777f315eb1456dd2`, adds terminal fail-closed rejection
+to `hitl_html_node`'s API branch. Supporting real interrupt/resume/API regressions
+are in `tests/test_real_hitl_api.py`. Reject and missing/unknown action terminate
+rejected without CLI input/publication; approve and feedback/request_changes
+preserve existing behavior. Real article-gate approve/reject/feedback dictionary
+contracts were checked without broadening article-gate code.
+
+Evidence: Isolated two-file application/test delta; independent bounded audit
+PASS; normal fast-forward push, no rewritten/new integration SHA; GitHub push CI
+[37296752071](https://github.com/anudeepreddy332/content-agent/actions/runs/37296752071)
+completed successfully at exact `2a1d95f` (lint/test PASS, PR-only eval skipped).
+See ledger `VAL-2026-10-05-02`.
+
+Boundary: No retrieval, corpus, model/index identity, ranking, expansion/packing,
+qualification protocol, metric/threshold, approval record, sealed evidence, or
+publication architecture delta. V2 PASS remains attributed solely to `e0cfe0b`.
+Direct scalar `Command(resume=...)` at the article gate is outside the current
+FastAPI dictionary payload contract: NONBLOCKING / optional P2 hardening,
+absent a demonstrated reachable HTTP path. It did not broaden this correction.
+
+Status: **VALIDATED / INTEGRATED / EXACT-SHA CI PASS**, application-only scope.
+Not a holdout-tested descendant or application E2E PASS.
+
+---
+Decision ID: D-2026-10-05-03
+Date: 2026-10-05
+
+Decision: **APPLICATION-E2E-RUN-1 = FAILED / REJECTED AT GATE 1. Preserve the
+failure and separate output reliability/routing findings from retrieval success.**
+
+Evidence: One real authenticated FastAPI run
+`50b11781-3513-46d6-92c6-ff1f3d1cd56a`, execution SHA
+`2a1d95f98b2b240750288924116f8a77b3492250`, topic “Gradient Descent: A Beginner
+Learning Note,” card `standalone`, series `Learning Log`. Real `cswp_local`
+retrieval returned 10 web sources and 11 packed KB evidence items. Six DeepSeek
+requests (draft/inventory/reflection twice), three Tavily searches, no retries;
+reported model-cost estimate `$0.02307958`. Final structured draft output was
+truncated/malformed and both claim-inventory extractions were unusable.
+Semantic analyzer Call B never executed; `verification_status=parse_failed`,
+grounding `0.0`, reflection `3`, publication safety false. Historical routing
+reflected despite failed verification, automatically redrafted once, and then
+reached the real `hitl_review` interrupt at the global iteration ceiling.
+
+The operator did not approve. During this reconciliation, the original process
+was alive and the same run awaited Gate 1. The authorized authenticated reject
+terminated with API `status=rejected`, `hitl_status=rejected`, checkpoint next
+nodes empty, and zero additional provider calls. No final article HTML or
+publication occurred. Local raw evidence is under
+`/tmp/content-agent-oct5-live-e2e/`; rejection receipt is
+`docs-reconciliation/run-final.json` there. Canonical result: ledger
+`EXP-2026-10-05-01`.
+
+Reason: Empty claim summaries/obligations and `no_inventory` policy defaults
+are not verified safety. Gate 1 arrival is not automated-quality acceptance;
+retrieval success does not prove semantic-verifier execution or E2E success.
+Structured-output reliability investigation remains OPEN; no retry-until-green,
+new provider run, or frozen retrieval change was performed here.
+
+Status: **APPLICATION E2E FAIL / REJECTED**. External pilot NOT READY.
+This finding motivates D-2026-10-05-04; no runtime correction is implemented
+by this documentation decision.
+
+---
+Decision ID: D-2026-10-05-04
+Date: 2026-10-05
+
+Decision: **Adopt the Astra-frozen workflow contract: quality-accepted editorial
+Gate 1, conditional verification/reflection, independent bounded feedback episodes,
+and explicit terminal outcomes.**
+
+Status: **ACCEPTED / FROZEN — IMPLEMENTATION PENDING**.
+Architecture authority: `architecture.md` section 1. Current implementation
+remains the application runtime at `2a1d95f`; this docs-only descendant does not
+implement the accepted contract.
+
+Topology: retrieve -> start quality episode -> draft. Only a valid structured
+draft reaches verify. Invalid/recoverable draft output consumes the current
+attempt and retries draft only if an attempt remains. Verify accepted ->
+reflect; VERIFY FAILED -> NEVER reflect. A repairable verification failure may
+redraft within the episode, otherwise terminates as quality/policy/execution
+failure. Reflection accepted -> Gate 1; reflection failed may redraft within
+the episode, followed by fresh verify and reflection only after verify passes;
+otherwise terminal quality failure. Cumulative resource stops always remain
+terminal, never editorial review.
+
+Frozen budgets:
+
+- LOOP A: **2 total draft attempts per quality episode: initial + 1 automatic redraft**.
+- LOOP B: **maximum 2 accepted Gate-1 content-feedback events per run**. Each
+  accepted event starts a fresh episode with its own 2-draft allowance; third
+  feedback request -> `content_revision_limit`.
+- LOOP C: **maximum 2 Gate-2 layout revision attempts after initial HTML**.
+  Failed/discarded revision consumes an attempt; third changes request ->
+  `layout_revision_limit`.
+
+Counters are separate. Previous automatic attempts do not consume a fresh
+human-feedback episode; layout revisions do not consume content attempts.
+Cumulative cost/resource limits never reset; provider transport retries remain
+separate. Lifetime `iterations` is only a monotonic trace/draft ordinal, not
+routing-budget authority. Historical P2.3 rejected `MAX_ITERATIONS > 2`; this
+keeps two drafts **per quality episode**, not one global run budget, and does
+not resurrect the rejected higher-ceiling grounding experiment.
+
+Gate1Eligible requires structurally valid current draft; current inventory /
+identity integrity; successful semantic execution; semantic acceptance;
+material/required-content acceptance; citation acceptance; valid genuine/current
+reflection bound to that same draft/attempt, score >=7; and no terminal/resource
+stop. Missing/malformed/skipped/fallback/stale reflection cannot pass. Enforce
+before the interrupt and again on approval. Gate 1 approve -> HTML; reject ->
+`terminal_rejected`; accepted content feedback -> fresh quality episode.
+
+Gate 2 is content-frozen layout/design review: approve -> existing guarded Git
+path; reject -> terminal rejected; accepted layout feedback -> html_revise ->
+Gate 2, never draft/verify/reflect. Trusted prior render may remain approvable
+after a failed layout revision. If article content must change, this run ends
+and a new content workflow begins. Initial HTML must preserve Gate-1-approved
+visible content/code, allowing only authorized formatting/citation additions:
+this equivalence guard is an accepted **IMPLEMENTATION PENDING** requirement.
+Remote publication remains separately human-triggered.
+
+Terminal outcomes: `terminal_rejected`, `terminal_quality_exhausted`,
+`policy_blocked`, `execution_failed`, `resource_exhausted`,
+`content_revision_limit`, `layout_revision_limit`, `rendering_failed`.
+They are not successful, complete, or human-reviewable outcomes. Default message:
+“Quality gates were not met within the allowed attempts. Please try again.”
+
+Explicit supersession: supersedes **only conflicting destination/routing clauses**
+in `D-2026-08-21-01`, `D-2026-09-14-05`, and
+`D-2026-09-16-06`, `D-2026-09-16-07`, and `D-2026-09-16-08`:
+unconditional verify -> reflect; exhausted failed
+quality -> HITL; failed/UNKNOWN quality -> HITL/HOLD; unbounded human revisions;
+fallback reflection score as acceptance. Preserve their valid semantic/status,
+blocker, UVR, material/required-content, inventory-integrity, citation-authority,
+and publication-safety findings. UNKNOWN remains UNKNOWN; it is not converted
+to acceptance or given an invented semantic resolver.
+
+Reason: October-5 Run 1 demonstrated that failed execution and failed quality
+could reach an editorial interrupt. Human review must review an already
+quality-accepted current artifact rather than serve as the destination for
+failed automated quality. No retrieval redesign or new verifier semantics.
+
+Governance: A material milestone is not CLOSED until relevant canonical docs
+agree with validated evidence: architecture -> architecture.md + DECISIONS.md;
+project state -> PROJECT_STATUS.md; experiment/evaluation/E2E ->
+docs/EXPERIMENT_LEDGER.md; externally visible validated capability -> README.md
+if applicable. FREEZE.md is historical. Chat and /tmp receipts are evidence
+inputs, not canonical project state.

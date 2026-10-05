@@ -1,6 +1,6 @@
 # Experiment and Evidence Ledger
 
-_Canonical compact index. Last synchronized: 2026-09-18._
+_Canonical compact index. Last synchronized: 2026-10-05._
 
 This ledger indexes meaningful experiments and release-relevant validation. It does not duplicate
 full reports. Detailed artifacts remain under `docs/archive/`, in the named commit/branch, or in the
@@ -332,3 +332,51 @@ For every applicable change:
 | Evidence | SHA `bdbd4c3abc3a6b33529b11203b7393b899805739`; fixtures `evals/fixtures/evidence_exposure_2c.json`; evaluator `scripts/evaluate_evidence_exposure_2c.py`; decision `D-2026-09-04-05`. |
 | Decision enabled | Stage 2D pre-provider implementation and independent preflight review. Provider execution **NOT** authorized from this result alone. |
 | Confidence | 0.97 |
+
+
+### VAL-2026-10-05-01 — Phase-5 authoritative one-shot HOLDOUT-V2 qualification closure
+
+| Field | Record |
+| --- | --- |
+| Question | Did the frozen authoritative production protocol independently verify a completed sealed retrieval qualification? |
+| Qualified SHA only | `e0cfe0b566134f848feb731a777f315eb1456dd2` on `feature/phase5-rag-hardening`. Historical exact-SHA CI `36997080859`. |
+| Protocol / execution | `PHASE5-AUTH-PROTOCOL-1` closed. Exactly **one** production V2 attempt, with protocol-required executions inside it; no retry/tuning. |
+| Sealed evidence | `reports/phase5/phase5e1a/holdout-run-1`; 20 immutable artifacts, retained untracked. Archive is evidence custody, not permission to inspect oracle contents. |
+| Aggregate result | Evidence-bearing macro packed recall **0.93333333**; ANSWERABLE **0.91666667**; PARTIAL gate **PASS** (available-evidence packed recall 1.0 for every PARTIAL query). |
+| Integrity / execution gates | Determinism **PASS**; local/Qdrant parity **PASS**; score truth **PASS**; fresh final preflight, manifest/archive integrity and independent completed verification **PASS**. No grade-2 retrieved-to-packed or packed-below-retrieved loss. |
+| Classification | **PHASE-5-HOLDOUT-V2-PASS**, historical qualification for the qualified SHA only. |
+| Boundary | Not application E2E PASS, deployment proof or pilot readiness. Descendant SHAs were not V2-executed. This reconciliation made no holdout execution/access or evidence modification. |
+| Canonical continuity | `D-2026-10-05-01`; `PROJECT_STATUS.md`. Sanitized prior qualification result recorded here without reopening sealed inputs. |
+
+### VAL-2026-10-05-02 — Post-qualification real HTML API rejection correction and CI
+
+| Field | Record |
+| --- | --- |
+| Question | Does the reviewed application-only descendant fix real API HTML rejection without changing qualified retrieval? |
+| Base / candidate | Base `e0cfe0b566134f848feb731a777f315eb1456dd2`; single-parent candidate `2a1d95f98b2b240750288924116f8a77b3492250`. |
+| Isolated delta | One terminal API rejection return in `agent/nodes.py::hitl_html_node`; focused `tests/test_real_hitl_api.py`. No article-gate production change. |
+| Actual product contract | FastAPI approve/reject/feedback endpoints construct dictionary resume payloads. Real HTML rejection and unknown/missing action terminate rejected without CLI input or publication; approve/changes preserved; article approve/reject/feedback checked through real production interrupt/resume. |
+| Independent audit / integration | Bounded independent audit **PASS**; normal fast-forward canonical feature push, exact candidate preserved. Direct scalar article resume is outside current HTTP contract: nonblocking optional P2 hardening. |
+| Exact-SHA CI | [37296752071](https://github.com/anudeepreddy332/content-agent/actions/runs/37296752071): completed / success, head SHA exact `2a1d95f98b2b240750288924116f8a77b3492250`; lint/test PASS; PR-only eval skipped on push. Existing HITL/routing/publication/browser/security and full ordinary regression evidence green; no new suite executed in this docs mission. |
+| Qualification isolation | No retrieval/corpus/index/model/ranking/packing/protocol/metric/threshold/approval/sealed-evidence delta. V2 PASS stays only at `e0cfe0b`; candidate is independently reviewed application-only descendant, **not holdout-tested**. |
+| Classification | Application rejection fix **VALIDATED / INTEGRATED / CI PASS**; not full application E2E PASS. |
+| Canonical continuity | `D-2026-10-05-02`; `PROJECT_STATUS.md`. |
+
+### EXP-2026-10-05-01 — Supervised real application E2E Run 1 FAIL / rejected at Gate 1
+
+| Field | Record |
+| --- | --- |
+| Run / execution identity | `50b11781-3513-46d6-92c6-ff1f3d1cd56a`; SHA `2a1d95f98b2b240750288924116f8a77b3492250`; one authenticated real FastAPI `/runs` creation, no replacement run. |
+| Input | “Gradient Descent: A Beginner Learning Note”; card `standalone`; series `Learning Log`. No sealed holdout content. |
+| Provider boundary | Entire-run authorization: at most 9 DeepSeek requests / 6 Tavily searches; no live publication. `GIT_PUSH_ENABLED=false`, `LANGSMITH_TRACING=0`, API HITL mandatory. |
+| Retrieval result | **Succeeded**, `cswp_local`; **10 web sources**, **11 packed KB evidence items**. Production packed evidence flowed to drafting/state; semantic evidence-analyzer consumption was not established because Call B never executed. |
+| Actual usage | **6 DeepSeek requests**, **3 Tavily searches**; no provider transport retries, cache hits or force refreshes identified. Application-reported model-cost estimate **$0.02307958** (~$0.02308), not independently billed total and not including Tavily credits. |
+| Failure | Final structured draft output truncated/malformed (`Unterminated string` parse error); both inventory extractions unusable (`no JSON array found`). Semantic analyzer **did not execute**. Reflection still ran under historical topology. |
+| Quality / policy | `verification_status=parse_failed`; grounding **0.0**; final reflection **3**; claim inventory unavailable; unverified rate undefined. Empty obligations / `no_inventory` material/citation defaults did not prove safety. Combined publication safety **false**. |
+| Routing finding | Two total drafts / one automatic revision, followed by historical ceiling escalation to the actual `hitl_review` Gate-1 interrupt despite failed quality. Gate arrival was not acceptance. |
+| Human / final disposition | Human did **not approve**. Original process still held this same paused run during docs reconciliation. Authorized real authenticated REJECT completed: API `rejected`, `hitl_status=rejected`, checkpoint next empty. **APPLICATION-E2E-RUN-1 = FAILED / REJECTED AT GATE 1**. |
+| Side effects | **No final article HTML / no publication**. Trusted Markdown review HTML existed at Gate 1; it is not final article HTML. Rejection made **zero new DeepSeek requests / zero new Tavily searches**; lifetime totals remained 6 / 3. No source change or holdout execution. |
+| Evidence | `/tmp/content-agent-oct5-live-e2e/`: `gate1-api-response.json`, `gate1-state.json`, `gate1-draft.md`, `gate1-retrieval.json`, `provider-usage.jsonl`, `provider-totals.json`; terminal receipt `docs-reconciliation/run-final.json`. Draft SHA-256 `da301bb23b06e833fd8b66e5b4b19db4c91a7783aa8570cf81da3b67708b0f83`. These are local evidence inputs; this ledger records canonical disposition. |
+| Classification | **APPLICATION E2E FAIL**. Retrieval qualification remains intact; external pilot NOT READY. |
+| Decision enabled | Frozen workflow correction (`D-2026-10-05-04`) **IMPLEMENTATION PENDING**; structured-output reliability investigation OPEN; initial HTML equivalence guard PENDING. No provider restart/rerun or retrieval tuning authorized here. |
+| Canonical continuity | `D-2026-10-05-03`; `PROJECT_STATUS.md`. Failure retained as failure. |

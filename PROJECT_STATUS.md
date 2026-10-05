@@ -1,17 +1,80 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-19 (Phase 5D4B CSWP serving backend)._
+_Canonical current-state snapshot. Last synchronized: 2026-10-05 (Phase-5 qualification,
+application-only HITL correction, failed supervised E2E, and frozen workflow contract)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
-## Authoritative SHA roles
+## Current status — 2026-10-05
 
-- **Current canonical repository state:** the HEAD of `refs/heads/main`. Before
-  client-demo-fixes integration, exact `e4b39caa37497c1743e33843c464ea4381f166d4`
-  (demo publish-target guard). Client-demo fixes closeout merges from
-  `feature/client-demo-rehearsal-fixes`.
+**Phase 5 authoritative retrieval qualification: CLOSED / HOLDOUT-V2 PASS.**
+`PHASE5-AUTH-PROTOCOL-1` closed; exactly one production V2 attempt qualified
+`e0cfe0b566134f848feb731a777f315eb1456dd2`. Evidence-bearing macro packed recall
+was `0.93333333`; ANSWERABLE `0.91666667`; PARTIAL, determinism, local/Qdrant
+parity, score truth, and independent completed verification passed. The 20 sealed
+artifacts remain immutable under `reports/phase5/phase5e1a/holdout-run-1`.
+No new holdout execution is authorized by this documentation reconciliation.
+
+**Canonical feature runtime:** `feature/phase5-rag-hardening` at local and remote
+`2a1d95f98b2b240750288924116f8a77b3492250` at reconciliation start. This is an
+independently reviewed application-only descendant of the qualified base,
+**not holdout-tested**. Its HTML API rejection correction is fixed and integrated:
+API rejection/unknown decisions terminate without CLI fallthrough. Exact-SHA push
+CI [37296752071](https://github.com/anudeepreddy332/content-agent/actions/runs/37296752071)
+completed successfully (lint/test PASS; PR-only eval skipped). Main remains
+`86712d200fd46382a876f2083f824f03a83341ab`; the Phase-5 branch is not merged into main.
+The local documentation-only descendant created by this reconciliation does not
+change those runtime/qualification identities; it is not pushed or CI-qualified here.
+
+**APPLICATION-E2E-RUN-1 = FAILED / REJECTED AT GATE 1.** The one real FastAPI
+run `50b11781-3513-46d6-92c6-ff1f3d1cd56a`, topic “Gradient Descent: A Beginner
+Learning Note,” used the runtime above and `cswp_local`. Retrieval succeeded
+(10 web sources; 11 packed KB evidence items). The run made 6 DeepSeek requests
+and 3 Tavily searches, with approximately `$0.02308` reported model-cost estimate.
+Structured-output reliability failed: final draft JSON was truncated/malformed;
+both claim-inventory extractions were unusable; semantic analyzer Call B did not
+execute. Historical routing reflected despite failed verification and escalated
+failed quality to Gate 1 after two drafts (one automatic revision). Grounding was
+`0.0`, reflection `3`, verification `parse_failed`, publication safety **false**.
+No human approval, generated final article HTML, or publication occurred.
+
+On this reconciliation, the original process was still alive with that exact run
+awaiting article review. The operator-authorized real authenticated rejection
+completed: API status `rejected`, `hitl_status=rejected`, checkpoint next nodes
+empty. Rejection made **zero new DeepSeek/Tavily calls**, no final article HTML,
+and no publication. See `D-2026-10-05-03` and ledger `EXP-2026-10-05-01`.
+
+**New Astra-reviewed workflow contract: ACCEPTED / FROZEN — IMPLEMENTATION PENDING.**
+`architecture.md` section 1 and `D-2026-10-05-04` now own the accepted destination:
+conditional draft/verify/reflect execution, automated-quality acceptance before
+Gate 1, terminal failed quality, and independent bounded human-feedback loops.
+At the current runtime these corrections are **not implemented**. Structured-output
+reliability investigation is **OPEN**. Initial HTML equivalence guard is **PENDING**.
+External pilot is **NOT READY**; no application E2E PASS or publication readiness
+is claimed. Earlier bounded Phase-4 and Phase-5 results remain valid within their
+own scope; they do not establish real application reliability.
+
+## Current authorized mission
+
+This mission reconciles documentation only. The next implementation action is a
+bounded implementation of the frozen workflow/state/counter/Gate1Eligible contract,
+with focused fail-closed routing and human-gate regressions. Structured-output
+reliability requires investigation; initial approved-content HTML equivalence
+requires implementation. These remain pending work, not changes performed here.
+Do not reopen qualified retrieval, alter sealed evidence, rerun holdouts, spend
+provider credits, or publish by implication. Supervised E2E must not be classified
+PASS until the real corrected application workflow is validated.
+
+## Authoritative SHA roles and retained historical anchors
+
+- **Current main:** `86712d200fd46382a876f2083f824f03a83341ab`.
+- **Current feature runtime / exact-SHA CI:** `2a1d95f98b2b240750288924116f8a77b3492250`
+  / push CI `37296752071` PASS; application-only descendant, not holdout-tested.
+- **HOLDOUT-V2 qualified base only:** `e0cfe0b566134f848feb731a777f315eb1456dd2`.
+- **Historical pre-client-demo main:** `e4b39caa37497c1743e33843c464ea4381f166d4`
+  (demo publish-target guard). The historical anchors below preserve scoped evidence.
 - **P0-2b slice 2B canonical integration commit:**
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. Linear ancestry is exact
   `e82672936fbb61ee7b1bde7dd3a1ced34f094fa8` →
@@ -66,12 +129,12 @@ remains preserved in `FREEZE.md`.
   `74523ffcfa8906573a72415f1d868dc02996b561`. No later descendant is implicitly validated.
 - **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`. This remains the
   historical snapshot against which the original P0-1 threat boundary was established.
-- System shape at current main: supervised single-operator LangGraph pipeline with Tavily plus
-  Qdrant/BM25/RRF retrieval, DeepSeek drafting/verification/reflection, two human review gates,
-  local Git integration, and a separate human-triggered publish endpoint.
-- Serving retrieval baseline: the existing `all-MiniLM-L6-v2` dense channel plus BM25, fused with
-  RRF `k=60`, over the current serving corpus/chunk contract. No replacement has passed every
-  required product-quality and integration gate.
+- Current feature system: supervised single-operator LangGraph/FastAPI with Tavily plus
+  qualified CSWP retrieval (`cswp_local` default; validated `cswp_qdrant` option), DeepSeek,
+  two human gates, existing guarded Git integration and separate human-triggered publication.
+- Qualified feature retrieval: pinned `all-MiniLM-L6-v2` dense channel, BM25/RRF `k=60`,
+  bounded expansion/packing and `DRAFTER_PACKED_EVIDENCE_V1`. V2 retrieval PASS is not
+  application E2E PASS. No retrieval change is made or authorized by this reconciliation.
 
 ## Enterprise-production decision
 
@@ -84,8 +147,12 @@ historical evidence, not a current enterprise-release decision.
 
 ## Accepted priority order
 
-The sequence below supersedes the earlier P0-1/P0-2/P0-3 milestone ordering for
-**current engineering work**. Historical P0-1/P0-2a/P0-2b slice boundaries
+The October-5 current mission above supersedes the next-work ordering below.
+The following sequence is retained as historical program context, not authorization
+to reopen qualified retrieval or implement enterprise infrastructure.
+
+The sequence below superseded the earlier P0-1/P0-2/P0-3 milestone ordering for
+**then-current engineering work**. Historical P0-1/P0-2a/P0-2b slice boundaries
 remain preserved below as evidence; they are not reopened here.
 
 ### High-impact engineering priority order
@@ -277,7 +344,11 @@ priority.
    - P0-1 exact artifact/commit/push binding is closed and must not be reopened as this later
      deployment-identity work.
 
-## Current status
+## Historical status snapshot — through 2026-09-19
+
+Preserved scoped milestone evidence follows. Old next-work, global-counter,
+failed/UNKNOWN-to-HITL and reflection-as-soft-only clauses are historical;
+the October-5 current status and frozen architecture supersede those destinations.
 
 - **Phase 4 — CLOSED / QUALIFIED / LIVE-WIRED** at HEAD
   `0139ef891c4e8bd7b5c96f1d94de9676b16e5553` (D-2026-09-16-10). Brief
@@ -329,11 +400,13 @@ priority.
 - **Reopen rule:** Semantic P0 Slice 1 must not be reopened without new material
   P0/P1 evidence.
 
-## Current authorized mission
+## Historical Phase-5 implementation and experiment record
 
-**Phase 5 — retrieval/chunking/evidence exposure** is the next authorized
-engineering direction. Phase 4 is CLOSED; do not reopen without new material
-P0/P1 evidence.
+The following records preserve the progression to the qualified Phase-5 runtime.
+Their old “local/not pushed/pending CI” labels describe their original checkpoints,
+not the current branch: those implementations are included in the qualified base
+and its CI-green application-only descendant. Phase 4 retains its bounded results;
+current application E2E findings and routing supersession are recorded above.
 
 **Phase 5A0 — RAG hardening baseline and contract COMPLETE.** Starting from
 required HEAD `f269ab760fc78f0b3a65618ae0c744649d1a0a2e`, the clean Baseline A was
@@ -823,6 +896,10 @@ redesign program (priority 3). No runtime change authorized by this record.
 
 ## Phase 4 Slice 2B material + required-content policy boundary
 
+Historical validated implementation boundary: conflicting UNKNOWN/failure-to-HITL
+destinations are superseded by `D-2026-10-05-04`; semantic/material authority and
+required-content findings remain valid. The new routing is implementation pending.
+
 - Isolated variable: deterministic material-claim + required-content
   acceptance policy only. No new LLM calls, no LangGraph topology change,
   no retrieval/chunking change, no new materiality model call.
@@ -876,6 +953,10 @@ redesign program (priority 3). No runtime change authorized by this record.
 
 **Status:** CLOSED / QUALIFIED / LIVE-WIRED at HEAD `0139ef891c4e8bd7b5c96f1d94de9676b16e5553`.
 
+This is scoped historical Phase-4 qualification, not current application E2E
+acceptance. Its failed/UNKNOWN-to-HITL destination and reflection-as-soft-only
+workflow clauses are superseded by `D-2026-10-05-04` (implementation pending).
+
 | Slice | Status | Summary |
 |-------|--------|---------|
 | 2a | CLOSED | Authoritative claim inventory/materiality; real Call-A provider qualification PASS under provider oracle v2 |
@@ -914,24 +995,30 @@ revision; drive material-policy denominator and publication-safety conjunction.
 | Call A | PASS (oracle v2) | `call_a_provider_eval_gold_v2` rescore |
 | Call B | PASS | run `semantic_analyzer_run_8f554fa3eb62`, digest `0ed38fc3…899c5` |
 
-**Next:** Phase 5B3 production integration live. Monitor first supervised
-publish runs. Q19/Q21/Q30 retrieval gaps remain upstream.
+**Historical next-work statement superseded:** Phase-5 integration and one-shot
+V2 qualification subsequently completed. October-5 E2E failed; workflow correction
+is frozen but pending, and external pilot/publication readiness is not established.
 
 **Final qualification evidence:** `tests/test_brief_requirements_live_wiring.py`
 (7/7); full regression suite; provider calls zero; demonstrated P0/P1 none.
 
 ## Parallel retrieval research
 
-- Known MiniLM truncation risk remains **OPEN / PROVEN DEFECT**; replacement architecture remains
-  **UNKNOWN REQUIRING EXPERIMENT**.
+- Historical legacy MiniLM truncation was a **PROVEN DEFECT**. Qualified CSWP
+  representation/serving is now accepted within the Phase-5 frozen contract;
+  these older diagnostics do not reopen the current retrieval baseline.
 - Tokenizer-aligned `224/32` child chunking removed measured truncation but produced mixed/regressive
   product-quality results; it is not an accepted serving fix.
 - Exact-73 diagnostics at `b9f9d1d`, `4f6637e`, and `de60706` clarify channel behavior but authorize
   no production cutover.
-- Research remains isolated from serving. Evaluation acceptance integrity precedes further quality
-  conclusions. No model, chunking, fusion, threshold, corpus, or collection change is accepted.
+- Further research remains isolated from serving. No new model, chunking, fusion,
+  threshold, corpus, or collection change is accepted by this reconciliation.
 
 ## Latest accepted evidence
+
+- October-5 exact feature CI `37296752071` PASS at `2a1d95f`; V2 PASS only at
+  `e0cfe0b`; application E2E Run 1 **FAIL / rejected at Gate 1**. See ledger
+  `VAL-2026-10-05-01/02` and `EXP-2026-10-05-01`. Earlier evidence below remains scoped history.
 
 - Exact P0-1 implementation `20eb17f2737010dbf72eea0f0e271bf47d5af3de`: Ruff fatal tier,
   `215 passed` deterministic tests, and `4 passed` pinned-Chromium security tests.
@@ -995,3 +1082,9 @@ publish runs. Q19/Q21/Q30 retrieval gaps remain upstream.
 No threshold lowering after results, no retry-until-lucky, and no aggregate score may hide a
 critical individual regression. A pass at one gate is evidence for that gate only; it is not merge
 or cutover approval.
+
+A material milestone is not CLOSED until relevant canonical documents agree with
+validated evidence: architecture → `architecture.md` + `DECISIONS.md`; project
+state → this file; experiment/evaluation/E2E → `docs/EXPERIMENT_LEDGER.md`;
+externally visible validated capability → `README.md` if applicable. `FREEZE.md`
+is historical. Chat and `/tmp` receipts are evidence inputs, not canonical state.

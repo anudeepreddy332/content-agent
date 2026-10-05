@@ -4,9 +4,13 @@
 grounded HTML article, verifies claims, and requires human review before publication.**
 
 > **Current engineering status:** enterprise production is **BLOCKED**. The P0-1
-> active-content/credential-boundary architecture is approved, but its implementation is not yet
-> validated, merged, or deployed. Read `PROJECT_STATUS.md` before relying on historical demo or
-> production-readiness claims.
+> active-content/credential boundary is validated and integrated within its scoped contract;
+> current deployment identity is not established. Phase-5 HOLDOUT-V2 retrieval qualification
+> passed only at `e0cfe0b566134f848feb731a777f315eb1456dd2`. The reviewed application-only
+> descendant `2a1d95f98b2b240750288924116f8a77b3492250` has green push CI, but the October-5
+> real application E2E failed and was rejected at Gate 1. The corrected workflow contract is
+> frozen; implementation and initial HTML content-equivalence guard are pending. External pilot
+> is **NOT READY**. Read `PROJECT_STATUS.md` and `architecture.md` for current state and contract.
 
 ## 🎥 Live Demo
 
@@ -21,11 +25,18 @@ grounding verification → reflection → human approval → live publish.
 
 ## What this does
 
-Takes a topic as input. Produces a publish-ready HTML article for themachinist.org,
-pushed to a feature branch on the themachinist-website repo (or its demo fork).
+Takes a topic as input and supports supervised article drafting, verification, HTML review,
+and guarded Git preparation for the website repository or demo fork. Successful end-to-end
+completion is not guaranteed; the October-5 run produced a malformed draft, failed claim
+inventory extraction, and never generated final article HTML or published.
 
-Pipeline: Retrieve → Draft → Verify → Reflect → [revise ≤2] → HITL (content) → HTML Gen →
+Historical implemented topology: Retrieve → Draft → Verify → Reflect → bounded automatic
+redraft → HITL (content) → HTML Gen →
 HITL (layout) → Git (local merge only — a human always does the actual `git push`).
+This topology reached Gate 1 with failed quality in the October-5 run. The accepted correction
+requires valid draft → accepted verification → genuine current reflection score ≥7 before
+Gate 1, with two drafts per quality episode and separately bounded content/layout feedback.
+That workflow correction is **IMPLEMENTATION PENDING**, not an E2E PASS.
 Source-aware drafting (retrieve runs before draft, not after) was locked at M3 — see
 `DECISIONS.md`, 2026-06-09.
 
