@@ -507,9 +507,9 @@ def test_present_inventory_with_critical_anchor_failure_blocks_acceptance(base_s
         "reflection_score": 8,
     }
     assert nodes.semantic_verification_accepted(state) is False
-    assert nodes.route_after_reflect(state) == "draft"
+    assert nodes.route_after_reflect(state) == END
     monkey_state = {**state, "iterations": 2}
-    assert nodes.route_after_reflect(monkey_state) == "hitl"
+    assert nodes.route_after_reflect(monkey_state) == END
 
 
 def test_materiality_unknown_preserved_through_grounding_rows(base_state, monkeypatch):
@@ -580,9 +580,10 @@ def test_mocked_e2e_revision_rebuilds_inventory_per_draft_version(base_state, mo
     def fake_draft(state):
         text = drafts[min(state.get("iterations", 0), 1)]
         return {
-            "draft_sections": {"problem_framing": text, "technical_dive": "",
-                               "code_snippets": "", "takeaways": ""},
+            "draft_sections": {"problem_framing": text, "technical_dive": "section",
+                               "code_snippets": "section", "takeaways": "section"},
             "draft_markdown": text,
+            "draft_status": "valid",
             "iterations": state.get("iterations", 0) + 1,
         }
 
@@ -611,7 +612,7 @@ def test_mocked_e2e_revision_rebuilds_inventory_per_draft_version(base_state, mo
     assert len(metrics) == 2
     assert metrics[0]["N"] == 1 and metrics[1]["N"] == 2
     # Both semantic passes failed (all unverified) -> held at HITL, never published.
-    assert result["hitl_status"] == "rejected"
+    assert result["terminal_status"] == "terminal_quality_exhausted"
     assert result.get("html_output") is None
 
 
@@ -628,10 +629,7 @@ def test_hitl_api_payload_includes_inventory_summary(base_state, monkeypatch):
     monkeypatch.setenv("HITL_MODE", "api")
     captured = {}
     monkeypatch.setattr("langgraph.types.interrupt", lambda payload: captured.setdefault("p", payload) or {"action": "reject"})
-    nodes.hitl_node(state)
-    summary = captured["p"]["claim_inventory_summary"]
-    assert summary["draft_sha256"] == sha256_utf8(claim)
-    assert summary["counts"]["total"] == 1
-    assert summary["critical_failures"] == 0
-    # blocker-bearing unverified claim still cannot be approved through the gate
-    assert nodes.route_after_hitl({**state, "hitl_status": "rejected"}) == END
+    result = nodes.hitl_node(state)
+    assert result['terminal_status'] == 'execution_failed'
+    assert captured == {}
+    assert nodes.claim_inventory_summary(verified['claim_inventory']) is not None

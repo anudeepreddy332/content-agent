@@ -11,6 +11,7 @@ import pytest
 from langgraph.graph import END
 
 import agent.nodes as nodes
+from tests.workflow_fixtures import current_quality
 from config import UVR_THRESHOLD
 from tests.test_verify_node_semantic_cutover import (
     _fixture_state,
@@ -49,7 +50,7 @@ def _state(base_state: dict, report: list[dict], **extra) -> dict:
     }
     defaults.update(extra)
     state.update(defaults)
-    return state
+    return current_quality(state, build_inventory=True)
 
 
 @pytest.mark.parametrize(
@@ -123,7 +124,7 @@ def test_matrix_g_uvr_above_threshold(base_state):
 
 def test_p6_contradiction_weak_routes_to_revision(base_state, monkeypatch):
     result = _run_fixture_case(monkeypatch, "P6")
-    state = {**_fixture_state(_load_case("P6")), **result}
+    state = current_quality({**_fixture_state(_load_case("P6")), **result})
     assert state["grounding_report"][0]["status"] == "weak"
     assert nodes.unverified_rate(state["grounding_report"]) == 0.0
     assert state["grounding_score"] == 0.75
@@ -133,7 +134,7 @@ def test_p6_contradiction_weak_routes_to_revision(base_state, monkeypatch):
 
 def test_p7_limitation_weak_routes_to_revision(base_state, monkeypatch):
     result = _run_fixture_case(monkeypatch, "P7")
-    state = {**_fixture_state(_load_case("P7")), **result}
+    state = current_quality({**_fixture_state(_load_case("P7")), **result})
     assert state["grounding_report"][0]["status"] == "weak"
     assert nodes.semantic_verification_accepted(state) is False
     assert nodes.route_after_reflect(state) == "draft"
@@ -145,6 +146,7 @@ def test_p1_verified_clean_accepted(base_state, monkeypatch):
     # reflect pass, and post-Slice-1 the reflection gate no longer requires a
     # weak grounding_score conjunct to fire.
     state = {**_fixture_state(_load_case("P1")), **result, "reflection_score": 8}
+    state = current_quality(state)
     assert state["grounding_report"][0]["status"] == "verified"
     assert nodes.semantic_verification_accepted(state) is True
     assert nodes.route_after_reflect(state) == "hitl"

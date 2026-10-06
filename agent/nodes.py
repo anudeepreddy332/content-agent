@@ -19,6 +19,7 @@ import subprocess
 from pathlib import Path
 from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
 from dotenv import load_dotenv
+from agent import workflow
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 load_dotenv()
 
@@ -42,7 +43,6 @@ from config import (
     DEEPSEEK_BASE_URL,
     DRAFT_TEMPERATURE,
     MAX_ITERATIONS,
-    REFLECTION_THRESHOLD,
     UVR_THRESHOLD,
     COST_GATE_USD,
     DEEPSEEK_INPUT_COST_PER_M,
@@ -71,8 +71,6 @@ from agent.claim_inventory import (
     parse_claim_inventory_rows,
 )
 from agent.material_policy import (
-    MATERIAL_HITL,
-    MATERIAL_REVISION,
     MaterialPolicyResult,
     evaluate_material_policy,
     format_required_content_feedback,
@@ -307,8 +305,8 @@ def draft_node(state: AgentState) -> dict:
 
     Failure modes:
         - DeepSeek returns malformed JSON: fallback DraftSections with error message
-        - API timeout or rate limit: raises exception (caught in main.py retry loop)
-        - Cost gate exceeded: does NOT check here — checked in route_after_reflect
+        - API timeout or rate limit: existing transport retries, then execution failure
+        - Cost/episode allowance: enforced by the production graph draft wrapper
     """
     log = get_logger("draft_node")
     t_start = time.time()
@@ -363,7 +361,7 @@ def draft_node(state: AgentState) -> dict:
         grounding_feedback_block += blocker_block
         # Phase 4 Slice 2B: targeted material / required-content feedback. Only
         # repairable failures (revision_required) emit a block; UNKNOWN
-        # materiality and integrity failures route to HITL, not revision, so
+        # materiality and integrity failures terminate, rather than revising, so
         # they do NOT produce draft feedback (no stochastic retry-to-green).
         material_feedback = format_required_content_feedback(
             material_policy_result(state)
@@ -450,6 +448,12 @@ def draft_node(state: AgentState) -> dict:
 
     try:
         parsed = json.loads(raw)
+        if not isinstance(parsed, dict) or not all(
+            isinstance(parsed.get(k), str) and parsed[k].strip()
+            for k in ("problem_framing", "technical_dive", "code_snippets", "takeaways")
+        ):
+            raise ValueError("draft must contain four nonempty string sections")
+        draft_status = "valid"
         sections: DraftSections = {
             "problem_framing": parsed.get("problem_framing", ""),
             "technical_dive": parsed.get("technical_dive", ""),
@@ -457,7 +461,8 @@ def draft_node(state: AgentState) -> dict:
             "takeaways": parsed.get("takeaways", ""),
         }
 
-    except json.JSONDecodeError as e:
+    except (json.JSONDecodeError, ValueError) as e:
+        draft_status = "invalid"
         # Graceful degradation: don't crash the graph
         # Log the raw output so you can debug what the model returned
 
@@ -512,6 +517,7 @@ def draft_node(state: AgentState) -> dict:
 
     return {
         "draft_sections": sections,
+        "draft_status": draft_status,
         "draft_markdown": draft_markdown,
         "m4_feedback_claims": m4_feedback_claims,
         "iterations": iteration,
@@ -1538,6 +1544,8 @@ def reflect_node(state: AgentState) -> dict:
     """
     Self-evaluates draft on structure, depth, grounding. Scores 1-10.
     """
+    if not workflow.verification_eligible(state):
+        return workflow.terminal("execution_failed", "Reflection requires accepted current verification.")
     log = get_logger("reflect_node")
     t_start = time.time()
 
@@ -1643,6 +1651,7 @@ def reflect_node(state: AgentState) -> dict:
         "reflection_score": reflection_score,
         "reflection_notes": reflection_notes,
         "reflection_provenance": reflection_provenance,
+        "reflection_identity": workflow.identity(state),
         "total_tokens": state.get("total_tokens", 0) + response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
@@ -1655,6 +1664,8 @@ def hitl_node(state: AgentState) -> dict:
     Interactive HITL gate. Displays draft + grounding report + reflection.
     User inputs: a (approve), r (reject), f (feedback -> types it).
     """
+    if not workflow.gate1_eligible(state):
+        return {"hitl_status": "rejected", **workflow.terminal("execution_failed", "Gate 1 eligibility failed.")}
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
         # Auto-approve is a CI/CLI convenience, not a semantic pass.
         return hitl_approve_update(state)
@@ -1672,12 +1683,16 @@ def hitl_node(state: AgentState) -> dict:
             state.get("grounding_report", []),
             state.get("web_sources", []),
         )
+        try:
+            review_html = render_markdown_review_html(state.get("draft_markdown") or "")
+        except PolicyError:
+            return workflow.terminal("rendering_failed")
         decision = interrupt({
             "type": "hitl_review",
             "run_id": state["run_id"],
             "topic": state["topic"],
             "slug": state["slug"],
-            "draft_review_html": render_markdown_review_html(state.get("draft_markdown") or ""),
+            "draft_review_html": review_html,
             "html_policy_version": HTML_POLICY_VERSION,
             "grounding_score": state.get("grounding_score", 0.0),
             "reflection_score": state.get("reflection_score", 0),
@@ -1711,8 +1726,9 @@ def hitl_node(state: AgentState) -> dict:
         if action == "feedback":
             fb = (decision.get("feedback") or "").strip()
             if fb:
-                return _hitl_traced(state, {"hitl_status": "feedback", "hitl_feedback": fb})
-        return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None})
+                return _hitl_traced(state, workflow.content_feedback(state, fb))
+        return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None,
+                                      **workflow.terminal("terminal_rejected")})
 
 
     from rich.console import Console
@@ -1750,11 +1766,12 @@ def hitl_node(state: AgentState) -> dict:
         if choice == 'a':
             return hitl_approve_update(state)
         elif choice == 'r':
-            return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None})
+            return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None,
+                                      **workflow.terminal("terminal_rejected")})
         elif choice == 'f':
             feedback = input("Feedback: ").strip()
             if feedback:
-                return _hitl_traced(state, {"hitl_status": "feedback", "hitl_feedback": feedback})
+                return _hitl_traced(state, workflow.content_feedback(state, feedback))
         else:
             print("Enter a, r, or f.")
 
@@ -1860,7 +1877,7 @@ def _approve_html_update(state: AgentState) -> dict:
     html = state.get("html_output") or ""
     sha = state.get("html_sha256") or (sha256_utf8(html) if html else None)
     if not html or not sha or sha != sha256_utf8(html):
-        return {"html_review_status": "rejected"}
+        return {"html_review_status": "rejected", **workflow.terminal("terminal_rejected")}
 
     expected_remote = None
     errors = list(state.get("error_log") or [])
@@ -1890,13 +1907,16 @@ def hitl_html_node(state: AgentState) -> dict:
     P2 second HITL gate (post-render). The human reviews the GENERATED HTML before publish.
       approve         -> git (publish)
       reject          -> END (nothing published)
-      request_changes -> draft (revise): the note is stored in hitl_feedback (the SAME channel
-                         draft_node already consumes, lines 32-33), and the graph loops
-                         draft -> verify -> reflect -> draft gate -> html_gen -> here again.
+      request_changes -> html_revise -> this gate, with at most two layout attempts.
+    Content stays frozen; layout feedback cannot re-enter the content quality episode.
     No LLM calls, so interrupt() re-execution on resume is free. Fail-safe default is REJECT.
     """
+    if state.get("terminal_status"):
+        return {}
+    if workflow.resource_stopped(state):
+        return workflow.terminal("resource_exhausted")
     if not state.get("html_output"):
-        return {"html_review_status": "rejected"}
+        return {"html_review_status": "rejected", **workflow.terminal("rendering_failed")}
 
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
         return _approve_html_update(state)
@@ -1923,8 +1943,8 @@ def hitl_html_node(state: AgentState) -> dict:
             note = (decision.get("feedback") or "").strip()
             if note:
                 # Layout/design/positioning only — content is frozen after the draft gate.
-                return {"html_review_status": "changes", "html_feedback": note}
-        return {"html_review_status": "rejected"}
+                return workflow.layout_feedback(state, note)
+        return {"html_review_status": "rejected", **workflow.terminal("terminal_rejected")}
 
     # CLI interactive
     from rich.console import Console
@@ -1944,17 +1964,19 @@ def hitl_html_node(state: AgentState) -> dict:
         if choice == "a":
             return _approve_html_update(state)
         if choice == "r":
-            return {"html_review_status": "rejected"}
+            return {"html_review_status": "rejected", **workflow.terminal("terminal_rejected")}
         if choice == "c":
             note = input("Design/layout/positioning change (NOT content): ").strip()
             if note:
-                return {"html_review_status": "changes", "html_feedback": note}
+                return workflow.layout_feedback(state, note)
 
 
 def route_after_html_review(state: AgentState) -> str:
-    """approved -> git; changes -> draft (revise loop); anything else -> END."""
+    """approved -> git; changes -> html_revise; anything else -> END."""
     from langgraph.graph import END
     log = get_logger("router")
+    if state.get("terminal_status") or workflow.resource_stopped(state):
+        return END
     status = state.get("html_review_status", "rejected")
     log.info("html_review.decision", run_id=state["run_id"], status=status)
     if status == "approved":
@@ -2629,7 +2651,8 @@ def material_policy_result(state: AgentState) -> MaterialPolicyResult:
     current state. Pure/deterministic; no provider calls. Recomputed on demand
     from the current claim inventory + grounding report + draft sha, so a stale
     material result can never certify a revised draft (spec §11, §12)."""
-    return evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    episode_state = {**state, "iterations": state.get("quality_attempts", 0)}
+    return evaluate_material_policy(state=episode_state, max_iterations=workflow.QUALITY_ATTEMPTS)
 
 
 def material_policy_accepted(state: AgentState) -> bool:
@@ -2907,169 +2930,52 @@ def _hitl_traced(state: AgentState, payload: dict) -> dict:
 
 
 def hitl_approve_update(state: AgentState) -> dict:
-    """Ordinary approve grants HTML eligibility only if ALL hard gates pass:
-    semantic verification (Slice 1), material + required-content (Slice 2b),
-    and citation safety (Slice 2c).
+    if workflow.gate1_eligible(state):
+        return _hitl_traced(state, {
+            "hitl_status": "approved", "hitl_feedback": None,
+            "approved_draft_identity": workflow.identity(state),
+        })
+    return _hitl_traced(state, {
+        "hitl_status": "rejected", "hitl_feedback": None,
+        **workflow.terminal("execution_failed", "Gate 1 approval failed current eligibility."),
+    })
 
-    Any failure uses the existing reject payload so route_after_hitl → END.
-    This is what prevents HITL_AUTO_APPROVE=1 and API approve from bypassing
-    unresolved material claims, UNKNOWN materiality, missing/unresolved
-    mandatory requirements, or citation correctness/completeness/placement
-    failures. Feedback and explicit reject unchanged.
-    """
-    material = material_policy_result(state)
-    citation = citation_policy_result(state)
-    if (
-        semantic_verification_accepted(state)
-        and material_policy_passed(material)
-        and citation_policy_passed(citation)
-    ):
-        payload = {"hitl_status": "approved", "hitl_feedback": None}
-    else:
-        payload = {"hitl_status": "rejected", "hitl_feedback": None}
-        payload["policy_diagnostics"] = {
-            "material_policy": material.to_dict(),
-            "citation_policy": citation.to_dict(),
-        }
-    return _hitl_traced(state, payload)
+
+def route_after_draft(state: AgentState) -> str:
+    from langgraph.graph import END
+    if state.get("terminal_status") or workflow.resource_stopped(state):
+        return END
+    if workflow.draft_valid(state):
+        return "verify"
+    return "draft" if state.get("quality_attempts", 0) < workflow.QUALITY_ATTEMPTS else END
+
+
+def route_after_verify(state: AgentState) -> str:
+    from langgraph.graph import END
+    if state.get("terminal_status") or workflow.resource_stopped(state):
+        return END
+    if workflow.verification_eligible(state):
+        return "reflect"
+    return END if workflow.verification_failure(state) else "draft"
 
 
 def route_after_reflect(state: AgentState) -> str:
-    """
-        Decide whether to revise the draft or proceed to HITL.
-
-        Routing authority (Phase 4 Slice 1, D-2026-09-14-05):
-            Force rewrite if:
-                - semantic verification is not accepted (completed status,
-                  nonempty verdicts, no applicable contradiction/limitation
-                  blocker on any valid row, computable UVR <= 0.15), when
-                  iteration capacity remains
-                - OR reflection_score < REFLECTION_THRESHOLD (quality gate;
-                  threshold unchanged)
-            Proceed if:
-                - max iterations reached (HITL; auto-approve cannot launder a
-                  semantic failure — see hitl_node)
-                - cost gate trips (same HITL / fail-closed auto-approve rule)
-                - semantic verification is accepted AND reflection gate passes
-
-        grounding_score is DEPRECATED as routing authority: it is
-        compatibility/observability only (state/API/telemetry/benchmark/UI)
-        and is logged here for observability, but it cannot determine semantic
-        acceptance or revision routing. The old GROUNDING_FLOOR hard floor and
-        the grounding<0.75 soft-gate conjunct were already unreachable whenever
-        the semantic gate passed (UVR<=0.15 implies score >= 0.6375) and are
-        removed, not retuned; no replacement composite is introduced.
-
-        Returns:
-            "draft" — loop back and revise
-            "hitl"  — proceed to human review
-    """
-    log = get_logger("router")
-    iterations = state.get("iterations", 0)
-    reflection_score = state.get("reflection_score", 8)
-    grounding_score = state.get("grounding_score", 0.75)  # observability only
-    uvr = unverified_rate(state.get("grounding_report"))
-    semantic_ok = semantic_verification_accepted(state)
-
-    # Hard ceiling: never loop more than MAX_ITERATIONS
-    if iterations >= MAX_ITERATIONS:
-        log.info("route.max_iterations", run_id=state["run_id"], iterations=iterations,
-                 semantic_ok=semantic_ok, uvr=uvr, claim_completeness=CLAIM_COMPLETENESS)
+    from langgraph.graph import END
+    if state.get("terminal_status") or workflow.resource_stopped(state):
+        return END
+    if workflow.gate1_eligible(state):
         return "hitl"
+    if not workflow.verification_eligible(state):
+        return route_after_verify(state)
+    return "draft" if state.get("quality_attempts", 0) < workflow.QUALITY_ATTEMPTS else END
 
-    # Cost gate check
-    if state.get("total_cost_usd", 0) >= COST_GATE_USD:
-        log.info("route.cost_gate", run_id=state["run_id"], cost=round(state.get("total_cost_usd", 0), 4),
-                 semantic_ok=semantic_ok, uvr=uvr, claim_completeness=CLAIM_COMPLETENESS)
-        return "hitl"
-
-    if not semantic_ok:
-        log.info("route.revise", run_id=state["run_id"], reason="semantic verification not accepted",
-                 verification_status=state.get("verification_status"),
-                 uvr=uvr, reflection=reflection_score, grounding=round(grounding_score, 2),
-                 claim_completeness=CLAIM_COMPLETENESS)
-        return "draft"
-
-    # Phase 4 Slice 2B: material + required-content policy (spec §14).
-    # Applied AFTER the semantic gate. A material factual claim that is only
-    # WEAK/UNVERIFIED/INVALID, or a missing/unresolved mandatory requirement,
-    # is repairable -> targeted revision while budget remains. UNKNOWN
-    # materiality and integrity/version failures go straight to HITL/HOLD
-    # (never a stochastic revision retry). material_policy_pass does NOT yet
-    # imply final publication eligibility (citation safety is Slice 2c).
-    material = material_policy_result(state)
-    if material.decision == MATERIAL_REVISION:
-        log.info("route.revise", run_id=state["run_id"], reason="material/required-content policy",
-                 material_safety_state=material.material_safety_state,
-                 unresolved_material=material.unresolved_material_claim_count,
-                 unknown_materiality=material.unknown_materiality_count,
-                 missing_reqs=len(material.missing_requirement_ids),
-                 unresolved_reqs=len(material.unresolved_requirement_ids),
-                 material_verified_rate=material.material_verified_rate)
-        return "draft"
-    if material.decision == MATERIAL_HITL:
-        log.info("route.material_hold", run_id=state["run_id"],
-                 material_safety_state=material.material_safety_state,
-                 reason_codes=material.reason_codes)
-        return "hitl"
-
-    # Phase 4 Slice 2C: citation safety AFTER semantic + material. Failures
-    # HOLD/HITL — citations are derived from already-qualified Call-B
-    # support, so we do not ask the drafter to hallucinate references.
-    # A high reflection score cannot override a citation failure.
-    citation = citation_policy_result(state)
-    if not citation_policy_passed(citation):
-        log.info("route.citation_hold", run_id=state["run_id"],
-                 citation_safety_state=citation.citation_safety_state,
-                 reason_codes=citation.reason_codes,
-                 missing=citation.missing_required_citation_count,
-                 invalid=citation.invalid_citation_count,
-                 placement=citation.citation_placement_failure_count)
-        return "hitl"
-
-    # Quality gate (reflection only; grounding_score is not consulted)
-    if reflection_score < REFLECTION_THRESHOLD:
-        log.info("route.revise", run_id=state["run_id"], reason="reflection below threshold",
-                 reflection=reflection_score, grounding=round(grounding_score, 2))
-        return "draft"
-
-    log.info("route.proceed", run_id=state["run_id"], reflection=reflection_score, grounding=round(grounding_score, 2),
-             uvr=uvr, claim_completeness=CLAIM_COMPLETENESS,
-             material_safety_state=material.material_safety_state)
-    return "hitl"
 
 def route_after_hitl(state: AgentState) -> str:
-    """
-    Route based on HITL decision.
-
-    Ordinary approve may proceed to HTML only when ALL hard gates pass:
-    semantic verification (Slice 1), material + required-content (Slice 2b),
-    and citation safety (Slice 2c). Existing destinations only:
-        "html_gen" — approved AND publication_safety_accepted
-        "draft"    — explicit feedback (existing remediation path)
-        END        — reject, unknown, or approve blocked by a gate failure
-    publication_safety_pass does not publish by itself.
-    """
     from langgraph.graph import END
-    log = get_logger("router")
-    status = state.get("hitl_status", "pending")
-    semantic_ok = semantic_verification_accepted(state)
-    material_ok = material_policy_accepted(state)
-    citation_ok = citation_policy_accepted(state)
-    safety_ok = semantic_ok and material_ok and citation_ok
-    log.info("hitl.decision", run_id=state["run_id"], status=status,
-             semantic_ok=semantic_ok, material_ok=material_ok, citation_ok=citation_ok)
-
-    if status == "feedback":
-        return "draft"
-    if status == "approved" and safety_ok:
-        return "html_gen"
-    if status == "approved":
-        log.info("hitl.approve_blocked_gate_failure",
-                 run_id=state["run_id"],
-                 verification_status=state.get("verification_status"),
-                 semantic_ok=semantic_ok, material_ok=material_ok,
-                 citation_ok=citation_ok,
-                 claim_completeness=CLAIM_COMPLETENESS)
+    if state.get("terminal_status") or workflow.resource_stopped(state):
         return END
+    if state.get("hitl_status") == "feedback":
+        return "draft"
+    if state.get("hitl_status") == "approved" and workflow.gate1_eligible(state):
+        return "html_gen"
     return END

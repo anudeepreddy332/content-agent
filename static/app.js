@@ -147,7 +147,7 @@ async function retryStream(attempt){
         onGate(body.review);
         return;
       }
-      if(body.status === "complete" || body.status === "rejected"){
+      if(body.status === "complete" || body.status === "rejected" || body.summary?.terminal_status){
         onDone({status: body.status, summary: body.summary || {}});
         return;
       }
@@ -310,6 +310,9 @@ function onDone(d){
   if(publishable){
     p.className = "ok";
     p.textContent = "Merged locally (git_status: "+(s.git_status||"?")+"). Click Publish to push the approved commit.";
+  } else if(s.terminal_status){
+    p.className = "bad";
+    p.textContent = s.terminal_message || s.terminal_status;
   } else if(d.status==="complete"){
     p.className = "ok";
     p.textContent = "Published locally (git_status: "+(s.git_status||"?")+", file "+(s.html_filename||"?")+").";
@@ -319,7 +322,7 @@ function onDone(d){
       const a = document.createElement("a"); a.href = url; a.target="_blank"; a.rel="noopener noreferrer"; a.textContent = url;
       extra.appendChild(a); body.appendChild(p); body.appendChild(extra);
     }
-  } else if(d.status==="rejected"){
+  } else if(d.status==="rejected" || d.status==="terminal_rejected"){
     p.className = "bad"; p.textContent = "Run ended: nothing was published.";
   }
   if(!body.contains(p)) body.appendChild(p);

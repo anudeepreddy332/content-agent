@@ -9,6 +9,7 @@ from langgraph.graph import END
 
 import agent.graph as graph_mod
 import agent.nodes as nodes
+from tests.workflow_fixtures import current_quality, verification_for_report
 from config import (
     COST_GATE_USD,
     GROUNDING_FLOOR,
@@ -67,7 +68,7 @@ def topic10_state(base_state: dict) -> dict:
         reflection_score=7,
         total_cost_usd=0.01,
     )
-    return state
+    return current_quality(state, build_inventory=True)
 
 
 def test_thresholds_and_prompt_files_unchanged():
@@ -102,6 +103,7 @@ def test_uvr_exactly_threshold_is_acceptable(base_state):
         grounding_score=0.80,
         reflection_score=8,
     )
+    base_state = current_quality(base_state, build_inventory=True)
     assert nodes.semantic_verification_accepted(base_state) is True
     assert nodes.route_after_reflect(base_state) == "hitl"
 
@@ -115,6 +117,7 @@ def test_uvr_above_threshold_routes_to_revision_when_capacity_remains(base_state
         grounding_score=0.80,
         reflection_score=8,
     )
+    base_state = current_quality(base_state, build_inventory=True)
     assert nodes.unverified_rate(report) > UVR_THRESHOLD
     assert nodes.route_after_reflect(base_state) == "draft"
 
@@ -135,7 +138,7 @@ def test_completed_empty_verdict_set_fails_closed(base_state):
     )
     assert nodes.semantic_verification_accepted(base_state) is False
     assert nodes.unverified_rate([]) is None
-    assert nodes.route_after_reflect(base_state) == "draft"
+    assert nodes.route_after_reflect(base_state) == END
 
 
 @pytest.mark.parametrize(
@@ -152,8 +155,9 @@ def test_incomplete_verification_status_fails_closed(base_state, status):
         reflection_score=10,
         total_cost_usd=0.0,
     )
+    base_state = current_quality(base_state, build_inventory=True)
     assert nodes.semantic_verification_accepted(base_state) is False
-    assert nodes.route_after_reflect(base_state) == "draft"
+    assert nodes.route_after_reflect(base_state) == ("draft" if status == "parse_failed" else END)
 
 
 def test_high_confidence_unverified_cannot_pass_via_confidence(base_state):
@@ -166,6 +170,7 @@ def test_high_confidence_unverified_cannot_pass_via_confidence(base_state):
         grounding_score=0.99,
         reflection_score=10,
     )
+    base_state = current_quality(base_state, build_inventory=True)
     assert nodes.semantic_verification_accepted(base_state) is False
     assert nodes.route_after_reflect(base_state) == "draft"
 
@@ -213,6 +218,8 @@ def test_revision_is_followed_by_reverification(base_state, monkeypatch):
         })
         return {
             "draft_markdown": f"draft-{len(draft_calls)}",
+            "draft_status": "valid",
+            "draft_sections": {k: "section" for k in ("problem_framing", "technical_dive", "code_snippets", "takeaways")},
             "m4_feedback_claims": draft_calls[-1]["m4"],
             "iterations": state.get("iterations", 0) + 1,
         }
@@ -221,19 +228,19 @@ def test_revision_is_followed_by_reverification(base_state, monkeypatch):
         verify_calls.append(state.get("iterations"))
         if len(verify_calls) == 1:
             return {
-                "grounding_report": report,
+                **verification_for_report(state, report),
                 "grounding_score": 0.669,
                 "verification_status": "completed",
             }
         ok = _report(verified=10, weak=0, unverified=0)
         return {
-            "grounding_report": ok,
+            **verification_for_report(state, ok),
             "grounding_score": 0.85,
             "verification_status": "completed",
         }
 
     def fake_reflect(state):
-        return {"reflection_score": 7, "reflection_notes": "ok"}
+        return {"reflection_score": 7, "reflection_notes": "ok", "reflection_provenance": {"origin": "judge", "provider_called": True, "parse_status": "ok"}}
 
     def fake_hitl(state):
         return {"hitl_status": "rejected", "hitl_feedback": None}
@@ -249,12 +256,13 @@ def test_revision_is_followed_by_reverification(base_state, monkeypatch):
     init["iterations"] = 0
     init["grounding_report"] = []
     init["verification_status"] = "not_started"
-    graph.invoke(init)
+    result = graph.invoke(init)
 
-    assert verify_calls == [1, 2], "revision must execute verify again"
+    assert verify_calls == [1, 2]
     assert len(draft_calls) == 2
-    assert draft_calls[1]["claims"] == TOPIC10_UNVERIFIED
-    assert draft_calls[1]["m4"] == 5
+    assert draft_calls[1]["claims"] == nodes.unverified_claims(report)
+    assert result["hitl_status"] == "rejected"
+
 
 
 def test_acceptable_verified_state_proceeds_to_hitl(base_state):
@@ -266,6 +274,7 @@ def test_acceptable_verified_state_proceeds_to_hitl(base_state):
         grounding_score=0.80,
         reflection_score=8,
     )
+    base_state = current_quality(base_state, build_inventory=True)
     assert nodes.semantic_verification_accepted(base_state) is True
     assert nodes.route_after_reflect(base_state) == "hitl"
 
@@ -273,7 +282,7 @@ def test_acceptable_verified_state_proceeds_to_hitl(base_state):
 def test_iteration_ceiling_does_not_auto_approve_semantic_failure(base_state, monkeypatch):
     state = topic10_state(base_state)
     state["iterations"] = MAX_ITERATIONS
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
     monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
     result = nodes.hitl_node(state)
     assert result["hitl_status"] == "rejected"
@@ -284,7 +293,7 @@ def test_iteration_ceiling_does_not_auto_approve_semantic_failure(base_state, mo
 def test_cost_ceiling_does_not_auto_approve_semantic_failure(base_state, monkeypatch):
     state = topic10_state(base_state)
     state["total_cost_usd"] = COST_GATE_USD
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
     monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
     result = nodes.hitl_node(state)
     assert result["hitl_status"] == "rejected"
@@ -300,6 +309,7 @@ def test_auto_approve_still_works_when_semantic_verification_passes(base_state, 
         grounding_score=0.80,
         reflection_score=8,
     )
+    base_state = current_quality(base_state, build_inventory=True)
     monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
     result = nodes.hitl_node(base_state)
     assert result["hitl_status"] == "approved"
@@ -316,12 +326,13 @@ def _accepted_state(base_state: dict) -> dict:
         reflection_score=8,
         total_cost_usd=0.01,
     )
-    return state
+    return current_quality(state, build_inventory=True)
 
 
 def test_semantically_accepted_human_approve_routes_to_html_gen(base_state):
     state = _accepted_state(base_state)
     state["hitl_status"] = "approved"
+    base_state = current_quality(base_state, build_inventory=True)
     assert nodes.semantic_verification_accepted(state) is True
     assert nodes.route_after_hitl(state) == "html_gen"
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 from langgraph.graph import END
 
 import agent.nodes as nodes
+from tests.workflow_fixtures import current_quality
 from agent.semantic_analyzer.status_engine import sha256_utf8
 from agent.claim_inventory import build_claim_inventory
 from agent.citation_policy import (
@@ -101,7 +102,7 @@ def _state_with(base_state, draft, inv, report, *, iterations=1, **extra):
         ],
     })
     state.update(extra)
-    return state
+    return current_quality(state)
 
 
 def _verified(base_state, draft, rows, supports, **extra):
@@ -255,7 +256,7 @@ def test_I_overlapping_nonidentical_anchors_fail_closed(base_state):
     res = evaluate_citation_policy(state=state)
     assert res.decision == CITATION_HITL
     assert "overlapping_nonidentical_anchors" in res.reason_codes
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
 
 
 def test_J_nonmaterial_without_citation_does_not_hard_fail(base_state):
@@ -360,7 +361,7 @@ def test_O_high_reflection_cannot_override_citation_failure(base_state):
         "evidence_ids": [E1],
     }]
     state["reflection_score"] = 10
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
     assert nodes.publication_safety_accepted(state) is False
 
 
@@ -534,4 +535,4 @@ def test_pre2a_absent_inventory_preserves_slice1_pass(base_state):
     res = evaluate_citation_policy(state=state)
     assert res.decision == CITATION_PASS
     assert nodes.citation_policy_accepted(state) is True
-    assert nodes.route_after_hitl(state) == "html_gen"
+    assert nodes.route_after_hitl(state) == END

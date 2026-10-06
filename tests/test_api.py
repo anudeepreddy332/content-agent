@@ -98,14 +98,14 @@ def test_html_gate_reject_does_not_publish(client):
     client.post(f"/runs/{rid}/approve", headers=H)                     # -> html gate
     client.post(f"/runs/{rid}/reject", headers=H)                      # reject the render
     body = client.get(f"/runs/{rid}", headers=H).json()
-    assert body["status"] == "rejected"
+    assert body["status"] == "terminal_rejected"
     assert body["summary"]["html_review_status"] == "rejected"
     assert body["summary"]["git_status"] is None                      # git never ran
 
 def test_reject_cycle(client):
     rid = client.post("/runs", json={"topic": "X"}, headers=H).json()["run_id"]
     client.post(f"/runs/{rid}/reject", headers=H)
-    assert client.get(f"/runs/{rid}", headers=H).json()["status"] == "rejected"
+    assert client.get(f"/runs/{rid}", headers=H).json()["status"] == "terminal_rejected"
 
 def test_feedback_loops_back_to_review(client):
     rid = client.post("/runs", json={"topic": "X"}, headers=H).json()["run_id"]
@@ -144,7 +144,7 @@ def test_poll_graph_crash_writes_upstream_failed_telemetry(tmp_path, monkeypatch
     run_id = created.json()["run_id"]
 
     status = client.get(f"/runs/{run_id}", headers=H).json()
-    assert status["status"] == "error"
+    assert status["status"] == "execution_failed"
     assert status["error"] == "injected poll failure"
     telemetry = json.loads((Path("outputs/runs") / f"{run_id}.json").read_text())
     assert telemetry["verification_status"] == "upstream_failed"

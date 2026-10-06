@@ -14,6 +14,7 @@ from langgraph.types import Command
 import agent.nodes as nodes
 from agent.state import AgentState
 from tests.test_citation_policy import E1, _claim_row, _verified
+from tests.workflow_fixtures import current_quality
 
 
 @pytest.fixture
@@ -50,7 +51,7 @@ def html_state(base_state):
 def article_state(base_state):
     draft = "Dropout randomly zeroes activations during training."
     state, _ = _verified(base_state, draft, [_claim_row(draft)], [[E1]])
-    return state
+    return current_quality(state)
 
 
 def _gate_graph(gate):
@@ -177,7 +178,7 @@ def test_http_review_resumes_real_gate(
         "approve": "approved", "reject": "rejected", "feedback": "feedback"
     }[action]
     assert result[status_key] == expected_status
-    assert server.REGISTRY[run_id]["status"] == ("rejected" if action == "reject" else "complete")
+    assert server.REGISTRY[run_id]["status"] == ("terminal_rejected" if action == "reject" else "complete")
     expected_route = {
         "html": {"approve": "git", "reject": END, "feedback": "html_revise"},
         "article": {"approve": "html_gen", "reject": END, "feedback": "draft"},

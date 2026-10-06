@@ -138,10 +138,13 @@ def test_production_path_requirements_reach_inventory_and_call_a_context(
     monkeypatch.setattr(graph_mod, "retrieve_node", _retrieve_with_content(claim))
     monkeypatch.setattr(graph_mod, "draft_node", lambda state: {
         "draft_markdown": claim,
+        "draft_status": "valid",
+        "draft_sections": {k: "section" for k in ("problem_framing", "technical_dive", "code_snippets", "takeaways")},
         "iterations": state.get("iterations", 0) + 1,
     })
     monkeypatch.setattr(graph_mod, "reflect_node", lambda state: {
         "reflection_score": 8, "reflection_notes": "ok",
+        "reflection_provenance": {"origin": "judge", "provider_called": True, "parse_status": "ok"},
     })
     monkeypatch.setattr(graph_mod, "hitl_node", lambda state: {
         "hitl_status": "rejected", "hitl_feedback": None,
@@ -188,7 +191,9 @@ def test_production_path_denominator_gaming_deletion_blocks_publication(
 
     def fake_draft(state):
         text = drafts[min(state.get("iterations", 0), 1)]
-        return {"draft_markdown": text, "iterations": state.get("iterations", 0) + 1}
+        return {"draft_markdown": text, "draft_status": "valid",
+                "draft_sections": {k: "section" for k in ("problem_framing", "technical_dive", "code_snippets", "takeaways")},
+                "iterations": state.get("iterations", 0) + 1}
 
     init = _build_initial_state(
         "Latency", "latency", "W-2", "Test", "live-req-del",
@@ -204,6 +209,7 @@ def test_production_path_denominator_gaming_deletion_blocks_publication(
     monkeypatch.setattr(graph_mod, "draft_node", fake_draft)
     monkeypatch.setattr(graph_mod, "reflect_node", lambda state: {
         "reflection_score": 8, "reflection_notes": "ok",
+        "reflection_provenance": {"origin": "judge", "provider_called": True, "parse_status": "ok"},
     })
     monkeypatch.setattr(graph_mod, "hitl_node", lambda state: {
         "hitl_status": "rejected", "hitl_feedback": None,
@@ -241,10 +247,13 @@ def test_production_path_advisory_link_does_not_satisfy_semantic_requirement(
     monkeypatch.setattr(graph_mod, "retrieve_node", _retrieve_with_content(claim))
     monkeypatch.setattr(graph_mod, "draft_node", lambda state: {
         "draft_markdown": claim,
+        "draft_status": "valid",
+        "draft_sections": {k: "section" for k in ("problem_framing", "technical_dive", "code_snippets", "takeaways")},
         "iterations": state.get("iterations", 0) + 1,
     })
     monkeypatch.setattr(graph_mod, "reflect_node", lambda state: {
         "reflection_score": 8, "reflection_notes": "ok",
+        "reflection_provenance": {"origin": "judge", "provider_called": True, "parse_status": "ok"},
     })
     monkeypatch.setattr(graph_mod, "hitl_node", lambda state: {
         "hitl_status": "rejected", "hitl_feedback": None,
@@ -256,7 +265,7 @@ def test_production_path_advisory_link_does_not_satisfy_semantic_requirement(
     mp = nodes.material_policy_result(result)
     assert mp.mandatory_requirement_states["REQ-QUORUM"] == REQ_UNKNOWN
     assert nodes.material_policy_accepted(result) is False
-    assert nodes.route_after_reflect(result) == "hitl"
+    assert nodes.route_after_reflect(result) == END
 
     monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
     hitl = nodes.hitl_node(result)
@@ -287,10 +296,13 @@ def test_production_path_structural_requirement_satisfied_when_present(
     monkeypatch.setattr(graph_mod, "retrieve_node", _retrieve_with_content("print('hi')"))
     monkeypatch.setattr(graph_mod, "draft_node", lambda state: {
         "draft_markdown": claim,
+        "draft_status": "valid",
+        "draft_sections": {k: "section" for k in ("problem_framing", "technical_dive", "code_snippets", "takeaways")},
         "iterations": state.get("iterations", 0) + 1,
     })
     monkeypatch.setattr(graph_mod, "reflect_node", lambda state: {
         "reflection_score": 8, "reflection_notes": "ok",
+        "reflection_provenance": {"origin": "judge", "provider_called": True, "parse_status": "ok"},
     })
     monkeypatch.setattr(graph_mod, "hitl_node", lambda state: {
         "hitl_status": "rejected", "hitl_feedback": None,

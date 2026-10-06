@@ -48,6 +48,7 @@ from langgraph.types import Command
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from agent.graph import build_graph
+from agent.workflow import terminal_api_status, terminal
 from agent.html_policy import REVIEWER_APP_CSP
 from main import _build_initial_state, _make_slug, _write_telemetry
 from observability.logger import get_logger
@@ -103,9 +104,10 @@ def _advance(run_id: str, invoke_input, finalizing: bool):
         crash = dict(REGISTRY[run_id]["initial_state"])
         crash["error_log"] = [f"pipeline crash: {e}"]
         crash["verification_status"] = "upstream_failed"
+        crash.update(terminal("execution_failed"))
         _write_telemetry(crash)
         with LOCK:
-            REGISTRY[run_id].update(status="error", error=str(e))
+            REGISTRY[run_id].update(status="execution_failed", result=crash, error=str(e))
         return
 
     payload = _extract_interrupt(result, config)
@@ -115,9 +117,7 @@ def _advance(run_id: str, invoke_input, finalizing: bool):
             return
         # Terminal. Reject path never runs git; approve path does.
         REGISTRY[run_id]["result"] = result
-        rejected = (result.get("hitl_status") == "rejected"
-                    or result.get("html_review_status") == "rejected")
-        REGISTRY[run_id]["status"] = "rejected" if rejected else "complete"
+        REGISTRY[run_id]["status"] = terminal_api_status(result)
     if result.get("git_status") == "failed":
         # ERROR level (not just git_node's own log line) so this is grep-able for an
         # external log-based alert — docs/PRODUCTION_READINESS.md item 2. No dashboard here,
@@ -190,9 +190,10 @@ def _advance_streaming(run_id, invoke_input, finalizing):
         crash = dict(REGISTRY[run_id]["initial_state"])
         crash["error_log"] = [f"pipeline crash: {e}"]
         crash["verification_status"] = "upstream_failed"
+        crash.update(terminal("execution_failed"))
         _write_telemetry(crash)
         with LOCK:
-            REGISTRY[run_id].update(status="error", error=str(e))
+            REGISTRY[run_id].update(status="execution_failed", result=crash, error=str(e))
         q.put({"event": "error", "error": str(e)})
         q.put(_SENTINEL)
         return
@@ -205,9 +206,7 @@ def _advance_streaming(run_id, invoke_input, finalizing):
             REGISTRY[run_id].update(status="awaiting_review", interrupt_payload=payload)
         else:
             REGISTRY[run_id]["result"] = result
-            rejected = (result.get("hitl_status") == "rejected"
-                        or result.get("html_review_status") == "rejected")
-            REGISTRY[run_id]["status"] = "rejected" if rejected else "complete"
+            REGISTRY[run_id]["status"] = terminal_api_status(result)
     if payload is not None:
         q.put({"event": "gate", "review": payload})
     else:
@@ -219,6 +218,8 @@ def _advance_streaming(run_id, invoke_input, finalizing):
                       error_log=result.get("error_log", []))
         _write_telemetry(result)
         q.put({"event": "done", "status": REGISTRY[run_id]["status"], "summary": {
+            "terminal_status": result.get("terminal_status"),
+            "terminal_message": result.get("terminal_message"),
             "grounding_score": result.get("grounding_score"),
             "total_cost_usd": result.get("total_cost_usd"),
             "git_status": result.get("git_status"),
@@ -342,6 +343,11 @@ def get_run(run_id: str):
         if reg["result"] is not None:
             r = reg["result"]
             out["summary"] = {
+                "terminal_status": r.get("terminal_status"),
+                "terminal_message": r.get("terminal_message"),
+                "quality_attempts": r.get("quality_attempts"),
+                "content_feedback_count": r.get("content_feedback_count"),
+                "html_revision_attempts": r.get("html_revision_attempts"),
                 "grounding_score": r.get("grounding_score"),
                 "total_cost_usd": r.get("total_cost_usd"),
                 "hitl_status": r.get("hitl_status"),

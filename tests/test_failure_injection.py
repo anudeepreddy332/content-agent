@@ -5,6 +5,8 @@ import json
 from openai import AuthenticationError, RateLimitError, APITimeoutError
 
 import agent.nodes as nodes
+from langgraph.graph import END
+from tests.workflow_fixtures import current_quality
 from tests.conftest import FakeLLMClient, fake_response, openai_error
 
 # ---------- Fault 1: DeepSeek auth / timeout / rate limit ----------
@@ -206,14 +208,14 @@ def test_reflect_cost_gate_skips_llm(base_state, monkeypatch):
 def test_route_cost_gate_forces_hitl_over_revision(base_state):
     base_state.update(total_cost_usd=nodes.COST_GATE_USD,
                       iterations=0, reflection_score=2, grounding_score=0.1)
-    assert nodes.route_after_reflect(base_state) == "hitl", \
-        "cost gate must beat the revise gate even on a terrible draft"
+    assert nodes.route_after_reflect(base_state) == END, \
+        "resource exhaustion must terminate instead of entering review"
 
 
 def test_route_max_iterations_forces_hitl(base_state):
     base_state.update(iterations=nodes.MAX_ITERATIONS,
                       reflection_score=2, grounding_score=0.1)
-    assert nodes.route_after_reflect(base_state) == "hitl"
+    assert nodes.route_after_reflect(base_state) == END
 
 
 def test_parse_failure_routes_to_revision_when_capacity_remains(base_state, monkeypatch):
@@ -223,6 +225,7 @@ def test_parse_failure_routes_to_revision_when_capacity_remains(base_state, monk
     assert result["verification_status"] == "parse_failed"
     routed = {**base_state, **result, "iterations": 1, "reflection_score": 10,
               "grounding_score": 0.99, "total_cost_usd": 0.0}
+    routed = current_quality(routed)
     assert nodes.route_after_reflect(routed) == "draft"
 
 
@@ -236,7 +239,7 @@ def test_skipped_verification_fails_closed_when_capacity_remains(base_state, mon
     assert result["verification_status"] == "skipped_cost_gate"
     routed = {**base_state, **result, "iterations": 1, "reflection_score": 10,
               "grounding_score": 0.99, "total_cost_usd": 0.0}
-    assert nodes.route_after_reflect(routed) == "draft"
+    assert nodes.route_after_reflect(routed) == END
 
 
 def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path):

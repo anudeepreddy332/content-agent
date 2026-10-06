@@ -8,6 +8,7 @@ import pytest
 from langgraph.graph import END
 
 import agent.nodes as nodes
+from tests.workflow_fixtures import current_quality
 from agent.claim_inventory import compute_claim_id
 from agent.semantic_trace import (
     canonical_json,
@@ -298,6 +299,7 @@ def test_accepted_and_uvr_failed_routing_unchanged(base_state, monkeypatch):
         "reflection_score": 8,
         "run_id": "ok-run",
     })
+    accepted = current_quality(accepted, build_inventory=True)
     assert nodes.semantic_verification_accepted(accepted) is True
     assert nodes.route_after_reflect(accepted) == "hitl"
     monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
@@ -316,6 +318,7 @@ def test_accepted_and_uvr_failed_routing_unchanged(base_state, monkeypatch):
         "reflection_score": 10,
         "run_id": "uvr-run",
     })
+    failed = current_quality(failed, build_inventory=True)
     assert nodes.unverified_rate(bad_report) > UVR_THRESHOLD
     assert nodes.semantic_verification_accepted(failed) is False
     assert nodes.route_after_reflect(failed) == "draft"
@@ -349,10 +352,9 @@ def test_api_cli_hitl_fail_closed_unchanged(base_state, monkeypatch):
         "action": "feedback", "feedback": "ground the unverified claims",
     })
     fb = nodes.hitl_node(failed)
-    assert fb["hitl_status"] == "feedback"
-    assert fb["hitl_feedback"] == "ground the unverified claims"
-    assert nodes.route_after_hitl(_merge(failed, fb)) == "draft"
-    assert fb["semantic_trace"]["hitl_events"][-1]["hitl_feedback"] == "ground the unverified claims"
+    assert fb['hitl_status'] == 'rejected'
+    assert fb['terminal_status'] == 'execution_failed'
+    assert nodes.route_after_hitl(_merge(failed, fb)) == END
 
 
 def test_telemetry_reread_validation_and_failed_envelope(
@@ -746,6 +748,7 @@ def test_trace_failure_does_not_alter_article_semantic_acceptance_or_routing(bas
         "run_id": "routing-run",
         "semantic_trace": _complete_trace(ok_report),
     })
+    state = current_quality(state, build_inventory=True)
     del state["semantic_trace"]["iterations"][0]["verifier_input"]
     assert nodes.semantic_verification_accepted(state) is True
     assert nodes.route_after_reflect(state) == "hitl"

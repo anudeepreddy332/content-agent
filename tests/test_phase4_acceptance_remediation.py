@@ -22,6 +22,7 @@ from langgraph.graph import END
 
 import agent.graph as graph_mod
 import agent.nodes as nodes
+from tests.workflow_fixtures import current_quality, verification_for_report
 from config import MAX_ITERATIONS, REFLECTION_THRESHOLD, UVR_THRESHOLD
 from tests.conftest import FakeLLMClient, fake_response
 from tests.test_verify_node_semantic_cutover import (
@@ -97,7 +98,7 @@ def _state(base_state: dict, report: list[dict], **extra) -> dict:
     }
     defaults.update(extra)
     state.update(defaults)
-    return state
+    return current_quality(state, build_inventory=True)
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +180,7 @@ def test_case_i_invalid_evaluation_state_fails_closed(base_state, status):
         reflection_score=10,
     )
     assert nodes.semantic_verification_accepted(state) is False
-    assert nodes.route_after_reflect(state) == "draft"
+    assert nodes.route_after_reflect(state) == ("draft" if status == "parse_failed" else END)
 
 
 def test_case_j_legacy_confidence_cannot_launder_blocker(base_state):
@@ -198,7 +199,7 @@ def test_case_j_call_a_materiality_cannot_override_engine_p6(base_state, monkeyp
     classification — materiality is not semantic authority."""
     for material in (True, False, "unknown"):
         result = _run_fixture_case(monkeypatch, "P6", material=material)
-        state = {**_fixture_state(_load_case("P6")), **result}
+        state = current_quality({**_fixture_state(_load_case("P6")), **result})
         assert state["grounding_report"][0]["status"] == "weak"
         assert state["grounding_report"][0]["blockers"][0]["kind"] == "contradiction"
         assert nodes.semantic_verification_accepted(state) is False
@@ -210,7 +211,7 @@ def test_case_j_call_a_unknown_materiality_cannot_sink_engine_verified_p1(base_s
     state = {**_fixture_state(_load_case("P1")), **result, "reflection_score": 8}
     assert state["grounding_report"][0]["status"] == "verified"
     assert nodes.semantic_verification_accepted(state) is True
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
 
 
 # ---------------------------------------------------------------------------
@@ -280,7 +281,7 @@ def _capture_draft_user_message(monkeypatch, state: dict) -> str:
 
 def test_p6_contradiction_revision_feedback_is_targeted(base_state, monkeypatch):
     result = _run_fixture_case(monkeypatch, "P6")
-    state = {**_fixture_state(_load_case("P6")), **result}
+    state = current_quality({**_fixture_state(_load_case("P6")), **result})
     row = state["grounding_report"][0]
     assert row["status"] == "weak"
     assert row["blockers"][0]["kind"] == "contradiction"
@@ -305,7 +306,7 @@ def test_p6_contradiction_revision_feedback_is_targeted(base_state, monkeypatch)
 
 def test_p7_limitation_revision_feedback_is_targeted(base_state, monkeypatch):
     result = _run_fixture_case(monkeypatch, "P7")
-    state = {**_fixture_state(_load_case("P7")), **result}
+    state = current_quality({**_fixture_state(_load_case("P7")), **result})
     row = state["grounding_report"][0]
     assert row["status"] == "weak"
     assert row["blockers"][0]["kind"] == "limitation"
@@ -325,7 +326,7 @@ def test_p7_limitation_revision_feedback_is_targeted(base_state, monkeypatch):
 
 def test_blocker_feedback_reaches_trace_revision_linkage(base_state, monkeypatch):
     result = _run_fixture_case(monkeypatch, "P6")
-    state = {**_fixture_state(_load_case("P6")), **result}
+    state = current_quality({**_fixture_state(_load_case("P6")), **result})
     client = FakeLLMClient(response=fake_response(json.dumps({
         "problem_framing": "p", "technical_dive": "t", "code_snippets": "c", "takeaways": "k",
     })))
@@ -416,8 +417,8 @@ def test_auto_approve_cannot_bypass_blocker_at_iteration_exhaustion(
 ):
     report = [_row("blocked", status, blocker_kind=kind)] + _verified_rows(9)
     state = _state(base_state, report, iterations=MAX_ITERATIONS)
-    # Exhaustion routes to the human gate, never silently onward.
-    assert nodes.route_after_reflect(state) == "hitl"
+    # Exhaustion terminates without entering human review.
+    assert nodes.route_after_reflect(state) == END
     monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
     result = nodes.hitl_node(state)
     assert result["hitl_status"] == "rejected"
@@ -451,12 +452,12 @@ def test_hitl_api_payload_exposes_semantic_obligations(base_state, monkeypatch):
         return {"action": "reject"}
 
     monkeypatch.setattr("langgraph.types.interrupt", fake_interrupt)
-    nodes.hitl_node(state)
-    obligations = captured["payload"]["semantic_obligations"]
-    assert len(obligations) == 1
-    assert obligations[0]["blocking"] is True
-    assert obligations[0]["blocker_kinds"] == ["contradiction"]
-    assert captured["payload"]["claim_completeness"] == "unknown"
+    result = nodes.hitl_node(state)
+    assert result['terminal_status'] == 'execution_failed'
+    assert captured == {}
+    obligations = nodes.unresolved_semantic_obligations(state['grounding_report'])
+    assert len(obligations) == 1 and obligations[0]['blocking'] is True
+    assert obligations[0]['blocker_kinds'] == ['contradiction']
 
 
 # ---------------------------------------------------------------------------
@@ -485,14 +486,14 @@ def test_uvr_cannot_override_blocker_or_invalid_state(base_state):
 
 # ---------------------------------------------------------------------------
 # Mocked end-to-end (spec §16.12): blocker-bearing UNVERIFIED revises with
-# targeted feedback, exhausts iterations, then holds at HITL — never publishes.
+# targeted feedback, exhausts its episode, then terminates — never publishes.
 # ---------------------------------------------------------------------------
 
 def test_mocked_e2e_unverified_blocker_revises_then_holds(base_state, monkeypatch):
     draft_json = json.dumps({
         "problem_framing": "p", "technical_dive": "t", "code_snippets": "c", "takeaways": "k",
     })
-    client = FakeLLMClient(response=fake_response(draft_json))
+    client = FakeLLMClient(response=fake_response(draft_json), analyzer_autofill=False)
     captured: list[list[dict]] = []
     orig_create = client.chat.completions.create
 
@@ -516,7 +517,7 @@ def test_mocked_e2e_unverified_blocker_revises_then_holds(base_state, monkeypatc
 
     monkeypatch.setattr(graph_mod, "retrieve_node", lambda state: {})
     monkeypatch.setattr(graph_mod, "verify_node", lambda state: {
-        "grounding_report": copy.deepcopy(report),
+        **verification_for_report(state, copy.deepcopy(report)),
         "grounding_score": 0.9,
         "verification_status": "completed",
     })
@@ -530,10 +531,10 @@ def test_mocked_e2e_unverified_blocker_revises_then_holds(base_state, monkeypatc
     init.update(iterations=0, grounding_report=[], verification_status="not_started")
     result = graph.invoke(init)
 
-    # Two drafting passes (initial + one revision), then exhaustion -> HITL hold.
+    # Two drafting passes (initial + one revision), then terminal exhaustion.
     assert result["iterations"] == MAX_ITERATIONS
     assert len(captured) == MAX_ITERATIONS
-    assert result["hitl_status"] == "rejected"
+    assert result["terminal_status"] == "terminal_quality_exhausted"
     assert result.get("html_output") is None
 
     revision_user = next(m["content"] for m in captured[1] if m["role"] == "user")

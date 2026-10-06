@@ -61,6 +61,12 @@ def _write_telemetry(state: dict):
         "prompt_hashes": PROMPT_HASHES,
 
         "iterations": state.get("iterations", 0),
+        "quality_episode": state.get("quality_episode"),
+        "quality_attempts": state.get("quality_attempts"),
+        "content_feedback_count": state.get("content_feedback_count"),
+        "html_revision_attempts": state.get("html_revision_attempts"),
+        "terminal_status": state.get("terminal_status"),
+        "terminal_message": state.get("terminal_message"),
         # M4: per-iteration verify metrics + experiment toggles. The independent
         # variable must be visible in every run record (preflight rule).
         "iteration_metrics": state.get("iteration_metrics", []),
@@ -233,6 +239,11 @@ def _build_initial_state(
             "parse_status": "not_started",
         },
         "iterations": 0,
+        "quality_episode": 0, "quality_attempts": 0,
+        "content_feedback_count": 0, "html_revision_attempts": 0,
+        "draft_status": "not_started", "verification_identity": None,
+        "reflection_identity": None, "approved_draft_identity": None,
+        "terminal_status": None, "terminal_message": None,
         "hitl_status": "pending",
         "hitl_feedback": None,
         "html_review_status": None,
@@ -333,6 +344,7 @@ def run(topic, card_id, series, auto, brief_requirements_json):
     except Exception as e:
         initial_state["error_log"] = [f"pipeline crash: {e}"]
         initial_state["verification_status"] = "upstream_failed"
+        initial_state["terminal_status"] = "execution_failed"
         _write_telemetry(initial_state)
         raise
 

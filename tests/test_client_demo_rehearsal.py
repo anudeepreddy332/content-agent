@@ -7,6 +7,7 @@ import json
 import subprocess
 
 import agent.nodes as nodes
+from tests.workflow_fixtures import current_quality
 from main import _build_initial_state, _write_telemetry
 from agent.html_policy import (
     assemble_trusted_article,
@@ -79,6 +80,9 @@ def test_reflection_marks_a_real_judge_score_as_real(base_state, monkeypatch):
         lambda: FakeLLMClient(response=fake_response('{"score": 7, "notes": "specific judge critique"}')),
     )
 
+    base_state.update(iterations=1, verification_status='completed',
+                      grounding_report=[{'claim': 'Synthetic fact', 'status': 'verified', 'blockers': []}])
+    base_state = current_quality(base_state, build_inventory=True)
     out = nodes.reflect_node(base_state)
 
     assert out["reflection_score"] == 7
@@ -97,6 +101,9 @@ def test_reflection_marks_parse_fallback_as_fallback(base_state, monkeypatch):
         lambda: FakeLLMClient(response=fake_response("not JSON")),
     )
 
+    base_state.update(iterations=1, verification_status='completed',
+                      grounding_report=[{'claim': 'Synthetic fact', 'status': 'verified', 'blockers': []}])
+    base_state = current_quality(base_state, build_inventory=True)
     out = nodes.reflect_node(base_state)
 
     assert out["reflection_score"] == 7

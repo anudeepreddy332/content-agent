@@ -160,7 +160,7 @@ def test_stream_graph_crash_writes_upstream_failed_telemetry(tmp_path, monkeypat
     run_id = created.json()["run_id"]
 
     status = client.get(f"/runs/{run_id}", headers=H).json()
-    assert status["status"] == "error"
+    assert status["status"] == "execution_failed"
     assert status["error"] == "injected stream failure"
     telemetry = json.loads((tmp_path / "outputs" / "runs" / f"{run_id}.json").read_text())
     assert telemetry["verification_status"] == "upstream_failed"

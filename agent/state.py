@@ -68,7 +68,17 @@ class AgentState(TypedDict):
     reflection_score: int       # 1–10
     reflection_notes: str
     reflection_provenance: dict # judge output vs deterministic fallback
-    iterations: int             # max 2
+    iterations: int             # monotonic lifetime draft ordinal; never routing authority
+    quality_episode: int
+    quality_attempts: int        # 0..2 in the current episode
+    content_feedback_count: int  # 0..2 accepted events per run
+    html_revision_attempts: int  # 0..2 attempts, including failed/discarded revisions
+    draft_status: str
+    verification_identity: dict | None
+    reflection_identity: dict | None
+    approved_draft_identity: dict | None
+    terminal_status: str | None
+    terminal_message: str | None
 
     # HITL
     hitl_status: Literal["pending", "approved", "rejected", "feedback"]

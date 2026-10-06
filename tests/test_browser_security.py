@@ -330,3 +330,18 @@ def test_chromium_rejects_legacy_ipv4_citation_hrefs(pw_page):
     pw_page.set_content("<!DOCTYPE html><html><body>ok</body></html>", wait_until="domcontentloaded")
     pw_page.wait_for_timeout(100)
     assert blocked == []
+
+
+@pytest.mark.parametrize('status', ['terminal_quality_exhausted', 'policy_blocked', 'execution_failed',
+    'resource_exhausted', 'content_revision_limit', 'layout_revision_limit', 'rendering_failed',
+    'terminal_rejected'])
+def test_workflow_terminal_ui_cannot_offer_publication(live_server, pw_page, status):
+    pw_page.goto(live_server + '/', wait_until='domcontentloaded')
+    message = 'Quality gates were not met within the allowed attempts. Please try again.'
+    pw_page.evaluate('(payload) => onDone(payload)', {'status': status, 'summary': {
+        'terminal_status': status, 'terminal_message': message,
+        'git_status': 'merged', 'html_filename': 'never-published.html'}})
+    assert pw_page.locator('#doneBody p.bad').inner_text() == message
+    assert pw_page.locator('#publishBtns').is_hidden()
+    assert pw_page.locator('#gate1').is_hidden()
+    assert pw_page.locator('#gate2').is_hidden()

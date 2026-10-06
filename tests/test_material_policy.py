@@ -11,6 +11,7 @@ import json
 from langgraph.graph import END
 
 import agent.nodes as nodes
+from tests.workflow_fixtures import current_quality
 from agent.claim_inventory import build_claim_inventory
 from agent.material_policy import (
     MATERIAL_HITL,
@@ -81,7 +82,7 @@ def _state_with(base_state, draft, inv, report, *, iterations=1, **extra):
         "total_cost_usd": 0.01,
     })
     state.update(extra)
-    return state
+    return current_quality(state)
 
 
 def _verified_state(base_state, draft, rows, statuses, reqs=None, iterations=1):
@@ -172,7 +173,7 @@ def test_F_material_invalid_fail_closed(base_state):
     assert res.invalid_material_claim_ids == [ids[0]]
     assert res.unresolved_material_claim_ids == [ids[0]]
     assert "invalid_material_claim" in res.reason_codes
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
 
 
 def test_G_materiality_unknown_hitl_not_stochastic_retry(base_state):
@@ -187,7 +188,7 @@ def test_G_materiality_unknown_hitl_not_stochastic_retry(base_state):
     assert res.unknown_materiality_claim_ids == [cid]
     # Unknown materiality does NOT route to revision (no retry-to-green),
     # even with full revision budget remaining.
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
 
 
 def test_Gb_unknown_materiality_live_cases(base_state):
@@ -285,8 +286,8 @@ def test_L_stale_inventory_fail_closed(base_state):
     # already rejects a stale inventory, so routing is fail-closed (re-verify
     # via draft, or HITL on exhaustion) — never onward to publish.
     assert nodes.semantic_verification_accepted(state) is False
-    assert nodes.route_after_reflect(state) in ("draft", "hitl")
-    assert nodes.route_after_reflect({**state, "iterations": MAX_ITERATIONS}) == "hitl"
+    assert nodes.route_after_reflect(state) == END
+    assert nodes.route_after_reflect({**state, "iterations": MAX_ITERATIONS}) == END
 
 
 def test_M_stale_grounding_roster_fail_closed(base_state):
@@ -316,7 +317,7 @@ def test_N_all_resolved_and_deterministic_requirements_satisfied_pass(base_state
     assert res.material_safety_state == "pass"
     assert res.mandatory_requirement_states["REQ-SEC"] == REQ_SATISFIED
     assert res.material_verified_rate == 1.0
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
 
 
 def test_O_high_reflection_cannot_override_material_failure(base_state):
@@ -341,7 +342,7 @@ def test_exhaustion_routes_unresolved_material_to_hitl(base_state):
     res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
     assert res.decision == MATERIAL_HITL
     assert res.material_safety_state == "exhausted"
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
 
 
 def test_exhaustion_routes_missing_requirement_to_hitl(base_state):
@@ -352,7 +353,7 @@ def test_exhaustion_routes_missing_requirement_to_hitl(base_state):
     state = _state_with(base_state, draft, inv, [], iterations=MAX_ITERATIONS)
     res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
     assert res.decision == MATERIAL_HITL
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
 
 
 def test_denominator_gaming_deleting_required_claim_does_not_improve_gate(base_state):
@@ -572,7 +573,7 @@ def test_sonnet_attack_unrelated_verified_claim_linked_to_semantic_req(base_stat
     assert res.mandatory_requirement_states["REQ-QUORUM"] != REQ_SATISFIED
     assert material_policy_passed(res) is False
     assert res.decision == MATERIAL_HITL
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
     monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
     hitl = nodes.hitl_node(state)
     assert hitl["hitl_status"] == "rejected"
@@ -717,7 +718,7 @@ def test_unknown_requirement_routes_hitl_not_draft_retry(base_state):
                                  iterations=1)
     res = evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
     assert res.decision == MATERIAL_HITL
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
     assert format_required_content_feedback(res) == ""
 
 
@@ -783,12 +784,15 @@ def test_new_claim_after_revision_evaluated_from_current_inventory(base_state, m
 
     def fake_draft(state):
         text = drafts[min(state.get("iterations", 0), 1)]
-        return {"draft_markdown": text, "iterations": state.get("iterations", 0) + 1}
+        return {"draft_markdown": text, "draft_status": "valid",
+                "draft_sections": {k: "section" for k in ("problem_framing", "technical_dive", "code_snippets", "takeaways")},
+                "iterations": state.get("iterations", 0) + 1}
 
     monkeypatch.setattr(graph_mod, "retrieve_node", lambda state: {})
     monkeypatch.setattr(graph_mod, "draft_node", fake_draft)
     monkeypatch.setattr(graph_mod, "reflect_node", lambda state: {
-        "reflection_score": 8, "reflection_notes": "ok"})
+        "reflection_score": 3, "reflection_notes": "redraft",
+        "reflection_provenance": {"origin": "judge", "provider_called": True, "parse_status": "ok"}})
     monkeypatch.setattr(graph_mod, "hitl_node", lambda state: {
         "hitl_status": "rejected", "hitl_feedback": None})
 
@@ -799,7 +803,7 @@ def test_new_claim_after_revision_evaluated_from_current_inventory(base_state, m
     result = graph.invoke(init)
     final_inv = result["claim_inventory"]
     assert compute_claim_id(claim_new) in {c["claim_id"] for c in final_inv["claims"]}
-    assert result["hitl_status"] == "rejected"
+    assert result["terminal_status"] == "execution_failed"
     assert result.get("html_output") is None
 
 
