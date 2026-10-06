@@ -341,7 +341,37 @@ def test_workflow_terminal_ui_cannot_offer_publication(live_server, pw_page, sta
     pw_page.evaluate('(payload) => onDone(payload)', {'status': status, 'summary': {
         'terminal_status': status, 'terminal_message': message,
         'git_status': 'merged', 'html_filename': 'never-published.html'}})
-    assert pw_page.locator('#doneBody p.bad').inner_text() == message
+    assert pw_page.locator('#doneBody p.bad').inner_text() == status + ': ' + message
     assert pw_page.locator('#publishBtns').is_hidden()
     assert pw_page.locator('#gate1').is_hidden()
     assert pw_page.locator('#gate2').is_hidden()
+
+
+@pytest.mark.parametrize('legacy', [False, True])
+def test_J_failed_archive_ui_is_never_success(live_server, pw_page, legacy, monkeypatch, base_state):
+    pw_page.goto(live_server + '/', wait_until='domcontentloaded')
+    import agent.nodes as nodes
+    from unittest.mock import Mock
+    monkeypatch.setenv('GIT_PUSH_ENABLED', 'false')
+    monkeypatch.setattr(nodes, '_atomic_write_utf8', Mock(side_effect=OSError('disk write denied')))
+    html = '<html><body>Approved article.</body></html>'
+    sha = nodes.sha256_utf8(html)
+    summary = nodes.git_node({**base_state, 'html_output': html, 'html_filename': 'article.html',
+                              'html_sha256': sha, 'approved_html_sha256': sha})
+    assert summary['git_status'] == 'failed'
+    if legacy:
+        summary.pop('terminal_status')
+    pw_page.evaluate('(payload) => onDone(payload)', {'status': 'complete' if legacy else 'execution_failed',
+                                                   'summary': summary})
+    text = pw_page.locator('#doneBody').inner_text()
+    assert 'execution_failed' in text and summary['terminal_message'] in text
+    assert 'Published locally' not in text
+    assert pw_page.locator('#doneBody p.ok').count() == 0
+    assert pw_page.locator('#publishBtns').is_hidden()
+
+
+def test_L_successful_local_publish_ui_is_preserved(live_server, pw_page):
+    pw_page.goto(live_server + '/', wait_until='domcontentloaded')
+    pw_page.evaluate('(payload) => onDone(payload)', {'status': 'complete', 'summary': {'git_status': 'merged'}})
+    assert 'Merged locally' in pw_page.locator('#doneBody p.ok').inner_text()
+    assert pw_page.locator('#publishBtns').is_visible()

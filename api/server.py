@@ -48,7 +48,7 @@ from langgraph.types import Command
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from agent.graph import build_graph
-from agent.workflow import terminal_api_status, terminal
+from agent.workflow import terminal_api_status, terminal, project_terminal
 from agent.html_policy import REVIEWER_APP_CSP
 from main import _build_initial_state, _make_slug, _write_telemetry
 from observability.logger import get_logger
@@ -110,6 +110,7 @@ def _advance(run_id: str, invoke_input, finalizing: bool):
             REGISTRY[run_id].update(status="execution_failed", result=crash, error=str(e))
         return
 
+    result = project_terminal(result)
     payload = _extract_interrupt(result, config)
     with LOCK:
         if payload is not None:
@@ -200,6 +201,7 @@ def _advance_streaming(run_id, invoke_input, finalizing):
 
     if not result:  # defensive: recover final state from the checkpoint
         result = getattr(GRAPH.get_state(config), "values", {}) or {}
+    result = project_terminal(result)
     payload = _extract_interrupt(result, config)
     with LOCK:
         if payload is not None:

@@ -230,7 +230,7 @@ def test_missing_or_fallback_reflection_never_qualifies(harness, provenance):
     graph, config, state, plan, _ = harness
     plan['reflect'] = [{'reflection_score': 9, 'reflection_provenance': provenance}] * 2
     result = graph.invoke(state, config)
-    assert result['terminal_status'] == 'terminal_quality_exhausted'
+    assert result['terminal_status'] == 'execution_failed'
     assert '__interrupt__' not in result
 
 

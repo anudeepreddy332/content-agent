@@ -120,18 +120,20 @@ def verification_failure(state):
         return failure(state, "execution_failed", repairable=state.get("verification_status") in (
             "parse_failed", "inventory_failed",
         ))
-    if not inventory_current(state) or not nodes.semantic_verification_accepted(state):
-        if not inventory_current(state) or nodes.inventory_critical_failures(state.get("claim_inventory")):
-            return failure(state, "execution_failed", repairable=False)
-        return failure(state, "terminal_quality_exhausted")
+    if not inventory_current(state) or nodes.inventory_critical_failures(state.get("claim_inventory")):
+        return failure(state, "execution_failed", repairable=False)
     material = nodes.material_policy_result(state)
-    if not nodes.material_policy_passed(material):
-        # The policy receives the episode count through nodes.material_policy_result.
-        return failure(state, "policy_blocked", repairable=material.material_safety_state in (
-            "repairable", "exhausted",
-        ))
+    material_ok = nodes.material_policy_passed(material)
+    # UNKNOWN materiality/requirements, invalid material analyses and integrity
+    # failures never authorize a stochastic retry, even alongside semantic rejection.
+    if not material_ok and material.material_safety_state not in ("repairable", "exhausted"):
+        return failure(state, "policy_blocked", repairable=False)
     if not nodes.citation_policy_accepted(state):
         return failure(state, "policy_blocked", repairable=False)
+    if not nodes.semantic_verification_accepted(state):
+        return failure(state, "terminal_quality_exhausted")
+    if not material_ok:
+        return failure(state, "policy_blocked")
     return failure(state, "execution_failed", repairable=False)
 
 
@@ -181,11 +183,24 @@ def reflect_step(state, *, run):
         return terminal("execution_failed")
     try:
         update = run(state)
-    except Exception:
-        update = {"reflection_score": 0, "reflection_provenance": {"origin": "unavailable"}}
+    except Exception as exc:
+        return {"reflection_score": 0, "reflection_identity": identity(state),
+                "reflection_provenance": {"origin": "unavailable", "parse_status": "execution_failed",
+                                          "provider_called": None, "reason": type(exc).__name__},
+                "error_log": [*state.get("error_log", []), f"reflect: {type(exc).__name__}: {exc}"],
+                **terminal("execution_failed", "Reflection execution failed.")}
     update = {**update, "reflection_identity": identity(state)}
     current = {**state, **update}
-    if not gate1_eligible(current):
+    provenance = current.get("reflection_provenance")
+    score = current.get("reflection_score")
+    executed = (isinstance(provenance, dict) and provenance.get("origin") == "judge"
+                and provenance.get("provider_called") is True and provenance.get("parse_status") == "ok"
+                and type(score) is int and 1 <= score <= 10)
+    if resource_stopped(current):
+        update.update(terminal("resource_exhausted"))
+    elif not executed:
+        update.update(terminal("execution_failed", "Reflection response was unusable."))
+    elif not gate1_eligible(current):
         update.update(failure(current, "terminal_quality_exhausted"))
     return update
 
@@ -234,7 +249,15 @@ def layout_feedback(state, note):
             "html_revision_attempts": state.get("html_revision_attempts", 0) + 1}
 
 
+def project_terminal(state):
+    """One terminal projection for legacy/ordinary graph results and consumers."""
+    if state.get("git_status") == "failed" and not state.get("terminal_status"):
+        return {**state, **terminal("execution_failed", "Local Git/archive action failed.")}
+    return state
+
+
 def terminal_api_status(state):
+    state = project_terminal(state)
     if state.get("terminal_status"):
         return state["terminal_status"]
     if state.get("hitl_status") == "rejected" or state.get("html_review_status") == "rejected":

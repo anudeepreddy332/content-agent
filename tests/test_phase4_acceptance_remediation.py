@@ -203,7 +203,7 @@ def test_case_j_call_a_materiality_cannot_override_engine_p6(base_state, monkeyp
         assert state["grounding_report"][0]["status"] == "weak"
         assert state["grounding_report"][0]["blockers"][0]["kind"] == "contradiction"
         assert nodes.semantic_verification_accepted(state) is False
-        assert nodes.route_after_reflect(state) == "draft"
+        assert nodes.route_after_reflect(state) == (END if material == "unknown" else "draft")
 
 
 def test_case_j_call_a_unknown_materiality_cannot_sink_engine_verified_p1(base_state, monkeypatch):

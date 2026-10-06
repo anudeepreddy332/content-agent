@@ -2444,6 +2444,7 @@ def git_node(state: AgentState) -> dict:
         return {
             "branch_name": branch,
             "git_status": "failed",
+            **workflow.terminal("execution_failed", "Local Git/archive action failed."),
             "git_commit_sha": None,
             "latency_ms": existing_latency,
             "error_log": error_log,
@@ -2499,6 +2500,7 @@ def git_node(state: AgentState) -> dict:
         return {
             "branch_name": branch,
             "git_status": "failed",
+            **workflow.terminal("execution_failed", "Local Git/archive action failed."),
             "git_commit_sha": None,
             "latency_ms": existing_latency,
             "error_log": error_log,
@@ -2611,10 +2613,12 @@ def git_node(state: AgentState) -> dict:
              new_files=len(new_files))
 
     except GitCommandError as e:
+        git_status = "failed"
         log.error("git.command_error", run_id=state["run_id"], error=str(e))
         error_log.append(f"[git_node] Git command failed: {e}")
 
     except Exception as e:
+        git_status = "failed"
         log.error("git.unexpected_error", run_id=state["run_id"], error=str(e))
         error_log.append(f"[git_node] Unexpected error: {e}")
 
@@ -2632,6 +2636,8 @@ def git_node(state: AgentState) -> dict:
     return {
         "branch_name": branch,
         "git_status": git_status,
+        **(workflow.terminal("execution_failed", "Local Git/archive action failed.")
+           if git_status == "failed" else {}),
         "git_commit_sha": git_commit_sha,
         "latency_ms": existing_latency,
         "error_log": error_log,

@@ -303,16 +303,17 @@ function onDone(d){
   if(streamAbort){ streamAbort.abort(); streamAbort=null; }
   hide("#gate1"); hide("#gate2");
   const s=d.summary||{}; const base=$("#siteBase").value.trim().replace(/\/+$/,"");
-  const publishable = d.status==="complete" && (s.git_status==="merged" || s.git_status==="tagged_and_merged");
+  const failed = s.terminal_status || (s.git_status==="failed" ? "execution_failed" : null);
+  const publishable = !failed && d.status==="complete" && (s.git_status==="merged" || s.git_status==="tagged_and_merged");
   const body = $("#doneBody");
   clearChildren(body);
   const p = document.createElement("p");
   if(publishable){
     p.className = "ok";
     p.textContent = "Merged locally (git_status: "+(s.git_status||"?")+"). Click Publish to push the approved commit.";
-  } else if(s.terminal_status){
+  } else if(failed){
     p.className = "bad";
-    p.textContent = s.terminal_message || s.terminal_status;
+    p.textContent = failed + ": " + (s.terminal_message || "Run ended without successful publication.");
   } else if(d.status==="complete"){
     p.className = "ok";
     p.textContent = "Published locally (git_status: "+(s.git_status||"?")+", file "+(s.html_filename||"?")+").";

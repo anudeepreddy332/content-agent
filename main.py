@@ -348,8 +348,15 @@ def run(topic, card_id, series, auto, brief_requirements_json):
         _write_telemetry(initial_state)
         raise
 
+    from agent.workflow import project_terminal, terminal_api_status
+    result = project_terminal(result)
     telemetry_path = _write_telemetry(result)
-    click.echo(f"\nRun complete. Telemetry: {telemetry_path}")
+    status = terminal_api_status(result)
+    if status == "complete":
+        click.echo(f"\nRun complete. Telemetry: {telemetry_path}")
+    else:
+        click.echo(f"\nRun ended: {status}. Telemetry: {telemetry_path}")
+        click.echo(result.get("terminal_message") or status.replace("_", " "))
     click.echo(
         f"Cost: ${result['total_cost_usd']:.4f} | "
         f"Grounding: {result['grounding_score']:.2f} | "
