@@ -380,3 +380,16 @@ For every applicable change:
 | Classification | **APPLICATION E2E FAIL**. Retrieval qualification remains intact; external pilot NOT READY. |
 | Decision enabled | Frozen workflow correction (`D-2026-10-05-04`) **IMPLEMENTATION PENDING**; structured-output reliability investigation OPEN; initial HTML equivalence guard PENDING. No provider restart/rerun or retrieval tuning authorized here. |
 | Canonical continuity | `D-2026-10-05-03`; `PROJECT_STATUS.md`. Failure retained as failure. |
+
+### VAL-2026-10-07-01 — Frozen workflow implementation, re-audit, and feature CI
+
+| Field | Record |
+| --- | --- |
+| Contract / docs base | Frozen October-5 workflow `D-2026-10-05-04`; canonical docs base `ced78a3ca35f13b8217a6455ef5875cdb605c9d8`. |
+| Implementation chain | Initial `278a8c1d52eed01cd735021e16686982c1f15dce`; corrected application-only candidate `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`. Initial independent audit blocked on three P1s; corrected independent re-audit **PASS**, all three P1s CLOSED, no remaining P0/P1 against the frozen contract. |
+| Frozen workflow validation | 18 P1 correction tests PASS; 25 frozen-workflow tests PASS; complete A–M contract PASS. Verify-before-Reflect, genuine current score >=7 before Gate 1, two drafts per quality episode, at most two accepted Gate-1 feedback events and two Gate-2 revisions, terminal non-repairable blockers, and truthful failure presentation preserved. |
+| Ordinary regression / security | Full ordinary suite **1,832 passed, 37 warnings**; browser/security/publication regressions PASS; zero new Ruff fatal issues. |
+| Integration / exact-SHA CI | Normal fast-forward feature push to `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`. [GitHub Actions 37599028135](https://github.com/anudeepreddy332/content-agent/actions/runs/37599028135): push event, exact head SHA `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`, overall SUCCESS; lint PASS; test PASS (1,832 passed / 37 warnings); PR-only eval-gate **SKIPPED BY DESIGN**. Main remains `86712d200fd46382a876f2083f824f03a83341ab`; no Phase-5 PR. |
+| Qualification boundary | Zero provider calls during implementation/audit/integration; no V1 inspection/execution or V2 execution. All 20 sealed artifacts unchanged. HOLDOUT-V2 PASS belongs only to `e0cfe0b566134f848feb731a777f315eb1456dd2`; `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` is **not holdout-tested**. |
+| Classification | **FROZEN WORKFLOW IMPLEMENTATION — VALIDATED / INTEGRATED TO FEATURE / EXACT-SHA CI PASS**. Not application E2E PASS, Phase-5 main merge closure, or external pilot readiness. |
+| Canonical continuity | `D-2026-10-07-01`; `PROJECT_STATUS.md`; `architecture.md`; `README.md`. `FREEZE.md` remains historical and unchanged. |

@@ -1,7 +1,8 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-10-05. Workflow contract ACCEPTED / FROZEN —
-IMPLEMENTATION PENDING (D-2026-10-05-04). Historical implementation anchors follow._
+_Accepted contract synchronized 2026-10-07. Workflow contract ACCEPTED / FROZEN —
+IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
+(D-2026-10-05-04). Historical implementation anchors follow._
 
 - **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`
 - **Authorized P0-1 implementation base:** `7a606e895fe0a4bc9092659f130881bc7b52bd28`
@@ -12,12 +13,13 @@ IMPLEMENTATION PENDING (D-2026-10-05-04). Historical implementation anchors foll
 - **P0-2a implementation base (historical):** `ca29d32b4869269daa47142615d298580a577a77`
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
-- **Current identity at reconciliation:** canonical Phase-5 feature runtime is
-  `2a1d95f98b2b240750288924116f8a77b3492250`; main remains
+- **Current implementation identity:** canonical Phase-5 feature runtime is
+  `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`; exact-SHA push CI
+  [37599028135](https://github.com/anudeepreddy332/content-agent/actions/runs/37599028135)
+  passed. Main remains
   `86712d200fd46382a876f2083f824f03a83341ab`. HOLDOUT-V2 qualified only
-  `e0cfe0b566134f848feb731a777f315eb1456dd2`; its application-only descendant
-  `2a1d95f` was independently reviewed, not holdout-tested. A documentation-only
-  descendant does not implement the newly frozen workflow.
+  `e0cfe0b566134f848feb731a777f315eb1456dd2`; the workflow implementation
+  is an independently audited application-only descendant, not holdout-tested.
 - **Historical canonical P0-2b state:** exact
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. It contains the P0-2a integration commit,
   the P0-2b slice-1 integration commit, the P0-2b slice-2A integration commit, and the P0-2b
@@ -48,7 +50,8 @@ This file contains accepted architecture only. Candidate ideas and experiment hy
 belong here until independent review accepts them. Material decision history remains in
 `DECISIONS.md`; current implementation/release state remains in `PROJECT_STATUS.md`.
 
-The October-5 workflow contract in section 1 is accepted architecture awaiting implementation.
+The October-5 workflow contract in section 1 is accepted architecture implemented and
+independently audited on the feature branch at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`.
 The security and earlier implementation records below retain their scoped validation; their old
 next-mission/status statements are historical, not current project authorization.
 
@@ -103,11 +106,12 @@ documentation-only descendant of the audited runtime reference and does not chan
 product implementation. No other descendant is authorized by implication. A different Cursor base
 is `ARCHITECTURE-BLOCKED` unless independently reviewed.
 
-## 1. Astra-frozen workflow contract — implementation pending
+## 1. Astra-frozen workflow contract — implemented on feature branch
 
-**Status: ACCEPTED / FROZEN — IMPLEMENTATION PENDING**, 2026-10-05,
-decision `D-2026-10-05-04`. This is the accepted destination for the supervised,
-single-operator application, not a claim about the graph at `2a1d95f`.
+**Status: ACCEPTED / FROZEN — IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH;
+MAIN MERGE PENDING**, contract dated 2026-10-05, decision `D-2026-10-05-04`.
+Implementation evidence: `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`, exact-SHA
+push CI `37599028135`. The October-5 graph at `2a1d95f` remains historical.
 
 ### 1.1 Topology and conditional quality transitions
 
@@ -618,7 +622,7 @@ PASS. No AFTER paid benchmark has run after P0-2b slice 2B.
 
 Historical integration record. Its exhausted-failure-to-HITL destination is superseded
 by section 1 / `D-2026-10-05-04`; semantic acceptance and approval safety findings
-remain valid. The superseding workflow is implementation pending.
+remain valid. The superseding workflow is implemented on the feature branch.
 
 - Exact integration: `230314f7f774ed4b112c377269b190fa1279a004`.
 - Ancestry: `eea98c367b0f82fcc844dcca73b3935542adeef6` →

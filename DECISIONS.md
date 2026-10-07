@@ -3804,3 +3804,33 @@ project state -> PROJECT_STATUS.md; experiment/evaluation/E2E ->
 docs/EXPERIMENT_LEDGER.md; externally visible validated capability -> README.md
 if applicable. FREEZE.md is historical. Chat and /tmp receipts are evidence
 inputs, not canonical project state.
+
+---
+Decision ID: D-2026-10-07-01
+Date: 2026-10-07
+
+Decision: **Close implementation of the frozen October-5 workflow contract on the
+canonical feature branch.** Contract authority remains `D-2026-10-05-04` and
+`architecture.md` section 1; this decision changes implementation status, not
+the frozen workflow semantics.
+
+Status: **WORKFLOW IMPLEMENTATION CLOSED ON FEATURE BRANCH / MAIN MERGE PENDING**.
+
+Initial implementation `278a8c1d52eed01cd735021e16686982c1f15dce` was
+independently audited and blocked on three P1s. Corrected candidate
+`4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` passed independent re-audit:
+reflection execution failures terminate without redraft or Gate 1; non-repairable
+execution/policy blockers precede repairable quality failures; failure terminals
+are presented truthfully across graph, API, SSE, browser, and CLI. All three prior
+P1s are CLOSED; the complete A–M frozen-workflow matrix is preserved; no remaining
+P0/P1 was found against `D-2026-10-05-04`.
+
+The corrected application-only candidate was integrated by normal fast-forward
+push to `feature/phase5-rag-hardening`. Exact-SHA push CI
+[37599028135](https://github.com/anudeepreddy332/content-agent/actions/runs/37599028135)
+completed SUCCESS (lint PASS; 1,832 tests PASS, 37 warnings; PR-only eval-gate
+skipped by design). Main remains `86712d200fd46382a876f2083f824f03a83341ab`
+and unmerged; no Phase-5 PR exists. HOLDOUT-V2 PASS remains attributable only to
+`e0cfe0b566134f848feb731a777f315eb1456dd2`; the corrected candidate was not
+holdout-tested. No corrected application E2E PASS, Phase-5 closure, or external
+pilot readiness is claimed.

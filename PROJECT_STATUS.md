@@ -1,13 +1,13 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-10-05 (Phase-5 qualification,
-application-only HITL correction, failed supervised E2E, and frozen workflow contract)._
+_Canonical current-state snapshot. Last synchronized: 2026-10-07 (Phase-5 qualification,
+failed supervised E2E, and audited frozen-workflow implementation on the feature branch)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
-## Current status — 2026-10-05
+## Current status — 2026-10-07
 
 **Phase 5 authoritative retrieval qualification: CLOSED / HOLDOUT-V2 PASS.**
 `PHASE5-AUTH-PROTOCOL-1` closed; exactly one production V2 attempt qualified
@@ -18,19 +18,20 @@ artifacts remain immutable under `reports/phase5/phase5e1a/holdout-run-1`.
 No new holdout execution is authorized by this documentation reconciliation.
 
 **Canonical feature runtime:** `feature/phase5-rag-hardening` at local and remote
-`2a1d95f98b2b240750288924116f8a77b3492250` at reconciliation start. This is an
-independently reviewed application-only descendant of the qualified base,
-**not holdout-tested**. Its HTML API rejection correction is fixed and integrated:
-API rejection/unknown decisions terminate without CLI fallthrough. Exact-SHA push
-CI [37296752071](https://github.com/anudeepreddy332/content-agent/actions/runs/37296752071)
-completed successfully (lint/test PASS; PR-only eval skipped). Main remains
-`86712d200fd46382a876f2083f824f03a83341ab`; the Phase-5 branch is not merged into main.
-The local documentation-only descendant created by this reconciliation does not
-change those runtime/qualification identities; it is not pushed or CI-qualified here.
+`4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`. This is an independently audited
+application-only descendant of the qualified base, **not holdout-tested**. The earlier
+HTML API rejection correction remains integrated. The frozen workflow implementation
+began at `278a8c1d52eed01cd735021e16686982c1f15dce`, was corrected at the current
+feature SHA, and passed independent re-audit. Exact-SHA push CI
+[37599028135](https://github.com/anudeepreddy332/content-agent/actions/runs/37599028135)
+completed successfully: lint PASS; tests **1,832 passed, 37 warnings**; PR-only eval-gate
+skipped by design. Main remains `86712d200fd46382a876f2083f824f03a83341ab`;
+there is no Phase-5 PR and the branch is not merged into main.
 
 **APPLICATION-E2E-RUN-1 = FAILED / REJECTED AT GATE 1.** The one real FastAPI
 run `50b11781-3513-46d6-92c6-ff1f3d1cd56a`, topic “Gradient Descent: A Beginner
-Learning Note,” used the runtime above and `cswp_local`. Retrieval succeeded
+Learning Note,” used historical runtime `2a1d95f98b2b240750288924116f8a77b3492250`
+and `cswp_local`. Retrieval succeeded
 (10 web sources; 11 packed KB evidence items). The run made 6 DeepSeek requests
 and 3 Tavily searches, with approximately `$0.02308` reported model-cost estimate.
 Structured-output reliability failed: final draft JSON was truncated/malformed;
@@ -40,38 +41,41 @@ failed quality to Gate 1 after two drafts (one automatic revision). Grounding wa
 `0.0`, reflection `3`, verification `parse_failed`, publication safety **false**.
 No human approval, generated final article HTML, or publication occurred.
 
-On this reconciliation, the original process was still alive with that exact run
+During the October-5 reconciliation, the original process was still alive with that exact run
 awaiting article review. The operator-authorized real authenticated rejection
 completed: API status `rejected`, `hitl_status=rejected`, checkpoint next nodes
 empty. Rejection made **zero new DeepSeek/Tavily calls**, no final article HTML,
 and no publication. See `D-2026-10-05-03` and ledger `EXP-2026-10-05-01`.
 
-**New Astra-reviewed workflow contract: ACCEPTED / FROZEN — IMPLEMENTATION PENDING.**
-`architecture.md` section 1 and `D-2026-10-05-04` now own the accepted destination:
-conditional draft/verify/reflect execution, automated-quality acceptance before
-Gate 1, terminal failed quality, and independent bounded human-feedback loops.
-At the current runtime these corrections are **not implemented**. Structured-output
-reliability investigation is **OPEN**. Initial HTML equivalence guard is **PENDING**.
-External pilot is **NOT READY**; no application E2E PASS or publication readiness
-is claimed. Earlier bounded Phase-4 and Phase-5 results remain valid within their
-own scope; they do not establish real application reliability.
+**Frozen workflow contract: IMPLEMENTED / INDEPENDENTLY RE-AUDITED PASS ON FEATURE.**
+`architecture.md` section 1 and `D-2026-10-05-04` remain the frozen authority.
+Current Verify must pass before Reflect; current accepted Verify and a genuine current
+Reflection score >=7 are required before Gate 1. Each quality episode allows two
+drafts; at most two accepted Gate-1 feedback events each start a fresh episode;
+Gate 2 allows at most two layout revisions without a content back-edge.
+Non-repairable execution/policy states terminate, and failure terminals are truthful
+across graph, API, SSE, browser UI, and CLI. Independent re-audit closed all three
+implementation P1s: reflection execution failure termination, non-repairable policy
+precedence, and truthful terminal presentation. It found no remaining P0/P1 against
+the frozen contract and confirmed the A–M workflow matrix. This is not a corrected
+application E2E PASS. Structured-output reliability remains **OPEN**; the initial
+HTML content-equivalence guard remains **PENDING**. External pilot is **NOT READY**.
 
-## Current authorized mission
+## Next bounded technical work
 
-This mission reconciles documentation only. The next implementation action is a
-bounded implementation of the frozen workflow/state/counter/Gate1Eligible contract,
-with focused fail-closed routing and human-gate regressions. Structured-output
-reliability requires investigation; initial approved-content HTML equivalence
-requires implementation. These remain pending work, not changes performed here.
-Do not reopen qualified retrieval, alter sealed evidence, rerun holdouts, spend
-provider credits, or publish by implication. Supervised E2E must not be classified
-PASS until the real corrected application workflow is validated.
+Current application blockers are: (1) structured-output reliability investigation;
+(2) initial HTML content-equivalence guard implementation; (3) a fresh successful
+supervised provider-backed E2E of the corrected application; and (4) Phase-5 PR,
+PR-only evaluation, final merge audit, and main merge. Work must be separately
+authorized at the applicable provider/release boundaries. Do not reopen qualified
+retrieval, alter sealed evidence, or rerun holdouts by implication. Phase 5 is not
+complete; external pilot remains **NOT READY**.
 
 ## Authoritative SHA roles and retained historical anchors
 
 - **Current main:** `86712d200fd46382a876f2083f824f03a83341ab`.
-- **Current feature runtime / exact-SHA CI:** `2a1d95f98b2b240750288924116f8a77b3492250`
-  / push CI `37296752071` PASS; application-only descendant, not holdout-tested.
+- **Current feature runtime / exact-SHA CI:** `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`
+  / push CI `37599028135` PASS; application-only descendant, not holdout-tested.
 - **HOLDOUT-V2 qualified base only:** `e0cfe0b566134f848feb731a777f315eb1456dd2`.
 - **Historical pre-client-demo main:** `e4b39caa37497c1743e33843c464ea4381f166d4`
   (demo publish-target guard). The historical anchors below preserve scoped evidence.
@@ -898,7 +902,7 @@ redesign program (priority 3). No runtime change authorized by this record.
 
 Historical validated implementation boundary: conflicting UNKNOWN/failure-to-HITL
 destinations are superseded by `D-2026-10-05-04`; semantic/material authority and
-required-content findings remain valid. The new routing is implementation pending.
+required-content findings remain valid. The superseding routing is implemented on the feature branch.
 
 - Isolated variable: deterministic material-claim + required-content
   acceptance policy only. No new LLM calls, no LangGraph topology change,
@@ -955,7 +959,7 @@ required-content findings remain valid. The new routing is implementation pendin
 
 This is scoped historical Phase-4 qualification, not current application E2E
 acceptance. Its failed/UNKNOWN-to-HITL destination and reflection-as-soft-only
-workflow clauses are superseded by `D-2026-10-05-04` (implementation pending).
+workflow clauses are superseded by `D-2026-10-05-04` (implemented on the feature branch).
 
 | Slice | Status | Summary |
 |-------|--------|---------|
@@ -997,7 +1001,8 @@ revision; drive material-policy denominator and publication-safety conjunction.
 
 **Historical next-work statement superseded:** Phase-5 integration and one-shot
 V2 qualification subsequently completed. October-5 E2E failed; workflow correction
-is frozen but pending, and external pilot/publication readiness is not established.
+is now implemented and audited on the feature branch, while external pilot/publication
+readiness is not established.
 
 **Final qualification evidence:** `tests/test_brief_requirements_live_wiring.py`
 (7/7); full regression suite; provider calls zero; demonstrated P0/P1 none.
@@ -1016,6 +1021,10 @@ is frozen but pending, and external pilot/publication readiness is not establish
 
 ## Latest accepted evidence
 
+- October-7 feature runtime `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`:
+  independent frozen-workflow re-audit PASS; exact-SHA push CI `37599028135` SUCCESS
+  (lint PASS; 1,832 tests PASS / 37 warnings; PR-only eval skipped by design).
+  Main remains `86712d200fd46382a876f2083f824f03a83341ab`; no Phase-5 PR.
 - October-5 exact feature CI `37296752071` PASS at `2a1d95f`; V2 PASS only at
   `e0cfe0b`; application E2E Run 1 **FAIL / rejected at Gate 1**. See ledger
   `VAL-2026-10-05-01/02` and `EXP-2026-10-05-01`. Earlier evidence below remains scoped history.
