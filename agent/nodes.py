@@ -54,8 +54,11 @@ from observability.logger import get_logger
 from observability.tracing import is_tracing_enabled
 from agent.semantic_trace import (
     copy_trace,
+    finish_output_diagnostic,
+    new_output_diagnostic,
     record_draft,
     record_hitl_event,
+    record_output_diagnostic,
     record_semantic_analyzer,
     record_verify,
 )
@@ -432,6 +435,13 @@ def draft_node(state: AgentState) -> dict:
         temperature=DRAFT_TEMPERATURE,
         max_tokens=4000,
     )
+    diagnostic = new_output_diagnostic(
+        stage="draft", iteration=state.get("iterations", 0) + 1,
+        quality_episode=state.get("quality_episode"),
+        quality_attempt=(state["quality_attempts"] + 1 if isinstance(state.get("quality_attempts"), int) else None),
+        requested_model=DEEPSEEK_MODEL, temperature=DRAFT_TEMPERATURE,
+        max_tokens=4000, response_format=None, response=response,
+    )
 
     latency = int((time.time() - t_start) * 1000)
     run_cost = _cost(response.usage)
@@ -446,6 +456,7 @@ def draft_node(state: AgentState) -> dict:
             raw = raw[4:]
         raw = raw.strip()
 
+    parse_error = None
     try:
         parsed = json.loads(raw)
         if not isinstance(parsed, dict) or not all(
@@ -462,6 +473,7 @@ def draft_node(state: AgentState) -> dict:
         }
 
     except (json.JSONDecodeError, ValueError) as e:
+        parse_error = e
         draft_status = "invalid"
         # Graceful degradation: don't crash the graph
         # Log the raw output so you can debug what the model returned
@@ -474,6 +486,7 @@ def draft_node(state: AgentState) -> dict:
             "code_snippets": "",
             "takeaways": "",
         }
+    finish_output_diagnostic(diagnostic, raw, parse_error)
 
     # assemble full markdown for downstream nodes
     draft_markdown = _assemble_markdown(state['topic'], sections)
@@ -505,6 +518,7 @@ def draft_node(state: AgentState) -> dict:
         draft_markdown=draft_markdown,
         revision_linkage=revision_linkage,
     )
+    record_output_diagnostic(trace, iteration=iteration, diagnostic=diagnostic)
 
     log.info(
         "draft.complete",
@@ -1187,6 +1201,14 @@ def verify_node(state: AgentState) -> dict:
             "semantic_trace": trace,
         }
 
+    diagnostic = new_output_diagnostic(
+        stage="claim_inventory", iteration=iteration,
+        quality_episode=state.get("quality_episode"),
+        quality_attempt=state.get("quality_attempts"),
+        requested_model=DEEPSEEK_MODEL, temperature=0.1,
+        max_tokens=4000, response_format=None, response=claim_response,
+    )
+    trace = copy_trace(state)
     run_cost += _cost(claim_response.usage)
     total_new_tokens += claim_response.usage.total_tokens
     raw = claim_response.choices[0].message.content.strip()
@@ -1195,13 +1217,14 @@ def verify_node(state: AgentState) -> dict:
         raw_claim_rows = parse_claim_inventory_rows(raw)
         parser_status = "ok"
     except (json.JSONDecodeError, ValueError, ValidationError) as exc:
+        finish_output_diagnostic(diagnostic, raw, exc)
+        record_output_diagnostic(trace, iteration=iteration, diagnostic=diagnostic)
         log.error("verify.inventory_parse_failed", run_id=state["run_id"], error=str(exc),
                   raw_preview=raw[:300])
         verification_status = "parse_failed"
         parser_status = "parse_failed"
         parse_error = str(exc)
         latency = int((time.time() - t_start) * 1000)
-        trace = copy_trace(state)
         record_verify(
             trace,
             iteration=iteration,
@@ -1239,6 +1262,8 @@ def verify_node(state: AgentState) -> dict:
             "semantic_trace": trace,
         }
 
+    finish_output_diagnostic(diagnostic, raw)
+    record_output_diagnostic(trace, iteration=iteration, diagnostic=diagnostic)
     # Deterministic inventory: exact anchoring, Python claim IDs, duplicate
     # merge, required⇒material override. Versioned by draft_sha256.
     claim_inventory = build_claim_inventory(
@@ -1257,7 +1282,6 @@ def verify_node(state: AgentState) -> dict:
     if not eligible_claims(claim_inventory) or critical_failures:
         verification_status = "inventory_failed"
         latency = int((time.time() - t_start) * 1000)
-        trace = copy_trace(state)
         record_verify(
             trace,
             iteration=iteration,
@@ -1321,8 +1345,6 @@ def verify_node(state: AgentState) -> dict:
     engine_status_by_claim = {}
     if analyzer_result.adjudication is not None:
         engine_status_by_claim = dict(analyzer_result.adjudication.semantic_status_by_claim)
-
-    trace = copy_trace(state)
 
     if not analyzer_result.success:
         record_verify(
@@ -1598,6 +1620,13 @@ def reflect_node(state: AgentState) -> dict:
         temperature=0.1,
         max_tokens=500,
     )
+    diagnostic = new_output_diagnostic(
+        stage="reflection", iteration=state.get("iterations", 0),
+        quality_episode=state.get("quality_episode"),
+        quality_attempt=state.get("quality_attempts"),
+        requested_model=DEEPSEEK_MODEL, temperature=0.1,
+        max_tokens=500, response_format=None, response=response,
+    )
 
     latency = int((time.time() - t_start) * 1000)
     run_cost = _cost(response.usage)
@@ -1608,6 +1637,7 @@ def reflect_node(state: AgentState) -> dict:
         if raw.startswith("json"): raw = raw[4:]
         raw = raw.strip()
 
+    parse_error = None
     try:
         parsed = json.loads(raw)
         if not isinstance(parsed, dict):
@@ -1627,6 +1657,7 @@ def reflect_node(state: AgentState) -> dict:
             parse_status="ok",
         )
     except (json.JSONDecodeError, ValueError) as e:
+        parse_error = e
         log.error("reflect.parse_failed", run_id=state["run_id"], error=str(e))
         reflection_score = 7
         reflection_notes = f"Parse error: {e}"
@@ -1636,6 +1667,9 @@ def reflect_node(state: AgentState) -> dict:
             provider_called=True,
             parse_status="failed",
         )
+    finish_output_diagnostic(diagnostic, raw, parse_error)
+    trace = copy_trace(state)
+    record_output_diagnostic(trace, iteration=state.get("iterations", 0), diagnostic=diagnostic)
 
 
     existing_latency = state.get("latency_ms", {})
@@ -1655,6 +1689,7 @@ def reflect_node(state: AgentState) -> dict:
         "total_tokens": state.get("total_tokens", 0) + response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
+        "semantic_trace": trace,
     }
 
 # NODE: hitl_node

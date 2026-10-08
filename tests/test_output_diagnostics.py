@@ -1,0 +1,226 @@
+"""Metadata-only structured-output diagnostics; all provider responses are fake."""
+
+import json
+from copy import deepcopy
+from types import SimpleNamespace
+
+import agent.nodes as nodes
+from agent.semantic_trace import (
+    empty_trace, finish_output_diagnostic, new_output_diagnostic,
+    record_output_diagnostic, sha256_utf8,
+)
+from main import _write_telemetry
+from tests.conftest import FakeLLMClient, fake_response
+from tests.workflow_fixtures import current_quality
+
+
+def _response(content, *, finish=None, details=None, reasoning=None, with_reasoning=False):
+    response = fake_response(content, tokens=8000)
+    response.model = "returned-model"
+    response.id = "completion-1"
+    if finish is not None:
+        response.choices[0].finish_reason = finish
+    if with_reasoning:
+        response.choices[0].message.reasoning_content = reasoning
+    response.usage.prompt_tokens = 4000
+    response.usage.completion_tokens = 4000
+    response.usage.total_tokens = 8000
+    if details is not None:
+        response.usage.completion_tokens_details = SimpleNamespace(**details)
+    return response
+
+
+def _diag(response, *, stage="draft", original="x"):
+    response.choices[0].message.content = original
+    return new_output_diagnostic(
+        stage=stage, iteration=1, quality_episode=2, quality_attempt=1,
+        requested_model="requested-model", temperature=0.7,
+        max_tokens=4000, response_format=None, response=response,
+    )
+
+
+def _records(state):
+    return [d for slot in state["semantic_trace"]["iterations"]
+            for d in slot.get("output_diagnostics", [])]
+
+
+def test_finish_reason_length_stop_and_missing_usage_ceiling():
+    length = _diag(_response("x", finish="length"))
+    stop = _diag(_response("x", finish="stop"))
+    missing = _diag(_response("x"))
+    assert length["response"]["termination"] == "provider_length"
+    assert stop["response"]["termination"] == "stop"
+    assert missing["response"] == {
+        "model": "returned-model", "id": "completion-1",
+        "finish_reason": None, "termination": "unknown",
+    }
+    assert missing["usage"]["completion_tokens"] == missing["request"]["max_tokens"]
+
+
+def test_usage_reasoning_and_unavailable_optional_fields():
+    full = _diag(_response("x", details={"reasoning_tokens": 4000,
+                                     "accepted_prediction_tokens": 2},
+                           reasoning="private rationale", with_reasoning=True))
+    assert full["usage"]["completion_tokens"] == 4000
+    assert full["usage"]["reasoning_tokens"] == 4000
+    assert full["usage"]["completion_token_details"]["accepted_prediction_tokens"] == 2
+    assert full["reasoning_content"] == {"present": True, "length": len("private rationale")}
+    assert "private rationale" not in json.dumps(full)
+    absent = _diag(fake_response("x"))
+    assert absent["response"]["model"] is None
+    assert absent["response"]["id"] is None
+    assert absent["usage"]["completion_token_details"] is None
+    assert absent["usage"]["reasoning_tokens"] is None
+    assert absent["reasoning_content"] == {"present": None, "length": None}
+
+
+def test_content_metadata_and_sanitized_parse_failure():
+    original = "  ```json\n{broken\n```  "
+    parser_input = "{broken"
+    diagnostic = _diag(_response(original), original=original)
+    finish_output_diagnostic(diagnostic, parser_input, ValueError("secret error text"))
+    assert diagnostic["content"] == {
+        "original": {"length": len(original), "sha256": sha256_utf8(original)},
+        "parser_input": {"length": len(parser_input), "sha256": sha256_utf8(parser_input)},
+    }
+    assert diagnostic["parse"] == {"status": "failed", "error_class": "ValueError"}
+    assert original not in json.dumps(diagnostic)
+    assert parser_input not in json.dumps(diagnostic)
+    assert "secret error text" not in json.dumps(diagnostic)
+
+
+def test_draft_success_failure_fences_request_neutrality(base_state, monkeypatch):
+    content = json.dumps({key: key for key in (
+        "problem_framing", "technical_dive", "code_snippets", "takeaways")})
+    fenced = " \n```json\n" + content + "\n``` \n"
+    client = FakeLLMClient(response=_response(fenced, finish="stop"))
+    calls = []
+    create = client.chat.completions.create
+
+    def capture(**kwargs):
+        calls.append(kwargs)
+        return create(**kwargs)
+
+    client.chat.completions.create = capture
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    result = nodes.draft_node(base_state)
+    diagnostic = _records(result)[0]
+    assert result["draft_status"] == "valid" and client.calls == 1
+    assert diagnostic["parse"] == {"status": "ok", "error_class": None}
+    assert diagnostic["content"]["original"]["sha256"] == sha256_utf8(fenced)
+    assert diagnostic["content"]["parser_input"]["sha256"] == sha256_utf8(content)
+    assert diagnostic["request"] == {"model": nodes.DEEPSEEK_MODEL,
+                                     "temperature": nodes.DRAFT_TEMPERATURE,
+                                     "max_tokens": 4000, "response_format": None}
+    assert {k: v for k, v in calls[0].items() if k != "messages"} == {
+        "model": nodes.DEEPSEEK_MODEL, "temperature": nodes.DRAFT_TEMPERATURE,
+        "max_tokens": 4000,
+    }
+    assert len(calls[0]["messages"]) == 2 and "response_format" not in calls[0]
+
+    broken = "{broken"
+    failure_client = FakeLLMClient(response=_response(broken))
+    monkeypatch.setattr(nodes, "_get_client", lambda: failure_client)
+    failed = nodes.draft_node(base_state)
+    assert failed["draft_status"] == "invalid" and failure_client.calls == 1
+    assert failed["draft_sections"]["technical_dive"] == broken
+    assert _records(failed)[0]["parse"] == {
+        "status": "failed", "error_class": "JSONDecodeError"}
+
+
+def test_inventory_october_pattern_and_success(base_state, monkeypatch):
+    state = {**base_state, "iterations": 1, "quality_episode": 2, "quality_attempts": 1}
+    response = _response("", details={"reasoning_tokens": 4000})
+    client = FakeLLMClient(response=response)
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    failed = nodes.verify_node(state)
+    diagnostic = _records(failed)[0]
+    assert failed["verification_status"] == "parse_failed" and client.calls == 1
+    assert diagnostic["stage"] == "claim_inventory"
+    assert diagnostic["response"]["termination"] == "unknown"
+    assert diagnostic["usage"]["completion_tokens"] == 4000
+    assert diagnostic["usage"]["reasoning_tokens"] == 4000
+    assert diagnostic["content"]["original"] == {"length": 0, "sha256": sha256_utf8("")}
+    assert diagnostic["parse"] == {"status": "failed", "error_class": "ClaimInventoryError"}
+
+    client = FakeLLMClient(response=fake_response("[]"))
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    parsed = nodes.verify_node(state)
+    assert parsed["verification_status"] == "inventory_failed" and client.calls == 1
+    assert _records(parsed)[0]["parse"] == {"status": "ok", "error_class": None}
+
+
+def test_reflection_success_failure_and_stage_identity(base_state, monkeypatch):
+    state = {**base_state, "iterations": 1, "verification_status": "completed",
+             "quality_episode": 3, "quality_attempts": 2,
+             "grounding_report": [{"claim": "fact", "status": "verified", "blockers": []}]}
+    state = current_quality(state, build_inventory=True)
+    state["quality_episode"], state["quality_attempts"] = 3, 2
+    state["verification_identity"] = nodes.workflow.identity(state)
+    client = FakeLLMClient(response=_response('{"score": 8, "notes": "ok"}', finish="stop"))
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    ok = nodes.reflect_node(state)
+    assert ok["reflection_score"] == 8 and client.calls == 1
+    diagnostic = _records(ok)[0]
+    assert (diagnostic["stage"], diagnostic["quality_episode"],
+            diagnostic["quality_attempt"]) == ("reflection", 3, 2)
+    assert diagnostic["parse"]["status"] == "ok"
+
+    client = FakeLLMClient(response=_response("not JSON"))
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    failed = nodes.reflect_node(state)
+    assert failed["reflection_provenance"]["parse_status"] == "failed"
+    assert failed["reflection_score"] == 7 and client.calls == 1
+    assert _records(failed)[0]["parse"]["error_class"] == "JSONDecodeError"
+
+
+def test_distinct_attempts_roundtrip_and_no_new_raw_fields(base_state, monkeypatch, tmp_path):
+    first = _diag(_response("first-secret-response"), original="first-secret-response")
+    finish_output_diagnostic(first, "first-secret-response")
+    second = _diag(_response("second-secret-response"), stage="claim_inventory",
+                   original="second-secret-response")
+    second["iteration"] = 2
+    finish_output_diagnostic(second, "second-secret-response")
+    trace = empty_trace(base_state)
+    record_output_diagnostic(trace, iteration=1, diagnostic=first)
+    same_attempt_reflection = _diag(_response("reflection-secret"), stage="reflection",
+                                    original="reflection-secret")
+    finish_output_diagnostic(same_attempt_reflection, "reflection-secret")
+    record_output_diagnostic(trace, iteration=1, diagnostic=same_attempt_reflection)
+    record_output_diagnostic(trace, iteration=2, diagnostic=second)
+    assert [d["stage"] for d in trace["iterations"][0]["output_diagnostics"]] == [
+        "draft", "reflection"]
+    assert trace["iterations"][1]["output_diagnostics"][0]["stage"] == "claim_inventory"
+    state = {**deepcopy(base_state), "semantic_trace": trace}
+    monkeypatch.chdir(tmp_path)
+    loaded = json.loads(_write_telemetry(state).read_text())
+    diagnostics = [d for slot in loaded["semantic_trace_v1"]["iterations"]
+                   for d in slot["output_diagnostics"]]
+    assert diagnostics == [first, same_attempt_reflection, second]
+    # The same metadata-only state is what a graph checkpointer serializes.
+    checkpoint_blob = json.dumps(state["semantic_trace"])
+    diagnostic_blob = json.dumps(diagnostics)
+    for secret in ("first-secret-response", "reflection-secret", "second-secret-response"):
+        assert secret not in checkpoint_blob and secret not in diagnostic_blob
+    assert set(first) == {"schema", "stage", "iteration", "quality_episode",
+                          "quality_attempt", "request", "response", "usage",
+                          "content", "parse", "reasoning_content"}
+
+
+def test_diagnostics_are_not_projected_into_poll_or_sse(base_state, monkeypatch):
+    import api.server as srv
+
+    diagnostic = _diag(_response("private-response"), original="private-response")
+    finish_output_diagnostic(diagnostic, "private-response")
+    trace = empty_trace(base_state)
+    record_output_diagnostic(trace, iteration=1, diagnostic=diagnostic)
+    delta = {"semantic_trace": trace, "iterations": 1}
+    assert srv._node_headline("draft", delta) == {"iterations": 1}
+    run_id = "metadata-public-projection"
+    monkeypatch.setitem(srv.REGISTRY, run_id, {
+        "status": "completed", "error": None, "result": {**base_state, **delta},
+    })
+    poll = srv.get_run(run_id)
+    assert "semantic_trace" not in json.dumps(poll)
+    assert "output_diagnostics" not in json.dumps(poll)
+    assert "private-response" not in json.dumps(poll)

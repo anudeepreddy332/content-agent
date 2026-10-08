@@ -28,6 +28,106 @@ CODE_IDENTITY = {
     ),
 }
 
+_COMPLETION_DETAIL_FIELDS = (
+    "reasoning_tokens",
+    "accepted_prediction_tokens",
+    "rejected_prediction_tokens",
+    "audio_tokens",
+)
+
+
+def _metadata_field(value: Any, name: str) -> Any:
+    return value.get(name) if isinstance(value, dict) else getattr(value, name, None)
+
+
+def _token_count(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _content_identity(value: str | None) -> dict:
+    return {
+        "length": len(value) if isinstance(value, str) else None,
+        "sha256": sha256_utf8(value) if isinstance(value, str) else None,
+    }
+
+
+def new_output_diagnostic(
+    *, stage: str, iteration: int, quality_episode: int | None,
+    quality_attempt: int | None, requested_model: str, temperature: float,
+    max_tokens: int, response_format: Any, response: Any,
+) -> dict:
+    """Capture only bounded metadata immediately after a provider response.
+
+    Content and reasoning text are hashed/measured in memory, never retained in
+    the diagnostic. An absent finish reason is not evidence of length termination.
+    """
+    choice = response.choices[0]
+    message = choice.message
+    content = _metadata_field(message, "content")
+    finish_reason = _metadata_field(choice, "finish_reason")
+    if not isinstance(finish_reason, str):
+        finish_reason = None
+    details = _metadata_field(_metadata_field(response, "usage"), "completion_tokens_details")
+    completion_details = (
+        {key: _token_count(_metadata_field(details, key)) for key in _COMPLETION_DETAIL_FIELDS}
+        if details is not None else None
+    )
+    reasoning = _metadata_field(message, "reasoning_content")
+    reasoning_observable = (
+        "reasoning_content" in message if isinstance(message, dict)
+        else hasattr(message, "reasoning_content")
+    )
+    usage = _metadata_field(response, "usage")
+    return {
+        "schema": "output_diagnostic_v1",
+        "stage": stage,
+        "iteration": iteration,
+        "quality_episode": quality_episode,
+        "quality_attempt": quality_attempt,
+        "request": {
+            "model": requested_model,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "response_format": response_format,
+        },
+        "response": {
+            "model": _metadata_field(response, "model"),
+            "id": _metadata_field(response, "id"),
+            "finish_reason": finish_reason,
+            "termination": "provider_length" if finish_reason == "length"
+            else finish_reason if finish_reason is not None else "unknown",
+        },
+        "usage": {
+            "prompt_tokens": _token_count(_metadata_field(usage, "prompt_tokens")),
+            "completion_tokens": _token_count(_metadata_field(usage, "completion_tokens")),
+            "total_tokens": _token_count(_metadata_field(usage, "total_tokens")),
+            "completion_token_details": completion_details,
+            "reasoning_tokens": (
+                completion_details["reasoning_tokens"] if completion_details is not None else None
+            ),
+        },
+        "content": {"original": _content_identity(content), "parser_input": None},
+        "parse": {"status": "not_attempted", "error_class": None},
+        "reasoning_content": {
+            "present": bool(reasoning) if reasoning_observable else None,
+            "length": len(reasoning) if isinstance(reasoning, str) else None,
+        },
+    }
+
+
+def finish_output_diagnostic(diagnostic: dict, parser_input: str, error: Exception | None = None) -> None:
+    """Add parser-input identity and a safe exception class, never error text."""
+    diagnostic["content"]["parser_input"] = _content_identity(parser_input)
+    diagnostic["parse"] = {
+        "status": "failed" if error is not None else "ok",
+        "error_class": type(error).__name__ if error is not None else None,
+    }
+
+
+def record_output_diagnostic(trace: dict, *, iteration: int, diagnostic: dict) -> None:
+    """Append instead of replacing another stage or attempt in this slot."""
+    _slot(trace, iteration).setdefault("output_diagnostics", []).append(diagnostic)
+
 
 def sha256_utf8(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
