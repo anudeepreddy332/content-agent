@@ -1,13 +1,13 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-10-07 (Phase-5 qualification,
-failed supervised E2E, and audited frozen-workflow implementation on the feature branch)._
+_Canonical current-state snapshot. Last synchronized: 2026-10-08 (Phase-5 qualification,
+failed supervised E2E, frozen workflow, and audited local output-metadata instrumentation)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
-## Current status — 2026-10-07
+## Current status — 2026-10-08
 
 **Phase 5 authoritative retrieval qualification: CLOSED / HOLDOUT-V2 PASS.**
 `PHASE5-AUTH-PROTOCOL-1` closed; exactly one production V2 attempt qualified
@@ -17,15 +17,17 @@ parity, score truth, and independent completed verification passed. The 20 seale
 artifacts remain immutable under `reports/phase5/phase5e1a/holdout-run-1`.
 No new holdout execution is authorized by this documentation reconciliation.
 
-**Canonical feature runtime:** `feature/phase5-rag-hardening` at local and remote
-`4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`. This is an independently audited
-application-only descendant of the qualified base, **not holdout-tested**. The earlier
-HTML API rejection correction remains integrated. The frozen workflow implementation
-began at `278a8c1d52eed01cd735021e16686982c1f15dce`, was corrected at the current
-feature SHA, and passed independent re-audit. Exact-SHA push CI
+**Canonical feature branch:** the latest local application commit is the independently
+audited metadata-only instrumentation candidate `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`;
+remote feature remains `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`. Both are application-only
+descendants of the qualified base, **not holdout-tested**. The earlier HTML API
+rejection correction remains integrated. The frozen workflow implementation began
+at `278a8c1d52eed01cd735021e16686982c1f15dce`, was corrected at `4d36c7c`,
+and passed independent re-audit. That remote SHA's exact-SHA push CI
 [37599028135](https://github.com/anudeepreddy332/content-agent/actions/runs/37599028135)
 completed successfully: lint PASS; tests **1,832 passed, 37 warnings**; PR-only eval-gate
-skipped by design. Main remains `86712d200fd46382a876f2083f824f03a83341ab`;
+skipped by design. The local instrumentation candidate has **not** been pushed or
+CI-qualified on its exact SHA. Main remains `86712d200fd46382a876f2083f824f03a83341ab`;
 there is no Phase-5 PR and the branch is not merged into main.
 
 **APPLICATION-E2E-RUN-1 = FAILED / REJECTED AT GATE 1.** The one real FastAPI
@@ -61,9 +63,25 @@ the frozen contract and confirmed the A–M workflow matrix. This is not a corre
 application E2E PASS. Structured-output reliability remains **OPEN**; the initial
 HTML content-equivalence guard remains **PENDING**. External pilot is **NOT READY**.
 
+**Structured-output diagnostics: IMPLEMENTED LOCALLY / INDEPENDENTLY AUDITED;
+FEATURE INTEGRATION AND EXACT-SHA CI PENDING.** The October-7 forensic audit
+supported reasoning/output-budget pressure but did not prove provider length
+termination. Local candidate `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`
+adds metadata-only diagnostics to draft, claim-inventory extraction, and reflection:
+request/response settings and identity, explicit finish reason, usage and reasoning
+counts, content and parser-input lengths/SHA-256, and sanitized parse status.
+`finish_reason` missing remains **unknown** even at the token ceiling; no model,
+parser, retry, or routing correction is claimed. No new raw assistant/parser or
+reasoning text, prompt, credential, or header storage was added, and no new API/SSE
+diagnostic field was exposed. Independent Sol High audit **PASS** found no P0/P1
+against this instrumentation scope (180 focused tests; full ordinary suite
+**1,840 passed, 37 warnings**; Ruff PASS). Existing trace validation does not
+independently authenticate every new diagnostic field; this is a nonblocking
+limitation. Structured-output behavioral reliability remains **OPEN**.
+
 ## Next bounded technical work
 
-Current application blockers are: (1) structured-output reliability investigation;
+Current application blockers are: (1) structured-output behavioral reliability investigation;
 (2) initial HTML content-equivalence guard implementation; (3) a fresh successful
 supervised provider-backed E2E of the corrected application; and (4) Phase-5 PR,
 PR-only evaluation, final merge audit, and main merge. Work must be separately
@@ -74,7 +92,10 @@ complete; external pilot remains **NOT READY**.
 ## Authoritative SHA roles and retained historical anchors
 
 - **Current main:** `86712d200fd46382a876f2083f824f03a83341ab`.
-- **Current feature runtime / exact-SHA CI:** `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`
+- **Current local feature candidate:** `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`;
+  independently audited metadata-only instrumentation, integration/CI pending,
+  not holdout-tested.
+- **Current remote feature runtime / exact-SHA CI:** `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`
   / push CI `37599028135` PASS; application-only descendant, not holdout-tested.
 - **HOLDOUT-V2 qualified base only:** `e0cfe0b566134f848feb731a777f315eb1456dd2`.
 - **Historical pre-client-demo main:** `e4b39caa37497c1743e33843c464ea4381f166d4`
@@ -1021,6 +1042,10 @@ readiness is not established.
 
 ## Latest accepted evidence
 
+- October-8 local instrumentation candidate `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`:
+  independent metadata-only audit PASS (180 focused; 1,840 ordinary offline tests,
+  37 warnings; Ruff PASS). Remote feature still `4d36c7c`; exact-SHA push CI pending.
+  See `D-2026-10-08-01` and ledger `VAL-2026-10-08-01`.
 - October-7 feature runtime `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`:
   independent frozen-workflow re-audit PASS; exact-SHA push CI `37599028135` SUCCESS
   (lint PASS; 1,832 tests PASS / 37 warnings; PR-only eval skipped by design).

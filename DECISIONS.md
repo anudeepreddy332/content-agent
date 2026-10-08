@@ -3834,3 +3834,41 @@ and unmerged; no Phase-5 PR exists. HOLDOUT-V2 PASS remains attributable only to
 `e0cfe0b566134f848feb731a777f315eb1456dd2`; the corrected candidate was not
 holdout-tested. No corrected application E2E PASS, Phase-5 closure, or external
 pilot readiness is claimed.
+
+---
+Decision ID: D-2026-10-08-01
+Date: 2026-10-08
+
+Decision: **Accept the independently audited local metadata-only structured-output
+instrumentation as a bounded observability milestone; feature integration and
+exact-SHA CI remain pending.** This does not revise the frozen workflow authority
+in `D-2026-10-05-04` or close structured-output behavioral reliability.
+
+The October-7 forensic review of the failed October-5 E2E found incomplete draft
+JSON and unusable/empty claim-inventory output. Reported reasoning/output-budget
+pressure was supported, but provider length termination was **not proven** because
+the historical response did not retain `finish_reason`. A speculative model,
+budget, parser, retry, or routing change is therefore rejected at this milestone.
+New raw-response persistence was also rejected: existing checkpoint/telemetry
+custody did not justify adding exact assistant or reasoning text. Candidate
+`ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc` instead appends bounded metadata
+for draft, claim-inventory extraction, and reflection to the existing trace:
+request/response settings, explicit termination classification, token and
+reasoning counts, content/parser-input lengths and SHA-256, and sanitized parse
+classification. Missing `finish_reason` remains `unknown`; a token-ceiling match
+alone never proves `provider_length`. No new raw assistant/parser/reasoning text,
+prompt, credential, or sensitive header is persisted or exposed through API/SSE.
+
+Independent Sol High audit verdict **CONTENT-AGENT-OUTPUT-METADATA-AUDIT-PASS**:
+180 focused tests PASS; 1,840 ordinary offline tests PASS with 37 warnings;
+Ruff PASS; behavioral neutrality and no new P0/P1 against the instrumentation
+scope. Existing trace validation does not independently authenticate every new
+diagnostic field; this is nonblocking for metadata observability. There was no
+provider-backed instrumentation validation, holdout execution, retrieval change,
+or new V2 qualification. HOLDOUT-V2 PASS remains only at
+`e0cfe0b566134f848feb731a777f315eb1456dd2`. Remote feature remains
+`4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`; main remains
+`86712d200fd46382a876f2083f824f03a83341ab`. The candidate is not pushed,
+CI-qualified on its exact SHA, merged to main, or evidence of E2E/pilot readiness.
+
+Status: **INSTRUMENTATION VALIDATED LOCALLY / FEATURE INTEGRATION AND CI PENDING**.
