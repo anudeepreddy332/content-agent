@@ -434,6 +434,7 @@ def draft_node(state: AgentState) -> dict:
         messages=messages,
         temperature=DRAFT_TEMPERATURE,
         max_tokens=4000,
+        extra_body={"thinking": {"type": "disabled"}},
     )
     diagnostic = new_output_diagnostic(
         stage="draft", iteration=state.get("iterations", 0) + 1,
@@ -487,6 +488,8 @@ def draft_node(state: AgentState) -> dict:
             "takeaways": "",
         }
     finish_output_diagnostic(diagnostic, raw, parse_error)
+    if diagnostic["response"]["finish_reason"] == "length":
+        draft_status = "invalid"
 
     # assemble full markdown for downstream nodes
     draft_markdown = _assemble_markdown(state['topic'], sections)

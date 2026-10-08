@@ -3,7 +3,11 @@
 import json
 from copy import deepcopy
 from types import SimpleNamespace
+from unittest.mock import Mock
 
+import pytest
+
+import agent.graph as graph_mod
 import agent.nodes as nodes
 from agent.semantic_trace import (
     empty_trace, finish_output_diagnostic, new_output_diagnostic,
@@ -114,7 +118,7 @@ def test_draft_success_failure_fences_request_neutrality(base_state, monkeypatch
                                      "max_tokens": 4000, "response_format": None}
     assert {k: v for k, v in calls[0].items() if k != "messages"} == {
         "model": nodes.DEEPSEEK_MODEL, "temperature": nodes.DRAFT_TEMPERATURE,
-        "max_tokens": 4000,
+        "max_tokens": 4000, "extra_body": {"thinking": {"type": "disabled"}},
     }
     assert len(calls[0]["messages"]) == 2 and "response_format" not in calls[0]
 
@@ -128,10 +132,140 @@ def test_draft_success_failure_fences_request_neutrality(base_state, monkeypatch
         "status": "failed", "error_class": "JSONDecodeError"}
 
 
+def test_openai_client_serializes_draft_thinking_toggle(base_state, monkeypatch):
+    import httpx
+    from openai import OpenAI
+
+    requests = []
+    content = json.dumps({key: key for key in (
+        "problem_framing", "technical_dive", "code_snippets", "takeaways")})
+
+    def respond(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(200, json={
+            "id": "offline-draft", "object": "chat.completion", "created": 1,
+            "model": nodes.DEEPSEEK_MODEL,
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": content}}],
+            "usage": {"prompt_tokens": 12, "completion_tokens": 20, "total_tokens": 32},
+        })
+
+    transport = httpx.MockTransport(respond)
+    client = OpenAI(api_key="offline-test", base_url="https://example.invalid/v1",
+                    http_client=httpx.Client(transport=transport), max_retries=0)
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    result = nodes.draft_node(base_state)
+
+    assert result["draft_status"] == "valid"
+    assert len(requests) == 1
+    assert requests[0]["thinking"] == {"type": "disabled"}
+    assert requests[0]["model"] == nodes.DEEPSEEK_MODEL
+    assert requests[0]["temperature"] == nodes.DRAFT_TEMPERATURE
+    assert requests[0]["max_tokens"] == 4000
+    assert "response_format" not in requests[0]
+
+
+def test_length_terminated_invalid_drafts_use_two_attempts_without_review(base_state, monkeypatch):
+    client = FakeLLMClient(responses=[
+        _response("", finish="length", details={"reasoning_tokens": 4000}),
+        _response("{broken", finish="length", details={"reasoning_tokens": 2388}),
+    ])
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    monkeypatch.setattr(graph_mod, "retrieve_node", lambda state: {})
+    verify = Mock(side_effect=AssertionError("invalid draft reached Verify"))
+    review = Mock(side_effect=AssertionError("invalid draft reached Gate 1"))
+    monkeypatch.setattr(graph_mod, "verify_node", verify)
+    monkeypatch.setattr(graph_mod, "hitl_node", review)
+
+    result = graph_mod.build_graph().invoke(base_state)
+    diagnostics = _records(result)
+    assert client.calls == 2
+    assert result["quality_attempts"] == result["iterations"] == 2
+    assert result["terminal_status"] == "execution_failed"
+    assert result["verification_status"] == "not_started"
+    assert [d["response"]["termination"] for d in diagnostics] == [
+        "provider_length", "provider_length"]
+    assert [d["parse"]["error_class"] for d in diagnostics] == [
+        "JSONDecodeError", "JSONDecodeError"]
+    verify.assert_not_called()
+    review.assert_not_called()
+
+
+def test_length_terminated_complete_json_cannot_reach_verify(base_state, monkeypatch):
+    content = json.dumps({key: key for key in (
+        "problem_framing", "technical_dive", "code_snippets", "takeaways")})
+    client = FakeLLMClient(response=_response(content, finish="length"))
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    state = {**base_state, "quality_episode": 1, "quality_attempts": 0,
+             "terminal_status": None}
+
+    update = nodes.workflow.draft_step(state, run=nodes.draft_node)
+    diagnostic = _records(update)[0]
+    assert diagnostic["response"]["termination"] == "provider_length"
+    assert diagnostic["parse"] == {"status": "ok", "error_class": None}
+    assert update["draft_status"] == "invalid"
+    assert nodes.route_after_draft({**state, **update}) != "verify"
+
+
+@pytest.mark.parametrize("finish,termination", [
+    ("stop", "stop"), (None, "unknown"),
+])
+def test_complete_json_without_length_still_reaches_verify(
+    base_state, monkeypatch, finish, termination,
+):
+    content = json.dumps({key: key for key in (
+        "problem_framing", "technical_dive", "code_snippets", "takeaways")})
+    client = FakeLLMClient(response=_response(content, finish=finish))
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    state = {**base_state, "quality_episode": 1, "quality_attempts": 0,
+             "terminal_status": None}
+
+    update = nodes.workflow.draft_step(state, run=nodes.draft_node)
+    diagnostic = _records(update)[0]
+    assert diagnostic["response"]["termination"] == termination
+    assert diagnostic["parse"] == {"status": "ok", "error_class": None}
+    assert update["draft_status"] == "valid"
+    assert nodes.route_after_draft({**state, **update}) == "verify"
+
+
+def test_two_complete_length_responses_exhaust_budget_without_review(base_state, monkeypatch):
+    content = json.dumps({key: key for key in (
+        "problem_framing", "technical_dive", "code_snippets", "takeaways")})
+    client = FakeLLMClient(responses=[
+        _response(content, finish="length"), _response(content, finish="length"),
+    ])
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    monkeypatch.setattr(graph_mod, "retrieve_node", lambda state: {})
+    verify = Mock(side_effect=AssertionError("length-terminated draft reached Verify"))
+    review = Mock(side_effect=AssertionError("length-terminated draft reached Gate 1"))
+    monkeypatch.setattr(graph_mod, "verify_node", verify)
+    monkeypatch.setattr(graph_mod, "hitl_node", review)
+
+    result = graph_mod.build_graph().invoke(base_state)
+    diagnostics = _records(result)
+    assert client.calls == result["quality_attempts"] == result["iterations"] == 2
+    assert result["terminal_status"] == "execution_failed"
+    assert result["verification_status"] == "not_started"
+    assert [d["response"]["termination"] for d in diagnostics] == [
+        "provider_length", "provider_length"]
+    assert [d["parse"] for d in diagnostics] == [
+        {"status": "ok", "error_class": None}] * 2
+    verify.assert_not_called()
+    review.assert_not_called()
+
+
 def test_inventory_october_pattern_and_success(base_state, monkeypatch):
     state = {**base_state, "iterations": 1, "quality_episode": 2, "quality_attempts": 1}
     response = _response("", details={"reasoning_tokens": 4000})
     client = FakeLLMClient(response=response)
+    calls = []
+    create = client.chat.completions.create
+
+    def capture(**kwargs):
+        calls.append(kwargs)
+        return create(**kwargs)
+
+    client.chat.completions.create = capture
     monkeypatch.setattr(nodes, "_get_client", lambda: client)
     failed = nodes.verify_node(state)
     diagnostic = _records(failed)[0]
@@ -142,6 +276,7 @@ def test_inventory_october_pattern_and_success(base_state, monkeypatch):
     assert diagnostic["usage"]["reasoning_tokens"] == 4000
     assert diagnostic["content"]["original"] == {"length": 0, "sha256": sha256_utf8("")}
     assert diagnostic["parse"] == {"status": "failed", "error_class": "ClaimInventoryError"}
+    assert "extra_body" not in calls[0]
 
     client = FakeLLMClient(response=fake_response("[]"))
     monkeypatch.setattr(nodes, "_get_client", lambda: client)
@@ -158,6 +293,14 @@ def test_reflection_success_failure_and_stage_identity(base_state, monkeypatch):
     state["quality_episode"], state["quality_attempts"] = 3, 2
     state["verification_identity"] = nodes.workflow.identity(state)
     client = FakeLLMClient(response=_response('{"score": 8, "notes": "ok"}', finish="stop"))
+    calls = []
+    create = client.chat.completions.create
+
+    def capture(**kwargs):
+        calls.append(kwargs)
+        return create(**kwargs)
+
+    client.chat.completions.create = capture
     monkeypatch.setattr(nodes, "_get_client", lambda: client)
     ok = nodes.reflect_node(state)
     assert ok["reflection_score"] == 8 and client.calls == 1
@@ -165,6 +308,7 @@ def test_reflection_success_failure_and_stage_identity(base_state, monkeypatch):
     assert (diagnostic["stage"], diagnostic["quality_episode"],
             diagnostic["quality_attempt"]) == ("reflection", 3, 2)
     assert diagnostic["parse"]["status"] == "ok"
+    assert "extra_body" not in calls[0]
 
     client = FakeLLMClient(response=_response("not JSON"))
     monkeypatch.setattr(nodes, "_get_client", lambda: client)
