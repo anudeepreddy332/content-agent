@@ -1164,6 +1164,7 @@ def verify_node(state: AgentState) -> dict:
             ],
             temperature=0.1,
             max_tokens=4000,
+            extra_body={"thinking": {"type": "disabled"}},
         )
     except (RateLimitError, APIConnectionError, APITimeoutError, InternalServerError) as exc:
         log.error("verify.inventory_transport_failed", run_id=state["run_id"], error=str(exc))
@@ -1267,6 +1268,48 @@ def verify_node(state: AgentState) -> dict:
 
     finish_output_diagnostic(diagnostic, raw)
     record_output_diagnostic(trace, iteration=iteration, diagnostic=diagnostic)
+    if diagnostic["response"]["finish_reason"] == "length":
+        # A parseable prefix is still incomplete when the provider reports
+        # length termination. Keep the true parser result; do not admit it to
+        # inventory construction or semantic Call B.
+        verification_status = "inventory_failed"
+        latency = int((time.time() - t_start) * 1000)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context="",
+            user_message=user_message,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=raw,
+            parser_status=parser_status,
+            parse_error=None,
+            pre_dedup_rows=copy.deepcopy(raw_claim_rows),
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+        )
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": verification_status,
+            "claim_inventory": None,
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=[],
+                verification_status=verification_status,
+                grounding_score=0.0,
+            ),
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
     # Deterministic inventory: exact anchoring, Python claim IDs, duplicate
     # merge, required⇒material override. Versioned by draft_sha256.
     claim_inventory = build_claim_inventory(

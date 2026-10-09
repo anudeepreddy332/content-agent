@@ -276,13 +276,154 @@ def test_inventory_october_pattern_and_success(base_state, monkeypatch):
     assert diagnostic["usage"]["reasoning_tokens"] == 4000
     assert diagnostic["content"]["original"] == {"length": 0, "sha256": sha256_utf8("")}
     assert diagnostic["parse"] == {"status": "failed", "error_class": "ClaimInventoryError"}
-    assert "extra_body" not in calls[0]
+    assert calls[0]["extra_body"] == {"thinking": {"type": "disabled"}}
 
     client = FakeLLMClient(response=fake_response("[]"))
     monkeypatch.setattr(nodes, "_get_client", lambda: client)
     parsed = nodes.verify_node(state)
     assert parsed["verification_status"] == "inventory_failed" and client.calls == 1
     assert _records(parsed)[0]["parse"] == {"status": "ok", "error_class": None}
+
+
+def _inventory_row():
+    claim = "Gradient descent minimizes a loss function."
+    return {
+        "claim_text": claim, "anchor_quote": claim, "section": "technical_dive",
+        "claim_type": "factual", "material": True,
+        "materiality_reason_code": "core_technical_conclusion",
+        "materiality_rationale": "fixture", "satisfies_req_ids": [],
+        "specificity": "substantive", "requires_citation": None,
+    }
+
+
+def test_openai_client_serializes_inventory_thinking_toggle(base_state, monkeypatch):
+    import httpx
+    from openai import OpenAI
+
+    requests = []
+
+    def respond(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(200, json={
+            "id": "offline-inventory", "object": "chat.completion", "created": 1,
+            "model": nodes.DEEPSEEK_MODEL,
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": "[]"}}],
+            "usage": {"prompt_tokens": 12, "completion_tokens": 2, "total_tokens": 14},
+        })
+
+    client = OpenAI(api_key="offline-test", base_url="https://example.invalid/v1",
+                    http_client=httpx.Client(transport=httpx.MockTransport(respond)),
+                    max_retries=0)
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    result = nodes.verify_node({**base_state, "iterations": 1})
+    assert result["verification_status"] == "inventory_failed"
+    assert len(requests) == 1
+    assert requests[0]["thinking"] == {"type": "disabled"}
+    assert requests[0]["model"] == nodes.DEEPSEEK_MODEL
+    assert requests[0]["temperature"] == 0.1
+    assert requests[0]["max_tokens"] == 4000
+    assert "response_format" not in requests[0]
+
+
+@pytest.mark.parametrize("finish,expected_termination", [
+    ("stop", "stop"), (None, "unknown"),
+])
+def test_complete_inventory_without_length_reaches_call_b(
+    base_state, monkeypatch, finish, expected_termination,
+):
+    content = json.dumps([_inventory_row()])
+    client = FakeLLMClient(response=_response(content, finish=finish))
+    calls = []
+    create = client.chat.completions.create
+
+    def capture(**kwargs):
+        calls.append(kwargs)
+        return create(**kwargs)
+
+    client.chat.completions.create = capture
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    result = nodes.verify_node({**base_state, "iterations": 1})
+    diagnostic = _records(result)[0]
+    assert result["verification_status"] == "completed"
+    assert result["claim_inventory"]["claims"]
+    assert client.calls == 2
+    assert calls[0]["extra_body"] == {"thinking": {"type": "disabled"}}
+    assert "extra_body" not in calls[1]
+    assert diagnostic["response"]["termination"] == expected_termination
+    assert diagnostic["parse"] == {"status": "ok", "error_class": None}
+
+
+def test_length_terminated_parseable_inventory_is_rejected_before_call_b(
+    base_state, monkeypatch, tmp_path,
+):
+    content = json.dumps([_inventory_row()])
+    client = FakeLLMClient(response=_response(content, finish="length"))
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    state = {**base_state, "iterations": 1, "quality_episode": 1, "quality_attempts": 1}
+    result = nodes.verify_node(state)
+    diagnostic = _records(result)[0]
+    slot = result["semantic_trace"]["iterations"][0]
+    assert client.calls == 1
+    assert result["verification_status"] == "inventory_failed"
+    assert result["claim_inventory"] is None
+    assert slot["verifier_raw"]["parser_status"] == "ok"
+    assert slot["verifier_raw"]["parse_error"] is None
+    assert slot["verifier_raw"]["pre_dedup_rows"] == [_inventory_row()]
+    assert diagnostic["parse"] == {"status": "ok", "error_class": None}
+    assert diagnostic["response"]["termination"] == "provider_length"
+    assert diagnostic["content"]["original"]["sha256"] == sha256_utf8(content)
+    assert nodes.route_after_verify({**state, **result}) != "reflect"
+    monkeypatch.chdir(tmp_path)
+    loaded = json.loads(_write_telemetry({**state, **result}).read_text())
+    persisted = loaded["semantic_trace_v1"]["iterations"][0]
+    assert persisted["output_diagnostics"][0] == diagnostic
+    assert persisted["verifier_raw"]["parser_status"] == "ok"
+    assert "extra_body" not in json.dumps(diagnostic)
+
+
+@pytest.mark.parametrize("content,error_class", [
+    ("", "ClaimInventoryError"), ("{broken", "ClaimInventoryError"),
+])
+def test_length_terminated_unparseable_inventory_preserves_parse_failure(
+    base_state, monkeypatch, content, error_class,
+):
+    client = FakeLLMClient(response=_response(content, finish="length"))
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    result = nodes.verify_node({**base_state, "iterations": 1})
+    diagnostic = _records(result)[0]
+    assert result["verification_status"] == "parse_failed"
+    assert result["claim_inventory"] is None and client.calls == 1
+    assert diagnostic["response"]["termination"] == "provider_length"
+    assert diagnostic["parse"] == {"status": "failed", "error_class": error_class}
+
+
+def test_two_length_terminated_inventories_exhaust_without_review(base_state, monkeypatch):
+    import agent.graph as graph_mod
+
+    content = json.dumps([_inventory_row()])
+    client = FakeLLMClient(responses=[
+        _response(content, finish="length"), _response(content, finish="length"),
+    ])
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    monkeypatch.setattr(graph_mod, "retrieve_node", lambda state: {})
+    monkeypatch.setattr(graph_mod, "draft_node", lambda state: {
+        "draft_markdown": base_state["draft_markdown"], "draft_status": "valid",
+        "draft_sections": {key: key for key in (
+            "problem_framing", "technical_dive", "code_snippets", "takeaways")},
+    })
+    reflect = Mock(side_effect=AssertionError("failed inventory reached reflection"))
+    review = Mock(side_effect=AssertionError("failed inventory reached Gate 1"))
+    monkeypatch.setattr(graph_mod, "reflect_node", reflect)
+    monkeypatch.setattr(graph_mod, "hitl_node", review)
+    result = graph_mod.build_graph().invoke(base_state)
+    assert client.calls == result["quality_attempts"] == 2
+    assert result["terminal_status"] == "execution_failed"
+    assert result["verification_status"] == "inventory_failed"
+    assert result["claim_inventory"] is None
+    assert [d["parse"]["status"] for d in _records(result)] == ["ok", "ok"]
+    reflect.assert_not_called()
+    review.assert_not_called()
 
 
 def test_reflection_success_failure_and_stage_identity(base_state, monkeypatch):
