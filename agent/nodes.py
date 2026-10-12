@@ -98,6 +98,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text()  # historical; evals only
 CLAIM_INVENTORY_SYSTEM = Path("prompts/claim_inventory_system.md").read_text()
+CLAIM_INVENTORY_MAX_TOKENS = 12_000
 REFLECT_SYSTEM = Path("prompts/reflect_system.md").read_text()
 
 # DeepSeek client
@@ -1163,7 +1164,7 @@ def verify_node(state: AgentState) -> dict:
                 {"role": "user", "content": user_message},
             ],
             temperature=0.1,
-            max_tokens=4000,
+            max_tokens=CLAIM_INVENTORY_MAX_TOKENS,
             extra_body={"thinking": {"type": "disabled"}},
         )
     except (RateLimitError, APIConnectionError, APITimeoutError, InternalServerError) as exc:
@@ -1210,7 +1211,7 @@ def verify_node(state: AgentState) -> dict:
         quality_episode=state.get("quality_episode"),
         quality_attempt=state.get("quality_attempts"),
         requested_model=DEEPSEEK_MODEL, temperature=0.1,
-        max_tokens=4000, response_format=None, response=claim_response,
+        max_tokens=CLAIM_INVENTORY_MAX_TOKENS, response_format=None, response=claim_response,
     )
     trace = copy_trace(state)
     run_cost += _cost(claim_response.usage)

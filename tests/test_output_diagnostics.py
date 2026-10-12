@@ -271,6 +271,7 @@ def test_inventory_october_pattern_and_success(base_state, monkeypatch):
     diagnostic = _records(failed)[0]
     assert failed["verification_status"] == "parse_failed" and client.calls == 1
     assert diagnostic["stage"] == "claim_inventory"
+    assert diagnostic["request"]["max_tokens"] == nodes.CLAIM_INVENTORY_MAX_TOKENS
     assert diagnostic["response"]["termination"] == "unknown"
     assert diagnostic["usage"]["completion_tokens"] == 4000
     assert diagnostic["usage"]["reasoning_tokens"] == 4000
@@ -322,7 +323,7 @@ def test_openai_client_serializes_inventory_thinking_toggle(base_state, monkeypa
     assert requests[0]["thinking"] == {"type": "disabled"}
     assert requests[0]["model"] == nodes.DEEPSEEK_MODEL
     assert requests[0]["temperature"] == 0.1
-    assert requests[0]["max_tokens"] == 4000
+    assert requests[0]["max_tokens"] == nodes.CLAIM_INVENTORY_MAX_TOKENS == 12_000
     assert "response_format" not in requests[0]
 
 
@@ -352,6 +353,56 @@ def test_complete_inventory_without_length_reaches_call_b(
     assert "extra_body" not in calls[1]
     assert diagnostic["response"]["termination"] == expected_termination
     assert diagnostic["parse"] == {"status": "ok", "error_class": None}
+
+
+def test_large_complete_inventory_uses_existing_call_b_and_accounts_for_usage(
+    base_state, monkeypatch,
+):
+    claims = [f"Distinct technical claim {number} is present in this draft."
+              for number in range(120)]
+    rows = [
+        {**_inventory_row(), "claim_text": claim, "anchor_quote": claim}
+        for claim in claims
+    ]
+    content = json.dumps(rows)
+    assert len(content) > 16_030  # Longer than the first October 12 truncated response.
+    inventory_response = _response(content, finish="stop")
+    inventory_response.usage.completion_tokens = 8000
+    inventory_response.usage.total_tokens = 12_000
+    client = FakeLLMClient(response=inventory_response)
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    draft = "\n".join(claims)
+    result = nodes.verify_node({**base_state, "iterations": 1, "draft_markdown": draft})
+    diagnostic = _records(result)[0]
+
+    assert client.calls == 2
+    assert result["verification_status"] == "completed"
+    assert len(result["claim_inventory"]["claims"]) == len(claims)
+    assert diagnostic["request"]["max_tokens"] == nodes.CLAIM_INVENTORY_MAX_TOKENS
+    assert diagnostic["response"]["termination"] == "stop"
+    assert diagnostic["parse"] == {"status": "ok", "error_class": None}
+    assert result["total_tokens"] == base_state["total_tokens"] + 12_000 + 100
+    assert result["total_cost_usd"] > base_state["total_cost_usd"]
+
+
+def test_historical_shaped_truncated_inventory_is_rejected_and_accounted(
+    base_state, monkeypatch,
+):
+    content = json.dumps([_inventory_row()])[:-1]
+    client = FakeLLMClient(response=_response(content, finish="length"))
+    monkeypatch.setattr(nodes, "_get_client", lambda: client)
+    result = nodes.verify_node({**base_state, "iterations": 1,
+                                "claim_inventory": {"stale": True}})
+    diagnostic = _records(result)[0]
+
+    assert client.calls == 1
+    assert result["verification_status"] == "parse_failed"
+    assert result["claim_inventory"] is None
+    assert nodes.route_after_verify({**base_state, **result}) != "reflect"
+    assert result["total_tokens"] == base_state["total_tokens"] + 8000
+    assert result["total_cost_usd"] > base_state["total_cost_usd"]
+    assert diagnostic["response"]["termination"] == "provider_length"
+    assert diagnostic["parse"]["status"] == "failed"
 
 
 def test_length_terminated_parseable_inventory_is_rejected_before_call_b(
@@ -416,7 +467,9 @@ def test_two_length_terminated_inventories_exhaust_without_review(base_state, mo
     review = Mock(side_effect=AssertionError("failed inventory reached Gate 1"))
     monkeypatch.setattr(graph_mod, "reflect_node", reflect)
     monkeypatch.setattr(graph_mod, "hitl_node", review)
-    result = graph_mod.build_graph().invoke(base_state)
+    result = graph_mod.build_graph().invoke({
+        **base_state, "claim_inventory": {"stale": True},
+    })
     assert client.calls == result["quality_attempts"] == 2
     assert result["terminal_status"] == "execution_failed"
     assert result["verification_status"] == "inventory_failed"
