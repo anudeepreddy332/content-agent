@@ -3872,3 +3872,52 @@ or new V2 qualification. HOLDOUT-V2 PASS remains only at
 CI-qualified on its exact SHA, merged to main, or evidence of E2E/pilot readiness.
 
 Status: **INSTRUMENTATION VALIDATED LOCALLY / FEATURE INTEGRATION AND CI PENDING**.
+
+---
+Decision ID: D-2026-10-13-01
+Date: 2026-10-13
+
+Decision: **Record the bounded structured-output corrections and close their
+feature integration and exact-SHA deterministic CI milestone. Keep provider-backed
+reliability and Phase-5 release gates OPEN.**
+
+The October-8 metadata candidate `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`
+was followed by draft correction `97a55a570dab121bb56e4faadadeead5f32dd529`
+and October-9 inventory correction `15ba11f3e71859485db9794eba2fe725213278bb`.
+Draft and Call-A inventory requests disable thinking; an explicit
+`finish_reason=length` rejects even parseable output before downstream acceptance.
+Parser success/failure remains separately recorded; absent termination metadata
+remains unknown. Prompts, schemas, semantic Call B, reflection, and frozen workflow
+budgets/routing were not broadened by these corrections.
+
+The October-12 inventory failure yielded two truncated, unusable outputs at the
+former 4,000-token Call-A limit. Independent forensic review and offline replay
+confirmed rejection before semantic Call B, reflection, or Gate 1. The evidence
+supports a bounded output-capacity correction; it does not prove complete claim
+extraction, population reliability, or a successful corrected application E2E.
+Candidate `82284129dcee8cc10f3d959e0994bacae6a5683b`, direct parent
+`15ba11f3e71859485db9794eba2fe725213278bb`, changes only `agent/nodes.py`
+and `tests/test_output_diagnostics.py`: one 12,000-token Call-A constant drives
+the request and diagnostic. Model, temperature, thinking setting, response format,
+parser, retries, Call B, reflection, and workflow contract remain unchanged.
+
+Independent Sol High verdict **CONTENT-AGENT-CALL-A-CAPACITY-AUDIT-PASS** applied
+to the bounded offline candidate: 380 focused tests passed; 1,855 ordinary tests
+passed with 37 warnings; fatal Ruff and diff check passed. Truncated inventories
+and explicit length termination still fail closed. The application-only commit
+was integrated by normal fast-forward push to `feature/phase5-rag-hardening`.
+Exact-SHA push CI [38373655918](https://github.com/anudeepreddy332/content-agent/actions/runs/38373655918)
+completed SUCCESS at `82284129` (lint PASS; 1,855 tests PASS, 37 warnings;
+PR-only eval-gate skipped). Main remains
+`86712d200fd46382a876f2083f824f03a83341ab`; no Phase-5 PR or main merge.
+
+Status: **BOUNDED CORRECTION AUDITED / FEATURE INTEGRATED / EXACT-SHA CI PASS**.
+HOLDOUT-V2 qualification remains solely at
+`e0cfe0b566134f848feb731a777f315eb1456dd2`; no descendant is holdout-tested.
+Live inventory reliability at 12,000 tokens is UNTESTED; claim completeness is
+UNPROVEN; semantic Call B/reflection have not been validated on a successful
+corrected run; full application E2E has not passed. Initial HTML equivalence,
+Phase-5 PR/evaluation/main merge, and external pilot readiness remain open.
+The larger request can increase the existing non-transactional cost overshoot;
+the `$0.10` resource gate is not a per-request ceiling. No provider, holdout,
+application, merge, or publication execution is authorized by this decision.

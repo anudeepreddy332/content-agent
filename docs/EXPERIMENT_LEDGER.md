@@ -1,6 +1,6 @@
 # Experiment and Evidence Ledger
 
-_Canonical compact index. Last synchronized: 2026-10-05._
+_Canonical compact index. Last synchronized: 2026-10-13._
 
 This ledger indexes meaningful experiments and release-relevant validation. It does not duplicate
 full reports. Detailed artifacts remain under `docs/archive/`, in the named commit/branch, or in the
@@ -407,3 +407,16 @@ For every applicable change:
 | Integration state | Validated **locally only**. Remote feature remains `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`; main remains `86712d200fd46382a876f2083f824f03a83341ab`. No exact-SHA push CI for `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`, no Phase-5 PR, and no main merge. |
 | Classification / limits | **STRUCTURED-OUTPUT METADATA INSTRUMENTATION — IMPLEMENTED LOCALLY / INDEPENDENTLY AUDITED / FEATURE INTEGRATION AND CI PENDING.** Not a structured-output behavioral fix, provider-backed validation, successful corrected E2E, Phase-5 merge closure, or external pilot readiness. Initial HTML equivalence remains pending. |
 | Canonical continuity | `D-2026-10-08-01`; `PROJECT_STATUS.md`. `architecture.md`, `README.md`, and historical `FREEZE.md` retain their existing truthful roles. |
+
+### VAL-2026-10-13-01 — Structured-output corrections, Call-A capacity audit, and feature CI
+
+| Field | Record |
+| --- | --- |
+| Scope / chronology | October-8 draft correction `97a55a570dab121bb56e4faadadeead5f32dd529`; October-9 Call-A inventory correction `15ba11f3e71859485db9794eba2fe725213278bb`; October-12 capacity candidate `82284129dcee8cc10f3d959e0994bacae6a5683b` (direct parent `15ba11f`). The prior metadata candidate `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc` is retained as a historical milestone. |
+| October-12 failure / forensic boundary | Two Call-A outputs at the former 4,000-token limit ended mid-structure and were unusable. Independent forensics and offline replay kept both rejected before semantic Call B, reflection, or Gate 1. This supports a bounded capacity mitigation, not complete extraction or proven live reliability. |
+| Isolated capacity delta | `agent/nodes.py` and `tests/test_output_diagnostics.py` only. One `CLAIM_INVENTORY_MAX_TOKENS = 12_000` drives the Call-A request and diagnostic. Model, temperature `0.1`, thinking disabled, response-format absence, parser, retries, Call B, reflection, and routing remain unchanged. |
+| Independent offline audit | **CONTENT-AGENT-CALL-A-CAPACITY-AUDIT-PASS**: 380 focused tests passed; 1,855 ordinary tests passed with 37 warnings; fatal Ruff and diff check passed. Mock transport verified request serialization. Truncated/malformed inventories and parseable output with explicit `finish_reason=length` remain rejected; missing finish reason remains unknown. No live 12,000-token provider test or V1/V2 holdout access/execution. |
+| Integration / exact-SHA CI | Normal fast-forward push to `feature/phase5-rag-hardening` at exact `82284129dcee8cc10f3d959e0994bacae6a5683b`. [GitHub Actions 38373655918](https://github.com/anudeepreddy332/content-agent/actions/runs/38373655918): push event, exact head SHA, overall SUCCESS; lint PASS; test PASS (**1,855 passed, 37 warnings**); PR-only eval-gate skipped. Main `86712d200fd46382a876f2083f824f03a83341ab`; no Phase-5 PR/main merge. |
+| Qualification and release limits | HOLDOUT-V2 PASS only at `e0cfe0b566134f848feb731a777f315eb1456dd2`; this descendant was not holdout-tested. Live inventory reliability at 12,000 tokens UNTESTED; claim completeness UNPROVEN; semantic Call B/reflection not validated on a successful corrected run; application E2E not passed; initial HTML equivalence pending; external pilot NOT READY. |
+| Classification | **BOUNDED CALL-A CAPACITY CORRECTION — INDEPENDENT OFFLINE AUDIT PASS / FEATURE INTEGRATED / EXACT-SHA CI PASS**. No application release or cutover approval. |
+| Canonical continuity | `D-2026-10-13-01`; `PROJECT_STATUS.md`; `architecture.md`; `README.md`. Earlier entries retain their checkpoint-specific findings. |

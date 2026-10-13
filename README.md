@@ -7,12 +7,15 @@ grounded HTML article, verifies claims, and requires human review before publica
 > active-content/credential boundary is validated and integrated within its scoped contract;
 > current deployment identity is not established. Phase-5 HOLDOUT-V2 retrieval qualification
 > passed only at `e0cfe0b566134f848feb731a777f315eb1456dd2`. The reviewed application-only
-> descendant `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` implements the frozen
-> workflow correction, passed independent re-audit, and has green exact-SHA push CI
-> [37599028135](https://github.com/anudeepreddy332/content-agent/actions/runs/37599028135).
+> descendant `82284129dcee8cc10f3d959e0994bacae6a5683b` includes the independently
+> re-audited frozen workflow and an independently audited 12,000-token Call-A capacity
+> correction. Exact-SHA push CI
+> [38373655918](https://github.com/anudeepreddy332/content-agent/actions/runs/38373655918)
+> succeeded (1,855 tests, 37 warnings; PR-only evaluation skipped).
 > The October-5 real application E2E remains a historical FAIL / Gate-1 rejection.
-> Structured-output reliability is unresolved, the initial HTML content-equivalence
-> guard is pending, and a fresh corrected E2E has not passed. External pilot is
+> Live inventory reliability at 12,000 tokens, claim completeness, and successful
+> Call B/reflection remain unverified. The initial HTML content-equivalence guard
+> is pending, and a fresh corrected E2E has not passed. External pilot is
 > **NOT READY**; main has not received Phase 5. Read `PROJECT_STATUS.md` and
 > `architecture.md` for current state and contract.
 

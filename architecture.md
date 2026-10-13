@@ -1,6 +1,6 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-10-07. Workflow contract ACCEPTED / FROZEN —
+_Accepted contract synchronized 2026-10-13. Workflow contract ACCEPTED / FROZEN —
 IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 (D-2026-10-05-04). Historical implementation anchors follow._
 
@@ -14,12 +14,15 @@ IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
 - **Current implementation identity:** canonical Phase-5 feature runtime is
-  `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`; exact-SHA push CI
-  [37599028135](https://github.com/anudeepreddy332/content-agent/actions/runs/37599028135)
-  passed. Main remains
+  `82284129dcee8cc10f3d959e0994bacae6a5683b`; exact-SHA push CI
+  [38373655918](https://github.com/anudeepreddy332/content-agent/actions/runs/38373655918)
+  passed (1,855 tests, 37 warnings; PR-only eval skipped). Main remains
   `86712d200fd46382a876f2083f824f03a83341ab`. HOLDOUT-V2 qualified only
-  `e0cfe0b566134f848feb731a777f315eb1456dd2`; the workflow implementation
-  is an independently audited application-only descendant, not holdout-tested.
+  `e0cfe0b566134f848feb731a777f315eb1456dd2`; the current application-only
+  descendant is not holdout-tested. The frozen workflow re-audit remains anchored
+  at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` and CI `37599028135`.
+  The later 12,000-token Call-A correction passed bounded offline audit; live
+  reliability, claim completeness, Call B/reflection, and application E2E remain open.
 - **Historical canonical P0-2b state:** exact
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. It contains the P0-2a integration commit,
   the P0-2b slice-1 integration commit, the P0-2b slice-2A integration commit, and the P0-2b
@@ -52,6 +55,8 @@ belong here until independent review accepts them. Material decision history rem
 
 The October-5 workflow contract in section 1 is accepted architecture implemented and
 independently audited on the feature branch at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`.
+The current feature descendant is `82284129dcee8cc10f3d959e0994bacae6a5683b`;
+its output-capacity change does not amend the frozen workflow contract.
 The security and earlier implementation records below retain their scoped validation; their old
 next-mission/status statements are historical, not current project authorization.
 
