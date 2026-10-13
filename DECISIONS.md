@@ -3890,6 +3890,17 @@ Parser success/failure remains separately recorded; absent termination metadata
 remains unknown. Prompts, schemas, semantic Call B, reflection, and frozen workflow
 budgets/routing were not broadened by these corrections.
 
+The saved October-9 run `e7c56174-11bc-4272-87b8-d4f17908e431`
+(`outputs/runs/e7c56174-11bc-4272-87b8-d4f17908e431.json`) records two
+successfully parsed drafts, both with `finish_reason=stop`. Both Call-A inventory
+responses had empty assistant content and explicit `finish_reason=length`; each
+reported 4,000 completion tokens, all 4,000 classified as reasoning tokens.
+Inventory parsing failed twice and the application ended `execution_failed`,
+without semantic Call B, reflection, or a HITL event. The telemetry explicitly
+marks verified runtime code identity unavailable; no SHA is attributed to this
+run. This empty-output failure is distinct from the October-12 visible JSON
+that ended mid-structure.
+
 The October-12 inventory failure yielded two truncated, unusable outputs at the
 former 4,000-token Call-A limit. Independent forensic review and offline replay
 confirmed rejection before semantic Call B, reflection, or Gate 1. The evidence
