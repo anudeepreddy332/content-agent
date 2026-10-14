@@ -350,7 +350,8 @@ def test_complete_inventory_without_length_reaches_call_b(
     assert result["claim_inventory"]["claims"]
     assert client.calls == 2
     assert calls[0]["extra_body"] == {"thinking": {"type": "disabled"}}
-    assert "extra_body" not in calls[1]
+    assert calls[1]["extra_body"] == {"thinking": {"type": "disabled"}}
+    assert calls[1]["max_tokens"] == 8_000
     assert diagnostic["response"]["termination"] == expected_termination
     assert diagnostic["parse"] == {"status": "ok", "error_class": None}
 

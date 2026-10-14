@@ -29,6 +29,8 @@ AnalyzerFailureKind = Literal[
     "adjudication_invalid",
 ]
 
+CALL_B_MAX_TOKENS = 8_000
+
 
 class LLMTransport(Protocol):
     """Injected production LLM boundary (Slice 3 passes ``agent.nodes._llm_call``)."""
@@ -55,6 +57,11 @@ class SemanticAnalyzerResult:
     returned_model: str | None = None
     provider_response_id: str | None = None
     usage: dict[str, Any] | None = None
+    finish_reason: str | None = None
+    response_length: int | None = None
+    parser_status: str = "not_run"
+    parser_error: str | None = None
+    max_tokens: int | None = None
     latency_ms: float | None = None
     quote_observations: list[dict[str, Any]] = field(default_factory=list)
     canonical_observations: list[dict[str, Any]] = field(default_factory=list)
@@ -67,40 +74,65 @@ class SemanticAnalyzerResult:
         return any(row.get("status") == "verified" for row in self.grounding_report)
 
 
-def _extract_transport_payload(response: Any) -> tuple[str, str | None, str | None, dict[str, Any] | None]:
+def _extract_transport_payload(response: Any) -> tuple[str, str | None, str | None, dict[str, Any] | None, str | None]:
     """Normalize OpenAI-compatible chat completion objects or test doubles."""
     if isinstance(response, str):
-        return response, None, None, None
+        return response, None, None, None, None
     if isinstance(response, dict):
+        if "content" not in response:
+            raise ValueError("transport dict missing content field")
         content = response.get("content")
+        if content is None:
+            content = ""
         if not isinstance(content, str):
             raise ValueError("transport dict missing string content")
+        raw_usage = response.get("usage")
+        usage = None
+        if isinstance(raw_usage, dict):
+            details = raw_usage.get("completion_tokens_details")
+            usage = {
+                "prompt_tokens": raw_usage.get("prompt_tokens"),
+                "completion_tokens": raw_usage.get("completion_tokens"),
+                "total_tokens": raw_usage.get("total_tokens"),
+                "reasoning_tokens": (
+                    details.get("reasoning_tokens") if isinstance(details, dict)
+                    else raw_usage.get("reasoning_tokens")
+                ),
+            }
         return (
             content,
             response.get("model"),
             response.get("id") or response.get("provider_response_id"),
-            response.get("usage"),
+            usage,
+            response.get("finish_reason"),
         )
     choices = getattr(response, "choices", None)
     if not choices:
         raise ValueError("transport response missing choices")
     message = choices[0].message
+    if not hasattr(message, "content"):
+        raise ValueError("transport response missing content field")
     content = getattr(message, "content", None)
+    if content is None:
+        content = ""
     if not isinstance(content, str):
         raise ValueError("transport response missing assistant content")
     usage_obj = getattr(response, "usage", None)
     usage = None
     if usage_obj is not None:
+        details = getattr(usage_obj, "completion_tokens_details", None)
         usage = {
             "prompt_tokens": getattr(usage_obj, "prompt_tokens", None),
             "completion_tokens": getattr(usage_obj, "completion_tokens", None),
             "total_tokens": getattr(usage_obj, "total_tokens", None),
+            "reasoning_tokens": getattr(details, "reasoning_tokens", None),
         }
     return (
         content,
         getattr(response, "model", None),
         getattr(response, "id", None),
         usage,
+        getattr(choices[0], "finish_reason", None),
     )
 
 
@@ -115,12 +147,13 @@ def analyze_semantic_evidence(
     model: str,
     system_prompt: str | None = None,
     temperature: float = 0.1,
-    max_tokens: int = 2000,
+    max_tokens: int = CALL_B_MAX_TOKENS,
     schema_version: int = 1,
     response_format: dict[str, str] | None = None,
 ) -> SemanticAnalyzerResult:
     """End-to-end semantic analysis: manifest → LLM → bind → adjudicate → grounding_report."""
     result = SemanticAnalyzerResult(request_id=request_id, success=False)
+    result.max_tokens = max_tokens
     evidence_manifest = build_evidence_manifest(
         request_id=request_id,
         web_sources=web_sources,
@@ -154,7 +187,7 @@ def analyze_semantic_evidence(
 
     result.latency_ms = round((time.time() - started) * 1000, 3)
     try:
-        raw_content, returned_model, response_id, usage = _extract_transport_payload(transport_response)
+        raw_content, returned_model, response_id, usage, finish_reason = _extract_transport_payload(transport_response)
     except Exception as exc:
         result.failure_kind = "provider"
         result.failure_detail = f"transport_shape:{exc}"
@@ -164,12 +197,26 @@ def analyze_semantic_evidence(
     result.returned_model = returned_model
     result.provider_response_id = response_id
     result.usage = usage
+    result.finish_reason = finish_reason
+    result.response_length = len(raw_content)
 
     try:
         quote_contract = parse_analyzer_response(raw_content)
     except ResponseContractError as exc:
+        result.parser_status = "failed"
+        result.parser_error = str(exc)
+        if finish_reason == "length":
+            result.failure_kind = "response_contract"
+            result.failure_detail = "provider_length"
+            return result
         result.failure_kind = "response_contract"
         result.failure_detail = str(exc)
+        return result
+
+    result.parser_status = "ok"
+    if finish_reason == "length":
+        result.failure_kind = "response_contract"
+        result.failure_detail = "provider_length"
         return result
 
     result.quote_observations = quote_contract["observations"]
@@ -198,12 +245,8 @@ def analyze_semantic_evidence(
     if adjudication.validity != "VALID":
         result.failure_kind = "adjudication_invalid"
         result.failure_detail = ",".join(adjudication.invalid_reasons) or "invalid_adjudication"
-        result.grounding_report = adjudication_to_grounding_report(
-            adjudication=adjudication,
-            claims=claims,
-            evidence_manifest=evidence_manifest,
-            observations=canonical_observations,
-        )
+        # A roster-level INVALID response cannot supply a partially favorable
+        # grounding score. Keep adjudication reasons for diagnostics only.
         return result
 
     result.grounding_report = adjudication_to_grounding_report(

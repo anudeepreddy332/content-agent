@@ -1033,6 +1033,7 @@ def _make_semantic_llm_transport(client: OpenAI):
         }
         if response_format is not None:
             kwargs["response_format"] = response_format
+        kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
         return _llm_call(client, **kwargs)
 
     return transport
@@ -1423,6 +1424,11 @@ def verify_node(state: AgentState) -> dict:
             returned_model=analyzer_result.returned_model,
             provider_response_id=analyzer_result.provider_response_id,
             usage=analyzer_result.usage,
+            finish_reason=analyzer_result.finish_reason,
+            response_length=analyzer_result.response_length,
+            parser_status=analyzer_result.parser_status,
+            parser_error=analyzer_result.parser_error,
+            max_tokens=analyzer_result.max_tokens,
             evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
             engine_status_by_claim=engine_status_by_claim,
             raw_response=analyzer_result.raw_response,
@@ -1505,6 +1511,11 @@ def verify_node(state: AgentState) -> dict:
         returned_model=analyzer_result.returned_model,
         provider_response_id=analyzer_result.provider_response_id,
         usage=analyzer_result.usage,
+        finish_reason=analyzer_result.finish_reason,
+        response_length=analyzer_result.response_length,
+        parser_status=analyzer_result.parser_status,
+        parser_error=analyzer_result.parser_error,
+        max_tokens=analyzer_result.max_tokens,
         evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
         engine_status_by_claim=engine_status_by_claim,
         raw_response=analyzer_result.raw_response,
