@@ -130,6 +130,8 @@ def _free_port():
 
 @pytest.fixture
 def live_server(monkeypatch):
+    monkeypatch.setenv("HITL_REVIEWER_ID", "pilot-reviewer")
+    monkeypatch.setenv("HITL_REVIEWER_TOKEN", "reviewer-browser-secret-0123456789abcdef")
     import tools.query_kb as kb
     monkeypatch.setattr(kb, "warmup", lambda: {"status": "skipped"})
     import api.server as srv
@@ -170,6 +172,7 @@ def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
     pw_page.on("popup", lambda p: popups.append(p.url))
     pw_page.goto(live_server + "/", wait_until="domcontentloaded")
     pw_page.fill("#token", "test-token")
+    pw_page.fill("#reviewerToken", "reviewer-browser-secret-0123456789abcdef")
     pw_page.fill("#topic", "Gradient Descent")
     pw_page.click("#go")
 
@@ -206,6 +209,7 @@ def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
 def test_reviewer_ui_exposes_claim_counts_filters_and_real_score_provenance(live_server, pw_page):
     pw_page.goto(live_server + "/", wait_until="domcontentloaded")
     pw_page.fill("#token", "test-token")
+    pw_page.fill("#reviewerToken", "reviewer-browser-secret-0123456789abcdef")
     pw_page.fill("#topic", "Gradient Descent")
     pw_page.click("#go")
 
@@ -230,6 +234,7 @@ def test_gate2_preview_keeps_trusted_article_styles_under_reviewer_csp(live_serv
     pw_page.set_viewport_size({"width": 540, "height": 820})
     pw_page.goto(live_server + "/", wait_until="domcontentloaded")
     pw_page.fill("#token", "test-token")
+    pw_page.fill("#reviewerToken", "reviewer-browser-secret-0123456789abcdef")
     pw_page.fill("#topic", "Gradient Descent")
     pw_page.click("#go")
     pw_page.wait_for_selector("#gate1:not(.hidden)", timeout=8000)

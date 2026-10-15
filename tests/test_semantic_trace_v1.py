@@ -290,6 +290,10 @@ def test_parse_failed_empty_report_and_cost_gate_remain_traceable(base_state, mo
 
 
 def test_accepted_and_uvr_failed_routing_unchanged(base_state, monkeypatch):
+    monkeypatch.setenv("HITL_TEST_MODE", "1")
+    monkeypatch.setenv("HITL_TEST_REVIEWER_ID", "test:semantic")
+    monkeypatch.setenv("GIT_PUSH_ENABLED", "false")
+    monkeypatch.delenv("PUBLISH_TARGET", raising=False)
     ok_report = [_verdict(f"ok-{i}") for i in range(10)]
     accepted = _merge(base_state, {
         "iterations": 1,

@@ -246,6 +246,8 @@ def _build_initial_state(
         "terminal_status": None, "terminal_message": None,
         "hitl_status": "pending",
         "hitl_feedback": None,
+        "gate1_reviewer_id": None,
+        "gate2_reviewer_id": None,
         "html_review_status": None,
         "html_feedback": None,
         "html_output": None,
@@ -300,6 +302,10 @@ def cli():
 )
 
 def run(topic, card_id, series, auto, brief_requirements_json):
+    if auto:
+        from agent.reviewer_identity import test_auto_reviewer_id
+        if test_auto_reviewer_id() is None:
+            raise click.UsageError("--auto requires isolated test identity and disabled publishing")
     # Validate required credentials before doing any work.
     # Fail here instead of mid-pipeline with a cryptic API error.
     missing = [v for v in ("DEEPSEEK_API_KEY", "TAVILY_API_KEY") if not os.getenv(v)]

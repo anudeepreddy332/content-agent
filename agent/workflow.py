@@ -97,6 +97,7 @@ def start_episode(state):
         "draft_status": "not_started",
         "verification_identity": None, "reflection_identity": None,
         "approved_draft_identity": None, "hitl_status": "pending",
+        "gate1_reviewer_id": None, "gate2_reviewer_id": None,
     }
 
 
@@ -155,7 +156,8 @@ def draft_step(state, *, run):
               "verification_identity": None, "reflection_identity": None,
               "approved_draft_identity": None, "verification_status": "not_started",
               "claim_inventory": None, "grounding_report": [], "reflection_score": 0,
-              "reflection_provenance": {}, "hitl_status": "pending"}
+              "reflection_provenance": {}, "hitl_status": "pending",
+              "gate1_reviewer_id": None, "gate2_reviewer_id": None}
     current = {**state, **update}
     if not draft_valid(current):
         update.update(failure(current, "execution_failed"))
@@ -206,7 +208,8 @@ def reflect_step(state, *, run):
 
 
 def html_step(state, *, run):
-    if not gate1_eligible(state) or state.get("approved_draft_identity") != identity(state):
+    if (not gate1_eligible(state) or state.get("approved_draft_identity") != identity(state)
+            or not state.get("gate1_reviewer_id")):
         return terminal("execution_failed")
     try:
         update = run(state)
@@ -228,6 +231,7 @@ def layout_step(state, *, run):
         # Accepted feedback already consumed an attempt; preserve the trusted
         # previous render, which can still be explicitly approved.
         update = {"html_feedback": None, "approved_html_sha256": None,
+                  "gate2_reviewer_id": None,
                   "error_log": [*state.get("error_log", []), "html_revise: revision failed; kept original"]}
     if resource_stopped({**state, **update}):
         update.update(terminal("resource_exhausted"))
@@ -245,7 +249,7 @@ def layout_feedback(state, note):
     if state.get("html_revision_attempts", 0) >= LAYOUT_REVISION_LIMIT:
         return terminal("layout_revision_limit")
     return {"html_review_status": "changes", "html_feedback": note,
-            "approved_html_sha256": None,
+            "approved_html_sha256": None, "gate2_reviewer_id": None,
             "html_revision_attempts": state.get("html_revision_attempts", 0) + 1}
 
 

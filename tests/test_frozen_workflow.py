@@ -40,6 +40,7 @@ def harness(monkeypatch, base_state):
     monkeypatch.setenv("HITL_MODE", "api")
     monkeypatch.setenv("HITL_AUTO_APPROVE", "0")
     monkeypatch.setenv("GIT_PUSH_ENABLED", "false")
+    monkeypatch.setattr(nodes, "current_reviewer_id", lambda _run_id: "test:frozen-workflow")
     monkeypatch.setattr(builtins, "input", Mock(side_effect=AssertionError("No CLI input")))
     monkeypatch.setattr(nodes, "_get_client", Mock(side_effect=AssertionError("No provider call")))
     calls = []

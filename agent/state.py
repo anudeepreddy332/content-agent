@@ -83,6 +83,8 @@ class AgentState(TypedDict):
     # HITL
     hitl_status: Literal["pending", "approved", "rejected", "feedback"]
     hitl_feedback: str | None
+    gate1_reviewer_id: str | None   # server-authenticated principal, never a secret
+    gate2_reviewer_id: str | None
     html_review_status: Literal["approved", "rejected", "changes"] | None   # P2 post-render gate
     html_feedback: str | None   # P2: design/layout note for html_revise — NEVER content
 

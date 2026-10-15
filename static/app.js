@@ -1,11 +1,13 @@
 const $ = s => document.querySelector(s);
 const STEP_ORDER = ["retrieve","draft","verify","reflect","html_gen","html_revise","git"];
 const SSE_RETRY_DELAYS_MS = [500, 1000, 2000];
-let RUN = null, TOKEN = "", streamAbort = null;
+let RUN = null, TOKEN = "", REVIEWER_TOKEN = "", streamAbort = null;
 
-function api(path, method, body){
+function api(path, method, body, reviewer){
+  const headers = {"Authorization":"Bearer "+TOKEN, "Content-Type":"application/json"};
+  if(reviewer) headers["X-Reviewer-Token"] = REVIEWER_TOKEN;
   return fetch(path, {method,
-    headers:{"Authorization":"Bearer "+TOKEN, "Content-Type":"application/json"},
+    headers,
     body: body ? JSON.stringify(body) : undefined});
 }
 function show(id){ $(id).classList.remove("hidden"); }
@@ -52,9 +54,11 @@ function finishNode(node, headline){
 }
 
 function authFailed(){
-  TOKEN = "";
+  TOKEN = ""; REVIEWER_TOKEN = "";
   const field = $("#token");
   if(field) field.value = "";
+  const reviewerField = $("#reviewerToken");
+  if(reviewerField) reviewerField.value = "";
   show("#setup");
   onError("authentication failed");
 }
@@ -282,12 +286,16 @@ function renderGrounding(report){
 
 function setGateButtons(disabled){ document.querySelectorAll("[data-act]").forEach(b=>b.disabled=disabled); }
 async function gateAction(gate, act){
+  const reviewerField = $("#reviewerToken");
+  REVIEWER_TOKEN = reviewerField.value || REVIEWER_TOKEN;
+  reviewerField.value = "";
+  if(!REVIEWER_TOKEN){ alert("Reviewer credential is required."); return; }
   const fb = gate==="1" ? $("#g1fb").value.trim() : $("#g2fb").value.trim();
   if(act==="feedback" && !fb){ alert("Enter the change you want before requesting changes."); return; }
   setGateButtons(true);
   let path = `/ui/runs/${RUN}/${act}`, body = null;
   if(act==="feedback"){ body = {feedback: fb}; }
-  const res = await api(path, "POST", body);
+  const res = await api(path, "POST", body, true);
   if(res.status === 401 || res.status === 403){ authFailed(); setGateButtons(false); return; }
   if(!res.ok){ const t=await res.text(); onError(`${res.status} ${t}`); setGateButtons(false); return; }
   hide("#gate1"); hide("#gate2"); setGateButtons(false);
@@ -301,6 +309,7 @@ document.querySelectorAll("[data-act]").forEach(b=>{
 
 function onDone(d){
   if(streamAbort){ streamAbort.abort(); streamAbort=null; }
+  REVIEWER_TOKEN = "";
   hide("#gate1"); hide("#gate2");
   const s=d.summary||{}; const base=$("#siteBase").value.trim().replace(/\/+$/,"");
   const failed = s.terminal_status || (s.git_status==="failed" ? "execution_failed" : null);
@@ -396,7 +405,10 @@ $("#go").addEventListener("click", async ()=>{
   const field = $("#token");
   TOKEN = field.value || TOKEN;
   field.value = "";
-  if(!topic||!TOKEN){ alert("Topic and token are required."); return; }
+  const reviewerField = $("#reviewerToken");
+  REVIEWER_TOKEN = reviewerField.value || REVIEWER_TOKEN;
+  reviewerField.value = "";
+  if(!topic||!TOKEN){ alert("Topic and API token are required."); return; }
   $("#go").disabled=true; hide("#gate1"); hide("#gate2"); hide("#done");
   initSteps(); show("#pipeline"); $("#pipeSub").textContent="running…";
   const res=await api("/ui/runs","POST",{topic, series:$("#series").value.trim()||"Learning Log"});

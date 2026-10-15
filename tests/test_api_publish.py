@@ -33,6 +33,7 @@ def _seed_run(git_status="merged", slug="s", html_output="<html/>", awaiting_htm
         "status": status, "initial_state": {}, "interrupt_payload": interrupt_payload,
         "result": None if awaiting_html else
                   {"slug": slug, "git_status": git_status, "html_output": html_output,
+                   "gate1_reviewer_id": "test:publish", "gate2_reviewer_id": "test:publish",
                    "git_commit_sha": git_commit_sha,
                    "publish_expected_remote_sha": publish_expected_remote_sha},
         "error": None,

@@ -172,6 +172,10 @@ def test_auto_approve_rejects_limitation_weak(base_state, monkeypatch):
 
 
 def test_auto_approve_still_passes_blocker_free_weak(base_state, monkeypatch):
+    monkeypatch.setenv("HITL_TEST_MODE", "1")
+    monkeypatch.setenv("HITL_TEST_REVIEWER_ID", "test:semantic")
+    monkeypatch.setenv("GIT_PUSH_ENABLED", "false")
+    monkeypatch.delenv("PUBLISH_TARGET", raising=False)
     report = [_weak_row("ordinary")] + [_verified_row(f"v-{i}") for i in range(9)]
     state = _state(base_state, report, grounding_score=0.85)
     assert nodes.semantic_verification_accepted(state) is True

@@ -48,6 +48,12 @@ from langgraph.types import Command
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from agent.graph import build_graph
+from agent.reviewer_identity import (
+    InvalidReviewerCredential,
+    ReviewerConfigurationError,
+    authenticate_reviewer,
+    reviewer_context,
+)
 from agent.workflow import terminal_api_status, terminal, project_terminal
 from agent.html_policy import REVIEWER_APP_CSP
 from main import _build_initial_state, _make_slug, _write_telemetry
@@ -90,7 +96,7 @@ def _extract_interrupt(result, config):
             return it.value
     return None
 
-def _advance(run_id: str, invoke_input, finalizing: bool):
+def _advance(run_id: str, invoke_input, finalizing: bool, reviewer_id: str | None = None):
     """Run one compute segment to the next interrupt or to termination.
     Used for both the initial run (invoke_input=initial_state) and resumes
     (invoke_input=Command(resume=...))."""
@@ -98,7 +104,8 @@ def _advance(run_id: str, invoke_input, finalizing: bool):
     with LOCK:
         REGISTRY[run_id]["status"] = "finalizing" if finalizing else "running"
     try:
-        result = GRAPH.invoke(invoke_input, config)
+        with reviewer_context(reviewer_id, run_id):
+            result = GRAPH.invoke(invoke_input, config)
     except Exception as e:  # mirror main.py crash handler
         log.error("api.run_crash", run_id=run_id, error=str(e))
         crash = dict(REGISTRY[run_id]["initial_state"])
@@ -128,12 +135,12 @@ def _advance(run_id: str, invoke_input, finalizing: bool):
     _write_telemetry(result)
 
 
-def _submit(run_id, invoke_input, finalizing):
+def _submit(run_id, invoke_input, finalizing, reviewer_id=None):
     """Submit to the worker, or run inline when API_SYNC=1 (tests only)."""
     if os.environ.get("API_SYNC") == "1":
-        _advance(run_id, invoke_input, finalizing)
+        _advance(run_id, invoke_input, finalizing, reviewer_id)
     else:
-        EXECUTOR.submit(_advance, run_id, invoke_input, finalizing)
+        EXECUTOR.submit(_advance, run_id, invoke_input, finalizing, reviewer_id)
 
 
 # ---- streaming variant (drives the demo SPA) -------------------------------
@@ -168,7 +175,7 @@ def _node_headline(node: str, delta: dict) -> dict:
     return d
 
 
-def _advance_streaming(run_id, invoke_input, finalizing):
+def _advance_streaming(run_id, invoke_input, finalizing, reviewer_id=None):
     """Run one compute segment with GRAPH.stream, emitting per-node events."""
     config = {"configurable": {"thread_id": run_id}}
     q = REGISTRY[run_id]["events"]
@@ -176,16 +183,17 @@ def _advance_streaming(run_id, invoke_input, finalizing):
         REGISTRY[run_id]["status"] = "finalizing" if finalizing else "running"
     result: dict = {}
     try:
-        for mode, chunk in GRAPH.stream(invoke_input, config,
-                                        stream_mode=["updates", "values"]):
-            if mode == "values":
-                result = chunk
-                continue
-            if not isinstance(chunk, dict) or "__interrupt__" in chunk:
-                continue
-            for node_name, delta in chunk.items():
-                q.put({"event": "node", "node": node_name,
-                       "headline": _node_headline(node_name, delta or {})})
+        with reviewer_context(reviewer_id, run_id):
+            for mode, chunk in GRAPH.stream(invoke_input, config,
+                                            stream_mode=["updates", "values"]):
+                if mode == "values":
+                    result = chunk
+                    continue
+                if not isinstance(chunk, dict) or "__interrupt__" in chunk:
+                    continue
+                for node_name, delta in chunk.items():
+                    q.put({"event": "node", "node": node_name,
+                           "headline": _node_headline(node_name, delta or {})})
     except Exception as e:  # mirror _advance / main.py crash handler
         log.error("api.stream_crash", run_id=run_id, error=str(e))
         crash = dict(REGISTRY[run_id]["initial_state"])
@@ -231,11 +239,11 @@ def _advance_streaming(run_id, invoke_input, finalizing):
     q.put(_SENTINEL)
 
 
-def _submit_stream(run_id, invoke_input, finalizing):
+def _submit_stream(run_id, invoke_input, finalizing, reviewer_id=None):
     if os.environ.get("API_SYNC") == "1":
-        _advance_streaming(run_id, invoke_input, finalizing)
+        _advance_streaming(run_id, invoke_input, finalizing, reviewer_id)
     else:
-        EXECUTOR.submit(_advance_streaming, run_id, invoke_input, finalizing)
+        EXECUTOR.submit(_advance_streaming, run_id, invoke_input, finalizing, reviewer_id)
 
 
 # ---- auth (fail closed) ----
@@ -246,6 +254,15 @@ def require_auth(authorization: str = Header(default="")):
     presented = authorization[7:] if authorization.startswith("Bearer ") else ""
     if not hmac.compare_digest(presented, expected):
         raise HTTPException(401, "invalid or missing bearer token")
+
+
+def require_reviewer(x_reviewer_token: str = Header(default="")) -> str:
+    try:
+        return authenticate_reviewer(x_reviewer_token)
+    except ReviewerConfigurationError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except InvalidReviewerCredential as exc:
+        raise HTTPException(401, str(exc)) from exc
 
 # ---- request models ----
 class BriefRequirementInput(BaseModel):
@@ -360,29 +377,29 @@ def get_run(run_id: str):
         return out
 
 
-def _resume(run_id: str, resume_value: dict):
+def _resume(run_id: str, resume_value: dict, reviewer_id: str):
     with LOCK:
         reg = REGISTRY.get(run_id)
         if not reg:
             raise HTTPException(404, "unknown run_id")
         if reg["status"] != "awaiting_review":
             raise HTTPException(409, f"run is '{reg['status']}', not awaiting_review")
-    _submit(run_id, Command(resume=resume_value), finalizing=True)
+    _submit(run_id, Command(resume=resume_value), finalizing=True, reviewer_id=reviewer_id)
     return {"run_id": run_id, "status": "resuming"}
 
 
 @app.post("/runs/{run_id}/approve", dependencies=[Depends(require_auth)])
-def approve(run_id: str):
-    return _resume(run_id, {"action": "approve"})
+def approve(run_id: str, reviewer_id: str = Depends(require_reviewer)):
+    return _resume(run_id, {"action": "approve"}, reviewer_id)
 
 
 @app.post("/runs/{run_id}/reject", dependencies=[Depends(require_auth)])
-def reject(run_id: str):
-    return _resume(run_id, {"action": "reject"})
+def reject(run_id: str, reviewer_id: str = Depends(require_reviewer)):
+    return _resume(run_id, {"action": "reject"}, reviewer_id)
 
 @app.post("/runs/{run_id}/feedback", dependencies=[Depends(require_auth)])
-def feedback(run_id: str, body: Feedback):
-    return _resume(run_id, {"action": "feedback", "feedback": body.feedback})
+def feedback(run_id: str, body: Feedback, reviewer_id: str = Depends(require_reviewer)):
+    return _resume(run_id, {"action": "feedback", "feedback": body.feedback}, reviewer_id)
 
 
 # ---- demo SPA: streaming UI surface (additive) -----------------------------
@@ -405,30 +422,30 @@ def ui_create_run(body: CreateRun):
     return {"run_id": run_id, "status": "queued", "slug": slug}
 
 
-def _resume_stream(run_id: str, resume_value: dict):
+def _resume_stream(run_id: str, resume_value: dict, reviewer_id: str):
     with LOCK:
         reg = REGISTRY.get(run_id)
         if not reg:
             raise HTTPException(404, "unknown run_id")
         if reg["status"] != "awaiting_review":
             raise HTTPException(409, f"run is '{reg['status']}', not awaiting_review")
-    _submit_stream(run_id, Command(resume=resume_value), finalizing=True)
+    _submit_stream(run_id, Command(resume=resume_value), finalizing=True, reviewer_id=reviewer_id)
     return {"run_id": run_id, "status": "resuming"}
 
 
 @app.post("/ui/runs/{run_id}/approve", dependencies=[Depends(require_auth)])
-def ui_approve(run_id: str):
-    return _resume_stream(run_id, {"action": "approve"})
+def ui_approve(run_id: str, reviewer_id: str = Depends(require_reviewer)):
+    return _resume_stream(run_id, {"action": "approve"}, reviewer_id)
 
 
 @app.post("/ui/runs/{run_id}/reject", dependencies=[Depends(require_auth)])
-def ui_reject(run_id: str):
-    return _resume_stream(run_id, {"action": "reject"})
+def ui_reject(run_id: str, reviewer_id: str = Depends(require_reviewer)):
+    return _resume_stream(run_id, {"action": "reject"}, reviewer_id)
 
 
 @app.post("/ui/runs/{run_id}/feedback", dependencies=[Depends(require_auth)])
-def ui_feedback(run_id: str, body: Feedback):
-    return _resume_stream(run_id, {"action": "feedback", "feedback": body.feedback})
+def ui_feedback(run_id: str, body: Feedback, reviewer_id: str = Depends(require_reviewer)):
+    return _resume_stream(run_id, {"action": "feedback", "feedback": body.feedback}, reviewer_id)
 
 
 @app.get("/ui/runs/{run_id}/events", dependencies=[Depends(require_auth)])
@@ -505,6 +522,8 @@ def ui_publish(run_id: str):
         if not reg:
             raise HTTPException(404, "unknown run_id")
         result = reg.get("result") or {}
+        if not result.get("gate1_reviewer_id") or not result.get("gate2_reviewer_id"):
+            raise HTTPException(409, "authenticated Gate 1 and Gate 2 reviews are required")
         git_status = result.get("git_status")
         if git_status not in ("merged", "tagged_and_merged"):
             raise HTTPException(409, f"run git_status is {git_status!r}, "

@@ -116,14 +116,16 @@ def test_reflection_marks_parse_fallback_as_fallback(base_state, monkeypatch):
 
 
 def test_gate2_approval_captures_the_fresh_parent_at_approval(base_state, monkeypatch):
+    from agent.reviewer_identity import reviewer_context
     html = "<html><body>trusted</body></html>"
     digest = hashlib.sha256(html.encode("utf-8")).hexdigest()
-    base_state.update(html_output=html, html_sha256=digest)
-    monkeypatch.setenv("HITL_AUTO_APPROVE", "1")
+    base_state.update(html_output=html, html_sha256=digest,
+                      gate1_reviewer_id="pilot-reviewer")
     monkeypatch.setenv("GIT_PUSH_ENABLED", "true")
     monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: REMOTE_PARENT)
 
-    out = nodes.hitl_html_node(base_state)
+    with reviewer_context("pilot-reviewer", base_state["run_id"]):
+        out = nodes._approve_html_update(base_state)
 
     assert out["html_review_status"] == "approved"
     assert out["approved_html_sha256"] == digest
@@ -160,6 +162,8 @@ def test_git_node_refuses_a_stale_local_main_before_mutating_the_site(
 
     state = {
         **base_state,
+        "gate1_reviewer_id": "pilot-reviewer",
+        "gate2_reviewer_id": "pilot-reviewer",
         "html_output": article.html,
         "html_filename": "gradient-descent-test.html",
         "html_sha256": article.sha256,
@@ -192,6 +196,8 @@ def test_git_node_preserves_the_remote_race_check_before_mutating_the_site(
 
     state = {
         **base_state,
+        "gate1_reviewer_id": "pilot-reviewer",
+        "gate2_reviewer_id": "pilot-reviewer",
         "html_output": article.html,
         "html_filename": "gradient-descent-test.html",
         "html_sha256": article.sha256,

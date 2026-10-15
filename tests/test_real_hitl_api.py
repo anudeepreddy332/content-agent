@@ -12,6 +12,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.types import Command
 
 import agent.nodes as nodes
+from agent.reviewer_identity import reviewer_context
 from agent.state import AgentState
 from tests.test_citation_policy import E1, _claim_row, _verified
 from tests.workflow_fixtures import current_quality
@@ -22,6 +23,9 @@ def api_gate_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("HITL_MODE", "api")
     monkeypatch.delenv("HITL_AUTO_APPROVE", raising=False)
     monkeypatch.setenv("GIT_PUSH_ENABLED", "false")
+    monkeypatch.setenv("API_BEARER_TOKEN", "real-gate-test-token")
+    monkeypatch.setenv("HITL_REVIEWER_ID", "test:real-gate")
+    monkeypatch.setenv("HITL_REVIEWER_TOKEN", "r" * 32)
     cli_input = Mock(side_effect=AssertionError("API gate must never call CLI input"))
     monkeypatch.setattr(builtins, "input", cli_input)
     monkeypatch.setattr(
@@ -44,6 +48,7 @@ def html_state(base_state):
         "html_sha256": hashlib.sha256(html.encode()).hexdigest(),
         "html_review_status": None,
         "approved_html_sha256": None,
+        "gate1_reviewer_id": "test:real-gate",
     }
 
 
@@ -54,7 +59,7 @@ def article_state(base_state):
     return current_quality(state)
 
 
-def _gate_graph(gate):
+def _gate_graph(gate, checkpointer=None):
     """Keep production node/router real; downstream markers have no side effects."""
     visited = []
     builder = StateGraph(AgentState)
@@ -73,7 +78,7 @@ def _gate_graph(gate):
     builder.add_conditional_edges(
         "review", router, {END: END, **{name: name for name in destinations}}
     )
-    return builder.compile(checkpointer=InMemorySaver()), visited
+    return builder.compile(checkpointer=checkpointer or InMemorySaver()), visited
 
 
 @pytest.mark.parametrize(
@@ -97,7 +102,8 @@ def test_real_html_interrupt_resume(api_gate_environment, html_state, decision, 
     assert visited == []
     assert graph.get_state(config).values.get("approved_html_sha256") is None
 
-    result = graph.invoke(Command(resume=decision), config)
+    with reviewer_context("test:real-gate", html_state["run_id"]):
+        result = graph.invoke(Command(resume=decision), config)
 
     assert "__interrupt__" not in result
     assert result["html_review_status"] == status
@@ -129,7 +135,8 @@ def test_real_article_api_contract(api_gate_environment, article_state, decision
     assert initial["__interrupt__"][0].value["type"] == "hitl_review"
     assert visited == []
 
-    result = graph.invoke(Command(resume=decision), config)
+    with reviewer_context("test:real-gate", article_state["run_id"]):
+        result = graph.invoke(Command(resume=decision), config)
 
     assert result["hitl_status"] == status
     assert nodes.route_after_hitl(result) == route
@@ -149,7 +156,7 @@ def test_http_review_resumes_real_gate(
 
     graph, visited = _gate_graph(gate)
     state = html_state if gate == "html" else article_state
-    run_id = "real-http-gate"
+    run_id = state["run_id"]
     monkeypatch.setenv("API_BEARER_TOKEN", "real-gate-test-token")
     monkeypatch.setenv("API_SYNC", "1")
     monkeypatch.setattr(server, "GRAPH", graph)
@@ -164,7 +171,7 @@ def test_http_review_resumes_real_gate(
     advance(run_id, state, False)
     assert server.REGISTRY[run_id]["status"] == "awaiting_review"
     assert visited == []
-    headers = {"Authorization": "Bearer real-gate-test-token"}
+    headers = {"Authorization": "Bearer real-gate-test-token", "X-Reviewer-Token": "r" * 32}
     body = {"feedback": "Simplify the layout."} if action == "feedback" else None
     client = TestClient(server.app)
     try:

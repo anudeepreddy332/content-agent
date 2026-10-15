@@ -17,6 +17,8 @@ from types import SimpleNamespace
 @pytest.fixture
 def client(monkeypatch):
     import api.server as srv
+    monkeypatch.setenv("HITL_REVIEWER_ID", "test:api")
+    monkeypatch.setenv("HITL_REVIEWER_TOKEN", "r" * 32)
 
     class FakeGraph:
         """Models both gates per thread_id. draft gate -> approve -> html gate;
@@ -61,7 +63,7 @@ def client(monkeypatch):
     return TestClient(srv.app)
 
 
-H = {"Authorization": "Bearer test-token"}
+H = {"Authorization": "Bearer test-token", "X-Reviewer-Token": "r" * 32}
 
 
 def test_auth_required(client):

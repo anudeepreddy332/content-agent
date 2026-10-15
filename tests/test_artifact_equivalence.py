@@ -64,6 +64,7 @@ def test_git_node_archive_and_repo_hash_equivalence(tmp_path, monkeypatch, base_
         "html_filename": "gradient-descent-test.html",
         "html_sha256": article.sha256,
         "approved_html_sha256": article.sha256,
+        "gate1_reviewer_id": "test:artifact", "gate2_reviewer_id": "test:artifact",
         "article_body_html": article.body_html,
         "slug": "gradient-descent-test",
         "topic": "Gradient Descent",
@@ -106,6 +107,7 @@ def test_publish_binds_commit_ref_not_ambient_main(tmp_path, monkeypatch):
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
         "result": {"slug": "my-article", "git_status": "merged",
+                       "gate1_reviewer_id": "test:artifact", "gate2_reviewer_id": "test:artifact",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},
     }
     calls = []
@@ -136,6 +138,7 @@ def test_publish_conflicts_if_remote_moved(tmp_path, monkeypatch):
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
         "result": {"slug": "my-article", "git_status": "merged",
+                       "gate1_reviewer_id": "test:artifact", "gate2_reviewer_id": "test:artifact",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},
     }
     other = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"

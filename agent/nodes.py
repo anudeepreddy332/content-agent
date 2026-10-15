@@ -24,6 +24,14 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 load_dotenv()
 
 from agent.state import AgentState, DraftSections
+from agent.reviewer_identity import (
+    InvalidReviewerCredential,
+    ReviewerConfigurationError,
+    authenticate_reviewer,
+    current_reviewer_id,
+    reviewer_context,
+    test_auto_reviewer_id,
+)
 from agent.html_policy import (
     HTML_POLICY_VERSION,
     PolicyError,
@@ -1750,6 +1758,16 @@ def reflect_node(state: AgentState) -> dict:
         "semantic_trace": trace,
     }
 
+def _cli_reviewer_identity() -> str | None:
+    """Authenticate an interactive reviewer without persisting the secret."""
+    from getpass import getpass
+
+    try:
+        return authenticate_reviewer(getpass("Reviewer credential: "))
+    except (InvalidReviewerCredential, ReviewerConfigurationError, EOFError):
+        return None
+
+
 # NODE: hitl_node
 
 def hitl_node(state: AgentState) -> dict:
@@ -1760,8 +1778,13 @@ def hitl_node(state: AgentState) -> dict:
     if not workflow.gate1_eligible(state):
         return {"hitl_status": "rejected", **workflow.terminal("execution_failed", "Gate 1 eligibility failed.")}
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
-        # Auto-approve is a CI/CLI convenience, not a semantic pass.
-        return hitl_approve_update(state)
+        reviewer_id = test_auto_reviewer_id()
+        if reviewer_id is None:
+            return {"hitl_status": "rejected", **workflow.terminal(
+                "execution_failed", "Auto-approval requires isolated test identity and disabled publishing."
+            )}
+        with reviewer_context(reviewer_id, state["run_id"]):
+            return hitl_approve_update(state)
 
     # B4: API mode — pause the graph via LangGraph interrupt(). The checkpointer
     # (set by the API server's build_graph) persists full state to SQLite, so the
@@ -1857,7 +1880,13 @@ def hitl_node(state: AgentState) -> dict:
     while True:
         choice = input("\n[a]pprove / [r]eject / [f]eedback: ").strip().lower()
         if choice == 'a':
-            return hitl_approve_update(state)
+            reviewer_id = _cli_reviewer_identity()
+            if reviewer_id is None:
+                return {"hitl_status": "rejected", **workflow.terminal(
+                    "execution_failed", "Reviewer authentication failed."
+                )}
+            with reviewer_context(reviewer_id, state["run_id"]):
+                return hitl_approve_update(state)
         elif choice == 'r':
             return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None,
                                       **workflow.terminal("terminal_rejected")})
@@ -1967,6 +1996,11 @@ Content to convert:
 
 def _approve_html_update(state: AgentState) -> dict:
     """Record Gate 2 approval and, only when enabled, its live remote parent."""
+    reviewer_id = current_reviewer_id(state.get("run_id"))
+    if reviewer_id is None or not state.get("gate1_reviewer_id"):
+        return {"html_review_status": "rejected", **workflow.terminal(
+            "execution_failed", "Gate 2 reviewer authentication or Gate 1 identity is missing."
+        )}
     html = state.get("html_output") or ""
     sha = state.get("html_sha256") or (sha256_utf8(html) if html else None)
     if not html or not sha or sha != sha256_utf8(html):
@@ -1988,6 +2022,7 @@ def _approve_html_update(state: AgentState) -> dict:
         "html_review_status": "approved",
         "approved_html_sha256": sha,
         "publish_expected_remote_sha": expected_remote,
+        "gate2_reviewer_id": reviewer_id,
     }
     if errors != list(state.get("error_log") or []):
         payload["error_log"] = errors
@@ -2012,7 +2047,13 @@ def hitl_html_node(state: AgentState) -> dict:
         return {"html_review_status": "rejected", **workflow.terminal("rendering_failed")}
 
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
-        return _approve_html_update(state)
+        reviewer_id = test_auto_reviewer_id()
+        if reviewer_id is None:
+            return {"html_review_status": "rejected", **workflow.terminal(
+                "execution_failed", "Auto-approval requires isolated test identity and disabled publishing."
+            )}
+        with reviewer_context(reviewer_id, state["run_id"]):
+            return _approve_html_update(state)
 
     if os.environ.get("HITL_MODE") == "api":
         from langgraph.types import interrupt
@@ -2055,7 +2096,13 @@ def hitl_html_node(state: AgentState) -> dict:
     while True:
         choice = input("\n[a]pprove (publish) / [c]hanges to LAYOUT (revise) / [r]eject (discard): ").strip().lower()
         if choice == "a":
-            return _approve_html_update(state)
+            reviewer_id = _cli_reviewer_identity()
+            if reviewer_id is None:
+                return {"html_review_status": "rejected", **workflow.terminal(
+                    "execution_failed", "Reviewer authentication failed."
+                )}
+            with reviewer_context(reviewer_id, state["run_id"]):
+                return _approve_html_update(state)
         if choice == "r":
             return {"html_review_status": "rejected", **workflow.terminal("terminal_rejected")}
         if choice == "c":
@@ -2554,6 +2601,9 @@ def git_node(state: AgentState) -> dict:
             return _fail(f"archive write failed: {exc}")
         return None
 
+    if not state.get("gate1_reviewer_id") or not state.get("gate2_reviewer_id"):
+        return _fail("missing authenticated Gate 1 or Gate 2 reviewer identity")
+
     if not html_content or not filename:
         return _fail("No HTML content or filename — nothing to push")
 
@@ -3029,14 +3079,16 @@ def _hitl_traced(state: AgentState, payload: dict) -> dict:
 
 
 def hitl_approve_update(state: AgentState) -> dict:
-    if workflow.gate1_eligible(state):
+    reviewer_id = current_reviewer_id(state.get("run_id"))
+    if reviewer_id is not None and workflow.gate1_eligible(state):
         return _hitl_traced(state, {
             "hitl_status": "approved", "hitl_feedback": None,
             "approved_draft_identity": workflow.identity(state),
+            "gate1_reviewer_id": reviewer_id,
         })
     return _hitl_traced(state, {
         "hitl_status": "rejected", "hitl_feedback": None,
-        **workflow.terminal("execution_failed", "Gate 1 approval failed current eligibility."),
+        **workflow.terminal("execution_failed", "Gate 1 approval lacks reviewer identity or current eligibility."),
     })
 
 

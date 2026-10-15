@@ -14,7 +14,7 @@ from langgraph.types import Command
 from types import SimpleNamespace
 
 TOK = "test-token"
-H = {"Authorization": "Bearer " + TOK}
+H = {"Authorization": "Bearer " + TOK, "X-Reviewer-Token": "r" * 32}
 
 
 def _interrupt(value):
@@ -78,6 +78,8 @@ class FakeStreamGraph:
 @pytest.fixture
 def client(monkeypatch):
     import api.server as srv
+    monkeypatch.setenv("HITL_REVIEWER_ID", "test:stream")
+    monkeypatch.setenv("HITL_REVIEWER_TOKEN", "r" * 32)
     monkeypatch.setattr(srv, "GRAPH", FakeStreamGraph())
     monkeypatch.setattr(srv, "_write_telemetry", lambda state: "outputs/runs/r.json")
     from fastapi.testclient import TestClient

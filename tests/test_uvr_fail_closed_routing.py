@@ -301,6 +301,10 @@ def test_cost_ceiling_does_not_auto_approve_semantic_failure(base_state, monkeyp
 
 
 def test_auto_approve_still_works_when_semantic_verification_passes(base_state, monkeypatch):
+    monkeypatch.setenv("HITL_TEST_MODE", "1")
+    monkeypatch.setenv("HITL_TEST_REVIEWER_ID", "test:semantic")
+    monkeypatch.setenv("GIT_PUSH_ENABLED", "false")
+    monkeypatch.delenv("PUBLISH_TARGET", raising=False)
     report = _report(verified=10, weak=0, unverified=0)
     base_state.update(
         iterations=1,
