@@ -145,8 +145,16 @@ def test_I_L_real_archive_api_projection(harness, monkeypatch, tmp_path, streami
     monkeypatch.setenv('API_BEARER_TOKEN', 'p1-test-token')
     advance = server._advance_streaming if streaming else server._advance
     advance(rid, state, False)
-    advance(rid, Command(resume={'action': 'approve'}), False)
-    advance(rid, Command(resume={'action': 'approve'}), True)
+    first_id = server.REGISTRY[rid]['interrupt_payload']['review_id']
+    with server.LOCK:
+        server._reserve_review(rid, first_id)
+    advance(rid, Command(resume={'action': 'approve', 'review_id': first_id}), False,
+            reviewer_id='frozen-workflow')
+    second_id = server.REGISTRY[rid]['interrupt_payload']['review_id']
+    with server.LOCK:
+        server._reserve_review(rid, second_id)
+    advance(rid, Command(resume={'action': 'approve', 'review_id': second_id}), True,
+            reviewer_id='frozen-workflow')
     with TestClient(server.app) as client:
         body = client.get('/runs/' + rid, headers={'Authorization': 'Bearer p1-test-token'}).json()
     result = server.REGISTRY[rid]['result']

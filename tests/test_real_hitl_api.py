@@ -24,7 +24,7 @@ def api_gate_environment(monkeypatch, tmp_path):
     monkeypatch.delenv("HITL_AUTO_APPROVE", raising=False)
     monkeypatch.setenv("GIT_PUSH_ENABLED", "false")
     monkeypatch.setenv("API_BEARER_TOKEN", "real-gate-test-token")
-    monkeypatch.setenv("HITL_REVIEWER_ID", "test:real-gate")
+    monkeypatch.setenv("HITL_REVIEWER_ID", "real-gate")
     monkeypatch.setenv("HITL_REVIEWER_TOKEN", "r" * 32)
     cli_input = Mock(side_effect=AssertionError("API gate must never call CLI input"))
     monkeypatch.setattr(builtins, "input", cli_input)
@@ -48,7 +48,8 @@ def html_state(base_state):
         "html_sha256": hashlib.sha256(html.encode()).hexdigest(),
         "html_review_status": None,
         "approved_html_sha256": None,
-        "gate1_reviewer_id": "test:real-gate",
+        "gate1_reviewer_id": "real-gate",
+        "gate1_review_origin": "authenticated",
     }
 
 
@@ -102,7 +103,7 @@ def test_real_html_interrupt_resume(api_gate_environment, html_state, decision, 
     assert visited == []
     assert graph.get_state(config).values.get("approved_html_sha256") is None
 
-    with reviewer_context("test:real-gate", html_state["run_id"]):
+    with reviewer_context("real-gate", html_state["run_id"]):
         result = graph.invoke(Command(resume=decision), config)
 
     assert "__interrupt__" not in result
@@ -135,7 +136,7 @@ def test_real_article_api_contract(api_gate_environment, article_state, decision
     assert initial["__interrupt__"][0].value["type"] == "hitl_review"
     assert visited == []
 
-    with reviewer_context("test:real-gate", article_state["run_id"]):
+    with reviewer_context("real-gate", article_state["run_id"]):
         result = graph.invoke(Command(resume=decision), config)
 
     assert result["hitl_status"] == status
@@ -171,7 +172,8 @@ def test_http_review_resumes_real_gate(
     advance(run_id, state, False)
     assert server.REGISTRY[run_id]["status"] == "awaiting_review"
     assert visited == []
-    headers = {"Authorization": "Bearer real-gate-test-token", "X-Reviewer-Token": "r" * 32}
+    headers = {"Authorization": "Bearer real-gate-test-token", "X-Reviewer-Token": "r" * 32,
+               "X-Review-Id": server.REGISTRY[run_id]["interrupt_payload"]["review_id"]}
     body = {"feedback": "Simplify the layout."} if action == "feedback" else None
     client = TestClient(server.app)
     try:

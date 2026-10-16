@@ -436,6 +436,7 @@ def test_Q_api_approve_cannot_bypass_citation_failure(base_state, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_R_citation_rendering_leaves_canonical_draft_sha_unchanged(base_state, monkeypatch):
+    base_state.update(gate1_reviewer_id="citation-reviewer", gate1_review_origin="authenticated")
     draft = "Dropout randomly zeroes activations during training."
     rows = [_claim_row(draft)]
     state, inv = _verified(base_state, draft, rows, [[E1]])

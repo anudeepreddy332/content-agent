@@ -83,6 +83,7 @@ def _git_state(base_state, article):
         **base_state,
         "gate1_reviewer_id": "pilot-reviewer",
         "gate2_reviewer_id": "pilot-reviewer",
+        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
         "html_output": article.html,
         "html_filename": "gradient-descent-test.html",
         "html_sha256": article.sha256,
@@ -103,6 +104,7 @@ def _seed_publishable(monkeypatch, repo: Path):
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
         "result": {"slug": "my-article", "git_status": "merged",
                    "gate1_reviewer_id": "pilot-reviewer", "gate2_reviewer_id": "pilot-reviewer",
+                   "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},
     }
     return srv, rid
@@ -236,6 +238,7 @@ def test_production_confirmation_does_not_skip_remote_parent_check(tmp_path, mon
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
         "result": {"slug": "my-article", "git_status": "merged",
                    "gate1_reviewer_id": "pilot-reviewer", "gate2_reviewer_id": "pilot-reviewer",
+                   "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},
     }
     calls = []
@@ -268,6 +271,7 @@ def test_production_confirmation_still_pushes_exact_sha_ref(tmp_path, monkeypatc
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
         "result": {"slug": "my-article", "git_status": "merged",
                    "gate1_reviewer_id": "pilot-reviewer", "gate2_reviewer_id": "pilot-reviewer",
+                   "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},
     }
     calls = []

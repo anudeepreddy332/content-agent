@@ -243,6 +243,7 @@ def test_skipped_verification_fails_closed_when_capacity_remains(base_state, mon
 
 
 def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path):
+    base_state.update(gate1_reviewer_id="failure-reviewer", gate1_review_origin="authenticated")
     """B6 regression: html_filename must be <slug>.html regardless of local archive
     state, so republishing a topic is a modification (tagged_and_merged), not a new file."""
     import agent.nodes as nodes

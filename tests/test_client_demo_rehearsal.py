@@ -120,7 +120,7 @@ def test_gate2_approval_captures_the_fresh_parent_at_approval(base_state, monkey
     html = "<html><body>trusted</body></html>"
     digest = hashlib.sha256(html.encode("utf-8")).hexdigest()
     base_state.update(html_output=html, html_sha256=digest,
-                      gate1_reviewer_id="pilot-reviewer")
+                      gate1_reviewer_id="pilot-reviewer", gate1_review_origin="authenticated")
     monkeypatch.setenv("GIT_PUSH_ENABLED", "true")
     monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: REMOTE_PARENT)
 
@@ -164,6 +164,7 @@ def test_git_node_refuses_a_stale_local_main_before_mutating_the_site(
         **base_state,
         "gate1_reviewer_id": "pilot-reviewer",
         "gate2_reviewer_id": "pilot-reviewer",
+        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
         "html_output": article.html,
         "html_filename": "gradient-descent-test.html",
         "html_sha256": article.sha256,
@@ -198,6 +199,7 @@ def test_git_node_preserves_the_remote_race_check_before_mutating_the_site(
         **base_state,
         "gate1_reviewer_id": "pilot-reviewer",
         "gate2_reviewer_id": "pilot-reviewer",
+        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
         "html_output": article.html,
         "html_filename": "gradient-descent-test.html",
         "html_sha256": article.sha256,
@@ -218,6 +220,7 @@ def test_git_node_preserves_the_remote_race_check_before_mutating_the_site(
 
 
 def test_html_generation_records_safe_placeholder_diagnostics(base_state, monkeypatch):
+    base_state.update(gate1_reviewer_id="pilot-reviewer", gate1_review_origin="authenticated")
     base_state.update(
         draft_sections={
             "problem_framing": "framing",

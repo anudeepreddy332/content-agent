@@ -6,6 +6,7 @@ attempt accounting, current-artifact bindings, gate eligibility and destinations
 from hashlib import sha256
 
 from config import COST_GATE_USD, REFLECTION_THRESHOLD
+from agent.reviewer_identity import approval_origin_valid
 
 QUALITY_ATTEMPTS = 2
 CONTENT_FEEDBACK_LIMIT = 2
@@ -98,6 +99,7 @@ def start_episode(state):
         "verification_identity": None, "reflection_identity": None,
         "approved_draft_identity": None, "hitl_status": "pending",
         "gate1_reviewer_id": None, "gate2_reviewer_id": None,
+        "gate1_review_origin": None, "gate2_review_origin": None,
     }
 
 
@@ -157,7 +159,8 @@ def draft_step(state, *, run):
               "approved_draft_identity": None, "verification_status": "not_started",
               "claim_inventory": None, "grounding_report": [], "reflection_score": 0,
               "reflection_provenance": {}, "hitl_status": "pending",
-              "gate1_reviewer_id": None, "gate2_reviewer_id": None}
+              "gate1_reviewer_id": None, "gate2_reviewer_id": None,
+              "gate1_review_origin": None, "gate2_review_origin": None}
     current = {**state, **update}
     if not draft_valid(current):
         update.update(failure(current, "execution_failed"))
@@ -209,7 +212,7 @@ def reflect_step(state, *, run):
 
 def html_step(state, *, run):
     if (not gate1_eligible(state) or state.get("approved_draft_identity") != identity(state)
-            or not state.get("gate1_reviewer_id")):
+            or not approval_origin_valid(state, 1)):
         return terminal("execution_failed")
     try:
         update = run(state)
@@ -231,7 +234,7 @@ def layout_step(state, *, run):
         # Accepted feedback already consumed an attempt; preserve the trusted
         # previous render, which can still be explicitly approved.
         update = {"html_feedback": None, "approved_html_sha256": None,
-                  "gate2_reviewer_id": None,
+                  "gate2_reviewer_id": None, "gate2_review_origin": None,
                   "error_log": [*state.get("error_log", []), "html_revise: revision failed; kept original"]}
     if resource_stopped({**state, **update}):
         update.update(terminal("resource_exhausted"))
@@ -250,6 +253,7 @@ def layout_feedback(state, note):
         return terminal("layout_revision_limit")
     return {"html_review_status": "changes", "html_feedback": note,
             "approved_html_sha256": None, "gate2_reviewer_id": None,
+            "gate2_review_origin": None,
             "html_revision_attempts": state.get("html_revision_attempts", 0) + 1}
 
 

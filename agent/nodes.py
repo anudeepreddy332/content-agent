@@ -29,6 +29,8 @@ from agent.reviewer_identity import (
     ReviewerConfigurationError,
     authenticate_reviewer,
     current_reviewer_id,
+    current_reviewer_origin,
+    approval_origin_valid,
     reviewer_context,
     test_auto_reviewer_id,
 )
@@ -1783,7 +1785,7 @@ def hitl_node(state: AgentState) -> dict:
             return {"hitl_status": "rejected", **workflow.terminal(
                 "execution_failed", "Auto-approval requires isolated test identity and disabled publishing."
             )}
-        with reviewer_context(reviewer_id, state["run_id"]):
+        with reviewer_context(reviewer_id, state["run_id"], origin="synthetic"):
             return hitl_approve_update(state)
 
     # B4: API mode — pause the graph via LangGraph interrupt(). The checkpointer
@@ -1806,6 +1808,7 @@ def hitl_node(state: AgentState) -> dict:
         decision = interrupt({
             "type": "hitl_review",
             "run_id": state["run_id"],
+            "draft_sha256": workflow.identity(state)["draft_sha256"],
             "topic": state["topic"],
             "slug": state["slug"],
             "draft_review_html": review_html,
@@ -1997,7 +2000,11 @@ Content to convert:
 def _approve_html_update(state: AgentState) -> dict:
     """Record Gate 2 approval and, only when enabled, its live remote parent."""
     reviewer_id = current_reviewer_id(state.get("run_id"))
-    if reviewer_id is None or not state.get("gate1_reviewer_id"):
+    origin = current_reviewer_origin(state.get("run_id"))
+    if (reviewer_id is None or not approval_origin_valid(state, 1) or
+            not ((origin == "authenticated" and not reviewer_id.startswith("test:")) or
+                 (origin == "synthetic" and reviewer_id.startswith("test:") and
+                  test_auto_reviewer_id() == reviewer_id))):
         return {"html_review_status": "rejected", **workflow.terminal(
             "execution_failed", "Gate 2 reviewer authentication or Gate 1 identity is missing."
         )}
@@ -2023,6 +2030,7 @@ def _approve_html_update(state: AgentState) -> dict:
         "approved_html_sha256": sha,
         "publish_expected_remote_sha": expected_remote,
         "gate2_reviewer_id": reviewer_id,
+        "gate2_review_origin": current_reviewer_origin(state.get("run_id")),
     }
     if errors != list(state.get("error_log") or []):
         payload["error_log"] = errors
@@ -2045,6 +2053,10 @@ def hitl_html_node(state: AgentState) -> dict:
         return workflow.terminal("resource_exhausted")
     if not state.get("html_output"):
         return {"html_review_status": "rejected", **workflow.terminal("rendering_failed")}
+    if not approval_origin_valid(state, 1):
+        return {"html_review_status": "rejected", **workflow.terminal(
+            "execution_failed", "Gate 1 approval origin is invalid for this runtime."
+        )}
 
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
         reviewer_id = test_auto_reviewer_id()
@@ -2052,7 +2064,7 @@ def hitl_html_node(state: AgentState) -> dict:
             return {"html_review_status": "rejected", **workflow.terminal(
                 "execution_failed", "Auto-approval requires isolated test identity and disabled publishing."
             )}
-        with reviewer_context(reviewer_id, state["run_id"]):
+        with reviewer_context(reviewer_id, state["run_id"], origin="synthetic"):
             return _approve_html_update(state)
 
     if os.environ.get("HITL_MODE") == "api":
@@ -2148,6 +2160,8 @@ def _article_shell_fields(state: AgentState) -> dict:
 
 
 def html_gen_node(state: AgentState) -> dict:
+    if not approval_origin_valid(state, 1):
+        return workflow.terminal("execution_failed", "Gate 1 approval origin is invalid for this runtime.")
     log = get_logger("html_gen_node")
     t_start = time.time()
     filename = f"{state['slug']}.html"
@@ -2377,6 +2391,8 @@ def _revision_content_key(html_str: str) -> tuple[tuple[str, str], ...]:
 
 def html_revise_node(state: AgentState) -> dict:
     """Layout revision of the sanitized article-body fragment only. Trusted shell is immutable."""
+    if not approval_origin_valid(state, 1):
+        return workflow.terminal("execution_failed", "Gate 1 approval origin is invalid for this runtime.")
     t0 = time.time()
     log = get_logger("html_revise")
     original_body = state.get("article_body_html") or ""
@@ -2601,7 +2617,7 @@ def git_node(state: AgentState) -> dict:
             return _fail(f"archive write failed: {exc}")
         return None
 
-    if not state.get("gate1_reviewer_id") or not state.get("gate2_reviewer_id"):
+    if not approval_origin_valid(state, 1) or not approval_origin_valid(state, 2):
         return _fail("missing authenticated Gate 1 or Gate 2 reviewer identity")
 
     if not html_content or not filename:
@@ -3080,11 +3096,16 @@ def _hitl_traced(state: AgentState, payload: dict) -> dict:
 
 def hitl_approve_update(state: AgentState) -> dict:
     reviewer_id = current_reviewer_id(state.get("run_id"))
-    if reviewer_id is not None and workflow.gate1_eligible(state):
+    origin = current_reviewer_origin(state.get("run_id"))
+    if reviewer_id is not None and workflow.gate1_eligible(state) and (
+        (origin == "authenticated" and not reviewer_id.startswith("test:"))
+        or (origin == "synthetic" and reviewer_id.startswith("test:") and test_auto_reviewer_id() == reviewer_id)
+    ):
         return _hitl_traced(state, {
             "hitl_status": "approved", "hitl_feedback": None,
             "approved_draft_identity": workflow.identity(state),
             "gate1_reviewer_id": reviewer_id,
+            "gate1_review_origin": origin,
         })
     return _hitl_traced(state, {
         "hitl_status": "rejected", "hitl_feedback": None,

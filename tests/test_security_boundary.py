@@ -84,6 +84,7 @@ def test_index_has_no_marked_or_innerhtml_source():
 
 
 def test_malicious_reviewer_feedback_is_sanitized_before_persist(base_state, monkeypatch):
+    base_state.update(gate1_reviewer_id="security-reviewer", gate1_review_origin="authenticated")
     import agent.nodes as nodes
     base_state["article_body_html"] = "<p>Gradient descent minimizes loss.</p>"
     base_state["html_output"] = "<p>Gradient descent minimizes loss.</p>"

@@ -78,7 +78,7 @@ class FakeStreamGraph:
 @pytest.fixture
 def client(monkeypatch):
     import api.server as srv
-    monkeypatch.setenv("HITL_REVIEWER_ID", "test:stream")
+    monkeypatch.setenv("HITL_REVIEWER_ID", "stream-reviewer")
     monkeypatch.setenv("HITL_REVIEWER_TOKEN", "r" * 32)
     monkeypatch.setattr(srv, "GRAPH", FakeStreamGraph())
     monkeypatch.setattr(srv, "_write_telemetry", lambda state: "outputs/runs/r.json")
@@ -100,6 +100,11 @@ def _drain(client, rid):
     return out
 
 
+def _review_headers(client, run_id):
+    review = client.get(f"/runs/{run_id}", headers=H).json()["review"]
+    return {**H, "X-Review-Id": review["review_id"]}
+
+
 def test_sse_requires_token(client):
     rid = client.post("/ui/runs", json={"topic": "X"}, headers=H).json()["run_id"]
     assert client.get(f"/ui/runs/{rid}/events").status_code == 401
@@ -118,12 +123,12 @@ def test_stream_full_two_gate_publish(client):
     gate1 = [e for e in seg1 if e["event"] == "gate"][0]
     assert gate1["review"]["type"] == "hitl_review"
 
-    assert client.post(f"/ui/runs/{rid}/approve", headers=H).status_code == 200
+    assert client.post(f"/ui/runs/{rid}/approve", headers=_review_headers(client, rid)).status_code == 200
     seg2 = _drain(client, rid)
     assert [e["node"] for e in seg2 if e["event"] == "node"] == ["html_gen"]
     assert [e for e in seg2 if e["event"] == "gate"][0]["review"]["type"] == "hitl_html_review"
 
-    assert client.post(f"/ui/runs/{rid}/approve", headers=H).status_code == 200
+    assert client.post(f"/ui/runs/{rid}/approve", headers=_review_headers(client, rid)).status_code == 200
     seg3 = _drain(client, rid)
     done = [e for e in seg3 if e["event"] == "done"][0]
     assert done["status"] == "complete"
@@ -136,9 +141,9 @@ def test_stream_full_two_gate_publish(client):
 def test_stream_resume_requires_awaiting_review(client):
     rid = client.post("/ui/runs", json={"topic": "X"}, headers=H).json()["run_id"]
     _drain(client, rid)                       # advance to the draft gate
-    client.post(f"/ui/runs/{rid}/approve", headers=H)
+    client.post(f"/ui/runs/{rid}/approve", headers=_review_headers(client, rid))
     _drain(client, rid)                       # advance to the html gate
-    client.post(f"/ui/runs/{rid}/approve", headers=H)
+    client.post(f"/ui/runs/{rid}/approve", headers=_review_headers(client, rid))
     _drain(client, rid)                       # terminal
     assert client.post(f"/ui/runs/{rid}/approve", headers=H).status_code == 409
 

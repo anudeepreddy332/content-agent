@@ -1,11 +1,14 @@
 const $ = s => document.querySelector(s);
 const STEP_ORDER = ["retrieve","draft","verify","reflect","html_gen","html_revise","git"];
 const SSE_RETRY_DELAYS_MS = [500, 1000, 2000];
-let RUN = null, TOKEN = "", REVIEWER_TOKEN = "", streamAbort = null;
+let RUN = null, TOKEN = "", REVIEWER_TOKEN = "", REVIEW_ID = "", REVIEW_GATE = "", streamAbort = null;
 
 function api(path, method, body, reviewer){
   const headers = {"Authorization":"Bearer "+TOKEN, "Content-Type":"application/json"};
-  if(reviewer) headers["X-Reviewer-Token"] = REVIEWER_TOKEN;
+  if(reviewer){
+    headers["X-Reviewer-Token"] = REVIEWER_TOKEN;
+    headers["X-Review-Id"] = REVIEW_ID;
+  }
   return fetch(path, {method,
     headers,
     body: body ? JSON.stringify(body) : undefined});
@@ -54,7 +57,7 @@ function finishNode(node, headline){
 }
 
 function authFailed(){
-  TOKEN = ""; REVIEWER_TOKEN = "";
+  TOKEN = ""; REVIEWER_TOKEN = ""; REVIEW_ID = ""; REVIEW_GATE = "";
   const field = $("#token");
   if(field) field.value = "";
   const reviewerField = $("#reviewerToken");
@@ -165,6 +168,7 @@ function onGate(r){
   setRunning(false);
   $("#pipeSub").textContent = "waiting for your review";
   if(r.type==="hitl_review"){
+    REVIEW_ID = r.review_id || ""; REVIEW_GATE = "1";
     const rows = r.review_claims || [];
     const calculatedUvr = rows.length
       ? rows.filter(row => String(row.status || "").toLowerCase()==="unverified").length / rows.length
@@ -181,6 +185,7 @@ function onGate(r){
     renderGrounding(rows);
     $("#g1fb").value=""; show("#gate1"); $("#gate1").scrollIntoView({behavior:"smooth"});
   } else if(r.type==="hitl_html_review"){
+    REVIEW_ID = r.review_id || ""; REVIEW_GATE = "2";
     $("#g2meta").textContent = `${r.html_filename||""} · grounding ${(r.grounding_score??0).toFixed(2)}`;
     $("#g2frame").srcdoc = r.html_output || "";
     const w = r.validation_warnings||[];
@@ -286,6 +291,7 @@ function renderGrounding(report){
 
 function setGateButtons(disabled){ document.querySelectorAll("[data-act]").forEach(b=>b.disabled=disabled); }
 async function gateAction(gate, act){
+  if(!REVIEW_ID || REVIEW_GATE !== gate){ onError("Review identity is missing or stale."); return; }
   const reviewerField = $("#reviewerToken");
   REVIEWER_TOKEN = reviewerField.value || REVIEWER_TOKEN;
   reviewerField.value = "";
@@ -298,6 +304,7 @@ async function gateAction(gate, act){
   const res = await api(path, "POST", body, true);
   if(res.status === 401 || res.status === 403){ authFailed(); setGateButtons(false); return; }
   if(!res.ok){ const t=await res.text(); onError(`${res.status} ${t}`); setGateButtons(false); return; }
+  REVIEW_ID = ""; REVIEW_GATE = "";
   hide("#gate1"); hide("#gate2"); setGateButtons(false);
   $("#pipeSub").textContent = act==="approve" ? "approved — continuing…"
       : act==="feedback" ? "revising…" : "rejecting…";

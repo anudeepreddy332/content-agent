@@ -248,6 +248,8 @@ def _build_initial_state(
         "hitl_feedback": None,
         "gate1_reviewer_id": None,
         "gate2_reviewer_id": None,
+        "gate1_review_origin": None,
+        "gate2_review_origin": None,
         "html_review_status": None,
         "html_feedback": None,
         "html_output": None,

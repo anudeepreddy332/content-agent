@@ -196,6 +196,7 @@ def test_diagnostic_scope_body_document_revised():
 
 
 def test_html_revise_scanner_failure_persists_safe_diagnostic(base_state, monkeypatch, tmp_path):
+    base_state.update(gate1_reviewer_id="layout-reviewer", gate1_review_origin="authenticated")
     import agent.nodes as nodes
 
     original = _article()
