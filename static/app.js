@@ -201,7 +201,7 @@ function renderMaterialReview(bundle){
     const title = document.createElement("h4"); title.textContent = `${claim.claim_id}: ${claim.claim_text}`;
     card.appendChild(title);
     for(const occurrence of claim.draft_contexts || []){
-      const p = document.createElement("p");
+      const p = document.createElement("p"); p.className = "draft-context";
       p.textContent = `Draft position ${occurrence.start}–${occurrence.end}: ${occurrence.context?.text || ""}`;
       card.appendChild(p);
     }
@@ -213,17 +213,13 @@ function renderMaterialReview(bundle){
       source.appendChild(citation);
       const quote = document.createElement("blockquote"); quote.textContent = span.quote || "";
       source.appendChild(quote);
-      const context = document.createElement("p"); context.textContent = `Surrounding source: ${span.source_context?.text || ""}`;
+      const context = document.createElement("p"); context.className = "source-context";
+      context.textContent = `Surrounding source: ${span.source_context?.text || ""}`;
       source.appendChild(context);
-      if(typeof provenance.url === "string"){
-        try{
-          const url = new URL(provenance.url);
-          if(url.protocol === "https:"){
-            const link = document.createElement("a"); link.href = url.href;
-            link.target = "_blank"; link.rel = "noopener noreferrer nofollow";
-            link.textContent = "Open source"; source.appendChild(link);
-          }
-        }catch(_e){ /* show the citation identity without a link */ }
+      if(typeof span.clickable_url === "string"){
+        const link = document.createElement("a"); link.href = span.clickable_url;
+        link.target = "_blank"; link.rel = "noopener noreferrer nofollow";
+        link.textContent = "Open source"; source.appendChild(link);
       }
       card.appendChild(source);
     }

@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 
+from agent.html_policy import normalize_citation_url
 from agent.semantic_analyzer.contract import build_evidence_manifest
 from agent.semantic_analyzer.status_engine import sha256_utf8
 
@@ -36,11 +37,14 @@ def _bound_span(raw: dict, manifest: dict[str, dict]) -> dict:
     quote = text[start:end]
     if raw.get("text") != quote or not quote.strip():
         raise EvidenceSignoffError("stale evidence quotation")
+    provenance = entry["provenance"]
+    clickable_url = (normalize_citation_url(provenance.get("url"))
+                     if provenance.get("kind") == "web" else None)
     return {
         "evidence_id": evidence_id, "start": start, "end": end, "quote": quote,
         "source_sha256": entry["source_sha256"],
         "source_context": _context(text, start, end),
-        "provenance": entry["provenance"],
+        "provenance": provenance, "clickable_url": clickable_url,
         "citation_identity": evidence_id,
     }
 

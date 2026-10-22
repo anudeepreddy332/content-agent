@@ -209,6 +209,59 @@ def test_reviewer_ui_exposes_evidence_without_favorable_model_labels(live_server
     assert "Verified:" not in pw_page.locator("#gate1").inner_text()
 
 
+def test_material_evidence_indentation_is_visibly_distinct_and_readable(live_server, pw_page):
+    pw_page.goto(live_server + "/", wait_until="domcontentloaded")
+    first = "if ready:\n    return allow()\nreturn deny()"
+    second = "if ready:\nreturn allow()\n    return deny()"
+    assert first.replace(" ", "") == second.replace(" ", "")
+    review = _gate1_review()
+    review["material_review"]["claims"] = [
+        {"claim_id": f"C-00{i}", "claim_text": "Indentation-sensitive Python",
+         "draft_contexts": [{"start": 0, "end": len(code),
+                             "context": {"text": code}}],
+         "support_spans": [{"evidence_id": f"WEB-00{i}", "citation_identity": f"WEB-00{i}",
+                            "quote": code, "source_context": {"text": code + "\n" + "x" * 500},
+                            "provenance": {"title": "Python source"}}],
+         "blockers": []}
+        for i, code in enumerate((first, second), start=1)
+    ]
+    pw_page.evaluate("payload => onGate(payload)", review)
+    quotes = pw_page.locator("#g1materialReview blockquote")
+    assert quotes.count() == 2
+    assert quotes.nth(0).screenshot() != quotes.nth(1).screenshot()
+    for selector in (".draft-context", "blockquote", ".source-context"):
+        for element in pw_page.locator(f"#g1materialReview {selector}").all():
+            assert element.evaluate("el => getComputedStyle(el).whiteSpace") == "pre-wrap"
+            assert element.evaluate("el => el.scrollWidth <= el.clientWidth + 1")
+
+
+def test_material_source_links_follow_server_canonical_policy(live_server, pw_page):
+    from agent.evidence_signoff import material_review_bundle
+    from tests.signoff_fixtures import approved_material_state
+
+    pw_page.goto(live_server + "/", wait_until="domcontentloaded")
+    requests = []
+    pw_page.on("request", lambda request: requests.append(request.url))
+    pw_page.route("https://**", lambda route: route.abort())
+    state = approved_material_state({"run_id": "canonical-link-probe",
+                                     "draft_markdown": "Gradient descent minimizes a loss function.",
+                                     "topic": "Gradient Descent", "slug": "gradient-descent"})
+    for url in ["https://127.1/admin", *LEGACY_LOOPBACK, *WHATWG_IPV4_EDGE_CASES]:
+        state["web_sources"][0]["url"] = url
+        bundle = material_review_bundle(state)
+        pw_page.evaluate("payload => onGate(payload)",
+                         {**_gate1_review(), "material_review": bundle})
+        assert pw_page.locator("#g1materialReview a").count() == 0, url
+    state["web_sources"][0]["url"] = "https://example.com/gd"
+    bundle = material_review_bundle(state)
+    pw_page.evaluate("payload => onGate(payload)",
+                     {**_gate1_review(), "material_review": bundle})
+    link = pw_page.locator("#g1materialReview a")
+    assert link.count() == 1
+    assert link.get_attribute("href") == "https://example.com/gd"
+    assert not any(url.startswith("https://") for url in requests)
+
+
 def test_gate2_preview_keeps_trusted_article_styles_under_reviewer_csp(live_server, pw_page):
     pw_page.set_viewport_size({"width": 540, "height": 820})
     pw_page.goto(live_server + "/", wait_until="domcontentloaded")
