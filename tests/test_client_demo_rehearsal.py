@@ -116,11 +116,13 @@ def test_reflection_marks_parse_fallback_as_fallback(base_state, monkeypatch):
 
 
 def test_gate2_approval_captures_the_fresh_parent_at_approval(base_state, monkeypatch):
+    from tests.signoff_fixtures import approved_material_state
     from agent.reviewer_identity import reviewer_context
     html = "<html><body>trusted</body></html>"
     digest = hashlib.sha256(html.encode("utf-8")).hexdigest()
     base_state.update(html_output=html, html_sha256=digest,
                       gate1_reviewer_id="pilot-reviewer", gate1_review_origin="authenticated")
+    base_state = approved_material_state(base_state, reviewer_id="pilot-reviewer")
     monkeypatch.setenv("GIT_PUSH_ENABLED", "true")
     monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: REMOTE_PARENT)
 
@@ -153,6 +155,7 @@ def test_parent_capture_reads_selected_remote_instead_of_a_local_tracking_ref(tm
 def test_git_node_refuses_a_stale_local_main_before_mutating_the_site(
     tmp_path, monkeypatch, base_state
 ):
+    from tests.signoff_fixtures import approved_material_state
     """A locally stale main must never become the base of an approved merge."""
     repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL}, commit=True)
     article = _trusted_article()
@@ -177,7 +180,7 @@ def test_git_node_refuses_a_stale_local_main_before_mutating_the_site(
         "draft_sections": {"problem_framing": "framing"},
     }
 
-    out = nodes.git_node(state)
+    out = nodes.git_node(approved_material_state(state, reviewer_id="pilot-reviewer"))
 
     assert out["git_status"] == "failed"
     assert "approved remote parent" in " ".join(out["error_log"])
@@ -188,6 +191,7 @@ def test_git_node_refuses_a_stale_local_main_before_mutating_the_site(
 def test_git_node_preserves_the_remote_race_check_before_mutating_the_site(
     tmp_path, monkeypatch, base_state
 ):
+    from tests.signoff_fixtures import approved_material_state
     repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL}, commit=True)
     article = _trusted_article()
     parent = subprocess.check_output(["git", "rev-parse", "main"], cwd=repo, text=True).strip()
@@ -212,7 +216,7 @@ def test_git_node_preserves_the_remote_race_check_before_mutating_the_site(
         "draft_sections": {"problem_framing": "framing"},
     }
 
-    out = nodes.git_node(state)
+    out = nodes.git_node(approved_material_state(state, reviewer_id="pilot-reviewer"))
 
     assert out["git_status"] == "failed"
     assert "remote main changed after Gate 2 approval" in " ".join(out["error_log"])
@@ -220,6 +224,7 @@ def test_git_node_preserves_the_remote_race_check_before_mutating_the_site(
 
 
 def test_html_generation_records_safe_placeholder_diagnostics(base_state, monkeypatch):
+    from tests.signoff_fixtures import approved_material_state
     base_state.update(gate1_reviewer_id="pilot-reviewer", gate1_review_origin="authenticated")
     base_state.update(
         draft_sections={
@@ -236,7 +241,7 @@ def test_html_generation_records_safe_placeholder_diagnostics(base_state, monkey
         lambda: FakeLLMClient(response=fake_response("<p>{{TOPIC}}</p>")),
     )
 
-    out = nodes.html_gen_node(base_state)
+    out = nodes.html_gen_node(approved_material_state(base_state, reviewer_id="pilot-reviewer"))
 
     assert out["html_output"] is None
     assert out["policy_diagnostics"] == [{

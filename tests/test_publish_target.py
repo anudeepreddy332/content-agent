@@ -18,6 +18,7 @@ from agent.publish_target import (
     github_owner_repo,
 )
 import agent.nodes as nodes
+from tests.signoff_fixtures import approved_material_state
 from agent.html_policy import assemble_trusted_article, sanitize_fragment
 
 DEMO_FORK_URL = "git@github.com:anudeepreddy332/themachinist-website-fork.git"
@@ -79,7 +80,7 @@ def _trusted():
 
 
 def _git_state(base_state, article):
-    return {
+    return approved_material_state({
         **base_state,
         "gate1_reviewer_id": "pilot-reviewer",
         "gate2_reviewer_id": "pilot-reviewer",
@@ -93,7 +94,7 @@ def _git_state(base_state, article):
         "topic": "Gradient Descent",
         "category": "concept-exploration",
         "draft_sections": {"problem_framing": "framing"},
-    }
+    }, reviewer_id="pilot-reviewer")
 
 
 def _seed_publishable(monkeypatch, repo: Path):
@@ -102,7 +103,11 @@ def _seed_publishable(monkeypatch, repo: Path):
     rid = "run-policy"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {"slug": "my-article", "git_status": "merged",
+        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
+                       "topic": "Gradient Descent",
+                       "draft_markdown": "Gradient descent minimizes a loss function."},
+                      reviewer_id="pilot-reviewer"),
+                   "slug": "my-article", "git_status": "merged",
                    "gate1_reviewer_id": "pilot-reviewer", "gate2_reviewer_id": "pilot-reviewer",
                    "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},
@@ -236,7 +241,11 @@ def test_production_confirmation_does_not_skip_remote_parent_check(tmp_path, mon
     other = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {"slug": "my-article", "git_status": "merged",
+        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
+                       "topic": "Gradient Descent",
+                       "draft_markdown": "Gradient descent minimizes a loss function."},
+                      reviewer_id="pilot-reviewer"),
+                   "slug": "my-article", "git_status": "merged",
                    "gate1_reviewer_id": "pilot-reviewer", "gate2_reviewer_id": "pilot-reviewer",
                    "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},
@@ -269,7 +278,11 @@ def test_production_confirmation_still_pushes_exact_sha_ref(tmp_path, monkeypatc
     rid = "run-prod-sha"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {"slug": "my-article", "git_status": "merged",
+        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
+                       "topic": "Gradient Descent",
+                       "draft_markdown": "Gradient descent minimizes a loss function."},
+                      reviewer_id="pilot-reviewer"),
+                   "slug": "my-article", "git_status": "merged",
                    "gate1_reviewer_id": "pilot-reviewer", "gate2_reviewer_id": "pilot-reviewer",
                    "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},

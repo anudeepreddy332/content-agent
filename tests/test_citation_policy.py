@@ -56,7 +56,7 @@ def _inventory(draft, rows, reqs=None):
 
 
 def _span(*eids):
-    return [{"evidence_id": e, "start": 0, "end": 3, "text": e} for e in eids]
+    return [{"evidence_id": e, "start": 0, "end": len(e), "text": e} for e in eids]
 
 
 def _row(claim_id, status, *, support=None, analysis_validity="VALID"):
@@ -96,9 +96,9 @@ def _state_with(base_state, draft, inv, report, *, iterations=1, **extra):
         "evidence_registry": _registry(),
         "web_sources": [
             {"title": "Source One", "url": "https://example.com/e1",
-             "content": "e1 body", "score": 0.9},
+             "content": "WEB-001 body", "score": 0.9},
             {"title": "Source Two", "url": "https://example.com/e2",
-             "content": "e2 body", "score": 0.8},
+             "content": "WEB-002 body", "score": 0.8},
         ],
     })
     state.update(extra)
@@ -111,6 +111,8 @@ def _verified(base_state, draft, rows, supports, **extra):
         _row(c["claim_id"], "verified", support=s)
         for c, s in zip(inv["claims"], supports)
     ]
+    for claim, observation in zip(inv["claims"], report):
+        observation["claim"] = claim["claim_text"]
     return _state_with(base_state, draft, inv, report, **extra), inv
 
 
@@ -436,7 +438,8 @@ def test_Q_api_approve_cannot_bypass_citation_failure(base_state, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_R_citation_rendering_leaves_canonical_draft_sha_unchanged(base_state, monkeypatch):
-    base_state.update(gate1_reviewer_id="citation-reviewer", gate1_review_origin="authenticated")
+    from agent.reviewer_identity import reviewer_context
+    from tests.signoff_fixtures import supported_signoff
     draft = "Dropout randomly zeroes activations during training."
     rows = [_claim_row(draft)]
     state, inv = _verified(base_state, draft, rows, [[E1]])
@@ -446,6 +449,9 @@ def test_R_citation_rendering_leaves_canonical_draft_sha_unchanged(base_state, m
         "code_snippets": "```python\nprint(1)\n```",
         "takeaways": "- keep going",
     }
+    with reviewer_context("citation-reviewer", state["run_id"], review_id="citation-review"):
+        state.update(nodes.hitl_approve_update(
+            state, supported_signoff(state), submitted_review_id="citation-review"))
     sha_before = sha256_utf8(state["draft_markdown"])
     monkeypatch.setattr(
         nodes, "_render_technical_dive_via_llm",

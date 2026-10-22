@@ -30,6 +30,7 @@ class ReviewerPrincipal:
     reviewer_id: str
     run_id: str
     origin: Literal["authenticated", "synthetic"]
+    review_id: str | None = None
 
 
 _CURRENT: ContextVar[ReviewerPrincipal | None] = ContextVar("gate_reviewer", default=None)
@@ -62,9 +63,10 @@ def authenticate_reviewer(presented: str) -> str:
 def reviewer_context(
     reviewer_id: str | None, run_id: str,
     *, origin: Literal["authenticated", "synthetic"] = "authenticated",
+    review_id: str | None = None,
 ) -> Iterator[None]:
     """Bind an already authenticated principal only for this graph invocation."""
-    principal = ReviewerPrincipal(reviewer_id, run_id, origin) if reviewer_id else None
+    principal = ReviewerPrincipal(reviewer_id, run_id, origin, review_id) if reviewer_id else None
     reset = _CURRENT.set(principal)
     try:
         yield
@@ -84,6 +86,13 @@ def current_reviewer_origin(run_id: str) -> str | None:
     if principal is None or principal.run_id != run_id:
         return None
     return principal.origin
+
+
+def current_review_id(run_id: str) -> str | None:
+    principal = _CURRENT.get()
+    if principal is None or principal.run_id != run_id:
+        return None
+    return principal.review_id
 
 
 def synthetic_mode_isolated() -> bool:

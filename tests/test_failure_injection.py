@@ -243,6 +243,7 @@ def test_skipped_verification_fails_closed_when_capacity_remains(base_state, mon
 
 
 def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path):
+    from tests.signoff_fixtures import approved_material_state
     base_state.update(gate1_reviewer_id="failure-reviewer", gate1_review_origin="authenticated")
     """B6 regression: html_filename must be <slug>.html regardless of local archive
     state, so republishing a topic is a modification (tagged_and_merged), not a new file."""
@@ -257,8 +258,10 @@ def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path)
         '</main></body></html>')
     base_state.update(slug="republish-target",
                       draft_sections={"problem_framing": "x", "technical_dive": "y",
-                                      "code_snippets": "", "takeaways": "z"})
-    r1 = nodes.html_gen_node({**base_state, "run_id": "run-aaaaaa"})
-    r2 = nodes.html_gen_node({**base_state, "run_id": "run-bbbbbb"})  # archive now exists
+                                      "code_snippets": "print(1)", "takeaways": "z"})
+    r1 = nodes.html_gen_node(approved_material_state(
+        {**base_state, "run_id": "run-aaaaaa"}, reviewer_id="failure-reviewer"))
+    r2 = nodes.html_gen_node(approved_material_state(
+        {**base_state, "run_id": "run-bbbbbb"}, reviewer_id="failure-reviewer"))  # archive now exists
     assert r1["html_filename"] == "republish-target.html"
     assert r2["html_filename"] == "republish-target.html"   # NOT suffixed

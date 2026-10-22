@@ -15,6 +15,7 @@ import agent.nodes as nodes
 from agent.reviewer_identity import reviewer_context
 from agent.state import AgentState
 from tests.test_citation_policy import E1, _claim_row, _verified
+from tests.signoff_fixtures import supported_signoff
 from tests.workflow_fixtures import current_quality
 
 
@@ -39,17 +40,19 @@ def api_gate_environment(monkeypatch, tmp_path):
 
 
 @pytest.fixture
-def html_state(base_state):
+def html_state(article_state):
     html = "<html><body><p>Safe synthetic gate payload.</p></body></html>"
+    with reviewer_context("real-gate", article_state["run_id"], review_id="fixture-gate1"):
+        gate1 = nodes.hitl_approve_update(article_state, supported_signoff(article_state),
+                                          submitted_review_id="fixture-gate1")
+    assert gate1["hitl_status"] == "approved"
     return {
-        **base_state,
+        **article_state, **gate1,
         "html_output": html,
         "html_filename": "gate-test.html",
         "html_sha256": hashlib.sha256(html.encode()).hexdigest(),
         "html_review_status": None,
         "approved_html_sha256": None,
-        "gate1_reviewer_id": "real-gate",
-        "gate1_review_origin": "authenticated",
     }
 
 
@@ -136,8 +139,11 @@ def test_real_article_api_contract(api_gate_environment, article_state, decision
     assert initial["__interrupt__"][0].value["type"] == "hitl_review"
     assert visited == []
 
-    with reviewer_context("real-gate", article_state["run_id"]):
-        result = graph.invoke(Command(resume=decision), config)
+    submitted = {**decision}
+    if decision.get("action") == "approve":
+        submitted.update(review_id="article-review", signoff=supported_signoff(article_state))
+    with reviewer_context("real-gate", article_state["run_id"], review_id="article-review"):
+        result = graph.invoke(Command(resume=submitted), config)
 
     assert result["hitl_status"] == status
     assert nodes.route_after_hitl(result) == route
@@ -174,7 +180,8 @@ def test_http_review_resumes_real_gate(
     assert visited == []
     headers = {"Authorization": "Bearer real-gate-test-token", "X-Reviewer-Token": "r" * 32,
                "X-Review-Id": server.REGISTRY[run_id]["interrupt_payload"]["review_id"]}
-    body = {"feedback": "Simplify the layout."} if action == "feedback" else None
+    body = ({"feedback": "Simplify the layout."} if action == "feedback" else
+            supported_signoff(state) if action == "approve" and gate == "article" else None)
     client = TestClient(server.app)
     try:
         response = client.post(f"/{surface}/{run_id}/{action}", headers=headers, json=body)

@@ -15,6 +15,7 @@ import json
 import time
 import copy
 import hashlib
+import secrets
 import subprocess
 from pathlib import Path
 from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
@@ -30,6 +31,7 @@ from agent.reviewer_identity import (
     authenticate_reviewer,
     current_reviewer_id,
     current_reviewer_origin,
+    current_review_id,
     approval_origin_valid,
     reviewer_context,
     test_auto_reviewer_id,
@@ -43,7 +45,6 @@ from agent.html_policy import (
     reassemble_from_body,
     render_citations_html,
     render_markdown_review_html,
-    safe_grounding_rows,
     sanitize_fragment,
     sha256_utf8,
 )
@@ -82,6 +83,9 @@ from agent.claim_inventory import (
     eligible_claims,
     inventory_critical_failures,
     parse_claim_inventory_rows,
+)
+from agent.evidence_signoff import (  # noqa: E402 - load_dotenv precedes project imports
+    EvidenceSignoffError, material_review_bundle, receipt_valid, validate_submission,
 )
 from agent.material_policy import (
     MaterialPolicyResult,
@@ -1779,14 +1783,36 @@ def hitl_node(state: AgentState) -> dict:
     """
     if not workflow.gate1_eligible(state):
         return {"hitl_status": "rejected", **workflow.terminal("execution_failed", "Gate 1 eligibility failed.")}
+    try:
+        material_review = material_review_bundle(state)
+        review_error = None
+    except (EvidenceSignoffError, KeyError, TypeError) as exc:
+        material_review = None
+        review_error = str(exc)
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
         reviewer_id = test_auto_reviewer_id()
         if reviewer_id is None:
             return {"hitl_status": "rejected", **workflow.terminal(
                 "execution_failed", "Auto-approval requires isolated test identity and disabled publishing."
             )}
-        with reviewer_context(reviewer_id, state["run_id"], origin="synthetic"):
-            return hitl_approve_update(state)
+        if material_review is None:
+            return {"hitl_status": "rejected", **workflow.terminal(
+                "execution_failed", f"Gate 1 evidence review unavailable: {review_error}"
+            )}
+        # Test-only synthetic receipt remains visibly synthetic and cannot cross
+        # any production render/Git/publish boundary.
+        submission = {
+            "evidence_binding_sha256": material_review["evidence_binding_sha256"],
+            "decisions": [{"claim_id": claim_id, "decision": "SUPPORTED",
+                           "rationale": "Synthetic test-only evidence decision"}
+                          for claim_id in material_review["material_claim_ids"]],
+            "coverage_attestation": {"no_omitted_material_claims": True,
+                                     "materiality_classification_correct": True},
+        }
+        auto_review_id = secrets.token_urlsafe(32)
+        with reviewer_context(reviewer_id, state["run_id"], origin="synthetic",
+                              review_id=auto_review_id):
+            return hitl_approve_update(state, submission, submitted_review_id=auto_review_id)
 
     # B4: API mode — pause the graph via LangGraph interrupt(). The checkpointer
     # (set by the API server's build_graph) persists full state to SQLite, so the
@@ -1797,10 +1823,6 @@ def hitl_node(state: AgentState) -> dict:
 
     if os.environ.get("HITL_MODE") == "api":
         from langgraph.types import interrupt
-        review_rows = safe_grounding_rows(
-            state.get("grounding_report", []),
-            state.get("web_sources", []),
-        )
         try:
             review_html = render_markdown_review_html(state.get("draft_markdown") or "")
         except PolicyError:
@@ -1809,17 +1831,13 @@ def hitl_node(state: AgentState) -> dict:
             "type": "hitl_review",
             "run_id": state["run_id"],
             "draft_sha256": workflow.identity(state)["draft_sha256"],
+            "material_review": material_review,
+            "material_review_error": review_error,
             "topic": state["topic"],
             "slug": state["slug"],
             "draft_review_html": review_html,
             "html_policy_version": HTML_POLICY_VERSION,
-            "grounding_score": state.get("grounding_score", 0.0),
-            "reflection_score": state.get("reflection_score", 0),
-            "reflection_notes": state.get("reflection_notes", ""),
-            "reflection_provenance": state.get("reflection_provenance", {}),
-            "review_claims": review_rows,
-            "claim_summary": claim_review_summary(review_rows),
-            "unverified_rate": unverified_rate(state.get("grounding_report", [])),
+            # Favorable automated labels are withheld until evidence review.
             # Explicit unresolved semantic review obligations (Phase 4 Slice 1):
             # blocker-bearing rows are categorical; blocker-free unverified rows
             # are UVR-governed. Not hidden behind aggregate scores.
@@ -1841,7 +1859,12 @@ def hitl_node(state: AgentState) -> dict:
         }) or {}
         action = decision.get("action")
         if action == "approve":
-            return hitl_approve_update(state)
+            signoff = decision.get("signoff")
+            if (isinstance(signoff, dict) and isinstance(signoff.get("coverage_attestation"), dict)
+                    and signoff["coverage_attestation"].get("no_omitted_material_claims") is False
+                    and isinstance(signoff.get("feedback"), str) and signoff["feedback"].strip()):
+                return _hitl_traced(state, workflow.content_feedback(state, signoff["feedback"].strip()))
+            return hitl_approve_update(state, signoff, submitted_review_id=decision.get("review_id"))
         if action == "feedback":
             fb = (decision.get("feedback") or "").strip()
             if fb:
@@ -1852,44 +1875,55 @@ def hitl_node(state: AgentState) -> dict:
 
     from rich.console import Console
     from rich.panel import Panel
-    from rich.table import Table
+    from rich.text import Text
 
     console = Console()
-    console.print(Panel(f"[bold]DRAFT REVIEW — {state['topic']}[/bold]", style="orange1"))
-    console.print(state["draft_markdown"])
-
-    # Grounding table
-    table = Table(title="Source Grounding Report")
-    table.add_column("Claim", max_width=60)
-    table.add_column("Status")
-    table.add_column("Confidence")
-    table.add_column("Source")
-    for r in state.get("grounding_report", []):
-        status_color = {"verified": "green", "weak": "yellow", "unverified": "red"}.get(
-            r.get("status", ""), "white")
-        table.add_row(
-            r.get("claim", "")[:60],
-            f"[{status_color}]{r.get('status', '')}[/{status_color}]",
-            f"{r.get('confidence', 0):.2f}",
-            r.get("source_url", "none") or "none",
-        )
-    console.print(table)
-
-    console.print(f"\n[bold]Reflection:[/bold] {state['reflection_score']}/10 — {state['reflection_notes']}")
-    console.print(f"[bold]Grounding score:[/bold] {state['grounding_score']:.2f}")
-    if state.get("error_log"):
-        console.print(f"[yellow]Warnings:[/yellow] {'; '.join(state['error_log'])}")
+    console.print(Panel(Text(f"DRAFT REVIEW — {state['topic']}"), style="orange1"))
+    console.print(Text(state["draft_markdown"]))
+    if review_error:
+        console.print(Text(f"Evidence review unavailable: {review_error}. Use feedback or reject."))
+    for claim in (material_review or {}).get("claims", []):
+        console.print(Text(f"\nMaterial claim {claim['claim_id']}: {claim['claim_text']}"))
+        for occurrence in claim["draft_contexts"]:
+            console.print(Text(f"Draft context: {occurrence['context']['text']}"))
+        for span in claim["support_spans"]:
+            console.print(Text(f"Evidence {span['evidence_id']} ({span['provenance']}): {span['quote']}"))
+            console.print(Text(f"Source context: {span['source_context']['text']}"))
+        for blocker in claim["blockers"]:
+            console.print(Text(f"Limitation: {blocker['kind']}: {blocker['explanation']}"))
 
     while True:
         choice = input("\n[a]pprove / [r]eject / [f]eedback: ").strip().lower()
         if choice == 'a':
+            if material_review is None:
+                console.print(Text("Approval blocked: current evidence review is unavailable."))
+                continue
+            decisions = []
+            for claim in material_review["claims"]:
+                selected = input(f"{claim['claim_id']} [s]upported/[u]nsupported/[c]annot determine: ").strip().lower()
+                decision = {"s": "SUPPORTED", "u": "UNSUPPORTED", "c": "CANNOT_DETERMINE"}.get(selected)
+                rationale = input("Evidence rationale: ").strip()
+                decisions.append({"claim_id": claim["claim_id"], "decision": decision,
+                                  "rationale": rationale})
+            no_omissions = input("Full draft checked: no omitted material claims? [y/N]: ").strip().lower() == "y"
+            materiality_correct = input("Materiality classifications correct? [y/N]: ").strip().lower() == "y"
+            if not no_omissions:
+                feedback = input("Describe omitted claim or needed correction: ").strip()
+                if feedback:
+                    return _hitl_traced(state, workflow.content_feedback(state, feedback))
             reviewer_id = _cli_reviewer_identity()
             if reviewer_id is None:
                 return {"hitl_status": "rejected", **workflow.terminal(
                     "execution_failed", "Reviewer authentication failed."
                 )}
-            with reviewer_context(reviewer_id, state["run_id"]):
-                return hitl_approve_update(state)
+            submission = {"evidence_binding_sha256": material_review["evidence_binding_sha256"],
+                          "decisions": decisions,
+                          "coverage_attestation": {
+                              "no_omitted_material_claims": no_omissions,
+                              "materiality_classification_correct": materiality_correct}}
+            cli_review_id = secrets.token_urlsafe(32)
+            with reviewer_context(reviewer_id, state["run_id"], review_id=cli_review_id):
+                return hitl_approve_update(state, submission, submitted_review_id=cli_review_id)
         elif choice == 'r':
             return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None,
                                       **workflow.terminal("terminal_rejected")})
@@ -2001,7 +2035,7 @@ def _approve_html_update(state: AgentState) -> dict:
     """Record Gate 2 approval and, only when enabled, its live remote parent."""
     reviewer_id = current_reviewer_id(state.get("run_id"))
     origin = current_reviewer_origin(state.get("run_id"))
-    if (reviewer_id is None or not approval_origin_valid(state, 1) or
+    if (reviewer_id is None or not approval_origin_valid(state, 1) or not receipt_valid(state) or
             not ((origin == "authenticated" and not reviewer_id.startswith("test:")) or
                  (origin == "synthetic" and reviewer_id.startswith("test:") and
                   test_auto_reviewer_id() == reviewer_id))):
@@ -2160,7 +2194,7 @@ def _article_shell_fields(state: AgentState) -> dict:
 
 
 def html_gen_node(state: AgentState) -> dict:
-    if not approval_origin_valid(state, 1):
+    if not approval_origin_valid(state, 1) or not receipt_valid(state):
         return workflow.terminal("execution_failed", "Gate 1 approval origin is invalid for this runtime.")
     log = get_logger("html_gen_node")
     t_start = time.time()
@@ -2391,7 +2425,7 @@ def _revision_content_key(html_str: str) -> tuple[tuple[str, str], ...]:
 
 def html_revise_node(state: AgentState) -> dict:
     """Layout revision of the sanitized article-body fragment only. Trusted shell is immutable."""
-    if not approval_origin_valid(state, 1):
+    if not approval_origin_valid(state, 1) or not receipt_valid(state):
         return workflow.terminal("execution_failed", "Gate 1 approval origin is invalid for this runtime.")
     t0 = time.time()
     log = get_logger("html_revise")
@@ -2617,7 +2651,8 @@ def git_node(state: AgentState) -> dict:
             return _fail(f"archive write failed: {exc}")
         return None
 
-    if not approval_origin_valid(state, 1) or not approval_origin_valid(state, 2):
+    if (not approval_origin_valid(state, 1) or not approval_origin_valid(state, 2)
+            or not receipt_valid(state)):
         return _fail("missing authenticated Gate 1 or Gate 2 reviewer identity")
 
     if not html_content or not filename:
@@ -3094,19 +3129,30 @@ def _hitl_traced(state: AgentState, payload: dict) -> dict:
     return payload
 
 
-def hitl_approve_update(state: AgentState) -> dict:
+def hitl_approve_update(state: AgentState, signoff_submission: dict | None = None,
+                        *, submitted_review_id: str | None = None) -> dict:
     reviewer_id = current_reviewer_id(state.get("run_id"))
     origin = current_reviewer_origin(state.get("run_id"))
+    trusted_review_id = current_review_id(state.get("run_id"))
     if reviewer_id is not None and workflow.gate1_eligible(state) and (
         (origin == "authenticated" and not reviewer_id.startswith("test:"))
         or (origin == "synthetic" and reviewer_id.startswith("test:") and test_auto_reviewer_id() == reviewer_id)
-    ):
-        return _hitl_traced(state, {
-            "hitl_status": "approved", "hitl_feedback": None,
-            "approved_draft_identity": workflow.identity(state),
-            "gate1_reviewer_id": reviewer_id,
-            "gate1_review_origin": origin,
-        })
+    ) and trusted_review_id and submitted_review_id == trusted_review_id:
+        try:
+            receipt = validate_submission(
+                state, signoff_submission, reviewer_id=reviewer_id,
+                origin=origin, review_id=trusted_review_id,
+            )
+        except (EvidenceSignoffError, KeyError, TypeError):
+            receipt = None
+        if receipt is not None:
+            return _hitl_traced(state, {
+                "hitl_status": "approved", "hitl_feedback": None,
+                "approved_draft_identity": workflow.identity(state),
+                "gate1_reviewer_id": reviewer_id,
+                "gate1_review_origin": origin,
+                "gate1_evidence_signoff": receipt,
+            })
     return _hitl_traced(state, {
         "hitl_status": "rejected", "hitl_feedback": None,
         **workflow.terminal("execution_failed", "Gate 1 approval lacks reviewer identity or current eligibility."),

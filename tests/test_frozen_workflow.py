@@ -13,6 +13,7 @@ from agent.claim_inventory import build_claim_inventory
 from agent.html_policy import sha256_utf8
 from tests.conftest import FakeLLMClient, fake_response
 from tests.test_citation_policy import _claim_row
+from tests.signoff_fixtures import supported_signoff
 
 CLAIM = "Gradient descent minimizes the loss."
 SECTIONS = dict(problem_framing=CLAIM, technical_dive="Follow the gradient.",
@@ -42,6 +43,7 @@ def harness(monkeypatch, base_state):
     monkeypatch.setenv("GIT_PUSH_ENABLED", "false")
     monkeypatch.setattr(nodes, "current_reviewer_id", lambda _run_id: "frozen-workflow")
     monkeypatch.setattr(nodes, "current_reviewer_origin", lambda _run_id: "authenticated")
+    monkeypatch.setattr(nodes, "current_review_id", lambda _run_id: "frozen-review")
     monkeypatch.setattr(builtins, "input", Mock(side_effect=AssertionError("No CLI input")))
     monkeypatch.setattr(nodes, "_get_client", Mock(side_effect=AssertionError("No provider call")))
     calls = []
@@ -94,6 +96,11 @@ def harness(monkeypatch, base_state):
     graph = graph_mod.build_graph(checkpointer=InMemorySaver())
     config = {"configurable": {"thread_id": "frozen-matrix"}}
     return graph, config, state, plan, calls
+
+
+def approval_for(graph, config):
+    return Command(resume={"action": "approve", "review_id": "frozen-review",
+                           "signoff": supported_signoff(graph.get_state(config).values)})
 
 
 def test_A_B_verify_failures_never_reflect_or_review(harness):
@@ -166,10 +173,11 @@ def test_H_approval_rechecks_current_identity(harness, monkeypatch):
     graph, config, state, _, calls = harness
     graph.invoke(state, config)
     approve = nodes.hitl_approve_update
-    def stale_approval(current):
-        return approve({**current, 'reflection_identity': {'draft_sha256': 'stale'}})
+    def stale_approval(current, signoff=None, *, submitted_review_id=None):
+        return approve({**current, 'reflection_identity': {'draft_sha256': 'stale'}},
+                       signoff, submitted_review_id=submitted_review_id)
     monkeypatch.setattr(nodes, 'hitl_approve_update', stale_approval)
-    result = graph.invoke(Command(resume={'action': 'approve'}), config)
+    result = graph.invoke(approval_for(graph, config), config)
     assert result['terminal_status'] == 'execution_failed'
     assert result['hitl_status'] == 'rejected'
     assert 'html_gen' not in calls
@@ -201,7 +209,7 @@ def test_I_J_M_feedback_new_episode_independent_of_lifetime(harness):
 def test_K_L_layout_is_separate_failed_attempts_count(harness):
     graph, config, state, _, calls = harness
     graph.invoke(state, config)
-    result = graph.invoke(Command(resume={'action': 'approve'}), config)
+    result = graph.invoke(approval_for(graph, config), config)
     assert result['__interrupt__'][0].value['type'] == 'hitl_html_review'
     initial = graph.get_state(config).values
     content_calls = calls.count('draft'), calls.count('verify'), calls.count('reflect')
@@ -221,9 +229,9 @@ def test_K_L_layout_is_separate_failed_attempts_count(harness):
 def test_trusted_previous_layout_remains_explicitly_approvable(harness):
     graph, config, state, _, calls = harness
     graph.invoke(state, config)
-    graph.invoke(Command(resume={'action': 'approve'}), config)
+    graph.invoke(approval_for(graph, config), config)
     graph.invoke(Command(resume={'action': 'feedback', 'feedback': 'Spacing.'}), config)
-    result = graph.invoke(Command(resume={'action': 'approve'}), config)
+    result = graph.invoke(approval_for(graph, config), config)
     assert result['git_status'] == 'dry_run' and calls.count('git') == 1
 
 
@@ -312,7 +320,7 @@ def test_initial_renderer_failure_is_terminal(harness, monkeypatch):
     monkeypatch.setattr(graph_mod, 'html_gen_node', broken)
     graph = graph_mod.build_graph(checkpointer=InMemorySaver())
     graph.invoke(state, config)
-    result = graph.invoke(Command(resume={'action': 'approve'}), config)
+    result = graph.invoke(approval_for(graph, config), config)
     assert result['terminal_status'] == 'rendering_failed'
     assert '__interrupt__' not in result and 'git' not in calls
 

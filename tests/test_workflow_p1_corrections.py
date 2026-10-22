@@ -16,6 +16,7 @@ import agent.graph as graph_mod
 import agent.nodes as nodes
 from agent import workflow
 from tests.test_frozen_workflow import harness as frozen_harness, accepted_verification, judge, CLAIM
+from tests.signoff_fixtures import supported_signoff
 
 
 harness = frozen_harness
@@ -131,7 +132,9 @@ def archive_graph(harness, monkeypatch):
 @pytest.mark.parametrize('fail', [False, True])
 def test_I_L_real_archive_api_projection(harness, monkeypatch, tmp_path, streaming, fail):
     import api.server as server
-    graph, _, state, _ = archive_graph(harness, monkeypatch)
+    from agent.reviewer_identity import current_review_id
+    monkeypatch.setattr(nodes, 'current_review_id', current_review_id)
+    graph, config, state, _ = archive_graph(harness, monkeypatch)
     monkeypatch.chdir(tmp_path)
     if fail:
         (tmp_path / 'outputs').mkdir()
@@ -148,7 +151,9 @@ def test_I_L_real_archive_api_projection(harness, monkeypatch, tmp_path, streami
     first_id = server.REGISTRY[rid]['interrupt_payload']['review_id']
     with server.LOCK:
         server._reserve_review(rid, first_id)
-    advance(rid, Command(resume={'action': 'approve', 'review_id': first_id}), False,
+    advance(rid, Command(resume={'action': 'approve', 'review_id': first_id,
+                                 'signoff': supported_signoff(graph.get_state(
+                                     {'configurable': {'thread_id': rid}}).values)}), False,
             reviewer_id='frozen-workflow')
     second_id = server.REGISTRY[rid]['interrupt_payload']['review_id']
     with server.LOCK:

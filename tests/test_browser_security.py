@@ -42,41 +42,21 @@ HOSTILE_MODEL_HTML = (
 def _gate1_review():
     return {
         "type": "hitl_review",
+        "draft_sha256": "a" * 64,
         "draft_review_html": render_markdown_review_html(HOSTILE_MARKDOWN),
         "html_policy_version": "p0-1-v2",
-        "grounding_score": 0.8,
-        "reflection_score": 8,
-        "reflection_notes": "ok",
-        "reflection_provenance": {
-            "origin": "judge", "reason": "json_score",
-            "provider_called": True, "parse_status": "ok",
+        "material_review": {
+            "evidence_binding_sha256": "b" * 64,
+            "material_claim_ids": ["C-001"],
+            "claims": [{
+                "claim_id": "C-001", "claim_text": "<script>alert(1)</script> material claim",
+                "draft_contexts": [{"start": 0, "end": 8, "context": {"text": "Draft context"}}],
+                "support_spans": [{"evidence_id": "WEB-001", "citation_identity": "WEB-001",
+                                   "quote": "Bound source passage", "source_context": {"text": "Bound source passage in context"},
+                                   "provenance": {"title": "Source", "url": "javascript:alert(1)"}}],
+                "blockers": [],
+            }],
         },
-        "review_claims": [
-            {
-                "claim": "<script>alert(1)</script> verified claim",
-                "status": "verified",
-                "confidence": 0.9,
-                "source_kind": "web",
-                "source_label": "Unresolved source",
-                "source_url": None,
-            },
-            {
-                "claim": "weak claim",
-                "status": "weak",
-                "confidence": 0.5,
-                "source_kind": "web",
-                "source_label": "Unresolved source",
-                "source_url": None,
-            },
-            {
-                "claim": "unverified claim",
-                "status": "unverified",
-                "confidence": 0.0,
-                "source_kind": "none",
-                "source_label": "none",
-                "source_url": None,
-            },
-        ],
     }
 
 
@@ -136,6 +116,7 @@ def live_server(monkeypatch):
     monkeypatch.setattr(kb, "warmup", lambda: {"status": "skipped"})
     import api.server as srv
     srv.GRAPH = HostileReviewGraph()
+    monkeypatch.setattr(srv, "material_review_bundle", lambda _state: _gate1_review()["material_review"])
     port = _free_port()
     config = uvicorn.Config(srv.app, host="127.0.0.1", port=port, log_level="error", lifespan="on")
     server = uvicorn.Server(config)
@@ -185,6 +166,10 @@ def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
     assert "https://evil.example" not in g1_srcdoc
     assert pw_page.evaluate("() => window.hacked === true") is False
 
+    pw_page.locator(".material-decision").select_option("SUPPORTED")
+    pw_page.locator(".material-rationale").fill("The cited passage supports the exact claim.")
+    pw_page.check("#g1noOmissions")
+    pw_page.check("#g1materiality")
     pw_page.click('#gate1 button[data-act="approve"]')
     pw_page.wait_for_selector("#gate2:not(.hidden)", timeout=8000)
     g2 = pw_page.locator("#g2frame")
@@ -206,7 +191,7 @@ def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
     assert "marked" not in pw_page.content()
 
 
-def test_reviewer_ui_exposes_claim_counts_filters_and_real_score_provenance(live_server, pw_page):
+def test_reviewer_ui_exposes_evidence_without_favorable_model_labels(live_server, pw_page):
     pw_page.goto(live_server + "/", wait_until="domcontentloaded")
     pw_page.fill("#token", "test-token")
     pw_page.fill("#reviewerToken", "reviewer-browser-secret-0123456789abcdef")
@@ -214,20 +199,14 @@ def test_reviewer_ui_exposes_claim_counts_filters_and_real_score_provenance(live
     pw_page.click("#go")
 
     pw_page.wait_for_selector("#gate1:not(.hidden)", timeout=8000)
-    summary = pw_page.locator("#g1claimSummary")
-    assert "Total: 3" in summary.inner_text()
-    assert "Verified: 1" in summary.inner_text()
-    assert "Weak: 1" in summary.inner_text()
-    assert "Unverified: 1" in summary.inner_text()
-    assert "REAL JUDGE SCORE" in pw_page.locator("#g1meta").inner_text()
-
-    pw_page.get_by_role("button", name="WEAK", exact=True).click()
-    assert pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").count() == 1
-    assert "weak claim" in pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").inner_text()
-
-    pw_page.get_by_role("button", name="UNVERIFIED", exact=True).click()
-    assert pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").count() == 1
-    assert "unverified claim" in pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").inner_text()
+    review = pw_page.locator("#g1materialReview")
+    assert "Material claims (1)" in review.inner_text()
+    assert "Bound source passage" in review.inner_text()
+    assert "Draft context" in review.inner_text()
+    assert "javascript:alert" not in pw_page.locator("#g1materialReview a").all_text_contents()
+    assert pw_page.locator("#g1materialReview a").count() == 0
+    assert "REAL JUDGE SCORE" not in pw_page.locator("#g1meta").inner_text()
+    assert "Verified:" not in pw_page.locator("#gate1").inner_text()
 
 
 def test_gate2_preview_keeps_trusted_article_styles_under_reviewer_csp(live_server, pw_page):
@@ -238,6 +217,10 @@ def test_gate2_preview_keeps_trusted_article_styles_under_reviewer_csp(live_serv
     pw_page.fill("#topic", "Gradient Descent")
     pw_page.click("#go")
     pw_page.wait_for_selector("#gate1:not(.hidden)", timeout=8000)
+    pw_page.locator(".material-decision").select_option("SUPPORTED")
+    pw_page.locator(".material-rationale").fill("The cited passage supports the exact claim.")
+    pw_page.check("#g1noOmissions")
+    pw_page.check("#g1materiality")
     pw_page.click('#gate1 button[data-act="approve"]')
     pw_page.wait_for_selector("#gate2:not(.hidden)", timeout=8000)
 

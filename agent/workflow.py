@@ -100,6 +100,7 @@ def start_episode(state):
         "approved_draft_identity": None, "hitl_status": "pending",
         "gate1_reviewer_id": None, "gate2_reviewer_id": None,
         "gate1_review_origin": None, "gate2_review_origin": None,
+        "gate1_evidence_signoff": None,
     }
 
 
@@ -160,7 +161,8 @@ def draft_step(state, *, run):
               "claim_inventory": None, "grounding_report": [], "reflection_score": 0,
               "reflection_provenance": {}, "hitl_status": "pending",
               "gate1_reviewer_id": None, "gate2_reviewer_id": None,
-              "gate1_review_origin": None, "gate2_review_origin": None}
+              "gate1_review_origin": None, "gate2_review_origin": None,
+              "gate1_evidence_signoff": None}
     current = {**state, **update}
     if not draft_valid(current):
         update.update(failure(current, "execution_failed"))
@@ -211,8 +213,9 @@ def reflect_step(state, *, run):
 
 
 def html_step(state, *, run):
+    from agent.evidence_signoff import receipt_valid
     if (not gate1_eligible(state) or state.get("approved_draft_identity") != identity(state)
-            or not approval_origin_valid(state, 1)):
+            or not approval_origin_valid(state, 1) or not receipt_valid(state)):
         return terminal("execution_failed")
     try:
         update = run(state)

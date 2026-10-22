@@ -250,6 +250,7 @@ def _build_initial_state(
         "gate2_reviewer_id": None,
         "gate1_review_origin": None,
         "gate2_review_origin": None,
+        "gate1_evidence_signoff": None,
         "html_review_status": None,
         "html_feedback": None,
         "html_output": None,

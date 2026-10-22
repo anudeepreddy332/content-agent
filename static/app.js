@@ -1,7 +1,7 @@
 const $ = s => document.querySelector(s);
 const STEP_ORDER = ["retrieve","draft","verify","reflect","html_gen","html_revise","git"];
 const SSE_RETRY_DELAYS_MS = [500, 1000, 2000];
-let RUN = null, TOKEN = "", REVIEWER_TOKEN = "", REVIEW_ID = "", REVIEW_GATE = "", streamAbort = null;
+let RUN = null, TOKEN = "", REVIEWER_TOKEN = "", REVIEW_ID = "", REVIEW_GATE = "", MATERIAL_REVIEW = null, streamAbort = null;
 
 function api(path, method, body, reviewer){
   const headers = {"Authorization":"Bearer "+TOKEN, "Content-Type":"application/json"};
@@ -57,7 +57,7 @@ function finishNode(node, headline){
 }
 
 function authFailed(){
-  TOKEN = ""; REVIEWER_TOKEN = ""; REVIEW_ID = ""; REVIEW_GATE = "";
+  TOKEN = ""; REVIEWER_TOKEN = ""; REVIEW_ID = ""; REVIEW_GATE = ""; MATERIAL_REVIEW = null;
   const field = $("#token");
   if(field) field.value = "";
   const reviewerField = $("#reviewerToken");
@@ -169,20 +169,12 @@ function onGate(r){
   $("#pipeSub").textContent = "waiting for your review";
   if(r.type==="hitl_review"){
     REVIEW_ID = r.review_id || ""; REVIEW_GATE = "1";
-    const rows = r.review_claims || [];
-    const calculatedUvr = rows.length
-      ? rows.filter(row => String(row.status || "").toLowerCase()==="unverified").length / rows.length
-      : null;
-    const uvr = typeof r.unverified_rate === "number" ? r.unverified_rate : calculatedUvr;
-    const uvrText = typeof uvr === "number" ? `${(uvr * 100).toFixed(1)}%` : "not computable";
-    const provenance = r.reflection_provenance || {};
-    const reflection = provenance.origin === "judge" && provenance.parse_status === "ok"
-      ? `REAL JUDGE SCORE ${r.reflection_score}/10`
-      : `FALLBACK / UNAVAILABLE SCORE ${r.reflection_score}/10 (${provenance.reason || "unknown"})`;
-    $("#g1meta").textContent =
-      `Claim grounding ${(r.grounding_score??0).toFixed(2)} · UVR ${uvrText} of the extracted verdict set (not a completeness measure) · ${reflection} — ${r.reflection_notes||""}`;
+    MATERIAL_REVIEW = r.material_review || null;
+    $("#g1meta").textContent = "Review each material claim against its bound source passages before deciding.";
     $("#g1frame").srcdoc = r.draft_review_html || "";
-    renderGrounding(rows);
+    renderMaterialReview(MATERIAL_REVIEW);
+    $("#g1noOmissions").checked = false;
+    $("#g1materiality").checked = false;
     $("#g1fb").value=""; show("#gate1"); $("#gate1").scrollIntoView({behavior:"smooth"});
   } else if(r.type==="hitl_html_review"){
     REVIEW_ID = r.review_id || ""; REVIEW_GATE = "2";
@@ -191,6 +183,67 @@ function onGate(r){
     const w = r.validation_warnings||[];
     if(w.length){ $("#g2warn").textContent = "warnings: "+w.join("; "); show("#g2warn"); } else hide("#g2warn");
     $("#g2fb").value=""; show("#gate2"); $("#gate2").scrollIntoView({behavior:"smooth"});
+  }
+}
+
+function renderMaterialReview(bundle){
+  const root = $("#g1materialReview");
+  clearChildren(root);
+  if(!bundle || !Array.isArray(bundle.claims)){
+    root.textContent = "Current material-claim evidence is unavailable. Approval is blocked.";
+    return;
+  }
+  const heading = document.createElement("h3"); heading.textContent = `Material claims (${bundle.claims.length})`;
+  root.appendChild(heading);
+  for(const claim of bundle.claims){
+    const card = document.createElement("section"); card.className = "material-claim";
+    card.dataset.claimId = claim.claim_id;
+    const title = document.createElement("h4"); title.textContent = `${claim.claim_id}: ${claim.claim_text}`;
+    card.appendChild(title);
+    for(const occurrence of claim.draft_contexts || []){
+      const p = document.createElement("p");
+      p.textContent = `Draft position ${occurrence.start}–${occurrence.end}: ${occurrence.context?.text || ""}`;
+      card.appendChild(p);
+    }
+    for(const span of claim.support_spans || []){
+      const source = document.createElement("div"); source.className = "evidence-source";
+      const provenance = span.provenance || {};
+      const citation = document.createElement("strong");
+      citation.textContent = `${span.citation_identity} · ${provenance.title || provenance.source || provenance.kind || "source"}`;
+      source.appendChild(citation);
+      const quote = document.createElement("blockquote"); quote.textContent = span.quote || "";
+      source.appendChild(quote);
+      const context = document.createElement("p"); context.textContent = `Surrounding source: ${span.source_context?.text || ""}`;
+      source.appendChild(context);
+      if(typeof provenance.url === "string"){
+        try{
+          const url = new URL(provenance.url);
+          if(url.protocol === "https:"){
+            const link = document.createElement("a"); link.href = url.href;
+            link.target = "_blank"; link.rel = "noopener noreferrer nofollow";
+            link.textContent = "Open source"; source.appendChild(link);
+          }
+        }catch(_e){ /* show the citation identity without a link */ }
+      }
+      card.appendChild(source);
+    }
+    for(const blocker of claim.blockers || []){
+      const p = document.createElement("p"); p.className = "warn";
+      p.textContent = `Limitation: ${blocker.kind || "unknown"} — ${blocker.explanation || ""}`;
+      card.appendChild(p);
+    }
+    const label = document.createElement("label"); label.textContent = "Your evidence decision";
+    const select = document.createElement("select"); select.className = "material-decision";
+    for(const [value, title] of [["", "Select"], ["SUPPORTED", "SUPPORTED"],
+                                 ["UNSUPPORTED", "UNSUPPORTED"], ["CANNOT_DETERMINE", "CANNOT DETERMINE"]]){
+      const option = document.createElement("option"); option.value = value; option.textContent = title;
+      select.appendChild(option);
+    }
+    label.appendChild(select); card.appendChild(label);
+    const rationaleLabel = document.createElement("label"); rationaleLabel.textContent = "Evidence rationale";
+    const rationale = document.createElement("textarea"); rationale.className = "material-rationale";
+    rationale.maxLength = 500; rationaleLabel.appendChild(rationale); card.appendChild(rationaleLabel);
+    root.appendChild(card);
   }
 }
 
@@ -301,10 +354,29 @@ async function gateAction(gate, act){
   setGateButtons(true);
   let path = `/ui/runs/${RUN}/${act}`, body = null;
   if(act==="feedback"){ body = {feedback: fb}; }
+  if(gate==="1" && act==="approve"){
+    if(!MATERIAL_REVIEW){ onError("Material evidence review is unavailable."); setGateButtons(false); return; }
+    const decisions = [];
+    for(const card of $("#g1materialReview").querySelectorAll(".material-claim")){
+      decisions.push({claim_id: card.dataset.claimId,
+        decision: card.querySelector(".material-decision").value,
+        rationale: card.querySelector(".material-rationale").value.trim()});
+    }
+    body = {evidence_binding_sha256: MATERIAL_REVIEW.evidence_binding_sha256,
+      decisions,
+      coverage_attestation: {no_omitted_material_claims: $("#g1noOmissions").checked,
+        materiality_classification_correct: $("#g1materiality").checked}};
+    if(!body.coverage_attestation.no_omitted_material_claims ||
+       !body.coverage_attestation.materiality_classification_correct ||
+       decisions.some(d => d.decision !== "SUPPORTED" || d.rationale.length < 8)){
+      onError("Approval needs a supported decision and rationale for every material claim, plus both full-draft declarations. Request changes for omissions or uncertainty.");
+      setGateButtons(false); return;
+    }
+  }
   const res = await api(path, "POST", body, true);
   if(res.status === 401 || res.status === 403){ authFailed(); setGateButtons(false); return; }
   if(!res.ok){ const t=await res.text(); onError(`${res.status} ${t}`); setGateButtons(false); return; }
-  REVIEW_ID = ""; REVIEW_GATE = "";
+  REVIEW_ID = ""; REVIEW_GATE = ""; MATERIAL_REVIEW = null;
   hide("#gate1"); hide("#gate2"); setGateButtons(false);
   $("#pipeSub").textContent = act==="approve" ? "approved — continuing…"
       : act==="feedback" ? "revising…" : "rejecting…";

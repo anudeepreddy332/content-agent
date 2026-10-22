@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from agent.html_policy import sanitize_fragment, assemble_trusted_article, sha256_utf8
 import agent.nodes as nodes
+from tests.signoff_fixtures import approved_material_state
 
 SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 H = {"Authorization": "Bearer test-token"}
@@ -75,7 +76,7 @@ def test_git_node_archive_and_repo_hash_equivalence(tmp_path, monkeypatch, base_
     parent = subprocess.check_output(["git", "rev-parse", "main"], cwd=repo, text=True).strip()
     state["publish_expected_remote_sha"] = parent
     monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: parent)
-    out = nodes.git_node(state)
+    out = nodes.git_node(approved_material_state(state, reviewer_id="artifact-reviewer"))
     assert out["git_status"] in ("merged", "tagged_and_merged")
     archive = (tmp_path / "outputs" / "articles" / "gradient-descent-test.html").read_bytes()
     git_bytes = subprocess.check_output(
@@ -107,7 +108,11 @@ def test_publish_binds_commit_ref_not_ambient_main(tmp_path, monkeypatch):
     rid = "run-bind"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {"slug": "my-article", "git_status": "merged",
+        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
+                       "topic": "Gradient Descent",
+                       "draft_markdown": "Gradient descent minimizes a loss function."},
+                      reviewer_id="artifact-reviewer"),
+                   "slug": "my-article", "git_status": "merged",
                        "gate1_reviewer_id": "artifact-reviewer", "gate2_reviewer_id": "artifact-reviewer",
                        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},
@@ -139,7 +144,11 @@ def test_publish_conflicts_if_remote_moved(tmp_path, monkeypatch):
     rid = "run-conflict"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {"slug": "my-article", "git_status": "merged",
+        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
+                       "topic": "Gradient Descent",
+                       "draft_markdown": "Gradient descent minimizes a loss function."},
+                      reviewer_id="artifact-reviewer"),
+                   "slug": "my-article", "git_status": "merged",
                        "gate1_reviewer_id": "artifact-reviewer", "gate2_reviewer_id": "artifact-reviewer",
                        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
                    "git_commit_sha": SHA, "publish_expected_remote_sha": SHA},

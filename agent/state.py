@@ -87,6 +87,7 @@ class AgentState(TypedDict):
     gate2_reviewer_id: str | None
     gate1_review_origin: Literal["authenticated", "synthetic"] | None
     gate2_review_origin: Literal["authenticated", "synthetic"] | None
+    gate1_evidence_signoff: dict | None  # server-minted, current claim/source-bound receipt
     html_review_status: Literal["approved", "rejected", "changes"] | None   # P2 post-render gate
     html_feedback: str | None   # P2: design/layout note for html_revise — NEVER content
 

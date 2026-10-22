@@ -25,6 +25,7 @@ from agent.reviewer_identity import (
 )
 from tests.test_citation_policy import E1, _claim_row, _verified
 from tests.test_real_hitl_api import _gate_graph
+from tests.signoff_fixtures import supported_signoff
 from tests.workflow_fixtures import current_quality
 
 API_TOKEN = "general-test-token"
@@ -70,8 +71,9 @@ def test_context_is_run_bound_and_untrusted_resume_fields_do_not_approve(credent
     assert without["hitl_status"] == "rejected"
     with reviewer_context(REVIEWER_ID, "different-run"):
         assert nodes.hitl_approve_update(article)["hitl_status"] == "rejected"
-    with reviewer_context(REVIEWER_ID, article["run_id"]):
-        accepted = nodes.hitl_approve_update(article)
+    with reviewer_context(REVIEWER_ID, article["run_id"], review_id="review-direct"):
+        accepted = nodes.hitl_approve_update(article, supported_signoff(article),
+                                             submitted_review_id="review-direct")
         assert accepted["gate1_reviewer_id"] == REVIEWER_ID
     assert current_reviewer_id(article["run_id"]) is None
 
@@ -103,7 +105,7 @@ def test_api_approval_needs_reviewer_secret_and_ignores_impersonation(
         assert visited == []
         response = client.post(url, headers={**general, "X-Reviewer-Token": REVIEWER_TOKEN,
                                              "X-Review-Id": review_id},
-                               json={"reviewer_id": "attacker"})
+                               json={**supported_signoff(article), "reviewer_id": "attacker"})
         assert response.status_code == 200
     finally:
         client.close()
@@ -112,13 +114,16 @@ def test_api_approval_needs_reviewer_secret_and_ignores_impersonation(
     assert REVIEWER_TOKEN not in repr(graph.get_state({"configurable": {"thread_id": run_id}}).values)
 
 
-def test_gate2_and_legacy_publish_require_both_identities(credentials, monkeypatch, base_state):
+def test_gate2_and_legacy_publish_require_both_identities(credentials, monkeypatch, article):
     import api.server as server
 
     html = "<html><body>Approved layout</body></html>"
     from hashlib import sha256
-    state = {**base_state, "html_output": html, "html_sha256": sha256(html.encode()).hexdigest(),
-             "gate1_reviewer_id": REVIEWER_ID, "gate1_review_origin": "authenticated"}
+    with reviewer_context(REVIEWER_ID, article["run_id"], review_id="first-review"):
+        first = nodes.hitl_approve_update(article, supported_signoff(article),
+                                          submitted_review_id="first-review")
+    state = {**article, **first, "html_output": html,
+             "html_sha256": sha256(html.encode()).hexdigest()}
     graph, visited = _gate_graph("html")
     run_id = state["run_id"]
     monkeypatch.setattr(server, "GRAPH", graph)
@@ -160,8 +165,10 @@ def test_sqlite_restart_requires_fresh_auth_context_and_stores_no_secret(
     second_connection = sqlite3.connect(db, check_same_thread=False)
     restarted, _ = _gate_graph("article", SqliteSaver(second_connection))
     try:
-        with reviewer_context(REVIEWER_ID, article["run_id"]):
-            accepted = restarted.invoke(Command(resume={"action": "approve", "reviewer_id": "attacker"}), config)
+        with reviewer_context(REVIEWER_ID, article["run_id"], review_id="checkpoint-review"):
+            accepted = restarted.invoke(Command(resume={"action": "approve", "reviewer_id": "attacker",
+                                                        "review_id": "checkpoint-review",
+                                                        "signoff": supported_signoff(article)}), config)
         assert accepted["gate1_reviewer_id"] == REVIEWER_ID
     finally:
         second_connection.close()
@@ -170,7 +177,11 @@ def test_sqlite_restart_requires_fresh_auth_context_and_stores_no_secret(
 
 def test_cli_and_auto_paths_fail_closed_without_identity(credentials, monkeypatch, article):
     monkeypatch.setenv("HITL_MODE", "cli")
-    monkeypatch.setattr(builtins, "input", lambda _prompt: "a")
+    monkeypatch.setattr(builtins, "input", lambda prompt: (
+        "s" if "[s]upported" in prompt else
+        "The bound source supports this claim." if "rationale" in prompt else
+        "y" if "[y/N]" in prompt else "a"
+    ))
     import getpass
     monkeypatch.setattr(getpass, "getpass", lambda _prompt: API_TOKEN)
     assert nodes.hitl_node(article)["terminal_status"] == "execution_failed"
@@ -316,8 +327,10 @@ def test_checkpoint_restart_issues_fresh_review_id(credentials, monkeypatch, art
         try:
             review = client.get(f"/runs/{run_id}", headers=headers).json()["review"]
             assert review["review_id"] != old_id
-            assert client.post(f"/runs/{run_id}/approve", headers={**headers, "X-Review-Id": old_id}).status_code == 409
-            assert client.post(f"/runs/{run_id}/approve", headers={**headers, "X-Review-Id": review["review_id"]}).status_code == 200
+            assert client.post(f"/runs/{run_id}/approve", headers={**headers, "X-Review-Id": old_id},
+                               json=supported_signoff(article)).status_code == 409
+            assert client.post(f"/runs/{run_id}/approve", headers={**headers, "X-Review-Id": review["review_id"]},
+                               json=supported_signoff(article)).status_code == 200
         finally:
             client.close()
         assert server.REGISTRY[run_id]["result"]["gate1_review_origin"] == "authenticated"

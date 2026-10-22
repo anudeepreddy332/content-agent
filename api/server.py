@@ -57,6 +57,7 @@ from agent.reviewer_identity import (
     authenticate_reviewer,
     reviewer_context,
 )
+from agent.evidence_signoff import EvidenceSignoffError, material_review_bundle, receipt_valid
 from agent.workflow import terminal_api_status, terminal, project_terminal
 from agent.html_policy import REVIEWER_APP_CSP
 from main import _build_initial_state, _make_slug, _write_telemetry
@@ -91,6 +92,13 @@ def _review_binding(run_id: str, payload: dict) -> tuple[str, str]:
     if gate not in ("hitl_review", "hitl_html_review") or payload.get("run_id", run_id) != run_id:
         raise ValueError("unexpected review gate or run")
     artifact = payload.get("draft_sha256" if gate == "hitl_review" else "html_sha256")
+    if gate == "hitl_review" and isinstance(payload.get("material_review"), dict):
+        if not isinstance(artifact, str) or len(artifact) != 64:
+            raise ValueError("missing Gate 1 draft identity")
+        evidence_digest = payload["material_review"].get("evidence_binding_sha256")
+        if not isinstance(evidence_digest, str) or len(evidence_digest) != 64:
+            raise ValueError("missing Gate 1 evidence identity")
+        artifact = hashlib.sha256(f"{artifact}:{evidence_digest}".encode()).hexdigest()
     if not isinstance(artifact, str) or len(artifact) != 64:
         # Historical mocked graph fixtures omit the artifact. Their entire
         # interrupt payload remains bound; production interrupts carry the SHA.
@@ -171,6 +179,13 @@ def _resume_binding_valid(run_id: str, invoke_input, config: dict) -> bool:
         gate, artifact = _review_binding(run_id, pending)
     except ValueError:
         return False
+    if gate == "hitl_review" and isinstance(pending.get("material_review"), dict):
+        try:
+            current = material_review_bundle(getattr(snapshot, "values", {}) or {})
+        except (EvidenceSignoffError, KeyError, TypeError):
+            return False
+        if current["evidence_binding_sha256"] != pending["material_review"].get("evidence_binding_sha256"):
+            return False
     return gate == binding["gate"] and artifact == binding["artifact"]
 
 def _extract_interrupt(result, config):
@@ -198,8 +213,9 @@ def _advance(run_id: str, invoke_input, finalizing: bool, reviewer_id: str | Non
         return
     with LOCK:
         REGISTRY[run_id]["status"] = "finalizing" if finalizing else "running"
+        trusted_review_id = (REGISTRY[run_id].get("reserved_review") or {}).get("review_id")
     try:
-        with reviewer_context(reviewer_id, run_id):
+        with reviewer_context(reviewer_id, run_id, review_id=trusted_review_id):
             result = GRAPH.invoke(invoke_input, config)
     except Exception as e:  # mirror main.py crash handler
         log.error("api.run_crash", run_id=run_id, error=str(e))
@@ -254,10 +270,7 @@ def _node_headline(node: str, delta: dict) -> dict:
         d["kb_results"] = len(delta["kb_results"])
     if isinstance(delta.get("grounding_report"), list):
         d["claims"] = len(delta["grounding_report"])
-    if delta.get("grounding_score") is not None:
-        d["grounding_score"] = round(delta["grounding_score"], 3)
-    if delta.get("reflection_score") is not None:
-        d["reflection_score"] = delta["reflection_score"]
+    # Do not prime Gate-1 evidence review with favorable automated labels.
     if delta.get("iterations") is not None:
         d["iterations"] = delta["iterations"]
     if delta.get("html_filename"):
@@ -283,9 +296,10 @@ def _advance_streaming(run_id, invoke_input, finalizing, reviewer_id=None):
     q = REGISTRY[run_id]["events"]
     with LOCK:
         REGISTRY[run_id]["status"] = "finalizing" if finalizing else "running"
+        trusted_review_id = (REGISTRY[run_id].get("reserved_review") or {}).get("review_id")
     result: dict = {}
     try:
-        with reviewer_context(reviewer_id, run_id):
+        with reviewer_context(reviewer_id, run_id, review_id=trusted_review_id):
             for mode, chunk in GRAPH.stream(invoke_input, config,
                                             stream_mode=["updates", "values"]):
                 if mode == "values":
@@ -488,8 +502,9 @@ def _resume(run_id: str, resume_value: dict, reviewer_id: str, review_id: str):
 
 
 @app.post("/runs/{run_id}/approve", dependencies=[Depends(require_auth)])
-def approve(run_id: str, reviewer_id: str = Depends(require_reviewer), x_review_id: str = Header(default="")):
-    return _resume(run_id, {"action": "approve"}, reviewer_id, x_review_id)
+def approve(run_id: str, body: dict | None = None, reviewer_id: str = Depends(require_reviewer),
+            x_review_id: str = Header(default="")):
+    return _resume(run_id, {"action": "approve", "signoff": body}, reviewer_id, x_review_id)
 
 
 @app.post("/runs/{run_id}/reject", dependencies=[Depends(require_auth)])
@@ -530,8 +545,9 @@ def _resume_stream(run_id: str, resume_value: dict, reviewer_id: str, review_id:
 
 
 @app.post("/ui/runs/{run_id}/approve", dependencies=[Depends(require_auth)])
-def ui_approve(run_id: str, reviewer_id: str = Depends(require_reviewer), x_review_id: str = Header(default="")):
-    return _resume_stream(run_id, {"action": "approve"}, reviewer_id, x_review_id)
+def ui_approve(run_id: str, body: dict | None = None, reviewer_id: str = Depends(require_reviewer),
+               x_review_id: str = Header(default="")):
+    return _resume_stream(run_id, {"action": "approve", "signoff": body}, reviewer_id, x_review_id)
 
 
 @app.post("/ui/runs/{run_id}/reject", dependencies=[Depends(require_auth)])
@@ -618,7 +634,9 @@ def ui_publish(run_id: str):
         if not reg:
             raise HTTPException(404, "unknown run_id")
         result = reg.get("result") or {}
-        if not approval_origin_valid(result, 1, publishing=True) or not approval_origin_valid(result, 2, publishing=True):
+        if (not approval_origin_valid(result, 1, publishing=True)
+                or not approval_origin_valid(result, 2, publishing=True)
+                or not receipt_valid(result, publishing=True)):
             raise HTTPException(409, "authenticated Gate 1 and Gate 2 reviews are required")
         git_status = result.get("git_status")
         if git_status not in ("merged", "tagged_and_merged"):
