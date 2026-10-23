@@ -25,8 +25,9 @@ from markdown_it import MarkdownIt
 # p0-1-v1 used raw substring checks without structural HTML context: article body
 # rejected {{ or }}; full document and reassembly rejected {{ only. Legitimate code
 # examples could therefore false-positive. p0-1-v2 permits delimiters only inside
-# pre/code (and immutable shell style).
-HTML_POLICY_VERSION = "p0-1-v2"
+# pre/code (and immutable shell style). v3 also preserves publication math
+# wrappers and explicit ordered-list starts under the structural contract.
+HTML_POLICY_VERSION = "p0-1-v3"
 
 ALLOWED_TAGS = {
     "h2", "h3", "h4", "p", "ul", "ol", "li", "pre", "code", "strong", "em",
@@ -57,6 +58,8 @@ ALLOWED_CLASSES = {
     "language-json",
     "language-bash",
     "language-sql",
+    "math-inline",
+    "math-block",
 }
 
 NH3_ATTRIBUTES = {tag: set() for tag in ALLOWED_TAGS}
@@ -66,11 +69,12 @@ NH3_ATTRIBUTES.update({
     "pre": {"class"},
     "code": {"class"},
     "th": {"scope"},
+    "ol": {"start"},
 })
 NH3_TAG_ATTRIBUTE_VALUES = {"th": {"scope": {"row", "col"}}}
 NH3_CLEAN_CONTENT_TAGS = {"script", "style"}
 
-REVIEW_ALLOWED_CLASSES = ALLOWED_CLASSES | {"math-inline", "math-block"}
+REVIEW_ALLOWED_CLASSES = ALLOWED_CLASSES
 REVIEW_NH3_ATTRIBUTES = {tag: set() for tag in REVIEW_ALLOWED_TAGS}
 REVIEW_NH3_ATTRIBUTES.update({
     "a": {"href"},
@@ -79,6 +83,7 @@ REVIEW_NH3_ATTRIBUTES.update({
     "pre": {"class"},
     "code": {"class"},
     "th": {"scope"},
+    "ol": {"start"},
 })
 
 _SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -217,6 +222,8 @@ def _csp_style_hash(css: str) -> str:
 
 
 def _attribute_filter(tag: str, attr: str, value: str) -> str | None:
+    if tag == "ol" and attr == "start" and re.fullmatch(r"[1-9][0-9]{0,3}", value):
+        return value
     if tag in CLASS_TAGS and attr == "class":
         kept = [c for c in value.split() if c in ALLOWED_CLASSES]
         return " ".join(kept) if kept else None
@@ -227,6 +234,8 @@ def _attribute_filter(tag: str, attr: str, value: str) -> str | None:
 
 def _review_attribute_filter(tag: str, attr: str, value: str) -> str | None:
     """Allow the narrowly-expanded attributes used by trusted Markdown review."""
+    if tag == "ol" and attr == "start" and re.fullmatch(r"[1-9][0-9]{0,3}", value):
+        return value
     if tag in CLASS_TAGS and attr == "class":
         kept = [css_class for css_class in value.split() if css_class in REVIEW_ALLOWED_CLASSES]
         return " ".join(kept) if kept else None
@@ -426,6 +435,7 @@ def _blocked_image(state, silent: bool) -> bool:
                 if not silent:
                     token = state.push("text", "", 0)
                     token.content = state.src[start + 2:label_end]
+                    token.meta = {"unsupported_publication_image": True}
                 state.pos = cursor + 1
                 return True
         elif char in "\r\n":
@@ -468,6 +478,31 @@ def render_markdown_fragment(markdown: str) -> TrustedFragment:
     fragment = sanitize_review_fragment(raw)
     del raw
     return fragment
+
+
+def publication_markdown_html(markdown: str) -> str:
+    """Render approved Markdown tokens before any lossy publication sanitizer."""
+    tokens = _MD.parse(markdown or "")
+    for token in tokens:
+        if token.type == "heading_open" and token.tag not in {"h2", "h3", "h4"}:
+            raise PolicyError("heading level is unsupported inside an article section")
+        if token.type == "ordered_list_open" and token.attrs and (
+            not isinstance(token.attrs.get("start"), int)
+            or not 1 <= token.attrs["start"] <= 9999
+        ):
+            raise PolicyError("ordered-list start is unsupported")
+        if token.type in {"th_open", "td_open"} and (token.attrs or {}).get("style"):
+            raise PolicyError("table alignment is unsupported in published articles")
+        for child in token.children or ():
+            if child.type in {"link_open", "image"}:
+                raise PolicyError("links and images are unsupported in published article sections")
+            if (child.meta or {}).get("unsupported_publication_image"):
+                raise PolicyError("images are unsupported in published article sections")
+    return _MD.renderer.render(tokens, _MD.options, {})
+
+
+def render_publication_markdown(markdown: str) -> TrustedFragment:
+    return sanitize_fragment(publication_markdown_html(markdown))
 
 
 REVIEW_CSS = (
@@ -539,6 +574,8 @@ nav#nav a:hover{text-decoration:underline}
 .sl-code-label{background:#111;padding:7px 16px;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #2a2a2a}
 .sl-code-block pre{margin:0;padding:18px 20px;overflow-x:auto;white-space:pre}
 .sl-code-block code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.82rem;line-height:1.7;color:#d4d4d4}
+.sl-body .math-inline{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
+.sl-body .math-block{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-x:auto;padding:12px;background:var(--section-bg)}
 .sl-body code:not(.sl-code-block code){background:var(--section-bg);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:0.85em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .sl-hr{border:none;border-top:1px solid var(--border);margin:38px 0}
 .sl-sources{border-top:1px solid var(--border);margin-top:52px;padding-top:28px}

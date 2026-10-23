@@ -181,11 +181,6 @@ def test_html_generation_records_safe_placeholder_diagnostics(base_state, monkey
             "takeaways": "- one",
         },
     )
-    monkeypatch.setattr(
-        nodes, "_render_technical_dive_via_llm",
-        lambda **kw: ("<p>{{TOPIC}}</p><p>Gradient descent minimizes a loss function.</p>", 0, 0.0),
-    )
-
     out = nodes.html_gen_node(state)
 
     assert out["html_output"] is None

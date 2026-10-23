@@ -87,6 +87,7 @@ def test_malicious_reviewer_feedback_is_sanitized_before_persist(base_state, mon
     from tests.signoff_fixtures import approved_material_state
     base_state.update(gate1_reviewer_id="security-reviewer", gate1_review_origin="authenticated")
     import agent.nodes as nodes
+    monkeypatch.setattr(nodes, "initial_equivalence_valid", lambda _state: True)
     base_state["article_body_html"] = "<p>Gradient descent minimizes loss.</p>"
     base_state["html_output"] = "<p>Gradient descent minimizes loss.</p>"
     base_state["html_feedback"] = "<script>alert(1)</script> make it bold"

@@ -3,17 +3,20 @@
 from __future__ import annotations
 
 import json
+import re
 from html.parser import HTMLParser
 
 from agent.html_policy import (ALLOWED_CLASSES, ALLOWED_TAGS, HTML_POLICY_VERSION, PolicyError, reassemble_from_body,
-                               render_markdown_fragment, sanitize_fragment, sha256_utf8)
+                               publication_markdown_html, sha256_utf8)
 
-CONTRACT_VERSION = "initial-html-content-v1"
+CONTRACT_VERSION = "article-structure-v2"
 SECTIONS = ("problem_framing", "technical_dive", "code_snippets", "takeaways")
 _VOID = frozenset({"br", "hr"})
 _BLOCK = frozenset({"p", "div", "h1", "h2", "h3", "h4", "li", "ul", "ol", "blockquote", "table", "tr", "td", "th"})
 _CODE_LANGUAGES = frozenset(css for css in ALLOWED_CLASSES if css.startswith("language-"))
 _CASE_CHANGING_CLASSES = frozenset({"callout-label", "sl-code-label"})
+_STRUCTURE = frozenset({"p", "h2", "h3", "h4", "ul", "ol", "li", "blockquote",
+                        "table", "thead", "tbody", "tr", "th", "td"})
 
 
 class _Visible(HTMLParser):
@@ -27,6 +30,8 @@ class _Visible(HTMLParser):
         self.text: list[str] = []
         self.code: list[str] = []
         self.pre_has_code = False
+        self.math_kind: str | None = None
+        self.math: list[str] = []
         self.citation: list[str] = []
 
     def _flush_text(self) -> None:
@@ -49,6 +54,12 @@ class _Visible(HTMLParser):
             len(attrs) != 1 or attrs[0][0] != "class" or attrs[0][1] not in _CODE_LANGUAGES
         ):
             raise PolicyError("code wrapper has unproven attributes")
+        if tag == "ol" and attrs and (
+            len(attrs) != 1 or attrs[0][0] != "start"
+            or not isinstance(attrs[0][1], str)
+            or not re.fullmatch(r"[1-9][0-9]{0,3}", attrs[0][1])
+        ):
+            raise PolicyError("invalid ordered-list start")
         seen: set[str] = set()
         for name, value in attrs:
             if name in seen or not isinstance(value, str):
@@ -62,12 +73,21 @@ class _Visible(HTMLParser):
                     continue
             if tag == "th" and name == "scope" and value in {"row", "col"}:
                 continue
+            if tag == "ol" and name == "start":
+                continue
             raise PolicyError("untrusted article attribute")
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         self._check_tag(tag, attrs)
         if "sup" in self.stack:
             raise PolicyError("nested citation markup")
+        if self.math_kind is not None:
+            raise PolicyError("nested math markup")
+        classes_here = frozenset(next((value.split() for name, value in attrs if name == "class"), ()))
+        math_kind = ("math_inline" if tag == "span" and classes_here == {"math-inline"}
+                     else "math_block" if tag == "div" and classes_here == {"math-block"} else None)
+        if classes_here & {"math-inline", "math-block"} and math_kind is None:
+            raise PolicyError("invalid math wrapper")
         if tag in ("pre", "code") and any(
             classes & _CASE_CHANGING_CLASSES for classes in self.classes
         ):
@@ -82,7 +102,11 @@ class _Visible(HTMLParser):
             self.pre_has_code = True
         if tag in _VOID:
             if tag == "br":
-                self.text.append(" ")
+                self._flush_text()
+                self.events.append(("break", ""))
+            else:
+                self._flush_text()
+                self.events.append(("rule", ""))
             return
         if tag == "sup":
             self._flush_text()
@@ -92,10 +116,20 @@ class _Visible(HTMLParser):
             self.code.clear()
             if tag == "pre":
                 self.pre_has_code = False
+        elif math_kind is not None:
+            self._flush_text()
+            self.math_kind = math_kind
+            self.math.clear()
+        elif classes_here & _CASE_CHANGING_CLASSES:
+            self._flush_text()
+            self.events.append(("open:case", ",".join(sorted(classes_here & _CASE_CHANGING_CLASSES))))
+        elif tag in _STRUCTURE:
+            self._flush_text()
+            self.events.append((f"open:{tag}", attrs[0][1] if tag == "ol" and attrs else ""))
         elif tag in _BLOCK and not any(t in ("pre", "code") for t in self.stack):
             self.text.append(" ")
         self.stack.append(tag)
-        self.classes.append(frozenset(next((value.split() for name, value in attrs if name == "class"), ())))
+        self.classes.append(classes_here)
 
     def handle_startendtag(self, tag: str, attrs: list) -> None:
         self._check_tag(tag, attrs)
@@ -103,12 +137,14 @@ class _Visible(HTMLParser):
             raise PolicyError("markup inside code changes displayed content")
         if tag not in _VOID:
             raise PolicyError("ambiguous self-closing article markup")
+        self._flush_text()
+        self.events.append(("break" if tag == "br" else "rule", ""))
 
     def handle_endtag(self, tag: str) -> None:
         if not self.stack or self.stack[-1] != tag:
             raise PolicyError("malformed article markup")
         self.stack.pop()
-        self.classes.pop()
+        classes_here = self.classes.pop()
         if tag == "sup":
             import re
 
@@ -126,12 +162,24 @@ class _Visible(HTMLParser):
         elif tag == "code" and "pre" not in self.stack:
             self.events.append(("inline_code", "".join(self.code)))
             self.code.clear()
+        elif self.math_kind is not None and classes_here & {"math-inline", "math-block"}:
+            self.events.append((self.math_kind, "".join(self.math)))
+            self.math_kind = None
+            self.math.clear()
+        elif classes_here & _CASE_CHANGING_CLASSES:
+            self._flush_text()
+            self.events.append(("close:case", ""))
+        elif tag in _STRUCTURE:
+            self._flush_text()
+            self.events.append((f"close:{tag}", ""))
         elif tag in _BLOCK and not any(t in ("pre", "code") for t in self.stack):
             self.text.append(" ")
 
     def handle_data(self, data: str) -> None:
         if "sup" in self.stack:
             self.citation.append(data)
+        elif self.math_kind is not None:
+            self.math.append(data)
         elif "pre" in self.stack and "code" not in self.stack:
             raise PolicyError("text outside the block code wrapper")
         elif any(t in ("pre", "code") for t in self.stack):
@@ -150,7 +198,7 @@ class _Visible(HTMLParser):
 
     def finish(self) -> tuple[tuple[str, str], ...]:
         self.close()
-        if self.stack or self.code:
+        if self.stack or self.code or self.math_kind is not None:
             raise PolicyError("unclosed article markup")
         self._flush_text()
         merged: list[tuple[str, str]] = []
@@ -168,6 +216,11 @@ def visible_key(fragment: str) -> tuple[tuple[str, str], ...]:
     return parser.finish()
 
 
+def content_key(fragment: str) -> tuple[tuple[str, str], ...]:
+    """Shared structural contract with trusted citation markers omitted."""
+    return tuple(event for event in visible_key(fragment) if event[0] != "citation")
+
+
 def _digest(value: object) -> str:
     return sha256_utf8(json.dumps(value, ensure_ascii=True, separators=(",", ":")))
 
@@ -177,7 +230,7 @@ def _source_fragment(section: str, raw: str) -> str:
         import html
 
         return f"<pre><code>{html.escape(raw)}</code></pre>"
-    return sanitize_fragment(render_markdown_fragment(raw).html).html
+    return publication_markdown_html(raw)
 
 
 def source_key(section: str, raw: str) -> tuple[tuple[str, str], ...]:

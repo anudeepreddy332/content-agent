@@ -455,18 +455,28 @@ def test_R_citation_rendering_leaves_canonical_draft_sha_unchanged(base_state, m
         state.update(nodes.hitl_approve_update(
             state, supported_signoff(state), submitted_review_id="citation-review"))
     sha_before = sha256_utf8(state["draft_markdown"])
-    monkeypatch.setattr(
-        nodes, "_render_technical_dive_via_llm",
-        lambda **kw: (f"<p>{claim}</p>", 0, 0.0),
-    )
     out = nodes.html_gen_node(state)
     assert sha256_utf8(state["draft_markdown"]) == sha_before
     assert inv["draft_sha256"] == sha_before
     assert out.get("html_output")
     assert "⟦cite:" not in state["draft_markdown"]
     html = out["html_output"]
+    assert html.count("<sup>1</sup>") == len(inv["claims"][0]["occurrences"])
     assert "Source One" in html or "example.com/e1" in html
     assert "example.com/e2" not in html  # uncited retrieved source must not appear
+    from tests.conftest import fake_response
+
+    state.update(out)
+    state["html_feedback"] = "Improve layout"
+    moved = state["article_body_html"].replace(
+        f"{claim}<sup>1</sup>", f"<sup>1</sup>{claim}", 1)
+    assert moved != state["article_body_html"]
+    monkeypatch.setattr(nodes, "_get_client", lambda: object())
+    monkeypatch.setattr(nodes, "_llm_call", lambda _client, **_kw: fake_response(moved))
+    revision = nodes.html_revise_node(state)
+    assert revision["article_body_html"] == state["article_body_html"]
+    assert revision["html_sha256"] == state["html_sha256"]
+    assert any("DISCARDED" in entry for entry in revision["error_log"])
 
 
 def test_S_plan_for_draft_n_cannot_certify_draft_n1(base_state):

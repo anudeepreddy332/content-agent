@@ -19,6 +19,7 @@ from agent.html_policy import (
     normalize_citation_url,
     render_citations_html,
     render_markdown_fragment,
+    render_publication_markdown,
     render_markdown_review_html,
     sanitize_fragment,
 )
@@ -192,6 +193,34 @@ def test_code_equivalence_matches_chromium_display_contract(pw_page):
     assert pw_page.locator("#valid strong").inner_text() == "gradient descent"
     assert pw_page.locator("#valid ol li code").inner_text() == "fit()"
     assert pw_page.locator("#valid sup").inner_text() == "1"
+
+
+def test_publication_markdown_structure_in_chromium(pw_page):
+    markdown = (
+        "## Method\n\n3. Third\n4. Fourth\n   - Nested\n\n"
+        "```python\nif ready:\n    step()\n```\n\n"
+        "| Claim | Value |\n|---|---|\n| loss | 0.1 |\n\n"
+        "Inline $x+y$\n\n$$\nx + y\n$$"
+    )
+    article = render_publication_markdown(markdown).html.replace(
+        "Inline <span", "Inline <sup>1</sup> <span", 1)
+    pw_page.set_content(f'<style>{ARTICLE_CSS}</style><div class="sl-body">{article}</div>')
+    assert pw_page.locator(".sl-body h2").inner_text() == "Method"
+    ordered = pw_page.locator(".sl-body ol")
+    assert ordered.get_attribute("start") == "3"
+    assert ordered.evaluate("el => el.start") == 3
+    assert ordered.locator("li").first.evaluate(
+        "el => getComputedStyle(el).display") == "list-item"
+    assert ordered.locator("ul li").inner_text() == "Nested"
+    code = pw_page.locator(".sl-body pre code")
+    assert code.evaluate("el => getComputedStyle(el).whiteSpace") == "pre"
+    assert "\n    step()" in code.inner_text()
+    assert pw_page.locator(".sl-body table tr").count() == 2
+    assert pw_page.locator(".sl-body tbody td").all_inner_texts() == ["loss", "0.1"]
+    assert pw_page.locator(".sl-body .math-inline").inner_text() == "x+y"
+    assert pw_page.locator(".sl-body .math-block").evaluate(
+        "el => getComputedStyle(el).whiteSpace") == "pre-wrap"
+    assert pw_page.locator(".sl-body sup").inner_text() == "1"
 
 
 def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):

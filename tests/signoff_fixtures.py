@@ -4,7 +4,6 @@ from agent import nodes, workflow
 from agent.claim_inventory import build_claim_inventory
 from agent.evidence_signoff import material_review_bundle
 from agent.reviewer_identity import reviewer_context
-from agent.html_policy import render_markdown_fragment
 from tests.workflow_fixtures import current_quality
 
 
@@ -97,9 +96,6 @@ def renderable_approved_state(state: dict, *, reviewer_id: str = "fixture-review
 
 def render_approved_offline(state: dict, monkeypatch) -> dict:
     """Run the production initial renderer with deterministic, provider-free HTML."""
-    monkeypatch.setattr(nodes, "_render_technical_dive_via_llm",
-                        lambda **kwargs: (render_markdown_fragment(kwargs["technical_dive"]).html,
-                                          0, 0.0))
     update = nodes.html_gen_node(state)
     if not update.get("html_output"):
         raise AssertionError(f"valid offline article failed to render: {update.get('error_log')}")

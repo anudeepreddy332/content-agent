@@ -182,6 +182,9 @@ def test_poll_graph_crash_writes_upstream_failed_telemetry(tmp_path, monkeypatch
 
 def test_html_revise_discards_content_change(base_state, monkeypatch):
     import agent.nodes as nodes
+    # Comparator unit fixture: real receipt/current-artifact checks are exercised
+    # by the two-gate and deterministic-render integration tests.
+    monkeypatch.setattr(nodes, "initial_equivalence_valid", lambda _state: True)
     base_state.update(gate1_reviewer_id="api-reviewer", gate1_review_origin="authenticated")
     base_state = approved_material_state(base_state)
     body = "<p>Gradient descent minimizes loss.</p>"
@@ -198,6 +201,7 @@ def test_html_revise_discards_content_change(base_state, monkeypatch):
 
 def test_html_revise_applies_layout_only(base_state, monkeypatch):
     import agent.nodes as nodes
+    monkeypatch.setattr(nodes, "initial_equivalence_valid", lambda _state: True)
     base_state.update(gate1_reviewer_id="api-reviewer", gate1_review_origin="authenticated")
     base_state = approved_material_state(base_state)
     body = "<p>Gradient descent minimizes loss.</p>"
@@ -217,6 +221,7 @@ def test_html_revise_applies_layout_only(base_state, monkeypatch):
 
 def _revise(base_state, monkeypatch, original, revised):
     import agent.nodes as nodes
+    monkeypatch.setattr(nodes, "initial_equivalence_valid", lambda _state: True)
     base_state.update(gate1_reviewer_id="api-reviewer", gate1_review_origin="authenticated")
     base_state = approved_material_state(base_state)
     base_state["article_body_html"] = original

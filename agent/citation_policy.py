@@ -27,7 +27,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from agent.html_policy import normalize_citation_url
+from agent.html_policy import PolicyError, normalize_citation_url
 from agent.material_policy import _integrity_failure
 from agent.semantic_analyzer.contract import KB_SOURCE_LIMIT, WEB_SOURCE_LIMIT
 from agent.semantic_analyzer.status_engine import sha256_utf8
@@ -667,6 +667,51 @@ def render_inline_cluster_html(evidence_ids: list[str], numbering: dict[str, int
     if not nums:
         return ""
     return "<sup>" + ",".join(nums) + "</sup>"
+
+
+def occurrence_marked_markdown(
+    raw: str, *, section_start: int, groups: list[dict], numbering: dict[str, int],
+) -> tuple[str, dict[str, str]]:
+    """Bind each citation to its exact approved Markdown offset before rendering."""
+    if "\ue000" in raw or "\ue001" in raw:
+        raise PolicyError("reserved citation marker in approved draft")
+    markers: dict[str, str] = {}
+    spans: list[tuple[int, int, str]] = []
+    for index, group in enumerate(groups):
+        ids = group.get("attached_evidence_ids") or []
+        if not ids:
+            continue
+        start, end = group.get("anchor_start"), group.get("anchor_end")
+        if (not isinstance(start, int) or not isinstance(end, int)
+                or start < section_start or end > section_start + len(raw) or start >= end):
+            if isinstance(start, int) and isinstance(end, int) and (
+                end <= section_start or start >= section_start + len(raw)
+            ):
+                continue
+            raise PolicyError("citation anchor crosses or leaves approved section")
+        if not isinstance(ids, list) or len(ids) != len(set(ids)) or any(i not in numbering for i in ids):
+            raise PolicyError("citation cluster has invalid evidence identities")
+        marker = f"\ue000CITE{index}\ue001"
+        markers[marker] = render_inline_cluster_html(ids, numbering)
+        spans.append((start - section_start, end - section_start, marker))
+    spans.sort()
+    if any(left[1] > right[0] for left, right in zip(spans, spans[1:])):
+        raise PolicyError("overlapping citation occurrences")
+    annotated = raw
+    for _start, end, marker in reversed(spans):
+        annotated = annotated[:end] + marker + annotated[end:]
+    return annotated, markers
+
+
+def replace_rendered_occurrence_markers(html: str, markers: dict[str, str]) -> str:
+    """Exactly one surviving marker per anchored occurrence is mandatory."""
+    for marker, cluster in markers.items():
+        if html.count(marker) != 1 or not cluster:
+            raise PolicyError("citation occurrence was lost or duplicated during rendering")
+        html = html.replace(marker, cluster)
+    if "\ue000CITE" in html or "\ue001" in html:
+        raise PolicyError("unresolved citation occurrence marker")
+    return html
 
 
 def apply_inline_clusters_to_html(

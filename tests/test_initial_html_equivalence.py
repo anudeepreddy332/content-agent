@@ -6,7 +6,8 @@ import sqlite3
 import pytest
 
 from agent import nodes
-from agent.html_policy import PolicyError, reassemble_from_body, sha256_utf8
+from agent.html_policy import (HTML_POLICY_VERSION, PolicyError, TrustedFragment,
+                               reassemble_from_body, sha256_utf8)
 from agent.initial_html_equivalence import (assert_section_equivalent, receipt_valid,
                                             source_key, visible_key)
 
@@ -31,8 +32,11 @@ def draft_state():
 def render(state, technical_html, monkeypatch):
     monkeypatch.setattr(nodes, "approval_origin_valid", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(nodes, "receipt_valid", lambda *_args, **_kwargs: True)
-    monkeypatch.setattr(nodes, "_render_technical_dive_via_llm",
-                        lambda **_kwargs: (technical_html, 0, 0.0))
+    original = nodes.render_publication_markdown
+    monkeypatch.setattr(nodes, "render_publication_markdown",
+                        lambda raw: (TrustedFragment(technical_html, HTML_POLICY_VERSION)
+                                     if raw == state["draft_sections"]["technical_dive"]
+                                     else original(raw)))
     return nodes.html_gen_node(state)
 
 
@@ -159,7 +163,7 @@ def test_block_inline_prose_code_representation_contract(draft_state, monkeypatc
     expected = f'<pre><code class="language-python">{content}</code></pre>'
     assert source_key("code_snippets", raw) == visible_key(expected)
     assert_section_equivalent("code_snippets", raw, expected)
-    assert visible_key("<p>Use <code>fit()</code> here.</p>") == visible_key(
+    assert visible_key("<p>Use <code>fit()</code> here.</p>") != visible_key(
         "<div>Use <code>fit()</code> here.</div>")
     assert visible_key("<p>Use <code>fit()</code> here.</p>") != visible_key(
         "<p>Use fit() here.</p>")

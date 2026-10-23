@@ -45,7 +45,7 @@ from agent.html_policy import (
     reassemble_from_body,
     render_citations_html,
     render_markdown_review_html,
-    render_markdown_fragment,
+    render_publication_markdown,
     sanitize_fragment,
     sha256_utf8,
 )
@@ -94,6 +94,7 @@ from agent.initial_html_equivalence import (  # noqa: E402 - load_dotenv precede
     receipt_valid as initial_equivalence_valid,
     source_identity as initial_source_identity,
     visible_key as initial_visible_key,
+    content_key as initial_content_key,
 )
 from agent.material_policy import (
     MaterialPolicyResult,
@@ -104,13 +105,13 @@ from agent.material_policy import (
 )
 from agent.citation_policy import (
     CitationPolicyResult,
-    apply_inline_clusters_to_html,
     bibliography_items,
     build_evidence_registry,
     citation_policy_passed,
     evaluate_citation_policy,
     evidence_numbering,
-    insert_citation_markers,
+    occurrence_marked_markdown,
+    replace_rendered_occurrence_markers,
 )
 import html as html_module
 import re
@@ -778,9 +779,9 @@ def _citations_html_for_state(state: AgentState) -> str:
             state.get("kb_results", []),
         )
     result = evaluate_citation_policy(state=state)
-    items = bibliography_items(result.attached_evidence_ids, build_evidence_registry(state))
+    items = bibliography_items(sorted(result.attached_evidence_ids), build_evidence_registry(state))
     if not items:
-        items = bibliography_items(result.required_evidence_ids, build_evidence_registry(state))
+        items = bibliography_items(sorted(result.required_evidence_ids), build_evidence_registry(state))
     return render_citations_html(items)
 
 
@@ -1933,63 +1934,70 @@ def hitl_node(state: AgentState) -> dict:
 
 
 def _render_problem_framing(raw: str) -> str:
-    return sanitize_fragment(render_markdown_fragment(raw).html).html
+    return render_publication_markdown(raw).html
 
 
 def _render_code_snippets(raw: str) -> str:
     if "```" in raw:
         # Markdown owns fenced code and any surrounding prose. Dropping text
         # outside fences would silently change the approved article.
-        return sanitize_fragment(render_markdown_fragment(raw).html).html
+        return render_publication_markdown(raw).html
     return f'<pre><code>{html_module.escape(raw)}</code></pre>'
 
 def _render_takeaways(raw: str) -> str:
-    return sanitize_fragment(render_markdown_fragment(raw).html).html
+    return render_publication_markdown(raw).html
 
 
-def _render_technical_dive_via_llm(
-    topic: str,
-    technical_dive: str,
-    client=None,
-    run_id: str = "",
-) -> tuple[str, int, float]:
-    if client is None:
-        client = _get_client()
-    prompt = f"""Convert this technical section into clean HTML for an article about: {topic}
-
-RULES:
-- Use <h3> for subsections
-- Use <p> for paragraphs
-- Use <code> for inline code (never backticks in output)
-- Use <strong> for emphasis
-- Use <div class="callout callout-info"> for important notes/warnings (both classes required)
-- Use <ul><li> for lists
-- Do NOT wrap output in any container div
-- Do NOT include DOCTYPE, html, head, or body tags
-- Return ONLY the HTML. No preamble. No markdown fences.
-
-Content to convert:
-{technical_dive}"""
-
-    response = _llm_call(
-        client,
-        model=DEEPSEEK_MODEL,
-        messages=[
-            {"role": "system", "content": "You are an HTML conversion engine. Return only valid HTML elements, no markdown, no fences, no preamble."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.1,
-        max_tokens=3000,
+def _render_occurrence_bound_citations(state: AgentState, fragments: dict, cite) -> dict:
+    """Render each approved section with one marker per exact Markdown anchor."""
+    headings = (
+        ("problem_framing", "Problem Framing"),
+        ("technical_dive", "Technical Deep-Dive"),
+        ("code_snippets", "Code"),
+        ("takeaways", "Takeaways"),
     )
-
-    rendered = response.choices[0].message.content.strip()
-    if rendered.startswith("```"):
-        rendered = re.sub(r'^```\w*\n?', '', rendered)
-        rendered = re.sub(r'\n?```$', '', rendered)
-        rendered = rendered.strip()
-
-    return rendered, response.usage.total_tokens, _cost(response.usage)
-
+    draft_md = state["draft_markdown"]
+    sections = state["draft_sections"]
+    numbering = evidence_numbering(cite.attached_evidence_ids)
+    expected_groups = [g for g in cite.anchor_groups if g.get("attached_evidence_ids")]
+    if len(numbering) != len(set(cite.attached_evidence_ids)):
+        raise PolicyError("citation numbering is incomplete")
+    rendered = {}
+    placed = 0
+    cursor = 0
+    observed_citations = []
+    for section, title in headings:
+        header = f"## {title}\n"
+        header_at = draft_md.find(header, cursor)
+        if header_at < 0:
+            raise PolicyError("approved section heading is missing")
+        start = header_at + len(header)
+        raw = sections[section]
+        if draft_md[start:start + len(raw)] != raw:
+            raise PolicyError("citation section differs from approved draft")
+        annotated, markers = occurrence_marked_markdown(
+            raw, section_start=start, groups=cite.anchor_groups, numbering=numbering,
+        )
+        if section == "code_snippets" and "```" not in raw:
+            annotated_html = f"<pre><code>{html_module.escape(annotated)}</code></pre>"
+        else:
+            annotated_html = render_publication_markdown(annotated).html
+        marked_html = replace_rendered_occurrence_markers(annotated_html, markers)
+        fragment = sanitize_fragment(marked_html)
+        if initial_content_key(fragment.html) != initial_visible_key(fragments[section].html):
+            raise PolicyError("citation rendering changed approved section structure")
+        observed_citations.extend(value for kind, value in initial_visible_key(fragment.html)
+                                  if kind == "citation")
+        rendered[section] = fragment
+        placed += len(markers)
+        cursor = start + len(raw)
+    if placed != len(expected_groups):
+        raise PolicyError("citation anchor is outside approved article sections")
+    expected_citations = [",".join(str(numbering[eid]) for eid in g["attached_evidence_ids"])
+                          for g in sorted(expected_groups, key=lambda g: g["anchor_start"])]
+    if observed_citations != expected_citations:
+        raise PolicyError("citation markers do not match approved occurrence order")
+    return rendered
 
 
 def _approve_html_update(state: AgentState) -> dict:
@@ -2178,7 +2186,6 @@ def html_gen_node(state: AgentState) -> dict:
                 "latency_ms": existing_latency}
 
     draft = state.get("draft_sections", {})
-    topic = state["topic"]
     run_id = state["run_id"]
     td_tokens, td_cost = 0, 0.0
 
@@ -2207,15 +2214,7 @@ def html_gen_node(state: AgentState) -> dict:
         code = sanitize_fragment(_render_code_snippets(draft.get("code_snippets", "")))
         takeaways = sanitize_fragment(_render_takeaways(draft.get("takeaways", "")))
 
-        log.info("html_gen.technical_dive_start", run_id=run_id)
-        raw_td, td_tokens, td_cost = _render_technical_dive_via_llm(
-            topic=topic,
-            technical_dive=draft.get("technical_dive", ""),
-            run_id=run_id,
-        )
-        initial_visible_key(raw_td)
-        dive = sanitize_fragment(raw_td)
-        del raw_td
+        dive = render_publication_markdown(draft.get("technical_dive", ""))
 
         for section, fragment in (
             ("problem_framing", framing), ("technical_dive", dive),
@@ -2224,36 +2223,15 @@ def html_gen_node(state: AgentState) -> dict:
             assert_section_equivalent(section, draft[section], fragment.html)
 
         citations_html = _citations_html_for_state(state)
-        framing_html, dive_html, code_html, takeaways_html = framing.html, dive.html, code.html, takeaways.html
         if state.get("claim_inventory") is not None:
             cite = evaluate_citation_policy(state=state)
-            # Local annotated copy only — canonical draft_markdown is untouched.
-            _ = insert_citation_markers(
-                state.get("draft_markdown") or "",
-                cite.anchor_groups,
-            )
-            numbering = evidence_numbering(cite.attached_evidence_ids or cite.required_evidence_ids)
-            draft_md = state.get("draft_markdown") or ""
-            framing_html = apply_inline_clusters_to_html(
-                framing_html, draft_markdown=draft_md,
-                groups=cite.anchor_groups, numbering=numbering,
-            )
-            dive_html = apply_inline_clusters_to_html(
-                dive_html, draft_markdown=draft_md,
-                groups=cite.anchor_groups, numbering=numbering,
-            )
-            code_html = apply_inline_clusters_to_html(
-                code_html, draft_markdown=draft_md,
-                groups=cite.anchor_groups, numbering=numbering,
-            )
-            takeaways_html = apply_inline_clusters_to_html(
-                takeaways_html, draft_markdown=draft_md,
-                groups=cite.anchor_groups, numbering=numbering,
-            )
-            framing = sanitize_fragment(framing_html)
-            dive = sanitize_fragment(dive_html)
-            code = sanitize_fragment(code_html)
-            takeaways = sanitize_fragment(takeaways_html)
+            marked = _render_occurrence_bound_citations(state, {
+                "problem_framing": framing, "technical_dive": dive,
+                "code_snippets": code, "takeaways": takeaways,
+            }, cite)
+            framing, dive, code, takeaways = (marked[key] for key in (
+                "problem_framing", "technical_dive", "code_snippets", "takeaways"
+            ))
         article = assemble_trusted_article(
             **_article_shell_fields(state),
             problem_framing=framing,
@@ -2307,102 +2285,12 @@ def html_gen_node(state: AgentState) -> dict:
     }
 
 
-def _nfc(text: str) -> str:
-    import unicodedata
-    return unicodedata.normalize("NFC", text or "")
-
-
-def _norm_visible_text(text: str) -> str:
-    """Unicode NFC plus HTML-equivalent whitespace collapsing. Order is preserved."""
-    return re.sub(r"\s+", " ", _nfc(text)).strip()
-
-
-def _norm_code_text(text: str) -> str:
-    """Unicode NFC only. Internal whitespace, newlines, and token order are significant."""
-    return _nfc(text).strip("\n")
-
-
-def _compact_revision_events(events: list[tuple[str, str]]) -> tuple[tuple[str, str], ...]:
-    """Merge adjacent TEXT events (NFC + whitespace collapse). Code events stay in place."""
-    out: list[tuple[str, str]] = []
-    text_acc: list[str] = []
-
-    def flush_text() -> None:
-        if not text_acc:
-            return
-        merged = _norm_visible_text(" ".join(text_acc))
-        text_acc.clear()
-        if merged:
-            out.append(("text", merged))
-
-    for kind, value in events:
-        if kind == "text":
-            text_acc.append(value)
-        else:
-            flush_text()
-            out.append((kind, value))
-    flush_text()
-    return tuple(out)
-
-
-def _revision_content_key(html_str: str) -> tuple[tuple[str, str], ...]:
-    """Ordered stream of visible prose and code. Layout/markup is ignored.
-
-    Events are ("text", ...), ("inline", ...), or ("block", ...) in document order.
-    Adjacent text events are merged after NFC/whitespace collapse so wrapping a
-    sentence in <strong> does not change the stream; moving code relative to
-    prose does.
-    """
-    from html.parser import HTMLParser
-
-    class _Canon(HTMLParser):
-        def __init__(self):
-            super().__init__(convert_charrefs=True)
-            self.events: list[tuple[str, str]] = []
-            self.pre = 0
-            self.code = 0
-            self.buf: list[str] = []
-
-        def handle_starttag(self, tag, attrs):
-            if tag == "pre":
-                self.pre += 1
-                if self.code == 0:
-                    self.buf = []
-            elif tag == "code":
-                self.code += 1
-                if self.code == 1:
-                    self.buf = []
-
-        def handle_endtag(self, tag):
-            if tag == "code" and self.code:
-                self.code -= 1
-                if self.code == 0:
-                    text = _norm_code_text("".join(self.buf))
-                    kind = "block" if self.pre else "inline"
-                    self.events.append((kind, text))
-                    self.buf = []
-            elif tag == "pre" and self.pre:
-                self.pre -= 1
-                if self.code == 0 and self.buf:
-                    self.events.append(("block", _norm_code_text("".join(self.buf))))
-                    self.buf = []
-
-        def handle_data(self, data):
-            if self.code or self.pre:
-                self.buf.append(data)
-            else:
-                self.events.append(("text", data))
-
-    parser = _Canon()
-    parser.feed(html_str or "")
-    parser.close()
-    return _compact_revision_events(parser.events)
-
-
 def html_revise_node(state: AgentState) -> dict:
     """Layout revision of the sanitized article-body fragment only. Trusted shell is immutable."""
     if not approval_origin_valid(state, 1) or not receipt_valid(state):
         return workflow.terminal("execution_failed", "Gate 1 approval origin is invalid for this runtime.")
+    if not initial_equivalence_valid(state):
+        return workflow.terminal("rendering_failed", "Initial HTML structure is stale or invalid.")
     t0 = time.time()
     log = get_logger("html_revise")
     original_body = state.get("article_body_html") or ""
@@ -2442,11 +2330,16 @@ def html_revise_node(state: AgentState) -> dict:
         "policy_diagnostics": policy_diagnostics,
     }
     try:
+        original_key = initial_visible_key(original_body)
+        if initial_visible_key(raw_revised) != original_key:
+            raise PolicyError("revision changes approved content or structure")
         revised_frag = sanitize_fragment(raw_revised)
+        if initial_visible_key(revised_frag.html) != original_key:
+            raise PolicyError("revision sanitization changes approved content or structure")
     except PolicyError as exc:
         del raw_revised
-        errors.append(f"html_revise: revision DISCARDED (sanitizer: {exc}); kept original")
-        log.warning("html_revise.discarded", run_id=state["run_id"], reason="sanitizer")
+        errors.append(f"html_revise: revision DISCARDED ({exc}); kept original")
+        log.warning("html_revise.discarded", run_id=state["run_id"], reason="structure_or_sanitizer")
         if exc.diagnostic is not None:
             policy_diagnostics.append({"stage": "html_revise", **exc.diagnostic})
         return {**base_out, "html_output": original_html, "article_body_html": original_body,
@@ -2461,19 +2354,14 @@ def html_revise_node(state: AgentState) -> dict:
         return {**base_out, "html_output": original_html, "article_body_html": original_body,
                 "html_sha256": state.get("html_sha256"),
                 "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
-    if _revision_content_key(original_body) != _revision_content_key(revised_frag.html):
-        errors.append("html_revise: revision DISCARDED (visible text/code changed); kept original")
-        log.warning("html_revise.discarded", run_id=state["run_id"], reason="content_changed")
-        return {**base_out, "html_output": original_html, "article_body_html": original_body,
-                "html_sha256": state.get("html_sha256"),
-                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
-
     try:
         article = reassemble_from_body(
             **_article_shell_fields(state),
             body_html=revised_frag.html,
             citations_html=citations_html,
         )
+        if initial_visible_key(article.body_html) != original_key:
+            raise PolicyError("reassembled revision changed approved structure")
     except PolicyError as exc:
         errors.append(f"html_revise: revision DISCARDED (reassemble: {exc}); kept original")
         log.warning("html_revise.discarded", run_id=state["run_id"], reason="reassemble")

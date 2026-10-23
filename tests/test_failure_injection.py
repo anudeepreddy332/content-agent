@@ -244,13 +244,10 @@ def test_skipped_verification_fails_closed_when_capacity_remains(base_state, mon
 
 def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path):
     from tests.signoff_fixtures import renderable_approved_state
-    from agent.html_policy import render_markdown_fragment
     base_state.update(gate1_reviewer_id="failure-reviewer", gate1_review_origin="authenticated")
     """B6 regression: html_filename must be <slug>.html regardless of local archive
     state, so republishing a topic is a modification (tagged_and_merged), not a new file."""
     import agent.nodes as nodes
-    monkeypatch.setattr(nodes, "_render_technical_dive_via_llm",
-                        lambda **kw: (render_markdown_fragment(kw["technical_dive"]).html, 0, 0.0))
     monkeypatch.chdir(tmp_path)
     (tmp_path / "prompts").mkdir()
     (tmp_path / "prompts" / "html_template.md").write_text(
