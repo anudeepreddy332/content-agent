@@ -7,7 +7,8 @@ import pytest
 
 from agent import nodes
 from agent.html_policy import PolicyError, reassemble_from_body, sha256_utf8
-from agent.initial_html_equivalence import receipt_valid, visible_key
+from agent.initial_html_equivalence import (assert_section_equivalent, receipt_valid,
+                                            source_key, visible_key)
 
 
 @pytest.fixture
@@ -152,6 +153,43 @@ def test_code_line_break_markup_and_unicode_literal_fail_closed(draft_state, mon
     assert render(draft_state, GOOD, monkeypatch)["html_output"] is None
 
 
+def test_block_inline_prose_code_representation_contract(draft_state, monkeypatch):
+    raw = draft_state["draft_sections"]["code_snippets"]
+    content = "if ready:\n    step()\n"
+    expected = f'<pre><code class="language-python">{content}</code></pre>'
+    assert source_key("code_snippets", raw) == visible_key(expected)
+    assert_section_equivalent("code_snippets", raw, expected)
+    assert visible_key("<p>Use <code>fit()</code> here.</p>") == visible_key(
+        "<div>Use <code>fit()</code> here.</div>")
+    assert visible_key("<p>Use <code>fit()</code> here.</p>") != visible_key(
+        "<p>Use fit() here.</p>")
+    assert visible_key("<p>First. Second.</p>") != visible_key("<p>Second. First.</p>")
+
+    for altered in (
+        f"<code>{content}</code>",
+        f"<p>{content}</p>",
+        f"<pre>{content}</pre>",
+        f"<pre><code>{content}</code><code></code></pre>",
+        f"<pre><code>{content}</pre>",
+        f'<pre class="sl-code-block"><code>{content}</code></pre>',
+        f'<pre><code class="sl-code-label">{content}</code></pre>',
+        f'<span class="sl-code-label"><pre><code>{content}</code></pre></span>',
+        f'<pre><code style="display:none">{content}</code></pre>',
+        f'<pre><code hidden>{content}</code></pre>',
+    ):
+        with pytest.raises(PolicyError):
+            assert_section_equivalent("code_snippets", raw, altered)
+    assert visible_key('<pre><code>print(&quot;é&quot;)</code></pre>') == visible_key(
+        '<pre><code>print("é")</code></pre>')
+    assert visible_key('<pre><code>print("é")</code></pre>') != visible_key(
+        '<pre><code>print("e\u0301")</code></pre>')
+    assert visible_key("<pre><code>a b</code></pre>") != visible_key(
+        "<pre><code>a&nbsp;b</code></pre>")
+
+    monkeypatch.setattr(nodes, "_render_code_snippets", lambda _raw: f"<code>{content}</code>")
+    assert render(draft_state, GOOD, monkeypatch)["html_output"] is None
+
+
 @pytest.mark.parametrize("raw,expected", [
     ("A **gradient descent** learning note.", "<strong>gradient descent</strong>"),
     ("- Use `fit()` on training data.", "<code>fit()</code>"),
@@ -238,6 +276,14 @@ def test_code_tampering_invalidates_receipt_gate2_and_git(draft_state, monkeypat
     assert nodes.git_node({**changed, "html_filename": "gradient-descent.html"})["git_status"] == "failed"
     assert not (tmp_path / "outputs" / "articles" / "gradient-descent.html").exists()
 
+    block = '<pre><code class="language-python">if ready:\n    step()\n</code></pre>'
+    inline = '<code class="language-python">if ready:\n    step()\n</code>'
+    changed_inline = changed_rendered_body(state, block, inline)
+    assert not receipt_valid(changed_inline)
+    assert nodes.hitl_html_node(changed_inline)["terminal_status"] == "rendering_failed"
+    assert nodes.git_node({**changed_inline, "html_filename": "gradient-descent.html"})["git_status"] == "failed"
+    assert not (tmp_path / "outputs" / "articles" / "gradient-descent.html").exists()
+
     unicode_state = deepcopy(draft_state)
     unicode_state["draft_sections"]["code_snippets"] = 'print("é")'
     unicode_state["draft_markdown"] = nodes._assemble_markdown(
@@ -249,7 +295,13 @@ def test_code_tampering_invalidates_receipt_gate2_and_git(draft_state, monkeypat
     assert nodes.hitl_html_node(changed_unicode)["terminal_status"] == "rendering_failed"
 
 
-def test_checkpoint_restart_rejects_inserted_code_break(base_state, monkeypatch, tmp_path):
+@pytest.mark.parametrize("before,after", [
+    ("print(1)", "print(<br>1)"),
+    ("<pre><code>print(1)</code></pre>", "<code>print(1)</code>"),
+])
+def test_checkpoint_restart_rejects_code_representation_change(
+    base_state, monkeypatch, tmp_path, before, after,
+):
     from langgraph.checkpoint.sqlite import SqliteSaver
     from langgraph.types import Command
     from agent.reviewer_identity import reviewer_context
@@ -264,7 +316,7 @@ def test_checkpoint_restart_rejects_inserted_code_break(base_state, monkeypatch,
     first_connection = sqlite3.connect(path, check_same_thread=False)
     graph, _ = _gate_graph("html", SqliteSaver(first_connection))
     assert graph.invoke(state, config)["__interrupt__"][0].value["type"] == "hitl_html_review"
-    changed = changed_rendered_body(state, "print(1)", "print(<br>1)")
+    changed = changed_rendered_body(state, before, after)
     graph.update_state(config, {
         "article_body_html": changed["article_body_html"],
         "html_output": changed["html_output"],
@@ -303,14 +355,18 @@ def test_stale_equivalence_blocks_publish_before_git_network(monkeypatch):
     assert "initial HTML" in response.text
 
 
-def test_inserted_code_break_blocks_publication_before_git_network(monkeypatch):
+@pytest.mark.parametrize("before,after", [
+    ("print(1)", "print(<br>1)"),
+    ("<pre><code>print(1)</code></pre>", "<code>print(1)</code>"),
+])
+def test_code_representation_change_blocks_publication_before_git_network(monkeypatch, before, after):
     from fastapi.testclient import TestClient
     import api.server as server
     from tests.signoff_fixtures import publishable_result
 
     run_id = "code-break-publish"
     state = publishable_result(run_id, "code-break", monkeypatch)
-    state = changed_rendered_body(state, "print(1)", "print(<br>1)")
+    state = changed_rendered_body(state, before, after)
     assert not receipt_valid(state)
     state.update(git_status="merged", git_commit_sha="a" * 40,
                  publish_expected_remote_sha="b" * 40)

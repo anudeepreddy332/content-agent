@@ -12,6 +12,8 @@ CONTRACT_VERSION = "initial-html-content-v1"
 SECTIONS = ("problem_framing", "technical_dive", "code_snippets", "takeaways")
 _VOID = frozenset({"br", "hr"})
 _BLOCK = frozenset({"p", "div", "h1", "h2", "h3", "h4", "li", "ul", "ol", "blockquote", "table", "tr", "td", "th"})
+_CODE_LANGUAGES = frozenset(css for css in ALLOWED_CLASSES if css.startswith("language-"))
+_CASE_CHANGING_CLASSES = frozenset({"callout-label", "sl-code-label"})
 
 
 class _Visible(HTMLParser):
@@ -20,9 +22,11 @@ class _Visible(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.stack: list[str] = []
+        self.classes: list[frozenset[str]] = []
         self.events: list[tuple[str, str]] = []
         self.text: list[str] = []
         self.code: list[str] = []
+        self.pre_has_code = False
         self.citation: list[str] = []
 
     def _flush_text(self) -> None:
@@ -39,6 +43,12 @@ class _Visible(HTMLParser):
     def _check_tag(tag: str, attrs: list) -> None:
         if tag not in ALLOWED_TAGS:
             raise PolicyError("untrusted article element")
+        if tag == "pre" and attrs:
+            raise PolicyError("block code wrapper has unproven attributes")
+        if tag == "code" and attrs != [] and (
+            len(attrs) != 1 or attrs[0][0] != "class" or attrs[0][1] not in _CODE_LANGUAGES
+        ):
+            raise PolicyError("code wrapper has unproven attributes")
         seen: set[str] = set()
         for name, value in attrs:
             if name in seen or not isinstance(value, str):
@@ -58,11 +68,18 @@ class _Visible(HTMLParser):
         self._check_tag(tag, attrs)
         if "sup" in self.stack:
             raise PolicyError("nested citation markup")
+        if tag in ("pre", "code") and any(
+            classes & _CASE_CHANGING_CLASSES for classes in self.classes
+        ):
+            raise PolicyError("presentation class changes displayed code")
         if any(t in ("pre", "code") for t in self.stack):
             # Only the inert <pre><code> wrapper is unambiguous. In particular,
             # <br> changes displayed line structure without contributing data.
             if tag != "code" or self.stack[-1] != "pre":
                 raise PolicyError("markup inside code changes displayed content")
+            if self.pre_has_code:
+                raise PolicyError("multiple code wrappers in one block")
+            self.pre_has_code = True
         if tag in _VOID:
             if tag == "br":
                 self.text.append(" ")
@@ -73,9 +90,12 @@ class _Visible(HTMLParser):
         elif tag in ("pre", "code") and not any(t in ("pre", "code") for t in self.stack):
             self._flush_text()
             self.code.clear()
+            if tag == "pre":
+                self.pre_has_code = False
         elif tag in _BLOCK and not any(t in ("pre", "code") for t in self.stack):
             self.text.append(" ")
         self.stack.append(tag)
+        self.classes.append(frozenset(next((value.split() for name, value in attrs if name == "class"), ())))
 
     def handle_startendtag(self, tag: str, attrs: list) -> None:
         self._check_tag(tag, attrs)
@@ -88,6 +108,7 @@ class _Visible(HTMLParser):
         if not self.stack or self.stack[-1] != tag:
             raise PolicyError("malformed article markup")
         self.stack.pop()
+        self.classes.pop()
         if tag == "sup":
             import re
 
@@ -96,8 +117,14 @@ class _Visible(HTMLParser):
                 raise PolicyError("invalid citation marker")
             self.events.append(("citation", value))
             self.citation.clear()
-        elif tag in ("pre", "code") and not any(t in ("pre", "code") for t in self.stack):
-            self.events.append(("code", "".join(self.code)))
+        elif tag == "pre":
+            if not self.pre_has_code:
+                raise PolicyError("block code requires a code wrapper")
+            self.events.append(("block_code", "".join(self.code)))
+            self.code.clear()
+            self.pre_has_code = False
+        elif tag == "code" and "pre" not in self.stack:
+            self.events.append(("inline_code", "".join(self.code)))
             self.code.clear()
         elif tag in _BLOCK and not any(t in ("pre", "code") for t in self.stack):
             self.text.append(" ")
@@ -105,6 +132,8 @@ class _Visible(HTMLParser):
     def handle_data(self, data: str) -> None:
         if "sup" in self.stack:
             self.citation.append(data)
+        elif "pre" in self.stack and "code" not in self.stack:
+            raise PolicyError("text outside the block code wrapper")
         elif any(t in ("pre", "code") for t in self.stack):
             self.code.append(data)
         else:

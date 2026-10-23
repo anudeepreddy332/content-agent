@@ -13,13 +13,17 @@ os.environ.setdefault("API_SYNC", "1")
 from types import SimpleNamespace
 
 from agent.html_policy import (
+    ARTICLE_CSS,
     assemble_trusted_article,
     build_citation_items,
     normalize_citation_url,
     render_citations_html,
+    render_markdown_fragment,
     render_markdown_review_html,
     sanitize_fragment,
 )
+from agent.initial_html_equivalence import visible_key
+from agent.html_policy import PolicyError
 from tests.test_api_stream import FakeStreamGraph, _interrupt
 from tests.test_html_policy import LEGACY_LOOPBACK, WHATWG_IPV4_EDGE_CASES, _article
 
@@ -144,6 +148,50 @@ def pw_page():
         yield pg
         context.close()
         browser.close()
+
+
+def test_code_equivalence_matches_chromium_display_contract(pw_page):
+    code = 'if ready:\n    step()'
+    block = f'<pre><code>{code}</code></pre>'
+    inline = f'<code>{code}</code>'
+    valid = sanitize_fragment(render_markdown_fragment(
+        'A **gradient descent** learning note.\n\n1. Use `fit()` on training data.'
+    ).html).html.replace('training data.', 'training data.<sup>1</sup>')
+    pw_page.set_content(
+        f'<style>{ARTICLE_CSS}</style><div class="sl-body">'
+        f'<div id="block">{block}</div><div id="inline">{inline}</div>'
+        f'<div id="break"><pre><code>if ready:<br>\n    step()</code></pre></div>'
+        f'<div id="case"><pre><code class="sl-code-label">print("a")</code></pre></div>'
+        '<div id="hidden" style="display:none">hidden claim</div>'
+        f'<div id="valid">{valid}</div>'
+        '</div>'
+    )
+    rendered = pw_page.evaluate("""() => Object.fromEntries(
+        ['block', 'inline', 'break', 'case', 'hidden'].map(id => {
+            const el = document.querySelector('#' + id);
+            const code = el.querySelector('code') || el;
+            const style = getComputedStyle(code);
+            return [id, {textContent: code.textContent, innerText: code.innerText,
+                         whiteSpace: style.whiteSpace, textTransform: style.textTransform,
+                         display: getComputedStyle(el).display}];
+        }))""")
+    assert rendered["block"]["textContent"] == rendered["inline"]["textContent"]
+    assert rendered["block"]["whiteSpace"] == "pre"
+    assert rendered["inline"]["whiteSpace"] == "normal"
+    assert "\n    step()" in rendered["block"]["innerText"]
+    assert "\n    step()" not in rendered["inline"]["innerText"]
+    assert rendered["break"]["innerText"].count("\n") > rendered["block"]["innerText"].count("\n")
+    assert rendered["case"]["textTransform"] == "uppercase"
+    assert rendered["hidden"]["display"] == "none"
+    assert visible_key(block) != visible_key(inline)
+    for unsafe in ('<pre><code>if ready:<br>    step()</code></pre>',
+                   '<pre><code class="sl-code-label">print("a")</code></pre>',
+                   '<div style="display:none">hidden claim</div>'):
+        with pytest.raises(PolicyError):
+            visible_key(unsafe)
+    assert pw_page.locator("#valid strong").inner_text() == "gradient descent"
+    assert pw_page.locator("#valid ol li code").inner_text() == "fit()"
+    assert pw_page.locator("#valid sup").inner_text() == "1"
 
 
 def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
