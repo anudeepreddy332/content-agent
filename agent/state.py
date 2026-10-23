@@ -96,6 +96,7 @@ class AgentState(TypedDict):
     html_output: str | None
     html_filename: str | None
     article_body_html: str | None
+    initial_html_equivalence: dict | None  # current draft and initial visible-content binding
     html_sha256: str | None
     html_policy_version: str | None
     approved_html_sha256: str | None

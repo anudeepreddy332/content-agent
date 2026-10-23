@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import subprocess
 
@@ -10,31 +9,14 @@ import agent.nodes as nodes
 from tests.workflow_fixtures import current_quality
 from main import _build_initial_state, _write_telemetry
 from agent.html_policy import (
-    assemble_trusted_article,
     render_markdown_review_html,
-    sanitize_fragment,
 )
 from tests.conftest import FakeLLMClient, fake_response
 from tests.test_publish_target import DEMO_FORK_URL, enable_demo_publish, make_git_repo
+from tests.signoff_fixtures import renderable_approved_state, render_approved_offline
 
 
 REMOTE_PARENT = "b" * 40
-
-
-def _trusted_article():
-    return assemble_trusted_article(
-        topic="Gradient Descent",
-        slug="gradient-descent-test",
-        meta_description="meta",
-        series_label="Test",
-        breadcrumb_section="Test",
-        read_time="5",
-        problem_framing=sanitize_fragment("<p>framing</p>"),
-        technical_dive=sanitize_fragment("<p>dive</p>"),
-        code_snippets=sanitize_fragment("<pre><code>print(1)</code></pre>"),
-        takeaways=sanitize_fragment("<ul><li>one</li></ul>"),
-        citations_html="<li>Sources retrieved via Tavily web search.</li>",
-    )
 
 
 def test_gate1_renders_canonical_markdown_without_mutating_it():
@@ -116,13 +98,10 @@ def test_reflection_marks_parse_fallback_as_fallback(base_state, monkeypatch):
 
 
 def test_gate2_approval_captures_the_fresh_parent_at_approval(base_state, monkeypatch):
-    from tests.signoff_fixtures import approved_material_state
     from agent.reviewer_identity import reviewer_context
-    html = "<html><body>trusted</body></html>"
-    digest = hashlib.sha256(html.encode("utf-8")).hexdigest()
-    base_state.update(html_output=html, html_sha256=digest,
-                      gate1_reviewer_id="pilot-reviewer", gate1_review_origin="authenticated")
-    base_state = approved_material_state(base_state, reviewer_id="pilot-reviewer")
+    base_state = render_approved_offline(
+        renderable_approved_state(base_state, reviewer_id="pilot-reviewer"), monkeypatch)
+    digest = base_state["html_sha256"]
     monkeypatch.setenv("GIT_PUSH_ENABLED", "true")
     monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: REMOTE_PARENT)
 
@@ -155,32 +134,17 @@ def test_parent_capture_reads_selected_remote_instead_of_a_local_tracking_ref(tm
 def test_git_node_refuses_a_stale_local_main_before_mutating_the_site(
     tmp_path, monkeypatch, base_state
 ):
-    from tests.signoff_fixtures import approved_material_state
     """A locally stale main must never become the base of an approved merge."""
     repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL}, commit=True)
-    article = _trusted_article()
     monkeypatch.chdir(tmp_path)
     enable_demo_publish(monkeypatch, repo)
     monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: REMOTE_PARENT)
 
-    state = {
-        **base_state,
-        "gate1_reviewer_id": "pilot-reviewer",
-        "gate2_reviewer_id": "pilot-reviewer",
-        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
-        "html_output": article.html,
-        "html_filename": "gradient-descent-test.html",
-        "html_sha256": article.sha256,
-        "approved_html_sha256": article.sha256,
-        "article_body_html": article.body_html,
-        "publish_expected_remote_sha": REMOTE_PARENT,
-        "slug": "gradient-descent-test",
-        "topic": "Gradient Descent",
-        "category": "concept-exploration",
-        "draft_sections": {"problem_framing": "framing"},
-    }
-
-    out = nodes.git_node(approved_material_state(state, reviewer_id="pilot-reviewer"))
+    state = render_approved_offline(
+        renderable_approved_state(base_state, reviewer_id="pilot-reviewer"), monkeypatch)
+    state.update(gate2_reviewer_id="pilot-reviewer", gate2_review_origin="authenticated",
+                 approved_html_sha256=state["html_sha256"], publish_expected_remote_sha=REMOTE_PARENT)
+    out = nodes.git_node(state)
 
     assert out["git_status"] == "failed"
     assert "approved remote parent" in " ".join(out["error_log"])
@@ -191,32 +155,17 @@ def test_git_node_refuses_a_stale_local_main_before_mutating_the_site(
 def test_git_node_preserves_the_remote_race_check_before_mutating_the_site(
     tmp_path, monkeypatch, base_state
 ):
-    from tests.signoff_fixtures import approved_material_state
     repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL}, commit=True)
-    article = _trusted_article()
     parent = subprocess.check_output(["git", "rev-parse", "main"], cwd=repo, text=True).strip()
     monkeypatch.chdir(tmp_path)
     enable_demo_publish(monkeypatch, repo)
     monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: "d" * 40)
 
-    state = {
-        **base_state,
-        "gate1_reviewer_id": "pilot-reviewer",
-        "gate2_reviewer_id": "pilot-reviewer",
-        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
-        "html_output": article.html,
-        "html_filename": "gradient-descent-test.html",
-        "html_sha256": article.sha256,
-        "approved_html_sha256": article.sha256,
-        "article_body_html": article.body_html,
-        "publish_expected_remote_sha": parent,
-        "slug": "gradient-descent-test",
-        "topic": "Gradient Descent",
-        "category": "concept-exploration",
-        "draft_sections": {"problem_framing": "framing"},
-    }
-
-    out = nodes.git_node(approved_material_state(state, reviewer_id="pilot-reviewer"))
+    state = render_approved_offline(
+        renderable_approved_state(base_state, reviewer_id="pilot-reviewer"), monkeypatch)
+    state.update(gate2_reviewer_id="pilot-reviewer", gate2_review_origin="authenticated",
+                 approved_html_sha256=state["html_sha256"], publish_expected_remote_sha=parent)
+    out = nodes.git_node(state)
 
     assert out["git_status"] == "failed"
     assert "remote main changed after Gate 2 approval" in " ".join(out["error_log"])
@@ -224,24 +173,20 @@ def test_git_node_preserves_the_remote_race_check_before_mutating_the_site(
 
 
 def test_html_generation_records_safe_placeholder_diagnostics(base_state, monkeypatch):
-    from tests.signoff_fixtures import approved_material_state
-    base_state.update(gate1_reviewer_id="pilot-reviewer", gate1_review_origin="authenticated")
-    base_state.update(
-        draft_sections={
+    state = renderable_approved_state(
+        base_state, reviewer_id="pilot-reviewer", sections={
             "problem_framing": "framing",
-            "technical_dive": "dive",
+            "technical_dive": "{{TOPIC}}",
             "code_snippets": "```python\nprint(1)\n```",
             "takeaways": "- one",
         },
-        draft_markdown="# Test\n\n## Technical Deep-Dive\ndive",
     )
     monkeypatch.setattr(
-        nodes,
-        "_get_client",
-        lambda: FakeLLMClient(response=fake_response("<p>{{TOPIC}}</p>")),
+        nodes, "_render_technical_dive_via_llm",
+        lambda **kw: ("<p>{{TOPIC}}</p><p>Gradient descent minimizes a loss function.</p>", 0, 0.0),
     )
 
-    out = nodes.html_gen_node(approved_material_state(base_state, reviewer_id="pilot-reviewer"))
+    out = nodes.html_gen_node(state)
 
     assert out["html_output"] is None
     assert out["policy_diagnostics"] == [{

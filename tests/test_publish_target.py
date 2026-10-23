@@ -18,7 +18,8 @@ from agent.publish_target import (
     github_owner_repo,
 )
 import agent.nodes as nodes
-from tests.signoff_fixtures import approved_material_state
+from tests.signoff_fixtures import (publishable_result, renderable_approved_state,
+                                    render_approved_offline)
 from agent.html_policy import assemble_trusted_article, sanitize_fragment
 
 DEMO_FORK_URL = "git@github.com:anudeepreddy332/themachinist-website-fork.git"
@@ -79,22 +80,12 @@ def _trusted():
     )
 
 
-def _git_state(base_state, article):
-    return approved_material_state({
-        **base_state,
-        "gate1_reviewer_id": "pilot-reviewer",
-        "gate2_reviewer_id": "pilot-reviewer",
-        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
-        "html_output": article.html,
-        "html_filename": "gradient-descent-test.html",
-        "html_sha256": article.sha256,
-        "approved_html_sha256": article.sha256,
-        "article_body_html": article.body_html,
-        "slug": "gradient-descent-test",
-        "topic": "Gradient Descent",
-        "category": "concept-exploration",
-        "draft_sections": {"problem_framing": "framing"},
-    }, reviewer_id="pilot-reviewer")
+def _git_state(base_state, article, monkeypatch):
+    state = render_approved_offline(
+        renderable_approved_state(base_state, reviewer_id="pilot-reviewer"), monkeypatch)
+    state.update(gate2_reviewer_id="pilot-reviewer", gate2_review_origin="authenticated",
+                 approved_html_sha256=state["html_sha256"], category="concept-exploration")
+    return state
 
 
 def _seed_publishable(monkeypatch, repo: Path):
@@ -103,10 +94,8 @@ def _seed_publishable(monkeypatch, repo: Path):
     rid = "run-policy"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
-                       "topic": "Gradient Descent",
-                       "draft_markdown": "Gradient descent minimizes a loss function."},
-                      reviewer_id="pilot-reviewer"),
+        "result": {**publishable_result(rid, "my-article", monkeypatch,
+                                        reviewer_id="pilot-reviewer"),
                    "slug": "my-article", "git_status": "merged",
                    "gate1_reviewer_id": "pilot-reviewer", "gate2_reviewer_id": "pilot-reviewer",
                    "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
@@ -241,10 +230,8 @@ def test_production_confirmation_does_not_skip_remote_parent_check(tmp_path, mon
     other = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
-                       "topic": "Gradient Descent",
-                       "draft_markdown": "Gradient descent minimizes a loss function."},
-                      reviewer_id="pilot-reviewer"),
+        "result": {**publishable_result(rid, "my-article", monkeypatch,
+                                        reviewer_id="pilot-reviewer"),
                    "slug": "my-article", "git_status": "merged",
                    "gate1_reviewer_id": "pilot-reviewer", "gate2_reviewer_id": "pilot-reviewer",
                    "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
@@ -278,10 +265,8 @@ def test_production_confirmation_still_pushes_exact_sha_ref(tmp_path, monkeypatc
     rid = "run-prod-sha"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
-                       "topic": "Gradient Descent",
-                       "draft_markdown": "Gradient descent minimizes a loss function."},
-                      reviewer_id="pilot-reviewer"),
+        "result": {**publishable_result(rid, "my-article", monkeypatch,
+                                        reviewer_id="pilot-reviewer"),
                    "slug": "my-article", "git_status": "merged",
                    "gate1_reviewer_id": "pilot-reviewer", "gate2_reviewer_id": "pilot-reviewer",
                    "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
@@ -310,7 +295,7 @@ def test_git_node_denies_merge_when_target_unset(tmp_path, monkeypatch, base_sta
     monkeypatch.delenv("PUBLISH_TARGET", raising=False)
     import config
     monkeypatch.setattr(config, "THEMACHINIST_REPO_PATH", str(repo))
-    out = nodes.git_node(_git_state(base_state, article))
+    out = nodes.git_node(_git_state(base_state, article, monkeypatch))
     assert out["git_status"] == "failed"
     assert "publish target denied" in " ".join(out["error_log"])
     assert not (repo / "gradient-descent-test.html").exists()
@@ -322,7 +307,7 @@ def test_git_node_merges_when_demo_allowlist_matches(tmp_path, monkeypatch, base
     monkeypatch.chdir(tmp_path)
     enable_demo_publish(monkeypatch, repo)
     parent = subprocess.check_output(["git", "rev-parse", "main"], cwd=repo, text=True).strip()
-    state = _git_state(base_state, article)
+    state = _git_state(base_state, article, monkeypatch)
     state["publish_expected_remote_sha"] = parent
     monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: parent)
     out = nodes.git_node(state)
@@ -336,7 +321,7 @@ def test_git_node_dry_run_when_push_disabled_even_with_demo_target(
     repo = make_git_repo(tmp_path / "fork", {"origin": DEMO_FORK_URL}, commit=True)
     monkeypatch.chdir(tmp_path)
     enable_demo_publish(monkeypatch, repo, git_push="false")
-    out = nodes.git_node(_git_state(base_state, article))
+    out = nodes.git_node(_git_state(base_state, article, monkeypatch))
     assert out["git_status"] == "dry_run"
     assert not (repo / "gradient-descent-test.html").exists()
 
@@ -480,7 +465,7 @@ def test_git_node_denies_fetch_fork_pushurl_production(
     )
     monkeypatch.chdir(tmp_path)
     enable_demo_publish(monkeypatch, repo)
-    out = nodes.git_node(_git_state(base_state, article))
+    out = nodes.git_node(_git_state(base_state, article, monkeypatch))
     assert out["git_status"] == "failed"
     assert "publish target denied" in " ".join(out["error_log"])
     assert not (repo / "gradient-descent-test.html").exists()

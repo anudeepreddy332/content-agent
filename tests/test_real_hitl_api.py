@@ -1,7 +1,6 @@
 """Real HITL interrupt/resume and HTTP contracts; synthetic state, no providers."""
 
 import builtins
-import hashlib
 import queue
 from unittest.mock import Mock
 
@@ -14,9 +13,7 @@ from langgraph.types import Command
 import agent.nodes as nodes
 from agent.reviewer_identity import reviewer_context
 from agent.state import AgentState
-from tests.test_citation_policy import E1, _claim_row, _verified
-from tests.signoff_fixtures import supported_signoff
-from tests.workflow_fixtures import current_quality
+from tests.signoff_fixtures import supported_signoff, renderable_approved_state, render_approved_offline
 
 
 @pytest.fixture
@@ -40,17 +37,14 @@ def api_gate_environment(monkeypatch, tmp_path):
 
 
 @pytest.fixture
-def html_state(article_state):
-    html = "<html><body><p>Safe synthetic gate payload.</p></body></html>"
+def html_state(article_state, monkeypatch):
     with reviewer_context("real-gate", article_state["run_id"], review_id="fixture-gate1"):
         gate1 = nodes.hitl_approve_update(article_state, supported_signoff(article_state),
                                           submitted_review_id="fixture-gate1")
     assert gate1["hitl_status"] == "approved"
+    rendered = render_approved_offline({**article_state, **gate1}, monkeypatch)
     return {
-        **article_state, **gate1,
-        "html_output": html,
-        "html_filename": "gate-test.html",
-        "html_sha256": hashlib.sha256(html.encode()).hexdigest(),
+        **rendered,
         "html_review_status": None,
         "approved_html_sha256": None,
     }
@@ -58,9 +52,10 @@ def html_state(article_state):
 
 @pytest.fixture
 def article_state(base_state):
-    draft = "Dropout randomly zeroes activations during training."
-    state, _ = _verified(base_state, draft, [_claim_row(draft)], [[E1]])
-    return current_quality(state)
+    approved = renderable_approved_state(base_state, reviewer_id="real-gate")
+    return {**approved, "hitl_status": "pending", "gate1_reviewer_id": None,
+            "gate1_review_origin": None, "gate1_evidence_signoff": None,
+            "approved_draft_identity": None}
 
 
 def _gate_graph(gate, checkpointer=None):

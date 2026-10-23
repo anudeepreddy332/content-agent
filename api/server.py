@@ -58,6 +58,7 @@ from agent.reviewer_identity import (
     reviewer_context,
 )
 from agent.evidence_signoff import EvidenceSignoffError, material_review_bundle, receipt_valid
+from agent.initial_html_equivalence import receipt_valid as initial_equivalence_valid
 from agent.workflow import terminal_api_status, terminal, project_terminal
 from agent.html_policy import REVIEWER_APP_CSP
 from main import _build_initial_state, _make_slug, _write_telemetry
@@ -636,8 +637,9 @@ def ui_publish(run_id: str):
         result = reg.get("result") or {}
         if (not approval_origin_valid(result, 1, publishing=True)
                 or not approval_origin_valid(result, 2, publishing=True)
-                or not receipt_valid(result, publishing=True)):
-            raise HTTPException(409, "authenticated Gate 1 and Gate 2 reviews are required")
+                or not receipt_valid(result, publishing=True)
+                or not initial_equivalence_valid(result)):
+            raise HTTPException(409, "current Gate 1, initial HTML, and Gate 2 approvals are required")
         git_status = result.get("git_status")
         if git_status not in ("merged", "tagged_and_merged"):
             raise HTTPException(409, f"run git_status is {git_status!r}, "

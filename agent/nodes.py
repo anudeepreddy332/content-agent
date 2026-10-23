@@ -45,6 +45,7 @@ from agent.html_policy import (
     reassemble_from_body,
     render_citations_html,
     render_markdown_review_html,
+    render_markdown_fragment,
     sanitize_fragment,
     sha256_utf8,
 )
@@ -86,6 +87,13 @@ from agent.claim_inventory import (
 )
 from agent.evidence_signoff import (  # noqa: E402 - load_dotenv precedes project imports
     EvidenceSignoffError, material_review_bundle, receipt_valid, validate_submission,
+)
+from agent.initial_html_equivalence import (  # noqa: E402 - load_dotenv precedes project imports
+    assert_section_equivalent,
+    receipt_for_article as initial_equivalence_receipt,
+    receipt_valid as initial_equivalence_valid,
+    source_identity as initial_source_identity,
+    visible_key as initial_visible_key,
 )
 from agent.material_policy import (
     MaterialPolicyResult,
@@ -824,17 +832,6 @@ def _atomic_write_utf8(path: Path, text: str) -> None:
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_bytes(data)
     os.replace(tmp, path)
-
-
-_ALLOWED_CODE_LANG = {
-    "python": "language-python",
-    "text": "language-text",
-    "json": "language-json",
-    "bash": "language-bash",
-    "sh": "language-bash",
-    "sql": "language-sql",
-}
-
 
 
 def _deduplicate_grounding_report(
@@ -1943,32 +1940,11 @@ def _render_problem_framing(raw: str) -> str:
 
 
 def _render_code_snippets(raw: str) -> str:
-    pattern = re.compile(r'```(\w*)\n(.*?)```', re.DOTALL)
-    matches = pattern.findall(raw)
-
-    if not matches:
-        escaped = html_module.escape(raw.strip())
-        return (
-            '<div class="sl-code-block">'
-            '<div class="sl-code-label">TEXT</div>'
-            f'<pre><code>{escaped}</code></pre>'
-            '</div>'
-        )
-
-    blocks = []
-    for lang, content in matches:
-        lang_key = (lang.strip() or "text").lower()
-        lang_class = _ALLOWED_CODE_LANG.get(lang_key, "language-text")
-        label = lang_key.upper() if lang_key in _ALLOWED_CODE_LANG else "TEXT"
-        escaped = html_module.escape(content.strip())
-        blocks.append(
-            f'<div class="sl-code-block">'
-            f'<div class="sl-code-label">{label}</div>'
-            f'<pre><code class="{lang_class}">{escaped}</code></pre>'
-            f'</div>'
-        )
-    return "\n\n".join(blocks)
-
+    if "```" in raw:
+        # Markdown owns fenced code and any surrounding prose. Dropping text
+        # outside fences would silently change the approved article.
+        return sanitize_fragment(render_markdown_fragment(raw).html).html
+    return f'<pre><code>{html_module.escape(raw)}</code></pre>'
 
 def _render_takeaways(raw: str) -> str:
     lines = raw.strip().splitlines()
@@ -2035,7 +2011,8 @@ def _approve_html_update(state: AgentState) -> dict:
     """Record Gate 2 approval and, only when enabled, its live remote parent."""
     reviewer_id = current_reviewer_id(state.get("run_id"))
     origin = current_reviewer_origin(state.get("run_id"))
-    if (reviewer_id is None or not approval_origin_valid(state, 1) or not receipt_valid(state) or
+    if (reviewer_id is None or not approval_origin_valid(state, 1) or not receipt_valid(state)
+            or not initial_equivalence_valid(state) or
             not ((origin == "authenticated" and not reviewer_id.startswith("test:")) or
                  (origin == "synthetic" and reviewer_id.startswith("test:") and
                   test_auto_reviewer_id() == reviewer_id))):
@@ -2090,6 +2067,10 @@ def hitl_html_node(state: AgentState) -> dict:
     if not approval_origin_valid(state, 1):
         return {"html_review_status": "rejected", **workflow.terminal(
             "execution_failed", "Gate 1 approval origin is invalid for this runtime."
+        )}
+    if not initial_equivalence_valid(state):
+        return {"html_review_status": "rejected", **workflow.terminal(
+            "rendering_failed", "Initial HTML content differs from the approved draft."
         )}
 
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
@@ -2208,7 +2189,7 @@ def html_gen_node(state: AgentState) -> dict:
         existing_latency["html_gen"] = 0
         return {"html_output": None, "html_filename": None, "article_body_html": None,
                 "html_sha256": None, "html_policy_version": HTML_POLICY_VERSION,
-                "approved_html_sha256": None,
+                "approved_html_sha256": None, "initial_html_equivalence": None,
                 "latency_ms": existing_latency}
 
     draft = state.get("draft_sections", {})
@@ -2217,6 +2198,7 @@ def html_gen_node(state: AgentState) -> dict:
     td_tokens, td_cost = 0, 0.0
 
     try:
+        initial_source_identity(state)
         if state.get("claim_inventory") is not None:
             cite_gate = evaluate_citation_policy(state=state)
             if not citation_policy_passed(cite_gate):
@@ -2228,7 +2210,7 @@ def html_gen_node(state: AgentState) -> dict:
                     "article_body_html": None,
                     "html_sha256": None,
                     "html_policy_version": HTML_POLICY_VERSION,
-                    "approved_html_sha256": None,
+                    "approved_html_sha256": None, "initial_html_equivalence": None,
                     "latency_ms": existing_latency,
                     "error_log": error_log,
                     "policy_diagnostics": policy_diagnostics + [cite_gate.to_dict()],
@@ -2246,8 +2228,15 @@ def html_gen_node(state: AgentState) -> dict:
             technical_dive=draft.get("technical_dive", ""),
             run_id=run_id,
         )
+        initial_visible_key(raw_td)
         dive = sanitize_fragment(raw_td)
         del raw_td
+
+        for section, fragment in (
+            ("problem_framing", framing), ("technical_dive", dive),
+            ("code_snippets", code), ("takeaways", takeaways),
+        ):
+            assert_section_equivalent(section, draft[section], fragment.html)
 
         citations_html = _citations_html_for_state(state)
         framing_html, dive_html, code_html, takeaways_html = framing.html, dive.html, code.html, takeaways.html
@@ -2288,6 +2277,7 @@ def html_gen_node(state: AgentState) -> dict:
             takeaways=takeaways,
             citations_html=citations_html,
         )
+        equivalence_receipt = initial_equivalence_receipt(state, article.body_html)
     except PolicyError as exc:
         existing_latency["html_gen"] = int((time.time() - t_start) * 1000)
         error_log.append(f"[html_gen] policy failure: {exc}")
@@ -2300,7 +2290,7 @@ def html_gen_node(state: AgentState) -> dict:
             "article_body_html": None,
             "html_sha256": None,
             "html_policy_version": HTML_POLICY_VERSION,
-            "approved_html_sha256": None,
+            "approved_html_sha256": None, "initial_html_equivalence": None,
             "total_tokens": state.get("total_tokens", 0) + td_tokens,
             "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
             "latency_ms": existing_latency,
@@ -2320,6 +2310,7 @@ def html_gen_node(state: AgentState) -> dict:
         "html_sha256": article.sha256,
         "html_policy_version": article.policy_version,
         "approved_html_sha256": None,
+        "initial_html_equivalence": equivalence_receipt,
         # A local/tracking ref here can be stale by the time a human approves.
         # Gate 2 captures the remote parent instead.
         "publish_expected_remote_sha": None,
@@ -2652,7 +2643,7 @@ def git_node(state: AgentState) -> dict:
         return None
 
     if (not approval_origin_valid(state, 1) or not approval_origin_valid(state, 2)
-            or not receipt_valid(state)):
+            or not receipt_valid(state) or not initial_equivalence_valid(state)):
         return _fail("missing authenticated Gate 1 or Gate 2 reviewer identity")
 
     if not html_content or not filename:

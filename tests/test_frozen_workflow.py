@@ -10,10 +10,9 @@ import agent.graph as graph_mod
 import agent.nodes as nodes
 from agent import workflow
 from agent.claim_inventory import build_claim_inventory
-from agent.html_policy import sha256_utf8
 from tests.conftest import FakeLLMClient, fake_response
 from tests.test_citation_policy import _claim_row
-from tests.signoff_fixtures import supported_signoff
+from tests.signoff_fixtures import supported_signoff, render_approved_offline
 
 CLAIM = "Gradient descent minimizes the loss."
 SECTIONS = dict(problem_framing=CLAIM, technical_dive="Follow the gradient.",
@@ -76,8 +75,8 @@ def harness(monkeypatch, base_state):
 
     def html(state):
         calls.append("html_gen")
-        text = "<html><body><p>Trusted previous render.</p></body></html>"
-        return {"html_output": text, "html_sha256": sha256_utf8(text)}
+        rendered = render_approved_offline(state, monkeypatch)
+        return {key: value for key, value in rendered.items() if key not in state or state[key] != value}
 
     def layout(state):
         calls.append("html_revise")

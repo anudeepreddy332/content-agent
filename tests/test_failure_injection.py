@@ -243,13 +243,14 @@ def test_skipped_verification_fails_closed_when_capacity_remains(base_state, mon
 
 
 def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path):
-    from tests.signoff_fixtures import approved_material_state
+    from tests.signoff_fixtures import renderable_approved_state
+    from agent.html_policy import render_markdown_fragment
     base_state.update(gate1_reviewer_id="failure-reviewer", gate1_review_origin="authenticated")
     """B6 regression: html_filename must be <slug>.html regardless of local archive
     state, so republishing a topic is a modification (tagged_and_merged), not a new file."""
     import agent.nodes as nodes
-    monkeypatch.setattr(nodes, "_get_client", lambda: object())
-    monkeypatch.setattr(nodes, "_render_technical_dive_via_llm", lambda **kw: ("<p>td</p>", 0, 0.0))
+    monkeypatch.setattr(nodes, "_render_technical_dive_via_llm",
+                        lambda **kw: (render_markdown_fragment(kw["technical_dive"]).html, 0, 0.0))
     monkeypatch.chdir(tmp_path)
     (tmp_path / "prompts").mkdir()
     (tmp_path / "prompts" / "html_template.md").write_text(
@@ -259,9 +260,11 @@ def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path)
     base_state.update(slug="republish-target",
                       draft_sections={"problem_framing": "x", "technical_dive": "y",
                                       "code_snippets": "print(1)", "takeaways": "z"})
-    r1 = nodes.html_gen_node(approved_material_state(
-        {**base_state, "run_id": "run-aaaaaa"}, reviewer_id="failure-reviewer"))
-    r2 = nodes.html_gen_node(approved_material_state(
-        {**base_state, "run_id": "run-bbbbbb"}, reviewer_id="failure-reviewer"))  # archive now exists
+    r1 = nodes.html_gen_node(renderable_approved_state(
+        {**base_state, "run_id": "run-aaaaaa"}, reviewer_id="failure-reviewer",
+        sections=base_state["draft_sections"]))
+    r2 = nodes.html_gen_node(renderable_approved_state(
+        {**base_state, "run_id": "run-bbbbbb"}, reviewer_id="failure-reviewer",
+        sections=base_state["draft_sections"]))
     assert r1["html_filename"] == "republish-target.html"
     assert r2["html_filename"] == "republish-target.html"   # NOT suffixed

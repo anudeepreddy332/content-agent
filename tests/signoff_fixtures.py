@@ -4,6 +4,7 @@ from agent import nodes, workflow
 from agent.claim_inventory import build_claim_inventory
 from agent.evidence_signoff import material_review_bundle
 from agent.reviewer_identity import reviewer_context
+from agent.html_policy import render_markdown_fragment
 from tests.workflow_fixtures import current_quality
 
 
@@ -74,3 +75,45 @@ def approved_material_state(state: dict, *, reviewer_id: str | None = None) -> d
     if not workflow.gate1_eligible(result):
         raise AssertionError("positive-control automated Gate 1 eligibility failed")
     return result
+
+
+def renderable_approved_state(state: dict, *, reviewer_id: str = "fixture-reviewer",
+                              sections: dict | None = None) -> dict:
+    """A coherent approved draft for downstream HTML/Git positive controls."""
+    sections = dict(sections or {
+        "problem_framing": "A gradient descent learning note.",
+        "technical_dive": "Gradient descent minimizes a loss function.",
+        "code_snippets": "print(1)",
+        "takeaways": "- Use a suitable learning rate.",
+    })
+    claim = "Gradient descent minimizes a loss function."
+    if claim not in sections["technical_dive"]:
+        sections["technical_dive"] += f"\n\n{claim}"
+    state = {**state, "draft_sections": sections,
+             "draft_markdown": nodes._assemble_markdown(state["topic"], sections)}
+    state.pop("evidence_registry", None)  # production graph derives this from current sources
+    return approved_material_state(state, reviewer_id=reviewer_id)
+
+
+def render_approved_offline(state: dict, monkeypatch) -> dict:
+    """Run the production initial renderer with deterministic, provider-free HTML."""
+    monkeypatch.setattr(nodes, "_render_technical_dive_via_llm",
+                        lambda **kwargs: (render_markdown_fragment(kwargs["technical_dive"]).html,
+                                          0, 0.0))
+    update = nodes.html_gen_node(state)
+    if not update.get("html_output"):
+        raise AssertionError(f"valid offline article failed to render: {update.get('error_log')}")
+    return {**state, **update}
+
+
+def publishable_result(run_id: str, slug: str, monkeypatch, *, reviewer_id: str = "fixture-reviewer") -> dict:
+    """A complete two-gate positive control for isolated publish-boundary tests."""
+    state = renderable_approved_state({
+        "run_id": run_id, "topic": "Gradient Descent", "slug": slug,
+        "series_context": "Test", "total_cost_usd": 0.0,
+        "latency_ms": {}, "error_log": [],
+    }, reviewer_id=reviewer_id)
+    state = render_approved_offline(state, monkeypatch)
+    state.update(gate2_reviewer_id=reviewer_id, gate2_review_origin="authenticated",
+                 approved_html_sha256=state["html_sha256"])
+    return state

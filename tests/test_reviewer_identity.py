@@ -25,7 +25,8 @@ from agent.reviewer_identity import (
 )
 from tests.test_citation_policy import E1, _claim_row, _verified
 from tests.test_real_hitl_api import _gate_graph
-from tests.signoff_fixtures import supported_signoff
+from tests.signoff_fixtures import (supported_signoff, renderable_approved_state,
+                                    render_approved_offline)
 from tests.workflow_fixtures import current_quality
 
 API_TOKEN = "general-test-token"
@@ -117,13 +118,8 @@ def test_api_approval_needs_reviewer_secret_and_ignores_impersonation(
 def test_gate2_and_legacy_publish_require_both_identities(credentials, monkeypatch, article):
     import api.server as server
 
-    html = "<html><body>Approved layout</body></html>"
-    from hashlib import sha256
-    with reviewer_context(REVIEWER_ID, article["run_id"], review_id="first-review"):
-        first = nodes.hitl_approve_update(article, supported_signoff(article),
-                                          submitted_review_id="first-review")
-    state = {**article, **first, "html_output": html,
-             "html_sha256": sha256(html.encode()).hexdigest()}
+    state = render_approved_offline(
+        renderable_approved_state(article, reviewer_id=REVIEWER_ID), monkeypatch)
     graph, visited = _gate_graph("html")
     run_id = state["run_id"]
     monkeypatch.setattr(server, "GRAPH", graph)

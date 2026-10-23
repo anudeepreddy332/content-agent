@@ -3,7 +3,7 @@ These never touch GRAPH — they only read REGISTRY state (seeded directly) and
 shell out to `git push`, which is mocked. $0, zero network, git_node untouched."""
 import os
 import pytest
-from tests.signoff_fixtures import approved_material_state
+from tests.signoff_fixtures import publishable_result
 
 os.environ["API_BEARER_TOKEN"] = "test-token"
 os.environ["API_SYNC"] = "1"
@@ -30,14 +30,13 @@ def _seed_run(git_status="merged", slug="s", html_output="<html/>", awaiting_htm
     if awaiting_html:
         status = "awaiting_review"
         interrupt_payload = {"type": "hitl_html_review", "html_output": html_output}
-    reviewed = approved_material_state({"run_id": run_id, "slug": slug,
-                                        "topic": "Gradient Descent",
-                                        "draft_markdown": "Gradient descent minimizes a loss function."},
-                                       reviewer_id="publish-reviewer")
+    with pytest.MonkeyPatch.context() as render_patch:
+        reviewed = publishable_result(run_id, slug, render_patch,
+                                      reviewer_id="publish-reviewer")
     srv.REGISTRY[run_id] = {
         "status": status, "initial_state": {}, "interrupt_payload": interrupt_payload,
         "result": None if awaiting_html else
-                  {**reviewed, "slug": slug, "git_status": git_status, "html_output": html_output,
+                  {**reviewed, "slug": slug, "git_status": git_status,
                    "gate1_reviewer_id": "publish-reviewer", "gate2_reviewer_id": "publish-reviewer",
                    "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
                    "git_commit_sha": git_commit_sha,

@@ -2,16 +2,16 @@
 import hashlib
 import os
 import subprocess
-from pathlib import Path
 
 os.environ["API_BEARER_TOKEN"] = "test-token"
 os.environ["API_SYNC"] = "1"
 
 from fastapi.testclient import TestClient
 
-from agent.html_policy import sanitize_fragment, assemble_trusted_article, sha256_utf8
+from agent.html_policy import sanitize_fragment, assemble_trusted_article
 import agent.nodes as nodes
-from tests.signoff_fixtures import approved_material_state
+from tests.signoff_fixtures import (publishable_result, renderable_approved_state,
+                                    render_approved_offline)
 
 SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 H = {"Authorization": "Bearer test-token"}
@@ -34,7 +34,8 @@ def _trusted():
 
 
 def test_git_node_archive_and_repo_hash_equivalence(tmp_path, monkeypatch, base_state):
-    article = _trusted()
+    state = renderable_approved_state(base_state, reviewer_id="artifact-reviewer")
+    state = render_approved_offline(state, monkeypatch)
     repo = tmp_path / "site"
     repo.mkdir()
     subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
@@ -59,34 +60,23 @@ def test_git_node_archive_and_repo_hash_equivalence(tmp_path, monkeypatch, base_
     import config
     monkeypatch.setattr(config, "THEMACHINIST_REPO_PATH", str(repo))
 
-    state = {
-        **base_state,
-        "html_output": article.html,
-        "html_filename": "gradient-descent-test.html",
-        "html_sha256": article.sha256,
-        "approved_html_sha256": article.sha256,
-        "gate1_reviewer_id": "artifact-reviewer", "gate2_reviewer_id": "artifact-reviewer",
-        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
-        "article_body_html": article.body_html,
-        "slug": "gradient-descent-test",
-        "topic": "Gradient Descent",
-        "category": "concept-exploration",
-        "draft_sections": {"problem_framing": "framing"},
-    }
+    state.update(approved_html_sha256=state["html_sha256"],
+                 gate2_reviewer_id="artifact-reviewer", gate2_review_origin="authenticated",
+                 category="concept-exploration")
     parent = subprocess.check_output(["git", "rev-parse", "main"], cwd=repo, text=True).strip()
     state["publish_expected_remote_sha"] = parent
     monkeypatch.setattr(nodes, "_capture_remote_main_sha", lambda: parent)
-    out = nodes.git_node(approved_material_state(state, reviewer_id="artifact-reviewer"))
+    out = nodes.git_node(state)
     assert out["git_status"] in ("merged", "tagged_and_merged")
     archive = (tmp_path / "outputs" / "articles" / "gradient-descent-test.html").read_bytes()
     git_bytes = subprocess.check_output(
         ["git", "show", f"{out['git_commit_sha']}:gradient-descent-test.html"], cwd=repo
     )
-    assert hashlib.sha256(archive).hexdigest() == article.sha256
-    assert hashlib.sha256(git_bytes).hexdigest() == article.sha256
-    assert hashlib.sha256(state["html_output"].encode("utf-8")).hexdigest() == article.sha256
+    assert hashlib.sha256(archive).hexdigest() == state["html_sha256"]
+    assert hashlib.sha256(git_bytes).hexdigest() == state["html_sha256"]
+    assert hashlib.sha256(state["html_output"].encode("utf-8")).hexdigest() == state["html_sha256"]
     assert out["git_commit_sha"]
-    assert archive == git_bytes == article.html.encode("utf-8")
+    assert archive == git_bytes == state["html_output"].encode("utf-8")
 
 
 def test_git_node_fails_closed_without_approval(tmp_path, monkeypatch, base_state):
@@ -108,10 +98,8 @@ def test_publish_binds_commit_ref_not_ambient_main(tmp_path, monkeypatch):
     rid = "run-bind"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
-                       "topic": "Gradient Descent",
-                       "draft_markdown": "Gradient descent minimizes a loss function."},
-                      reviewer_id="artifact-reviewer"),
+        "result": {**publishable_result(rid, "my-article", monkeypatch,
+                                        reviewer_id="artifact-reviewer"),
                    "slug": "my-article", "git_status": "merged",
                        "gate1_reviewer_id": "artifact-reviewer", "gate2_reviewer_id": "artifact-reviewer",
                        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",
@@ -144,10 +132,8 @@ def test_publish_conflicts_if_remote_moved(tmp_path, monkeypatch):
     rid = "run-conflict"
     srv.REGISTRY[rid] = {
         "status": "complete", "initial_state": {}, "interrupt_payload": None, "error": None,
-        "result": {**approved_material_state({"run_id": rid, "slug": "my-article",
-                       "topic": "Gradient Descent",
-                       "draft_markdown": "Gradient descent minimizes a loss function."},
-                      reviewer_id="artifact-reviewer"),
+        "result": {**publishable_result(rid, "my-article", monkeypatch,
+                                        reviewer_id="artifact-reviewer"),
                    "slug": "my-article", "git_status": "merged",
                        "gate1_reviewer_id": "artifact-reviewer", "gate2_reviewer_id": "artifact-reviewer",
                        "gate1_review_origin": "authenticated", "gate2_review_origin": "authenticated",

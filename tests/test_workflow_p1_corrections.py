@@ -120,10 +120,6 @@ def test_E_semantic_failure_without_nonrepairable_blocker_repairs(harness):
 
 def archive_graph(harness, monkeypatch):
     _, config, state, _, calls = harness
-    def html(current):
-        text = '<html><body><p>Approved article.</p></body></html>'
-        return {'html_output': text, 'html_sha256': nodes.sha256_utf8(text), 'html_filename': 'article.html'}
-    monkeypatch.setattr(graph_mod, 'html_gen_node', html)
     monkeypatch.setattr(graph_mod, 'git_node', nodes.git_node)
     return graph_mod.build_graph(checkpointer=InMemorySaver()), config, state, calls
 
@@ -169,7 +165,7 @@ def test_I_L_real_archive_api_projection(harness, monkeypatch, tmp_path, streami
     if fail:
         assert any('archive write failed' in e for e in result['error_log'])
     else:
-        assert (tmp_path / 'outputs/articles/article.html').read_text() == result['html_output']
+        assert (tmp_path / 'outputs/articles' / result['html_filename']).read_text() == result['html_output']
     if streaming:
         events = list(server.REGISTRY[rid]['events'].queue)
         done = next(e for e in reversed(events) if isinstance(e, dict) and e.get('event') == 'done')

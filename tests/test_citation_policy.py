@@ -440,22 +440,24 @@ def test_Q_api_approve_cannot_bypass_citation_failure(base_state, monkeypatch):
 def test_R_citation_rendering_leaves_canonical_draft_sha_unchanged(base_state, monkeypatch):
     from agent.reviewer_identity import reviewer_context
     from tests.signoff_fixtures import supported_signoff
-    draft = "Dropout randomly zeroes activations during training."
-    rows = [_claim_row(draft)]
-    state, inv = _verified(base_state, draft, rows, [[E1]])
-    state["draft_sections"] = {
-        "problem_framing": draft,
-        "technical_dive": draft,
+    claim = "Dropout randomly zeroes activations during training."
+    sections = {
+        "problem_framing": claim,
+        "technical_dive": claim,
         "code_snippets": "```python\nprint(1)\n```",
         "takeaways": "- keep going",
     }
+    draft = nodes._assemble_markdown(base_state["topic"], sections)
+    rows = [_claim_row(claim)]
+    state, inv = _verified(base_state, draft, rows, [[E1]])
+    state["draft_sections"] = sections
     with reviewer_context("citation-reviewer", state["run_id"], review_id="citation-review"):
         state.update(nodes.hitl_approve_update(
             state, supported_signoff(state), submitted_review_id="citation-review"))
     sha_before = sha256_utf8(state["draft_markdown"])
     monkeypatch.setattr(
         nodes, "_render_technical_dive_via_llm",
-        lambda **kw: (f"<p>{draft}</p>", 0, 0.0),
+        lambda **kw: (f"<p>{claim}</p>", 0, 0.0),
     )
     out = nodes.html_gen_node(state)
     assert sha256_utf8(state["draft_markdown"]) == sha_before

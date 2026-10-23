@@ -100,7 +100,7 @@ def start_episode(state):
         "approved_draft_identity": None, "hitl_status": "pending",
         "gate1_reviewer_id": None, "gate2_reviewer_id": None,
         "gate1_review_origin": None, "gate2_review_origin": None,
-        "gate1_evidence_signoff": None,
+        "gate1_evidence_signoff": None, "initial_html_equivalence": None,
     }
 
 
@@ -162,7 +162,7 @@ def draft_step(state, *, run):
               "reflection_provenance": {}, "hitl_status": "pending",
               "gate1_reviewer_id": None, "gate2_reviewer_id": None,
               "gate1_review_origin": None, "gate2_review_origin": None,
-              "gate1_evidence_signoff": None}
+              "gate1_evidence_signoff": None, "initial_html_equivalence": None}
     current = {**state, **update}
     if not draft_valid(current):
         update.update(failure(current, "execution_failed"))
