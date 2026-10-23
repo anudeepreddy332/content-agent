@@ -58,6 +58,11 @@ class _Visible(HTMLParser):
         self._check_tag(tag, attrs)
         if "sup" in self.stack:
             raise PolicyError("nested citation markup")
+        if any(t in ("pre", "code") for t in self.stack):
+            # Only the inert <pre><code> wrapper is unambiguous. In particular,
+            # <br> changes displayed line structure without contributing data.
+            if tag != "code" or self.stack[-1] != "pre":
+                raise PolicyError("markup inside code changes displayed content")
         if tag in _VOID:
             if tag == "br":
                 self.text.append(" ")
@@ -74,6 +79,8 @@ class _Visible(HTMLParser):
 
     def handle_startendtag(self, tag: str, attrs: list) -> None:
         self._check_tag(tag, attrs)
+        if any(t in ("pre", "code") for t in self.stack):
+            raise PolicyError("markup inside code changes displayed content")
         if tag not in _VOID:
             raise PolicyError("ambiguous self-closing article markup")
 
@@ -90,9 +97,7 @@ class _Visible(HTMLParser):
             self.events.append(("citation", value))
             self.citation.clear()
         elif tag in ("pre", "code") and not any(t in ("pre", "code") for t in self.stack):
-            import unicodedata
-
-            self.events.append(("code", unicodedata.normalize("NFC", "".join(self.code))))
+            self.events.append(("code", "".join(self.code)))
             self.code.clear()
         elif tag in _BLOCK and not any(t in ("pre", "code") for t in self.stack):
             self.text.append(" ")

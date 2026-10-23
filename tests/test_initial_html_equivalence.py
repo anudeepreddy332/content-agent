@@ -6,7 +6,7 @@ import sqlite3
 import pytest
 
 from agent import nodes
-from agent.html_policy import reassemble_from_body, sha256_utf8
+from agent.html_policy import PolicyError, reassemble_from_body, sha256_utf8
 from agent.initial_html_equivalence import receipt_valid, visible_key
 
 
@@ -33,6 +33,17 @@ def render(state, technical_html, monkeypatch):
     monkeypatch.setattr(nodes, "_render_technical_dive_via_llm",
                         lambda **_kwargs: (technical_html, 0, 0.0))
     return nodes.html_gen_node(state)
+
+
+def changed_rendered_body(state, before, after):
+    """Replace displayed code while retaining the original Gate 1 receipt."""
+    body = state["article_body_html"].replace(before, after, 1)
+    assert body != state["article_body_html"]
+    article = reassemble_from_body(**nodes._article_shell_fields(state), body_html=body,
+                                   citations_html=nodes._citations_html_for_state(state))
+    return {**state, "article_body_html": article.body_html,
+            "html_output": article.html, "html_sha256": article.sha256,
+            "approved_html_sha256": article.sha256}
 
 
 GOOD = "<p>It takes 10 steps only when the rate is suitable.</p><p>The result is approximate.</p>"
@@ -126,6 +137,49 @@ def test_visible_key_keeps_code_whitespace_significant():
     assert visible_key("<p>A<sup>1</sup>B</p>") != visible_key("<p>AB<sup>1</sup></p>")
 
 
+def test_code_line_break_markup_and_unicode_literal_fail_closed(draft_state, monkeypatch):
+    with pytest.raises(PolicyError):
+        visible_key("<pre><code>if ready:<br>    step()</code></pre>")
+    with pytest.raises(PolicyError):
+        visible_key("<pre><code>if ready:<span>\n</span>    step()</code></pre>")
+    assert visible_key('<pre><code>print("é")</code></pre>') != visible_key(
+        '<pre><code>print("e\u0301")</code></pre>')
+    assert visible_key('<pre><code>print(&quot;é&quot;)</code></pre>') == visible_key(
+        '<pre><code>print("é")</code></pre>')
+    assert render(draft_state, GOOD, monkeypatch)["html_output"]
+    monkeypatch.setattr(nodes, "_render_code_snippets",
+                        lambda _raw: "<pre><code>if ready:<br>    step()\n</code></pre>")
+    assert render(draft_state, GOOD, monkeypatch)["html_output"] is None
+
+
+@pytest.mark.parametrize("raw,expected", [
+    ("A **gradient descent** learning note.", "<strong>gradient descent</strong>"),
+    ("- Use `fit()` on training data.", "<code>fit()</code>"),
+])
+def test_trusted_markdown_section_rendering(raw, expected, draft_state, monkeypatch):
+    section = "problem_framing" if raw.startswith("A ") else "takeaways"
+    state = deepcopy(draft_state)
+    state["draft_sections"][section] = raw
+    state["draft_markdown"] = nodes._assemble_markdown(state["topic"], state["draft_sections"])
+    result = render(state, GOOD, monkeypatch)
+    assert result["html_output"]
+    assert expected in result["article_body_html"]
+    assert receipt_valid({**state, **result})
+
+
+def test_markdown_lists_and_actual_content_changes(draft_state, monkeypatch):
+    state = deepcopy(draft_state)
+    state["draft_sections"]["takeaways"] = "1. Use `fit()` on training data.\n2. Check the loss."
+    state["draft_markdown"] = nodes._assemble_markdown(state["topic"], state["draft_sections"])
+    result = render(state, GOOD, monkeypatch)
+    assert "<ol>" in result["article_body_html"]
+    assert "<code>fit()</code>" in result["article_body_html"]
+    assert receipt_valid({**state, **result})
+    monkeypatch.setattr(nodes, "_render_takeaways",
+                        lambda _raw: "<ol><li>Use <code>fit()</code> on all data.</li><li>Check the loss.</li></ol>")
+    assert render(state, GOOD, monkeypatch)["html_output"] is None
+
+
 def test_renderable_approved_fixture_is_a_valid_positive_control(base_state, monkeypatch):
     from tests.signoff_fixtures import render_approved_offline, renderable_approved_state
 
@@ -174,6 +228,59 @@ def test_checkpoint_restart_preserves_gate2_binding(base_state, monkeypatch, tmp
     assert visited == ["git"]
 
 
+def test_code_tampering_invalidates_receipt_gate2_and_git(draft_state, monkeypatch, tmp_path):
+    state = {**draft_state, **render(draft_state, GOOD, monkeypatch)}
+    assert receipt_valid(state)
+    changed = changed_rendered_body(state, "if ready:\n", "if ready:<br>\n")
+    assert not receipt_valid(changed)
+    assert nodes.hitl_html_node(changed)["terminal_status"] == "rendering_failed"
+    monkeypatch.chdir(tmp_path)
+    assert nodes.git_node({**changed, "html_filename": "gradient-descent.html"})["git_status"] == "failed"
+    assert not (tmp_path / "outputs" / "articles" / "gradient-descent.html").exists()
+
+    unicode_state = deepcopy(draft_state)
+    unicode_state["draft_sections"]["code_snippets"] = 'print("é")'
+    unicode_state["draft_markdown"] = nodes._assemble_markdown(
+        unicode_state["topic"], unicode_state["draft_sections"])
+    unicode_state.update(render(unicode_state, GOOD, monkeypatch))
+    assert receipt_valid(unicode_state)
+    changed_unicode = changed_rendered_body(unicode_state, 'print("é")', 'print("e\u0301")')
+    assert not receipt_valid(changed_unicode)
+    assert nodes.hitl_html_node(changed_unicode)["terminal_status"] == "rendering_failed"
+
+
+def test_checkpoint_restart_rejects_inserted_code_break(base_state, monkeypatch, tmp_path):
+    from langgraph.checkpoint.sqlite import SqliteSaver
+    from langgraph.types import Command
+    from agent.reviewer_identity import reviewer_context
+    from tests.signoff_fixtures import renderable_approved_state, render_approved_offline
+    from tests.test_real_hitl_api import _gate_graph
+
+    monkeypatch.setenv("HITL_MODE", "api")
+    monkeypatch.setenv("HITL_AUTO_APPROVE", "0")
+    state = render_approved_offline(renderable_approved_state(base_state), monkeypatch)
+    path = tmp_path / "tampered-code.sqlite"
+    config = {"configurable": {"thread_id": state["run_id"]}}
+    first_connection = sqlite3.connect(path, check_same_thread=False)
+    graph, _ = _gate_graph("html", SqliteSaver(first_connection))
+    assert graph.invoke(state, config)["__interrupt__"][0].value["type"] == "hitl_html_review"
+    changed = changed_rendered_body(state, "print(1)", "print(<br>1)")
+    graph.update_state(config, {
+        "article_body_html": changed["article_body_html"],
+        "html_output": changed["html_output"],
+        "html_sha256": changed["html_sha256"],
+    })
+    first_connection.close()
+
+    second_connection = sqlite3.connect(path, check_same_thread=False)
+    resumed, visited = _gate_graph("html", SqliteSaver(second_connection))
+    with reviewer_context("fixture-reviewer", state["run_id"]):
+        result = resumed.invoke(Command(resume={"action": "approve"}), config)
+    second_connection.close()
+    assert result["terminal_status"] == "rendering_failed"
+    assert visited == []
+
+
 def test_stale_equivalence_blocks_publish_before_git_network(monkeypatch):
     from fastapi.testclient import TestClient
     import api.server as server
@@ -194,3 +301,24 @@ def test_stale_equivalence_blocks_publish_before_git_network(monkeypatch):
                                headers={"Authorization": "Bearer offline-publish-token"})
     assert response.status_code == 409
     assert "initial HTML" in response.text
+
+
+def test_inserted_code_break_blocks_publication_before_git_network(monkeypatch):
+    from fastapi.testclient import TestClient
+    import api.server as server
+    from tests.signoff_fixtures import publishable_result
+
+    run_id = "code-break-publish"
+    state = publishable_result(run_id, "code-break", monkeypatch)
+    state = changed_rendered_body(state, "print(1)", "print(<br>1)")
+    assert not receipt_valid(state)
+    state.update(git_status="merged", git_commit_sha="a" * 40,
+                 publish_expected_remote_sha="b" * 40)
+    monkeypatch.setenv("API_BEARER_TOKEN", "offline-publish-token")
+    monkeypatch.setattr(server, "REGISTRY", {run_id: {"result": state, "status": "complete"}})
+    monkeypatch.setattr(server.subprocess, "run",
+                        lambda *_args, **_kwargs: pytest.fail("tampered code reached git network"))
+    with TestClient(server.app) as client:
+        response = client.post(f"/ui/runs/{run_id}/publish",
+                               headers={"Authorization": "Bearer offline-publish-token"})
+    assert response.status_code == 409

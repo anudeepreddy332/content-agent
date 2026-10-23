@@ -1933,10 +1933,7 @@ def hitl_node(state: AgentState) -> dict:
 
 
 def _render_problem_framing(raw: str) -> str:
-    paragraphs = [p.strip() for p in raw.strip().split("\n\n") if p.strip()]
-    if not paragraphs:
-        return f"<p>{html_module.escape(raw.strip())}</p>"
-    return "\n".join(f"<p>{html_module.escape(p)}</p>" for p in paragraphs)
+    return sanitize_fragment(render_markdown_fragment(raw).html).html
 
 
 def _render_code_snippets(raw: str) -> str:
@@ -1947,19 +1944,7 @@ def _render_code_snippets(raw: str) -> str:
     return f'<pre><code>{html_module.escape(raw)}</code></pre>'
 
 def _render_takeaways(raw: str) -> str:
-    lines = raw.strip().splitlines()
-    items = []
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        line = re.sub(r'^[\-\*\•]\s+', '', line)
-        line = re.sub(r'^\d+\.\s+', '', line)
-        if line:
-            items.append(f"<li>{html_module.escape(line)}</li>")
-    if not items:
-        return "<ul><li>No takeaways generated.</li></ul>"
-    return "<ul>\n" + "\n".join(items) + "\n</ul>"
+    return sanitize_fragment(render_markdown_fragment(raw).html).html
 
 
 def _render_technical_dive_via_llm(
