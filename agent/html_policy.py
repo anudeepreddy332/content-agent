@@ -21,6 +21,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 import nh3
 from markdown_it import MarkdownIt
+from markdown_it.rules_block.table import escapedSplit, getLine, table as markdown_table
 
 # p0-1-v1 used raw substring checks without structural HTML context: article body
 # rejected {{ or }}; full document and reassembly rejected {{ only. Legitimate code
@@ -452,6 +453,33 @@ def _render_math_block(_renderer, tokens, index, _options, _env) -> str:
     return f'<div class="math-block">{html_module.escape(tokens[index].content)}</div>\n'
 
 
+def _guard_publication_table_shape(state, start_line: int, end_line: int, silent: bool) -> bool:
+    """Reject table rows that MarkdownIt would truncate or implicitly pad."""
+    if silent or not markdown_table(state, start_line, end_line, True):
+        return False
+
+    def cells(line: int) -> list[str]:
+        columns = escapedSplit(getLine(state, line).strip())
+        if columns and columns[0] == "":
+            columns.pop(0)
+        if columns and columns[-1] == "":
+            columns.pop()
+        return columns
+
+    width = len(cells(start_line))
+    terminators = state.md.block.ruler.getRules("blockquote")
+    for line in range(start_line + 2, end_line):
+        if state.sCount[line] < state.blkIndent or state.is_code_block(line):
+            break
+        if any(rule(state, line, end_line, True) for rule in terminators):
+            break
+        if not getLine(state, line).strip():
+            break
+        if len(cells(line)) != width:
+            raise PolicyError("table row does not match approved header width")
+    return False
+
+
 def _markdown_engine() -> MarkdownIt:
     md = MarkdownIt(
         "js-default",
@@ -465,6 +493,7 @@ def _markdown_engine() -> MarkdownIt:
     md.inline.ruler.before("escape", "math_inline", _math_inline)
     md.inline.ruler.before("link", "blocked_image", _blocked_image)
     md.block.ruler.before("fence", "math_block", _math_block)
+    md.block.ruler.before("table", "publication_table_shape", _guard_publication_table_shape)
     md.add_render_rule("math_inline", _render_math_inline)
     md.add_render_rule("math_block", _render_math_block)
     return md

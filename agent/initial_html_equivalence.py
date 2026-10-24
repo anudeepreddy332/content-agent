@@ -9,7 +9,7 @@ from html.parser import HTMLParser
 from agent.html_policy import (ALLOWED_CLASSES, ALLOWED_TAGS, HTML_POLICY_VERSION, PolicyError, reassemble_from_body,
                                publication_markdown_html, sha256_utf8)
 
-CONTRACT_VERSION = "article-structure-v2"
+CONTRACT_VERSION = "article-structure-v3"
 SECTIONS = ("problem_framing", "technical_dive", "code_snippets", "takeaways")
 _VOID = frozenset({"br", "hr"})
 _BLOCK = frozenset({"p", "div", "h1", "h2", "h3", "h4", "li", "ul", "ol", "blockquote", "table", "tr", "td", "th"})
@@ -22,8 +22,9 @@ _STRUCTURE = frozenset({"p", "h2", "h3", "h4", "ul", "ol", "li", "blockquote",
 class _Visible(HTMLParser):
     """Keep ordered prose and exact code; reject malformed or ambiguous markup."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, omit_citations: bool = False) -> None:
         super().__init__(convert_charrefs=True)
+        self.omit_citations = omit_citations
         self.stack: list[str] = []
         self.classes: list[frozenset[str]] = []
         self.events: list[tuple[str, str]] = []
@@ -79,6 +80,8 @@ class _Visible(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         self._check_tag(tag, attrs)
+        if tag == "sub":
+            raise PolicyError("unsupported subscript changes displayed content")
         if "sup" in self.stack:
             raise PolicyError("nested citation markup")
         if self.math_kind is not None:
@@ -109,7 +112,8 @@ class _Visible(HTMLParser):
                 self.events.append(("rule", ""))
             return
         if tag == "sup":
-            self._flush_text()
+            if not self.omit_citations:
+                self._flush_text()
             self.citation.clear()
         elif tag in ("pre", "code") and not any(t in ("pre", "code") for t in self.stack):
             self._flush_text()
@@ -133,6 +137,8 @@ class _Visible(HTMLParser):
 
     def handle_startendtag(self, tag: str, attrs: list) -> None:
         self._check_tag(tag, attrs)
+        if tag == "sub":
+            raise PolicyError("unsupported subscript changes displayed content")
         if any(t in ("pre", "code") for t in self.stack):
             raise PolicyError("markup inside code changes displayed content")
         if tag not in _VOID:
@@ -151,7 +157,8 @@ class _Visible(HTMLParser):
             value = "".join(self.citation)
             if not re.fullmatch(r"[1-9][0-9]*(?:,[1-9][0-9]*)*", value):
                 raise PolicyError("invalid citation marker")
-            self.events.append(("citation", value))
+            if not self.omit_citations:
+                self.events.append(("citation", value))
             self.citation.clear()
         elif tag == "pre":
             if not self.pre_has_code:
@@ -218,7 +225,9 @@ def visible_key(fragment: str) -> tuple[tuple[str, str], ...]:
 
 def content_key(fragment: str) -> tuple[tuple[str, str], ...]:
     """Shared structural contract with trusted citation markers omitted."""
-    return tuple(event for event in visible_key(fragment) if event[0] != "citation")
+    parser = _Visible(omit_citations=True)
+    parser.feed(fragment)
+    return parser.finish()
 
 
 def _digest(value: object) -> str:

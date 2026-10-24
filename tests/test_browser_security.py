@@ -223,6 +223,21 @@ def test_publication_markdown_structure_in_chromium(pw_page):
     assert pw_page.locator(".sl-body sup").inner_text() == "1"
 
 
+def test_numeric_subscript_changes_chromium_presentation_and_is_rejected(pw_page):
+    plain = "<p>The example multiplier is 10.</p>"
+    altered = "<p>The example multiplier is 1<sub>0</sub>.</p>"
+    pw_page.set_content(f'<div id="plain">{plain}</div><div id="altered">{altered}</div>')
+    assert pw_page.locator("#plain").inner_text() == pw_page.locator("#altered").inner_text()
+    assert pw_page.locator("#altered sub").evaluate(
+        "el => getComputedStyle(el).verticalAlign") == "sub"
+    assert pw_page.locator("#altered sub").evaluate(
+        "el => el.getBoundingClientRect().top") > pw_page.locator("#altered p").evaluate(
+            "el => el.getBoundingClientRect().top")
+    with pytest.raises(PolicyError):
+        visible_key(altered)
+    assert visible_key(plain)
+
+
 def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
     seen = []
     popups = []

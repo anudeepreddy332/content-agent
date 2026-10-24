@@ -299,9 +299,21 @@ def test_code_tampering_invalidates_receipt_gate2_and_git(draft_state, monkeypat
     assert nodes.hitl_html_node(changed_unicode)["terminal_status"] == "rendering_failed"
 
 
+def test_numeric_subscript_invalidates_receipt_gate2_and_archive(draft_state, monkeypatch, tmp_path):
+    state = {**draft_state, **render(draft_state, GOOD, monkeypatch)}
+    assert receipt_valid(state)
+    changed = changed_rendered_body(state, "10 steps", "1<sub>0</sub> steps")
+    assert not receipt_valid(changed)
+    assert nodes.hitl_html_node(changed)["terminal_status"] == "rendering_failed"
+    monkeypatch.chdir(tmp_path)
+    assert nodes.git_node({**changed, "html_filename": "gradient-descent.html"})["git_status"] == "failed"
+    assert not (tmp_path / "outputs" / "articles" / "gradient-descent.html").exists()
+
+
 @pytest.mark.parametrize("before,after", [
     ("print(1)", "print(<br>1)"),
     ("<pre><code>print(1)</code></pre>", "<code>print(1)</code>"),
+    ("multiplier is 10.", "multiplier is 1<sub>0</sub>."),
 ])
 def test_checkpoint_restart_rejects_code_representation_change(
     base_state, monkeypatch, tmp_path, before, after,
@@ -314,7 +326,11 @@ def test_checkpoint_restart_rejects_code_representation_change(
 
     monkeypatch.setenv("HITL_MODE", "api")
     monkeypatch.setenv("HITL_AUTO_APPROVE", "0")
-    state = render_approved_offline(renderable_approved_state(base_state), monkeypatch)
+    sections = ({"problem_framing": "The example multiplier is 10.",
+                 "technical_dive": "Gradient descent minimizes a loss function.",
+                 "code_snippets": "print(1)", "takeaways": "- Use care."}
+                if "multiplier" in before else None)
+    state = render_approved_offline(renderable_approved_state(base_state, sections=sections), monkeypatch)
     path = tmp_path / "tampered-code.sqlite"
     config = {"configurable": {"thread_id": state["run_id"]}}
     first_connection = sqlite3.connect(path, check_same_thread=False)
@@ -378,6 +394,35 @@ def test_code_representation_change_blocks_publication_before_git_network(monkey
     monkeypatch.setattr(server, "REGISTRY", {run_id: {"result": state, "status": "complete"}})
     monkeypatch.setattr(server.subprocess, "run",
                         lambda *_args, **_kwargs: pytest.fail("tampered code reached git network"))
+    with TestClient(server.app) as client:
+        response = client.post(f"/ui/runs/{run_id}/publish",
+                               headers={"Authorization": "Bearer offline-publish-token"})
+    assert response.status_code == 409
+
+
+def test_numeric_subscript_blocks_publication_before_git_network(monkeypatch):
+    from fastapi.testclient import TestClient
+    import api.server as server
+    from tests.signoff_fixtures import renderable_approved_state, render_approved_offline
+
+    run_id = "numeric-subscript-publish"
+    state = render_approved_offline(renderable_approved_state({
+        "run_id": run_id, "topic": "Gradient Descent", "slug": "numeric-subscript",
+        "series_context": "Test", "error_log": [], "latency_ms": {},
+    }, sections={
+        "problem_framing": "The example multiplier is 10.",
+        "technical_dive": "Gradient descent minimizes a loss function.",
+        "code_snippets": "print(1)", "takeaways": "- Use care.",
+    }), monkeypatch)
+    state = changed_rendered_body(state, "multiplier is 10.", "multiplier is 1<sub>0</sub>.")
+    assert not receipt_valid(state)
+    state.update(git_status="merged", git_commit_sha="a" * 40,
+                 publish_expected_remote_sha="b" * 40,
+                 gate2_reviewer_id="fixture-reviewer", gate2_review_origin="authenticated")
+    monkeypatch.setenv("API_BEARER_TOKEN", "offline-publish-token")
+    monkeypatch.setattr(server, "REGISTRY", {run_id: {"result": state, "status": "complete"}})
+    monkeypatch.setattr(server.subprocess, "run",
+                        lambda *_args, **_kwargs: pytest.fail("tampered article reached git network"))
     with TestClient(server.app) as client:
         response = client.post(f"/ui/runs/{run_id}/publish",
                                headers={"Authorization": "Bearer offline-publish-token"})

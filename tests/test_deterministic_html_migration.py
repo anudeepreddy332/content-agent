@@ -11,7 +11,7 @@ from agent.citation_policy import (evidence_numbering, occurrence_marked_markdow
                                    replace_rendered_occurrence_markers)
 from agent.html_policy import PolicyError, render_publication_markdown
 from agent.initial_html_equivalence import (assert_section_equivalent, receipt_valid,
-                                            source_key, visible_key)
+                                            content_key, source_key, visible_key)
 from tests.conftest import fake_response
 from tests.signoff_fixtures import renderable_approved_state
 
@@ -85,6 +85,83 @@ def test_citation_anchor_survives_emphasis_and_duplicate_quotes():
             "anchor_start": start - 1, "anchor_end": start + 2,
             "attached_evidence_ids": ["WEB-001"],
         }], numbering=numbering)
+
+
+@pytest.mark.parametrize("prose,expected", [
+    ("A claim.<sup>1</sup> Another sentence.", "A claim. Another sentence."),
+    ("A <sup>1</sup>claim.", "A claim."),
+    ("A claim<sup>1</sup> with a qualifier.", "A claim with a qualifier."),
+    ("A <strong>claim<sup>1</sup></strong> with care.", "A <strong>claim</strong> with care."),
+    ("First<sup>1</sup> and second<sup>2</sup>.", "First and second."),
+])
+def test_approved_citations_are_removed_before_prose_aggregation(prose, expected):
+    assert content_key(f"<p>{prose}</p>") == visible_key(f"<p>{expected}</p>")
+    assert [value for kind, value in visible_key(f"<p>{prose}</p>") if kind == "citation"] == [
+        value for value in ("1", "2") if f"<sup>{value}</sup>" in prose]
+
+
+@pytest.mark.parametrize("altered", [
+    "<p>A changed claim.<sup>1</sup> Another sentence.</p>",
+    "<p>Another sentence. A claim.<sup>1</sup></p>",
+    "<p>A claim. Another sentence.<sup>1</sup></p>",
+])
+def test_citation_normalization_does_not_accept_changed_prose_or_shifted_marker(altered):
+    approved = "<p>A claim.<sup>1</sup> Another sentence.</p>"
+    if "shifted" not in altered:
+        assert (content_key(altered) != content_key(approved)
+                or visible_key(altered) != visible_key(approved))
+
+
+def test_approved_mid_paragraph_citation_renders_and_receipt_is_current(base_state):
+    state = renderable_approved_state(base_state, sections={
+        "problem_framing": "A learning note.",
+        "technical_dive": "Gradient descent minimizes a loss function. The rate matters.",
+        "code_snippets": "print(1)",
+        "takeaways": "- Use care.",
+    })
+    update = nodes.html_gen_node(state)
+    assert update["html_output"]
+    assert "minimizes a loss function.<sup>1</sup> The rate matters." in update["article_body_html"]
+    assert receipt_valid({**state, **update})
+
+
+@pytest.mark.parametrize("markdown", [
+    "| Claim | Scope |\n|---|---|\n| works | here | not in deployment |",
+    "| A | B |\n|---|---|\n| x |",
+])
+def test_table_rows_that_would_lose_or_invent_cells_fail_closed(markdown):
+    with pytest.raises(PolicyError, match="table row"):
+        render_publication_markdown(markdown)
+    with pytest.raises(PolicyError, match="table row"):
+        source_key("technical_dive", markdown)
+
+
+@pytest.mark.parametrize("markdown,expected", [
+    ("| A | B |\n|---|---|\n| x | y |", ("<td>x</td>", "<td>y</td>")),
+    ("| A | B | C |\n|---|---|---|\n| x | y | z |", ("<td>x</td>", "<td>z</td>")),
+    ("| A | B |\n|---|---|\n| x | |", ("<td>x</td>", "<td></td>")),
+    (r"| A | B |" + "\n|---|---|\n" + r"| a\|b | c |", ("<td>a|b</td>", "<td>c</td>")),
+])
+def test_supported_tables_preserve_expected_source_cells(markdown, expected):
+    html = render_publication_markdown(markdown).html
+    for cell in expected:
+        assert cell in html
+    assert_section_equivalent("technical_dive", markdown, html)
+
+
+def test_table_like_text_in_fenced_code_remains_literal():
+    markdown = "```text\n| A | B |\n|---|---|\n| x | y | lost |\n```"
+    html = render_publication_markdown(markdown).html
+    assert "| x | y | lost |" in html
+    assert "<table>" not in html
+
+
+def test_subscript_is_not_equivalent_to_plain_numeric_content():
+    assert visible_key("<p>The example multiplier is 10.</p>")
+    for changed in ("1<sub>0</sub>", "1<sup>0</sup>", "10<sub>2</sub>"):
+        with pytest.raises(PolicyError):
+            visible_key(f"<p>The example multiplier is {changed}.</p>")
+    assert visible_key('<p>Term <span class="math-inline">x_0</span>.</p>')
 
 
 def test_bibliography_order_uses_the_same_numbering_as_markers(monkeypatch):
@@ -182,5 +259,26 @@ def test_gate2_rejects_structure_change_and_keeps_prior_render(
     assert update["html_output"] == state["html_output"]
     assert update["article_body_html"] == state["article_body_html"]
     assert update["html_sha256"] == state["html_sha256"]
+    assert any("DISCARDED" in entry for entry in update["error_log"])
+    assert receipt_valid({**state, **update})
+
+
+def test_gate2_rejects_numeric_subscript_and_keeps_valid_render(base_state, monkeypatch):
+    state = renderable_approved_state(base_state, sections={
+        "problem_framing": "The example multiplier is 10.",
+        "technical_dive": "Gradient descent minimizes a loss function.",
+        "code_snippets": "print(1)",
+        "takeaways": "- Use care.",
+    })
+    state.update(nodes.html_gen_node(state))
+    assert receipt_valid(state)
+    changed = state["article_body_html"].replace("multiplier is 10.", "multiplier is 1<sub>0</sub>.")
+    assert changed != state["article_body_html"]
+    state["html_feedback"] = "Improve layout"
+    monkeypatch.setattr(nodes, "_get_client", lambda: object())
+    monkeypatch.setattr(nodes, "_llm_call", lambda _client, **_kw: fake_response(changed))
+    update = nodes.html_revise_node(state)
+    assert update["article_body_html"] == state["article_body_html"]
+    assert update["html_output"] == state["html_output"]
     assert any("DISCARDED" in entry for entry in update["error_log"])
     assert receipt_valid({**state, **update})
