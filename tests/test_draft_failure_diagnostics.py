@@ -67,6 +67,10 @@ def test_draft_exception_phase_is_safe_and_fail_closed(
     assert diagnostic["exception_class"] == "RuntimeError"
     assert diagnostic["reason"] == workflow._DRAFT_FAILURE_REASONS[phase]
     assert diagnostic["timestamp"].endswith("+00:00")
+    assert diagnostic["source_file"] in ("agent/nodes.py", "agent/workflow.py")
+    expected_function = "_llm_call" if phase == "provider_request" else "draft_node"
+    assert diagnostic["source_function"] == expected_function
+    assert type(diagnostic["source_line"]) is int and diagnostic["source_line"] > 0
     captured = capsys.readouterr()
     assert SECRET not in str(result) + captured.out + captured.err
 

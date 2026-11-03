@@ -275,6 +275,21 @@ def _cost(usage) -> float:
     )
 
 
+def _draft_total_tokens(usage) -> tuple[int, str]:
+    """Use the provider total, or the exact sum of two valid component counts."""
+    total = getattr(usage, "total_tokens", None)
+    if type(total) is int and total >= 0:
+        return total, "provider"
+    if total is not None:
+        raise ValueError("invalid draft total token count")
+    prompt = getattr(usage, "prompt_tokens", None)
+    completion = getattr(usage, "completion_tokens", None)
+    if (type(prompt) is int and prompt >= 0
+            and type(completion) is int and completion >= 0):
+        return prompt + completion, "component_sum"
+    raise ValueError("incomplete draft token usage")
+
+
 def _cost_from_usage(usage) -> float:
     """Compute cost from OpenAI usage object or analyzer transport dict."""
     if usage is None:
@@ -474,6 +489,9 @@ def draft_node(state: AgentState) -> dict:
 
     latency = int((time.time() - t_start) * 1000)
     run_cost = _cost(response.usage)
+    accounted_tokens, token_source = _draft_total_tokens(response.usage)
+    diagnostic["usage"]["accounted_total_tokens"] = accounted_tokens
+    diagnostic["usage"]["total_tokens_source"] = token_source
 
     # Parse JSON response
     raw = response.choices[0].message.content.strip()
@@ -556,7 +574,7 @@ def draft_node(state: AgentState) -> dict:
     log.info(
         "draft.complete",
         run_id=state["run_id"],
-        tokens=response.usage.total_tokens,
+        tokens=accounted_tokens,
         cost=round(run_cost, 5),
         latency_ms=latency,
         sections_count=len([v for v in sections.values() if v])
@@ -568,7 +586,7 @@ def draft_node(state: AgentState) -> dict:
         "draft_markdown": draft_markdown,
         "m4_feedback_claims": m4_feedback_claims,
         "iterations": iteration,
-        "total_tokens": state.get("total_tokens", 0) + response.usage.total_tokens,
+        "total_tokens": state.get("total_tokens", 0) + accounted_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
         "semantic_trace": trace,

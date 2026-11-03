@@ -7,6 +7,7 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
+from pathlib import Path
 import re
 
 from config import COST_GATE_USD, REFLECTION_THRESHOLD
@@ -26,6 +27,7 @@ _DRAFT_FAILURE_REASONS = {
     "post_response_accounting_telemetry": "post_response_processing_failed",
 }
 _DRAFT_FAILURE_PHASE = ContextVar("draft_failure_phase", default="client_prompt_initialization")
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def mark_draft_failure_phase(phase: str) -> None:
@@ -40,13 +42,34 @@ def _draft_failure_entry(state: dict, exc: Exception) -> str:
     exception_class = type(exc).__name__
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", exception_class):
         exception_class = "Exception"
+    source = {"source_file": "agent/workflow.py", "source_function": "draft_step",
+              "source_line": 0}
+    traceback = exc.__traceback__
+    while traceback is not None:
+        frame = traceback.tb_frame
+        try:
+            relative = Path(frame.f_code.co_filename).resolve().relative_to(_PROJECT_ROOT)
+        except (OSError, ValueError):
+            relative = None
+        if relative is not None and relative.parts[0] == "agent":
+            function = frame.f_code.co_name
+            source = {
+                "source_file": relative.as_posix(),
+                "source_function": function if re.fullmatch(
+                    r"[A-Za-z_][A-Za-z0-9_]{0,63}", function,
+                ) else "unknown",
+                "source_line": traceback.tb_lineno,
+            }
+        traceback = traceback.tb_next
+    run_id = state.get("run_id")
     diagnostic = {
-        "run_id": state.get("run_id"),
+        "run_id": run_id if isinstance(run_id, str) else None,
         "stage": "draft",
         "failure_phase": phase,
         "exception_class": exception_class,
         "reason": _DRAFT_FAILURE_REASONS[phase],
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        **source,
     }
     return "[draft] " + json.dumps(diagnostic, sort_keys=True)
 
