@@ -2,7 +2,7 @@
 
 _Canonical current-state snapshot. Last synchronized: 2026-11-03 (integrated
 HTML equivalence and draft recovery, failed first live E2E, bounded live draft
-diagnostic, and feature CI)._
+diagnostic, second live E2E terminal policy block, and feature CI)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -59,10 +59,30 @@ does not establish the original failed run's exception, which remains UNKNOWN.
 Evidence is in `/private/tmp/content-agent-live-draft-diagnostic-20261103/outputs/`;
 see `D-2026-11-03-05` and ledger `EXP-2026-11-03-02`.
 
+**Second supervised provider-backed application run: FAILED CLOSED before reflection
+and Gate 1.** Run `e3ea06a8-cf22-458a-af3b-dfdeeedd1f54` executed the production
+FastAPI graph at exact feature head `1978fa5fddbce9c077117b4fc4dd29b58cdb5568`
+in a private disposable checkout. Retrieval returned 10 web/11 KB rows; drafting
+was valid. `verify_node` completed Call A claim inventory (62 claims) and Call B
+semantic verification (43 verified, 17 weak, 2 unverified; grounding 0.899,
+UVR 0.032), but verification was **not accepted**. Seven material claims remained
+unresolved (`revision_required`). The citation policy found two overlapping,
+nonidentical material-claim anchors at draft offsets `[1265,1367)` and
+`[1311,1329)`, reported `placement_integrity_failure`, and the graph ended
+`policy_blocked` without a quality revision. This is the proven immediate block;
+the appropriate correction remains unestablished. Reflection, both human gates,
+HTML, archive, Git and publication were NOT REACHED. Three logical DeepSeek
+calls used 33,860 provider-reported tokens; Tavily ran three logical queries.
+Application-estimated cost was `$0.02228774`; physical provider attempts and
+billing are UNKNOWN. The first failed run's historical drafting exception
+remains UNKNOWN. Private checkpoint, telemetry and a safe summary are under
+`/private/tmp/content-agent-live-e2e-20261103/outputs/`. See
+`D-2026-11-03-06` and `EXP-2026-11-03-03`.
+
 **Production readiness: NOT ACHIEVED.** The next operational milestone is one
-freshly authorized, bounded Call-A claim-inventory diagnostic using the now
-persisted valid draft. No Gate 1/Gate 2
-success or provider-backed complete E2E has been demonstrated.
+offline, saved-checkpoint RCA of the overlapping material-claim anchors and
+citation placement policy. No Gate 1/Gate 2 success or provider-backed complete
+E2E has been demonstrated.
 
 ## Historical status — 2026-10-13
 

@@ -4045,3 +4045,31 @@ remains NOT ACHIEVED. The next action requires fresh authorization for one
 bounded Call-A claim-inventory diagnostic using this valid draft.
 
 Status: **LIVE DRAFT DIAGNOSTIC PASS / VERIFICATION ELIGIBLE; E2E OPEN**.
+
+---
+Decision ID: D-2026-11-03-06
+Date: 2026-11-03
+
+Decision: **Classify the second live supervised application run as a fail-closed
+verification-policy block, not an E2E qualification.** Run
+`e3ea06a8-cf22-458a-af3b-dfdeeedd1f54` used the normal production FastAPI
+graph at exact feature head `1978fa5fddbce9c077117b4fc4dd29b58cdb5568`.
+Retrieval and valid drafting completed; `verify_node` completed both its internal
+Call A and Call B operations. Call A yielded 62 claims; Call B yielded 43
+verified, 17 weak and 2 unverified (grounding 0.899; UVR 0.032). Material
+policy required revision for seven unresolved material claims. Citation policy
+reported `placement_integrity_failure` / `overlapping_nonidentical_anchors`
+for two material claims anchored at `[1265,1367)` and `[1311,1329)` in the
+same draft. The production route therefore ended `policy_blocked` before
+reflection, Gate 1, HTML, Gate 2 or archive. The exact immediate policy trigger
+is PROVEN; a safe correction is not yet established. Do not override the
+guard or attribute the original run's UNKNOWN draft exception to this new
+outcome. Three logical DeepSeek calls accounted for 33,860 provider-reported
+tokens and `$0.02228774` application-estimated cost; Tavily made three logical
+queries. Physical request attempts and provider billing remain UNKNOWN. No
+human approvals, graph Git node, website mutation, publication or holdout run
+occurred. Preserve this terminal checkpoint and diagnose the overlapping
+anchors offline before seeking any further live-run authorization. See ledger
+`EXP-2026-11-03-03`.
+
+Status: **LIVE E2E FAILED CLOSED / PRODUCTION NOT QUALIFIED**.
