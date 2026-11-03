@@ -3,7 +3,11 @@
 Provider/policy semantics stay in their existing nodes. This module owns only
 attempt accounting, current-artifact bindings, gate eligibility and destinations.
 """
+from contextvars import ContextVar
+from datetime import datetime, timezone
 from hashlib import sha256
+import json
+import re
 
 from config import COST_GATE_USD, REFLECTION_THRESHOLD
 from agent.reviewer_identity import approval_origin_valid
@@ -12,6 +16,39 @@ QUALITY_ATTEMPTS = 2
 CONTENT_FEEDBACK_LIMIT = 2
 LAYOUT_REVISION_LIMIT = 2
 QUALITY_MESSAGE = "Quality gates were not met within the allowed attempts. Please try again."
+
+_DRAFT_FAILURE_REASONS = {
+    "client_prompt_initialization": "draft_setup_failed",
+    "source_context_construction": "source_context_failed",
+    "provider_request": "provider_request_failed",
+    "provider_response_handling": "provider_response_invalid",
+    "json_parsing_validation": "draft_parse_failed",
+    "post_response_accounting_telemetry": "post_response_processing_failed",
+}
+_DRAFT_FAILURE_PHASE = ContextVar("draft_failure_phase", default="client_prompt_initialization")
+
+
+def mark_draft_failure_phase(phase: str) -> None:
+    """Record only a fixed, non-sensitive phase for the draft execution boundary."""
+    if phase not in _DRAFT_FAILURE_REASONS:
+        raise ValueError("unknown draft failure phase")
+    _DRAFT_FAILURE_PHASE.set(phase)
+
+
+def _draft_failure_entry(state: dict, exc: Exception) -> str:
+    phase = _DRAFT_FAILURE_PHASE.get()
+    exception_class = type(exc).__name__
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", exception_class):
+        exception_class = "Exception"
+    diagnostic = {
+        "run_id": state.get("run_id"),
+        "stage": "draft",
+        "failure_phase": phase,
+        "exception_class": exception_class,
+        "reason": _DRAFT_FAILURE_REASONS[phase],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    return "[draft] " + json.dumps(diagnostic, sort_keys=True)
 
 
 def identity(state):
@@ -150,11 +187,16 @@ def draft_step(state, *, run):
         return terminal("terminal_quality_exhausted")
     attempt = state.get("quality_attempts", 0) + 1
     ordinal = state.get("iterations", 0) + 1
+    phase_token = _DRAFT_FAILURE_PHASE.set("client_prompt_initialization")
     try:
         update = run(state)
-    except Exception:
+    except Exception as exc:
         return {"quality_attempts": attempt, "iterations": ordinal,
-                "draft_status": "invalid", **terminal("execution_failed")}
+                "draft_status": "invalid",
+                "error_log": [*(state.get("error_log") or []), _draft_failure_entry(state, exc)],
+                **terminal("execution_failed")}
+    finally:
+        _DRAFT_FAILURE_PHASE.reset(phase_token)
     update = {**update, "iterations": ordinal, "quality_attempts": attempt,
               "verification_identity": None, "reflection_identity": None,
               "approved_draft_identity": None, "verification_status": "not_started",

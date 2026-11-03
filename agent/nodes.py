@@ -337,8 +337,10 @@ def draft_node(state: AgentState) -> dict:
     """
     log = get_logger("draft_node")
     t_start = time.time()
+    workflow.mark_draft_failure_phase("client_prompt_initialization")
     client = _get_client()
     system_prompt = _load_system_prompt()
+    workflow.mark_draft_failure_phase("source_context_construction")
 
     # Build user message
     feedback_block = ""
@@ -452,6 +454,7 @@ def draft_node(state: AgentState) -> dict:
                  block_chars=len(grounding_feedback_block),
                  in_user_message=grounding_feedback_block in user_message)
 
+    workflow.mark_draft_failure_phase("provider_request")
     response = _llm_call(
         client,
         model=DEEPSEEK_MODEL,
@@ -460,6 +463,7 @@ def draft_node(state: AgentState) -> dict:
         max_tokens=4000,
         extra_body={"thinking": {"type": "disabled"}},
     )
+    workflow.mark_draft_failure_phase("provider_response_handling")
     diagnostic = new_output_diagnostic(
         stage="draft", iteration=state.get("iterations", 0) + 1,
         quality_episode=state.get("quality_episode"),
@@ -481,6 +485,7 @@ def draft_node(state: AgentState) -> dict:
             raw = raw[4:]
         raw = raw.strip()
 
+    workflow.mark_draft_failure_phase("json_parsing_validation")
     parse_error = None
     try:
         parsed = json.loads(raw)
@@ -515,6 +520,7 @@ def draft_node(state: AgentState) -> dict:
     if diagnostic["response"]["finish_reason"] == "length":
         draft_status = "invalid"
 
+    workflow.mark_draft_failure_phase("post_response_accounting_telemetry")
     # assemble full markdown for downstream nodes
     draft_markdown = _assemble_markdown(state['topic'], sections)
 
