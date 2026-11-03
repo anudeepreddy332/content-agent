@@ -4019,3 +4019,29 @@ from saved retrieval, without an implied second application run. See ledger
 `VAL-2026-11-03-02`.
 
 Status: **FEATURE INTEGRATED / EXACT-SHA CI PASS; LIVE E2E OPEN**.
+
+---
+Decision ID: D-2026-11-03-05
+Date: 2026-11-03
+
+Decision: **Record one successful live drafting diagnostic at exact feature
+head `3298e7bc3503408436923c515d052986e3074fa1`, without promoting it
+to a semantic-verification or E2E pass.** New run
+`3ed18574-8e98-416a-8aeb-348416b6e15f` used a new production-initialized
+state and the exact 10 web/11 KB rows from original failed run
+`f9f6f92d-5dbd-4370-aca2-83af159968ae` (full-list identities in ledger
+`EXP-2026-11-03-02`). One `workflow.draft_step` call of production
+`draft_node` returned four nonempty sections and complete Markdown. DeepSeek
+response `c88e9749-5ab0-4fe5-82fd-08afbc7fcb16` reported model
+`deepseek-flash`, `finish_reason=stop`, 4,281 prompt, 1,184 completion and
+5,465 total tokens; the application used the provider total and estimated
+`$0.00245827` at 8,365 ms draft latency. State and trace survived a separate
+SQLite checkpoint reread; `route_after_draft` returned `verify`, but Verify
+was not invoked. Physical HTTP attempts and provider billing remain UNKNOWN.
+No Tavily, Call A/B, reflection, human gate, archive, Git or publication call
+occurred. The original historical draft exception remains UNKNOWN: a later
+successful response cannot identify that prior cause. Production readiness
+remains NOT ACHIEVED. The next action requires fresh authorization for one
+bounded Call-A claim-inventory diagnostic using this valid draft.
+
+Status: **LIVE DRAFT DIAGNOSTIC PASS / VERIFICATION ELIGIBLE; E2E OPEN**.

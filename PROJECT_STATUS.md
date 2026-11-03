@@ -1,7 +1,8 @@
 # PROJECT STATUS
 
 _Canonical current-state snapshot. Last synchronized: 2026-11-03 (integrated
-HTML equivalence and draft recovery, failed first live E2E, and feature CI)._
+HTML equivalence and draft recovery, failed first live E2E, bounded live draft
+diagnostic, and feature CI)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -41,9 +42,26 @@ diagnostic metadata. Offline saved-state replay reaches verification; it is
 not a successful live application run. The documentation delta received
 independent read-only acceptance before the fast-forward feature push.
 
+**One bounded live draft diagnostic: PASS for drafting and verification routing.**
+New run `3ed18574-8e98-416a-8aeb-348416b6e15f` executed one production
+`workflow.draft_step` / `draft_node` invocation at feature head
+`3298e7bc3503408436923c515d052986e3074fa1`, with the failed run's exact
+10 web and 11 KB rows copied from its pre-draft checkpoint. DeepSeek returned
+four nonempty sections (`deepseek-flash`, `finish_reason=stop`); the draft and
+trace persisted in a separate private SQLite checkpoint and telemetry. Provider
+usage was 4,281 prompt + 1,184 completion = 5,465 reported total tokens;
+accounting source `provider`, application-estimated cost `$0.00245827`, draft
+latency 8,365 ms. `route_after_draft` returned `verify`; verification was NOT
+executed. One logical draft invocation was made; physical HTTP attempts and
+provider billing are not independently established. Tavily, claim inventory,
+reflection, human gates, archive and publication were not run. This success
+does not establish the original failed run's exception, which remains UNKNOWN.
+Evidence is in `/private/tmp/content-agent-live-draft-diagnostic-20261103/outputs/`;
+see `D-2026-11-03-05` and ledger `EXP-2026-11-03-02`.
+
 **Production readiness: NOT ACHIEVED.** The next operational milestone is one
-freshly authorized, bounded live draft diagnostic using the saved retrieval
-state. No Gate 1/Gate 2
+freshly authorized, bounded Call-A claim-inventory diagnostic using the now
+persisted valid draft. No Gate 1/Gate 2
 success or provider-backed complete E2E has been demonstrated.
 
 ## Historical status — 2026-10-13
