@@ -2036,7 +2036,8 @@ def _render_occurrence_bound_citations(state: AgentState, fragments: dict, cite)
     if placed != len(expected_groups):
         raise PolicyError("citation anchor is outside approved article sections")
     expected_citations = [",".join(str(numbering[eid]) for eid in g["attached_evidence_ids"])
-                          for g in sorted(expected_groups, key=lambda g: g["anchor_start"])]
+                          for g in sorted(expected_groups,
+                                          key=lambda g: (g["anchor_end"], g["anchor_start"]))]
     if observed_citations != expected_citations:
         raise PolicyError("citation markers do not match approved occurrence order")
     return rendered

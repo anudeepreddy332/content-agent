@@ -4073,3 +4073,34 @@ anchors offline before seeking any further live-run authorization. See ledger
 `EXP-2026-11-03-03`.
 
 Status: **LIVE E2E FAILED CLOSED / PRODUCTION NOT QUALIFIED**.
+
+---
+Decision ID: D-2026-11-03-07
+Date: 2026-11-03
+
+Decision: **Permit separate citation placement for strictly nested claim anchors
+with distinct endpoints and independently verified evidence bindings.** The
+saved checkpoint of run `e3ea06a8-cf22-458a-af3b-dfdeeedd1f54` (execution SHA
+`1978fa5fddbce9c077117b4fc4dd29b58cdb5568`) reproduces the blanket-overlap
+failure: material outer `clm-d3b34d6449c1269e` at `[1265,1367)` requires
+`KB-006`; material inner `clm-4c6ad60b809f5a34` at `[1311,1329)` requires
+`KB-002`. These are two propositions in one passage, each verified against its
+own source. The policy rejected strict containment solely because its overlap
+guard classified every nonidentical overlap as ambiguous.
+
+The bounded repair retains both original claim groups and required evidence
+sets, places each marker at its own endpoint, and rechecks supplied citation
+plans against current Call-B support. It rejects crossing or shared-endpoint
+overlaps, ambiguous model-written nested citation hints, and stale support.
+Coalescing evidence into an unqualified source union, dropping a claim, or
+turning overlap into semantic verification were rejected. The saved-state
+before/after replay and negative controls are indexed in `EXP-2026-11-03-04`.
+The repaired citation policy passes on the saved draft, but seven material
+claims still require revision; routing remains `draft`, not reflection or
+human review. This does not retroactively change the terminal failed run or
+qualify a complete E2E. Independent read-only acceptance passed for the
+cumulative repair; feature integration remains pending. No further provider
+run is implied.
+
+Status: **LOCAL CITATION REPAIR ACCEPTED OFFLINE; FEATURE INTEGRATION PENDING;
+LIVE E2E NOT QUALIFIED**.

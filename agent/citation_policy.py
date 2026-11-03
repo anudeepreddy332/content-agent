@@ -145,10 +145,14 @@ def _occurrence_spans(claim: dict) -> list[tuple[int, int]]:
     return spans
 
 
-def _spans_overlap_nonidentical(a: tuple[int, int], b: tuple[int, int]) -> bool:
+def _spans_conflict_for_placement(a: tuple[int, int], b: tuple[int, int]) -> bool:
+    """Only distinct endpoints for a strictly interior claim can be placed separately."""
     if a == b:
         return False
-    return a[0] < b[1] and b[0] < a[1]
+    if not (a[0] < b[1] and b[0] < a[1]):
+        return False
+    return not (a[0] < b[0] < b[1] < a[1]
+                or b[0] < a[0] < a[1] < b[1])
 
 
 def build_evidence_registry(state: dict) -> dict[str, dict]:
@@ -212,7 +216,8 @@ def _roster_ids(inventory: dict, grounding_report: list) -> tuple[list[str], lis
     return expected, observed
 
 
-def _plan_stale_reasons(plan: dict, inventory: dict, grounding_report: list, draft_sha: str) -> list[str]:
+def _plan_stale_reasons(plan: dict, inventory: dict, grounding_report: list,
+                        draft_sha: str, current_plan: dict) -> list[str]:
     reasons: list[str] = []
     if plan.get("draft_sha256") != draft_sha:
         reasons.append("stale_citation_plan_draft_sha")
@@ -223,6 +228,24 @@ def _plan_stale_reasons(plan: dict, inventory: dict, grounding_report: list, dra
         reasons.append("stale_citation_plan_claim_roster")
     if plan_grounding and plan_grounding != observed:
         reasons.append("stale_citation_plan_grounding_roster")
+    # Draft SHA and claim IDs alone do not bind a plan to Call-B support.
+    # Compare each original occurrence and its complete required evidence set.
+    try:
+        bindings = [
+            (group["anchor_start"], group["anchor_end"],
+             tuple(group["claim_ids"]), tuple(group["required_evidence_ids"]))
+            for group in plan["anchor_groups"]
+        ]
+        current_bindings = [
+            (group["anchor_start"], group["anchor_end"],
+             tuple(group["claim_ids"]), tuple(group["required_evidence_ids"]))
+            for group in current_plan["anchor_groups"]
+        ]
+        if (bindings != current_bindings
+                or plan.get("applicable_claim_ids") != current_plan["applicable_claim_ids"]):
+            reasons.append("stale_citation_plan_support")
+    except (KeyError, TypeError, ValueError):
+        reasons.append("stale_citation_plan_support")
     return reasons
 
 
@@ -352,10 +375,13 @@ def evaluate_citation_policy(*, state: dict) -> CitationPolicyResult:
         return _hitl_result(state_name="integrity_failure", reasons=[integrity])
 
     draft_sha = sha256_utf8(draft_markdown)
+    current_plan = build_citation_plan(state)
     supplied_plan = state.get("citation_plan")
     stale: list[str] = []
     if isinstance(supplied_plan, dict) and supplied_plan:
-        stale = _plan_stale_reasons(supplied_plan, inventory, grounding_report, draft_sha)
+        stale = _plan_stale_reasons(
+            supplied_plan, inventory, grounding_report, draft_sha, current_plan,
+        )
         if stale:
             return _hitl_result(
                 state_name="stale_citation_plan",
@@ -365,16 +391,19 @@ def evaluate_citation_policy(*, state: dict) -> CitationPolicyResult:
             )
         plan = supplied_plan
     else:
-        plan = build_citation_plan(state)
+        plan = current_plan
 
     registry = build_evidence_registry(state)
     groups = [dict(g) for g in plan.get("anchor_groups") or []]
 
-    # Overlapping non-identical applicable anchors: do not guess placement.
+    # Strict interior containment has two distinct endpoints, so retain both
+    # original groups and their separate evidence sets. Crossing and shared-
+    # endpoint overlaps remain ambiguous and fail closed.
     spans = [(g["anchor_start"], g["anchor_end"]) for g in groups]
+    nested_inner_spans: list[tuple[int, int]] = []
     for i, a in enumerate(spans):
         for b in spans[i + 1:]:
-            if _spans_overlap_nonidentical(a, b):
+            if _spans_conflict_for_placement(a, b):
                 return _hitl_result(
                     state_name="placement_integrity_failure",
                     reasons=["overlapping_nonidentical_anchors"],
@@ -387,6 +416,22 @@ def evaluate_citation_policy(*, state: dict) -> CitationPolicyResult:
                     }],
                     citation_placement_failure_count=1,
                 )
+            if a[0] < b[0] < b[1] < a[1]:
+                nested_inner_spans.append(b)
+            elif b[0] < a[0] < a[1] < b[1]:
+                nested_inner_spans.append(a)
+
+    model_cites = parse_model_written_citations(draft_markdown)
+    if any(inner[0] <= cite["start"] <= inner[1] + 1
+           for inner in nested_inner_spans for cite in model_cites):
+        return _hitl_result(
+            state_name="placement_integrity_failure",
+            reasons=["ambiguous_nested_model_citation"], plan=plan,
+            applicable_claim_ids=list(plan.get("applicable_claim_ids") or []),
+            anchor_groups=groups,
+            placement_failures=[{"reason": "ambiguous_nested_model_citation"}],
+            citation_placement_failure_count=1,
+        )
 
     overlay = state.get("citation_render_overlay")
     overlay_by_key: dict[tuple[int, int], list[str]] = {}
@@ -399,7 +444,6 @@ def evaluate_citation_policy(*, state: dict) -> CitationPolicyResult:
             if isinstance(key[0], int) and isinstance(key[1], int):
                 overlay_by_key[key] = ids
 
-    model_cites = parse_model_written_citations(draft_markdown)
     model_by_group, unplaced_model = _attach_model_cites_to_groups(groups, model_cites)
 
     missing: list[dict] = []
@@ -694,11 +738,12 @@ def occurrence_marked_markdown(
         marker = f"\ue000CITE{index}\ue001"
         markers[marker] = render_inline_cluster_html(ids, numbering)
         spans.append((start - section_start, end - section_start, marker))
-    spans.sort()
-    if any(left[1] > right[0] for left, right in zip(spans, spans[1:])):
+    if any(_spans_conflict_for_placement((left[0], left[1]), (right[0], right[1]))
+           for index, left in enumerate(spans) for right in spans[index + 1:]):
         raise PolicyError("overlapping citation occurrences")
     annotated = raw
-    for _start, end, marker in reversed(spans):
+    for _start, end, marker in sorted(spans, key=lambda span: (span[1], span[0]),
+                                      reverse=True):
         annotated = annotated[:end] + marker + annotated[end:]
     return annotated, markers
 

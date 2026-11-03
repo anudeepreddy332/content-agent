@@ -1,8 +1,8 @@
 # PROJECT STATUS
 
 _Canonical current-state snapshot. Last synchronized: 2026-11-03 (integrated
-HTML equivalence and draft recovery, failed first live E2E, bounded live draft
-diagnostic, second live E2E terminal policy block, and feature CI)._
+HTML equivalence and draft recovery, failed live E2E runs, and independently
+accepted offline nested citation-placement repair pending integration)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -10,10 +10,11 @@ remains preserved in `FREEZE.md`.
 
 ## Current status — 2026-11-03
 
-**Verified application-bearing feature integration:**
-`21666700bf03abf5e6ec37de9705ab873fcaf215` on remote
-`feature/phase5-rag-hardening` (read-only verified November 3). A later
-documentation-only closeout may advance the branch ref without changing runtime code.
+**Last verified remote feature head:**
+`24bcce854585e1aac26a02ccfeffd59902f6cbf8` on
+`feature/phase5-rag-hardening` before this local citation repair. That commit
+records the failed live E2E; its application code descends from draft-recovery
+integration `21666700bf03abf5e6ec37de9705ab873fcaf215`.
 Exact-SHA CI [41627868865](https://github.com/anudeepreddy332/content-agent/actions/runs/41627868865)
 completed SUCCESS: lint PASS, 1,994 tests PASS, push-only eval gate skipped.
 Its pre-repair feature base `102983ef08109522421c1098d3effd99e26f3c0b`
@@ -70,7 +71,8 @@ unresolved (`revision_required`). The citation policy found two overlapping,
 nonidentical material-claim anchors at draft offsets `[1265,1367)` and
 `[1311,1329)`, reported `placement_integrity_failure`, and the graph ended
 `policy_blocked` without a quality revision. This is the proven immediate block;
-the appropriate correction remains unestablished. Reflection, both human gates,
+an offline correction for strictly nested anchors is now validated locally (see
+below). Reflection, both human gates,
 HTML, archive, Git and publication were NOT REACHED. Three logical DeepSeek
 calls used 33,860 provider-reported tokens; Tavily ran three logical queries.
 Application-estimated cost was `$0.02228774`; physical provider attempts and
@@ -79,10 +81,22 @@ remains UNKNOWN. Private checkpoint, telemetry and a safe summary are under
 `/private/tmp/content-agent-live-e2e-20261103/outputs/`. See
 `D-2026-11-03-06` and `EXP-2026-11-03-03`.
 
-**Production readiness: NOT ACHIEVED.** The next operational milestone is one
-offline, saved-checkpoint RCA of the overlapping material-claim anchors and
-citation placement policy. No Gate 1/Gate 2 success or provider-backed complete
-E2E has been demonstrated.
+**Nested citation-placement repair: independently accepted offline, integration pending.**
+The saved checkpoint reproduces the old failure on base `24bcce854585e1aac26a02ccfeffd59902f6cbf8`.
+Outer claim `clm-d3b34d6449c1269e` `[1265,1367)` needs `KB-006`; strictly
+interior claim `clm-4c6ad60b809f5a34` `[1311,1329)` needs `KB-002`.
+The local repair places separate citations at distinct endpoints, retains both
+bindings, and rejects ambiguous overlaps and stale support plans. Saved-state
+replay now passes citation placement and renders four content-equivalent article
+sections. It does not resolve seven material claims: preterminal routing remains
+`draft`, not reflection. Focused 174 and full offline 2,006 tests passed;
+independent read-only acceptance passed; exact-SHA feature CI is pending. See
+`D-2026-11-03-07` and `EXP-2026-11-03-04`.
+
+**Production readiness: NOT ACHIEVED.** No Gate 1/Gate 2 success or
+provider-backed complete E2E has been demonstrated. The next operational
+milestone, after integration acceptance, is a separately authorized supervised
+run to observe whether the normal revision path resolves material claims.
 
 ## Historical status — 2026-10-13
 
