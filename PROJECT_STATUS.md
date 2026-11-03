@@ -2,7 +2,7 @@
 
 _Canonical current-state snapshot. Last synchronized: 2026-11-03 (integrated
 HTML equivalence and draft recovery, failed live E2E runs, and independently
-accepted offline nested citation-placement repair pending integration)._
+accepted nested citation-placement repair and exact-SHA feature CI)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -10,11 +10,13 @@ remains preserved in `FREEZE.md`.
 
 ## Current status — 2026-11-03
 
-**Last verified remote feature head:**
-`24bcce854585e1aac26a02ccfeffd59902f6cbf8` on
-`feature/phase5-rag-hardening` before this local citation repair. That commit
-records the failed live E2E; its application code descends from draft-recovery
-integration `21666700bf03abf5e6ec37de9705ab873fcaf215`.
+**Verified application-bearing feature head:**
+`753a27a4a55e548540708a1f8cbe5be1af4a55a8` was fast-forwarded to
+`feature/phase5-rag-hardening` from `24bcce854585e1aac26a02ccfeffd59902f6cbf8`.
+Exact-SHA CI [41661283760](https://github.com/anudeepreddy332/content-agent/actions/runs/41661283760)
+completed SUCCESS: lint PASS, test PASS (2,006 passed, 37 warnings),
+push-only eval gate skipped. A documentation-only closeout descendant may
+advance the ref without changing application code.
 Exact-SHA CI [41627868865](https://github.com/anudeepreddy332/content-agent/actions/runs/41627868865)
 completed SUCCESS: lint PASS, 1,994 tests PASS, push-only eval gate skipped.
 Its pre-repair feature base `102983ef08109522421c1098d3effd99e26f3c0b`
@@ -81,7 +83,7 @@ remains UNKNOWN. Private checkpoint, telemetry and a safe summary are under
 `/private/tmp/content-agent-live-e2e-20261103/outputs/`. See
 `D-2026-11-03-06` and `EXP-2026-11-03-03`.
 
-**Nested citation-placement repair: independently accepted offline, integration pending.**
+**Nested citation-placement repair: feature integrated, exact-SHA CI PASS.**
 The saved checkpoint reproduces the old failure on base `24bcce854585e1aac26a02ccfeffd59902f6cbf8`.
 Outer claim `clm-d3b34d6449c1269e` `[1265,1367)` needs `KB-006`; strictly
 interior claim `clm-4c6ad60b809f5a34` `[1311,1329)` needs `KB-002`.
@@ -90,7 +92,7 @@ bindings, and rejects ambiguous overlaps and stale support plans. Saved-state
 replay now passes citation placement and renders four content-equivalent article
 sections. It does not resolve seven material claims: preterminal routing remains
 `draft`, not reflection. Focused 174 and full offline 2,006 tests passed;
-independent read-only acceptance passed; exact-SHA feature CI is pending. See
+independent read-only acceptance passed; exact-SHA feature CI passed. See
 `D-2026-11-03-07` and `EXP-2026-11-03-04`.
 
 **Production readiness: NOT ACHIEVED.** No Gate 1/Gate 2 success or
