@@ -13,18 +13,20 @@ IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 - **P0-2a implementation base (historical):** `ca29d32b4869269daa47142615d298580a577a77`
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
-- **Current implementation identity:** canonical Phase-5 feature runtime is
-  `102983ef08109522421c1098d3effd99e26f3c0b`; exact-SHA CI
-  [40077527862](https://github.com/anudeepreddy332/content-agent/actions/runs/40077527862)
-  concluded SUCCESS. The earlier Call-A capacity ancestor `82284129` passed
+- **Last application-bearing feature integration:** canonical Phase-5 runtime code is
+  `21666700bf03abf5e6ec37de9705ab873fcaf215`; exact-SHA CI
+  [41627868865](https://github.com/anudeepreddy332/content-agent/actions/runs/41627868865)
+  concluded SUCCESS (lint and 1,994 tests PASS; push eval gate skipped).
+  Deterministic HTML was integrated at prior feature base `102983ef` with CI
+  `40077527862` SUCCESS. The earlier Call-A capacity ancestor `82284129` passed
   CI `38373655918` (1,855 tests, 37 warnings). Main remains
   `86712d200fd46382a876f2083f824f03a83341ab`. HOLDOUT-V2 qualified only
   `e0cfe0b566134f848feb731a777f315eb1456dd2`; the current application-only
   descendant is not holdout-tested. The frozen workflow re-audit remains anchored
   at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` and CI `37599028135`.
   Deterministic initial HTML and structural equivalence are feature integrated.
-  The November 3 live run failed in drafting; local diagnostic, accounting and
-  rejected-output repairs await independent acceptance and integration. Claim
+  The November 3 live run failed in drafting; diagnostic, accounting and
+  rejected-output repairs are feature integrated without a corrected live run. Claim
   completeness, Call B/reflection, and application E2E remain open.
 - **Historical canonical P0-2b state:** exact
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. It contains the P0-2a integration commit,
@@ -58,12 +60,12 @@ belong here until independent review accepts them. Material decision history rem
 
 The October-5 workflow contract in section 1 is accepted architecture implemented and
 independently audited on the feature branch at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`.
-The last verified remote feature descendant before draft-recovery integration is
-`102983ef08109522421c1098d3effd99e26f3c0b` (CI `40077527862` SUCCESS);
-its deterministic HTML and structural-equivalence implementation does not amend
-the frozen workflow contract. Local draft-recovery candidate
-`cef9e12eb18e46a92abaa85ce09128f23dc6ef1e` is not yet integrated; any
-future feature integration SHA must be verified separately.
+The pre-repair feature base was `102983ef08109522421c1098d3effd99e26f3c0b`
+(CI `40077527862` SUCCESS); its deterministic HTML and structural-equivalence
+implementation does not amend the frozen workflow contract. Draft-recovery
+candidate `cef9e12eb18e46a92abaa85ce09128f23dc6ef1e` is contained in
+application-bearing feature commit `21666700bf03abf5e6ec37de9705ab873fcaf215`
+(CI `41627868865` SUCCESS).
 The security and earlier implementation records below retain their scoped validation; their old
 next-mission/status statements are historical, not current project authorization.
 
@@ -153,7 +155,7 @@ Gate 2 accepted layout feedback -> html_revise -> Gate 2 (no content back-edge)
 ```
 
 An invalid draft never proceeds to verification. Failed verification never proceeds to reflection.
-For a rejected draft response, current local-only repair retains response length/hash,
+For a rejected draft response, the feature-integrated repair retains response length/hash,
 termination, usage and parse diagnostics but leaves draft sections and Markdown empty;
 the trace records an empty rejected-draft slot. Valid drafts retain exact content.
 This custody correction does not alter the frozen retry or eligibility contract.

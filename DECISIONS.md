@@ -3997,3 +3997,25 @@ See ledger `EXP-2026-11-03-01` and `VAL-2026-11-03-01`.
 
 Status: **LOCAL REPAIR; INDEPENDENT ACCEPTANCE, FEATURE INTEGRATION, EXACT-SHA
 CI AND CORRECTED LIVE E2E PENDING**.
+
+---
+Decision ID: D-2026-11-03-04
+Date: 2026-11-03
+
+Decision: **Close feature integration of the bounded draft-recovery code and
+documentation delta at application-bearing SHA
+`21666700bf03abf5e6ec37de9705ab873fcaf215`.** Independent read-only
+documentation acceptance passed at that exact cumulative SHA, finding only
+`PROJECT_STATUS.md` and `architecture.md` changed from reviewed repair
+`cef9e12eb18e46a92abaa85ce09128f23dc6ef1e`. The feature ref was fetched
+at expected base `102983ef08109522421c1098d3effd99e26f3c0b`, advanced by
+normal fast-forward, and read back at `2166670`. Exact-SHA GitHub Actions run
+`41627868865` concluded SUCCESS: lint PASS, test PASS (1,994 tests,
+37 warnings), push-only eval gate skipped. This closes integration and CI for
+the scoped repair, not the historical draft-cause investigation or live E2E.
+The original exception remains UNKNOWN; production readiness is NOT ACHIEVED.
+Next operational action is one freshly authorized bounded live draft diagnostic
+from saved retrieval, without an implied second application run. See ledger
+`VAL-2026-11-03-02`.
+
+Status: **FEATURE INTEGRATED / EXACT-SHA CI PASS; LIVE E2E OPEN**.

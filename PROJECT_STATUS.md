@@ -1,7 +1,7 @@
 # PROJECT STATUS
 
 _Canonical current-state snapshot. Last synchronized: 2026-11-03 (integrated
-HTML equivalence, failed first live E2E, local draft recovery, and feature CI)._
+HTML equivalence and draft recovery, failed first live E2E, and feature CI)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -9,10 +9,15 @@ remains preserved in `FREEZE.md`.
 
 ## Current status — 2026-11-03
 
-**Feature-integrated base:** `102983ef08109522421c1098d3effd99e26f3c0b`
-on remote `feature/phase5-rag-hardening` (read-only verified November 3).
-October 23–24 deterministic HTML and structural-equivalence qualification is
-accepted for that SHA; exact-SHA CI run `40077527862` concluded SUCCESS.
+**Verified application-bearing feature integration:**
+`21666700bf03abf5e6ec37de9705ab873fcaf215` on remote
+`feature/phase5-rag-hardening` (read-only verified November 3). A later
+documentation-only closeout may advance the branch ref without changing runtime code.
+Exact-SHA CI [41627868865](https://github.com/anudeepreddy332/content-agent/actions/runs/41627868865)
+completed SUCCESS: lint PASS, 1,994 tests PASS, push-only eval gate skipped.
+Its pre-repair feature base `102983ef08109522421c1098d3effd99e26f3c0b`
+qualified deterministic HTML and structural equivalence; CI `40077527862`
+concluded SUCCESS at that earlier SHA.
 The unintegrated no-archive E2E candidate `a6dc1d8` was abandoned after two
 independent checkpoint trust-boundary P1s and is not in the feature branch.
 
@@ -25,19 +30,20 @@ UNKNOWN. No verification, reflection, human approval, final HTML, archive or
 publication occurred. Original evidence remains in the disposable November 3
 checkout under `outputs/checkpoints.sqlite` and `outputs/runs/<run_id>.json`.
 
-**Local-only recovery:** diagnostic `61e89a7` and accounting `46c14ea` are
-descendants of the integrated base. The installed SDK's missing/null total-token
+**Feature-integrated draft recovery:** diagnostic `61e89a7`, accounting
+`46c14ea`, and rejected-output safety `cef9e12` are descendants of the
+pre-repair feature base. The installed SDK's missing/null total-token
 case is independently reproducible; valid 60+40 component counts now account
 for 100. A separate rejected-draft P1 was reproduced with a sensitive canary:
 malformed text leaked into structured logs, draft/trace, SQLite and exported
-telemetry. This local repair discards rejected text and retains bounded
+telemetry. The integrated repair discards rejected text and retains bounded
 diagnostic metadata. Offline saved-state replay reaches verification; it is
-not a successful live application run. The repair has no remote integration
-or exact-SHA CI yet, and requires independent acceptance.
+not a successful live application run. The documentation delta received
+independent read-only acceptance before the fast-forward feature push.
 
 **Production readiness: NOT ACHIEVED.** The next operational milestone is one
 freshly authorized, bounded live draft diagnostic using the saved retrieval
-state after independent acceptance and feature integration. No Gate 1/Gate 2
+state. No Gate 1/Gate 2
 success or provider-backed complete E2E has been demonstrated.
 
 ## Historical status — 2026-10-13
@@ -138,11 +144,11 @@ complete; external pilot remains **NOT READY**.
 ## Authoritative SHA roles and retained historical anchors
 
 - **Current main:** `86712d200fd46382a876f2083f824f03a83341ab`.
-- **Last verified remote feature application runtime before draft-recovery integration / exact-SHA CI:**
-  `102983ef08109522421c1098d3effd99e26f3c0b` / CI `40077527862`
-  SUCCESS; application-only descendant, not holdout-tested. Local draft-recovery
-  candidate `cef9e12eb18e46a92abaa85ce09128f23dc6ef1e` is not yet
-  integrated; any future integrated feature SHA requires separate verification.
+- **Verified application-bearing feature integration / exact-SHA CI:**
+  `21666700bf03abf5e6ec37de9705ab873fcaf215` / CI `41627868865`
+  SUCCESS; application-only descendant, not holdout-tested. Its repair ancestor
+  is `cef9e12eb18e46a92abaa85ce09128f23dc6ef1e`; the prior feature base
+  was `102983ef08109522421c1098d3effd99e26f3c0b` / CI `40077527862` SUCCESS.
 - **Historical instrumentation candidate:** `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`;
   independently audited metadata-only milestone, now included in the feature branch.
 - **Historical frozen-workflow runtime / exact-SHA CI:**

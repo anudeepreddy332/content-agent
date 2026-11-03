@@ -17,7 +17,9 @@ grounded HTML article, verifies claims, and requires human review before publica
 > integrated at `102983ef08109522421c1098d3effd99e26f3c0b` with successful
 > exact-SHA CI `40077527862`. The November-3 provider-backed run
 > `f9f6f92d-5dbd-4370-aca2-83af159968ae` failed during drafting before Gate 1.
-> Draft accounting and rejected-output safety repairs are local-only.
+> Draft accounting and rejected-output safety repairs are feature integrated at
+> `21666700bf03abf5e6ec37de9705ab873fcaf215` with successful exact-SHA CI
+> [41627868865](https://github.com/anudeepreddy332/content-agent/actions/runs/41627868865).
 > Live inventory reliability, claim completeness, and successful Call B/reflection
 > remain unverified. A corrected complete E2E has not passed. External pilot is
 > **NOT READY**; main has not received Phase 5. Read `PROJECT_STATUS.md` and
