@@ -7,15 +7,19 @@ grounded HTML article, verifies claims, and requires human review before publica
 > active-content/credential boundary is validated and integrated within its scoped contract;
 > current deployment identity is not established. Phase-5 HOLDOUT-V2 retrieval qualification
 > passed only at `e0cfe0b566134f848feb731a777f315eb1456dd2`. The reviewed application-only
-> descendant `82284129dcee8cc10f3d959e0994bacae6a5683b` includes the independently
+> ancestor `82284129dcee8cc10f3d959e0994bacae6a5683b` includes the independently
 > re-audited frozen workflow and an independently audited 12,000-token Call-A capacity
 > correction. Exact-SHA push CI
 > [38373655918](https://github.com/anudeepreddy332/content-agent/actions/runs/38373655918)
 > succeeded (1,855 tests, 37 warnings; PR-only evaluation skipped).
 > The October-5 real application E2E remains a historical FAIL / Gate-1 rejection.
-> Live inventory reliability at 12,000 tokens, claim completeness, and successful
-> Call B/reflection remain unverified. The initial HTML content-equivalence guard
-> is pending, and a fresh corrected E2E has not passed. External pilot is
+> The October-23–24 deterministic initial HTML equivalence correction is feature
+> integrated at `102983ef08109522421c1098d3effd99e26f3c0b` with successful
+> exact-SHA CI `40077527862`. The November-3 provider-backed run
+> `f9f6f92d-5dbd-4370-aca2-83af159968ae` failed during drafting before Gate 1.
+> Draft accounting and rejected-output safety repairs are local-only.
+> Live inventory reliability, claim completeness, and successful Call B/reflection
+> remain unverified. A corrected complete E2E has not passed. External pilot is
 > **NOT READY**; main has not received Phase 5. Read `PROJECT_STATUS.md` and
 > `architecture.md` for current state and contract.
 
@@ -34,8 +38,8 @@ grounding verification → reflection → human approval → live publish.
 
 Takes a topic as input and supports supervised article drafting, verification, HTML review,
 and guarded Git preparation for the website repository or demo fork. Successful end-to-end
-completion is not guaranteed; the October-5 run produced a malformed draft, failed claim
-inventory extraction, and never generated final article HTML or published.
+completion is not guaranteed; the October-5 run failed claim inventory and the November-3
+run failed during drafting. Neither generated final article HTML or published.
 
 Historical October-5 topology: Retrieve → Draft → Verify → Reflect → bounded automatic
 redraft → HITL (content) → HTML Gen →

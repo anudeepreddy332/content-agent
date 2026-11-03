@@ -3932,3 +3932,68 @@ Phase-5 PR/evaluation/main merge, and external pilot readiness remain open.
 The larger request can increase the existing non-transactional cost overshoot;
 the `$0.10` resource gate is not a per-request ceiling. No provider, holdout,
 application, merge, or publication execution is authorized by this decision.
+
+---
+Decision ID: D-2026-11-03-01
+Date: 2026-11-03 (records October 23–24 qualification)
+
+Decision: **Accept the deterministic initial HTML and structural-equivalence
+qualification on the feature branch, without claiming application E2E success.**
+The October 23–24 chain `8f9d84b` → `1d871ad` → `c3ead1e` → `b9ca579` →
+`102983ef08109522421c1098d3effd99e26f3c0b` binds the Gate-1-approved
+Markdown to rendered structure, citations, Gate 2, archive and publication guards.
+The three independently reproduced citation, table-cell and numeric-subscript
+P1s were closed at `102983ef`. Independent focused checks: 182 passed,
+1 warning; Chromium checks: 22 passed, 2 warnings. Exact-SHA CI run
+`40077527862` concluded SUCCESS at `102983ef` (independently verified).
+Remote `feature/phase5-rag-hardening` was read-only verified at that SHA on
+November 3. See ledger `VAL-2026-10-24-01`.
+
+Status: **FEATURE INTEGRATED / EXACT-SHA CI SUCCESS; APPLICATION E2E OPEN**.
+
+---
+Decision ID: D-2026-11-03-02
+Date: 2026-11-03 (records October 24 disposition)
+
+Decision: **Abandon the unintegrated no-archive E2E execution-mode experiment
+`a6dc1d8a1ff461bc7040a1222db8627dcb9e17c4` for this rehearsal.**
+Independent checkpoint-tampering acceptance found two P1 trust-boundary
+failures: mutable `run_mode` allowed both mode switches, and forged terminal
+state reported completion before Gate 2. A second check of mutable checkpoint
+fields was rejected as insufficient authority. The integrated production graph
+at `102983ef` with Git push disabled permits a disposable local dry-run archive
+and avoids integrating that experiment. This is a rehearsal isolation decision,
+not a repair or approval of the unintegrated mode. See ledger
+`VAL-2026-10-24-02`.
+
+Status: **EXPERIMENT ABANDONED / NOT INTEGRATED**.
+
+---
+Decision ID: D-2026-11-03-03
+Date: 2026-11-03
+
+Decision: **Keep the November 3 live drafting failure's historical cause
+UNKNOWN; accept the reproduced token-accounting correction and the bounded
+rejected-draft diagnostic-safety repair locally.** The first provider-backed
+run `f9f6f92d-5dbd-4370-aca2-83af159968ae` at integrated base `102983ef`
+ended `execution_failed` before verification or Gate 1. Its checkpoint records
+10 web and 11 KB items and 9,144 ms draft latency, but no response envelope,
+exception or provider usage; neither a billed request count nor the precise
+historical exception is proven. Diagnostic commit
+`61e89a7a553c695502272c6f23ec219ef68c8ff4` records safe failure phase,
+class and timestamp. Candidate `46c14ea8484a57cb6f8b8fc94c0fe4467633d69c`
+reproduced a real SDK contract defect: missing/null total tokens with valid
+60+40 component counts crashed post-response accounting; the candidate derives
+100 only from valid components and preserves the provider-reported field.
+Saved 10-web/11-KB state replay reached verification offline. Canary
+reproduction then proved a separate P1: malformed output entered logs,
+draft state, trace, SQLite and telemetry. This bounded repair retains rejected
+content length/hash, finish reason, usage, phase/class and timestamp where
+available while discarding rejected text. Valid draft content and verification
+eligibility remain intact. Retaining raw rejected text for debugging and
+claiming the accounting defect as the historical cause were rejected. No
+provider, prompt, retry, quality-gate, HTML or publication change is accepted.
+See ledger `EXP-2026-11-03-01` and `VAL-2026-11-03-01`.
+
+Status: **LOCAL REPAIR; INDEPENDENT ACCEPTANCE, FEATURE INTEGRATION, EXACT-SHA
+CI AND CORRECTED LIVE E2E PENDING**.

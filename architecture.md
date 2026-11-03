@@ -1,6 +1,6 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-10-13. Workflow contract ACCEPTED / FROZEN —
+_Accepted contract synchronized 2026-11-03. Workflow contract ACCEPTED / FROZEN —
 IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 (D-2026-10-05-04). Historical implementation anchors follow._
 
@@ -14,15 +14,18 @@ IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
 - **Current implementation identity:** canonical Phase-5 feature runtime is
-  `82284129dcee8cc10f3d959e0994bacae6a5683b`; exact-SHA push CI
-  [38373655918](https://github.com/anudeepreddy332/content-agent/actions/runs/38373655918)
-  passed (1,855 tests, 37 warnings; PR-only eval skipped). Main remains
+  `102983ef08109522421c1098d3effd99e26f3c0b`; exact-SHA CI
+  [40077527862](https://github.com/anudeepreddy332/content-agent/actions/runs/40077527862)
+  concluded SUCCESS. The earlier Call-A capacity ancestor `82284129` passed
+  CI `38373655918` (1,855 tests, 37 warnings). Main remains
   `86712d200fd46382a876f2083f824f03a83341ab`. HOLDOUT-V2 qualified only
   `e0cfe0b566134f848feb731a777f315eb1456dd2`; the current application-only
   descendant is not holdout-tested. The frozen workflow re-audit remains anchored
   at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` and CI `37599028135`.
-  The later 12,000-token Call-A correction passed bounded offline audit; live
-  reliability, claim completeness, Call B/reflection, and application E2E remain open.
+  Deterministic initial HTML and structural equivalence are feature integrated.
+  The November 3 live run failed in drafting; local diagnostic, accounting and
+  rejected-output repairs await independent acceptance and integration. Claim
+  completeness, Call B/reflection, and application E2E remain open.
 - **Historical canonical P0-2b state:** exact
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. It contains the P0-2a integration commit,
   the P0-2b slice-1 integration commit, the P0-2b slice-2A integration commit, and the P0-2b
@@ -146,6 +149,10 @@ Gate 2 accepted layout feedback -> html_revise -> Gate 2 (no content back-edge)
 ```
 
 An invalid draft never proceeds to verification. Failed verification never proceeds to reflection.
+For a rejected draft response, current local-only repair retains response length/hash,
+termination, usage and parse diagnostics but leaves draft sections and Markdown empty;
+the trace records an empty rejected-draft slot. Valid drafts retain exact content.
+This custody correction does not alter the frozen retry or eligibility contract.
 After every content redraft, verification is fresh; reflection runs only after verification passes.
 Non-repairable policy/execution failures terminate rather than entering editorial review.
 Remote publication remains a separate human-triggered action under existing publication guards.

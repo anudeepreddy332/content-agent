@@ -176,9 +176,9 @@ def test_draft_malformed_output_degrades_gracefully(base_state, monkeypatch):
 
     result = nodes.draft_node(base_state)  # must not raise
 
-    assert "[PARSE ERROR]" in result["draft_markdown"]
-    assert "not json at all" in result["draft_markdown"], \
-        "raw output preserved for debugging"
+    assert result["draft_status"] == "invalid"
+    assert result["draft_markdown"] == ""
+    assert "not json at all" not in json.dumps(result)
 
 
 # ---------- Fault 5: cost-gate breach ----------

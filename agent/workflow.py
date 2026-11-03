@@ -27,6 +27,7 @@ _DRAFT_FAILURE_REASONS = {
     "post_response_accounting_telemetry": "post_response_processing_failed",
 }
 _DRAFT_FAILURE_PHASE = ContextVar("draft_failure_phase", default="client_prompt_initialization")
+_DRAFT_RESPONSE_DIAGNOSTIC = ContextVar("draft_response_diagnostic", default=None)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -35,6 +36,15 @@ def mark_draft_failure_phase(phase: str) -> None:
     if phase not in _DRAFT_FAILURE_REASONS:
         raise ValueError("unknown draft failure phase")
     _DRAFT_FAILURE_PHASE.set(phase)
+
+
+def mark_draft_response_diagnostic(diagnostic: dict) -> None:
+    """Retain safe response metadata for a later post-response exception."""
+    _DRAFT_RESPONSE_DIAGNOSTIC.set({
+        "response_content": diagnostic["content"]["original"].copy(),
+        "finish_reason": diagnostic["response"]["finish_reason"],
+        "usage": diagnostic["usage"].copy(),
+    })
 
 
 def _draft_failure_entry(state: dict, exc: Exception) -> str:
@@ -71,6 +81,9 @@ def _draft_failure_entry(state: dict, exc: Exception) -> str:
         "timestamp": datetime.now(timezone.utc).isoformat(),
         **source,
     }
+    response_diagnostic = _DRAFT_RESPONSE_DIAGNOSTIC.get()
+    if response_diagnostic is not None:
+        diagnostic.update(response_diagnostic)
     return "[draft] " + json.dumps(diagnostic, sort_keys=True)
 
 
@@ -211,6 +224,7 @@ def draft_step(state, *, run):
     attempt = state.get("quality_attempts", 0) + 1
     ordinal = state.get("iterations", 0) + 1
     phase_token = _DRAFT_FAILURE_PHASE.set("client_prompt_initialization")
+    response_token = _DRAFT_RESPONSE_DIAGNOSTIC.set(None)
     try:
         update = run(state)
     except Exception as exc:
@@ -220,6 +234,7 @@ def draft_step(state, *, run):
                 **terminal("execution_failed")}
     finally:
         _DRAFT_FAILURE_PHASE.reset(phase_token)
+        _DRAFT_RESPONSE_DIAGNOSTIC.reset(response_token)
     update = {**update, "iterations": ordinal, "quality_attempts": attempt,
               "verification_identity": None, "reflection_identity": None,
               "approved_draft_identity": None, "verification_status": "not_started",

@@ -486,6 +486,7 @@ def draft_node(state: AgentState) -> dict:
         requested_model=DEEPSEEK_MODEL, temperature=DRAFT_TEMPERATURE,
         max_tokens=4000, response_format=None, response=response,
     )
+    workflow.mark_draft_response_diagnostic(diagnostic)
 
     latency = int((time.time() - t_start) * 1000)
     run_cost = _cost(response.usage)
@@ -523,24 +524,41 @@ def draft_node(state: AgentState) -> dict:
     except (json.JSONDecodeError, ValueError) as e:
         parse_error = e
         draft_status = "invalid"
-        # Graceful degradation: don't crash the graph
-        # Log the raw output so you can debug what the model returned
-
-        log.error("draft.parse_failed", run_id=state["run_id"], error=str(e), raw_preview=raw[:300])
-
         sections: DraftSections = {
-            "problem_framing": f"[PARSE ERROR] {str(e)}",
-            "technical_dive": raw,  # preserve raw content for debugging
+            "problem_framing": "",
+            "technical_dive": "",
             "code_snippets": "",
             "takeaways": "",
         }
     finish_output_diagnostic(diagnostic, raw, parse_error)
     if diagnostic["response"]["finish_reason"] == "length":
         draft_status = "invalid"
+    if draft_status == "invalid":
+        reason = "parse_failed" if parse_error is not None else "provider_length"
+        diagnostic["rejection"] = {
+            "reason": reason,
+            "failure_phase": "json_parsing_validation" if parse_error else "provider_response_handling",
+            "exception_class": type(parse_error).__name__ if parse_error else None,
+            "run_id": state["run_id"],
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+        content_identity = diagnostic["content"]["original"]
+        log.error(
+            "draft.parse_failed" if parse_error is not None else "draft.length_rejected",
+            run_id=state["run_id"], failure_phase=diagnostic["rejection"]["failure_phase"],
+            error_class=diagnostic["rejection"]["exception_class"],
+            response_length=content_identity["length"],
+            response_sha256=content_identity["sha256"],
+            finish_reason=diagnostic["response"]["finish_reason"],
+            usage=diagnostic["usage"],
+        )
+        sections = {key: "" for key in (
+            "problem_framing", "technical_dive", "code_snippets", "takeaways",
+        )}
 
     workflow.mark_draft_failure_phase("post_response_accounting_telemetry")
-    # assemble full markdown for downstream nodes
-    draft_markdown = _assemble_markdown(state['topic'], sections)
+    # Rejected provider text is never a draft or a reconstructable trace body.
+    draft_markdown = _assemble_markdown(state['topic'], sections) if draft_status == "valid" else ""
 
     # Merge latency into existing latency dict
     existing_latency = state.get("latency_ms", {})

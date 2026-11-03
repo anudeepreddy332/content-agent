@@ -1,6 +1,6 @@
 # Experiment and Evidence Ledger
 
-_Canonical compact index. Last synchronized: 2026-10-13._
+_Canonical compact index. Last synchronized: 2026-11-03._
 
 This ledger indexes meaningful experiments and release-relevant validation. It does not duplicate
 full reports. Detailed artifacts remain under `docs/archive/`, in the named commit/branch, or in the
@@ -421,3 +421,40 @@ For every applicable change:
 | Qualification and release limits | HOLDOUT-V2 PASS only at `e0cfe0b566134f848feb731a777f315eb1456dd2`; this descendant was not holdout-tested. Live inventory reliability at 12,000 tokens UNTESTED; claim completeness UNPROVEN; semantic Call B/reflection not validated on a successful corrected run; application E2E not passed; initial HTML equivalence pending; external pilot NOT READY. |
 | Classification | **BOUNDED CALL-A CAPACITY CORRECTION — INDEPENDENT OFFLINE AUDIT PASS / FEATURE INTEGRATED / EXACT-SHA CI PASS**. No application release or cutover approval. |
 | Canonical continuity | `D-2026-10-13-01`; `PROJECT_STATUS.md`; `architecture.md`; `README.md`. Earlier entries retain their checkpoint-specific findings. |
+
+### VAL-2026-10-24-01 — Deterministic initial HTML qualification and exact-SHA CI
+
+| Field | Record |
+| --- | --- |
+| Date / scope | October 23–24, 2026; initial deterministic Markdown rendering, structural/citation equivalence, Gate 2 and publication binding only. |
+| SHA / result | `8f9d84b` → `1d871ad` → `c3ead1e` → `b9ca579` → qualified `102983ef08109522421c1098d3effd99e26f3c0b`; three independent citation/table/subscript P1s closed. |
+| Independent checks | 182 focused tests passed, 1 warning; 22 Chromium tests passed, 2 warnings. Valid Gate-2 approval and adversarial restart/Git/archive/publication controls passed; tampered publication returned HTTP 409, zero intercepted Git/network calls. |
+| Integration / CI | Feature `feature/phase5-rag-hardening` at `102983ef`; independently verified GitHub run `40077527862`: head `102983ef`, conclusion SUCCESS. Read-only remote verification on November 3 returned the same SHA. |
+| Evidence / limit | `agent/html_policy.py`, `agent/initial_html_equivalence.py`, `tests/test_deterministic_html_migration.py`, `tests/test_initial_html_equivalence.py`, `tests/test_browser_security.py`; `D-2026-11-03-01`. This is not a provider-backed application E2E pass or pilot approval. |
+
+### VAL-2026-10-24-02 — No-archive experiment disposition
+
+| Field | Record |
+| --- | --- |
+| Date / candidate | October 24, 2026; unintegrated `a6dc1d8a1ff461bc7040a1222db8627dcb9e17c4`, separate from feature base `102983ef`. |
+| Adversarial result | Two P1 failures: changing/deleting mutable checkpoint `run_mode` crossed E2E/production boundaries; forged terminal completion on pending Gate 2 passed polling and streaming without approval. Intercepted writes prevented an actual archive. |
+| Decision / limit | Abandoned for one production-graph rehearsal; no integration or claim of repaired provenance/completion authority. The production graph permits one disposable local dry-run archive with Git push disabled. `D-2026-11-03-02`. The earlier independent review receipt is not present in this checkout; these findings are historical, not a new acceptance test. |
+
+### EXP-2026-11-03-01 — First provider-backed supervised E2E and failed draft
+
+| Field | Record |
+| --- | --- |
+| Run / runtime | November 3, 2026; run `f9f6f92d-5dbd-4370-aca2-83af159968ae`, disposable checkout at `102983ef08109522421c1098d3effd99e26f3c0b`. Topic “Gradient Descent: A Beginner Learning Note.” |
+| Observed stage / counts | Retrieval completed: 10 web sources, 11 KB rows, 12,702 ms retrieval latency. Draft latency recorded as 9,144 ms; `execution_failed` before verification, reflection, either human gate, HTML or archive. Telemetry records zero accounted tokens and `$0.00` application cost because draft did not return. These are **not** provider billing totals. |
+| Proven versus unknown | The draft call returned a response and processing reached the in-place latency update; response metadata, actual exception, billed request count/tokens/cost and historical root cause are **UNKNOWN**. The latency mutation can survive without a node return. No historical defect is inferred from the missing telemetry. |
+| Evidence | Preserved `outputs/checkpoints.sqlite` and `outputs/runs/f9f6f92d-5dbd-4370-aca2-83af159968ae.json` in `/private/tmp/content-agent-supervised-e2e-preflight-20261103`; `D-2026-11-03-03`. No second provider-backed run. |
+
+### VAL-2026-11-03-01 — Saved-state replay, accounting and rejected-draft safety
+
+| Field | Record |
+| --- | --- |
+| Base / local candidates | Integrated `102983ef`; diagnostic `61e89a7a553c695502272c6f23ec219ef68c8ff4`; accounting `46c14ea8484a57cb6f8b8fc94c0fe4467633d69c`; this local repair is the containing commit, pending independent acceptance. |
+| Accounting defect | Real installed OpenAI SDK with offline `httpx.MockTransport` returns `total_tokens=None` when prompt/completion counts are present; old post-response state accounting raised `TypeError`. Red tests failed before the accounting fix; fixed 60+40 → 100, one mocked request, valid draft and verification routing. This is a **PROVEN code defect**, not the **UNKNOWN** historical exception. |
+| Saved-state replay | Read-only copy of the failed checkpoint's exact 10 web/11 KB rows; direct and wrapped `draft_node` passed with a valid four-section mock response. SQLite graph persisted valid draft, 100 accounted tokens and a verification-next state; an intentional verification stub stopped further processing. Source-row hashes matched the saved checkpoint. Zero new retrieval/provider network calls. Evidence `/private/tmp/content-agent-draft-replay-20261103/`. |
+| Diagnostic-safety P1 | Sensitive canary in malformed JSON, incomplete sections and length-terminated JSON leaked before repair through draft state/trace and logs, then SQLite and telemetry. New canary tests assert its absence from all failure outputs after repair; rejected text is discarded while length/SHA-256, finish reason, usage, parse class, run ID/timestamp and exception phase/class remain where available. Valid drafts retain complete content and trace reconstruction. |
+| Validation / limit | 66 focused tests passed; final full offline regression 1,993 passed, 1 skipped, 37 warnings; Ruff fatal tier and diff check passed. Provider credentials were absent during tests, and saved-state replay used three mocked SDK requests with sockets denied. No DeepSeek/Tavily, holdout, new application run, push or publication. Independent acceptance and exact-SHA CI remain pending. `D-2026-11-03-03`. |

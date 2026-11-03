@@ -7,7 +7,40 @@ This file answers what is true now. It is not a history log. Material history re
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
-## Current status — 2026-10-13
+## Current status — 2026-11-03
+
+**Feature-integrated base:** `102983ef08109522421c1098d3effd99e26f3c0b`
+on remote `feature/phase5-rag-hardening` (read-only verified November 3).
+October 23–24 deterministic HTML and structural-equivalence qualification is
+accepted for that SHA; exact-SHA CI run `40077527862` concluded SUCCESS.
+The unintegrated no-archive E2E candidate `a6dc1d8` was abandoned after two
+independent checkpoint trust-boundary P1s and is not in the feature branch.
+
+**First supervised provider-backed run failed before Gate 1.** Run
+`f9f6f92d-5dbd-4370-aca2-83af159968ae` at the integrated base retrieved
+10 web sources and 11 KB rows, then ended `execution_failed` in drafting.
+The checkpoint records 9,144 ms of draft latency, proving the response path
+reached post-call accounting; the exact exception and provider billing remain
+UNKNOWN. No verification, reflection, human approval, final HTML, archive or
+publication occurred. Original evidence remains in the disposable November 3
+checkout under `outputs/checkpoints.sqlite` and `outputs/runs/<run_id>.json`.
+
+**Local-only recovery:** diagnostic `61e89a7` and accounting `46c14ea` are
+descendants of the integrated base. The installed SDK's missing/null total-token
+case is independently reproducible; valid 60+40 component counts now account
+for 100. A separate rejected-draft P1 was reproduced with a sensitive canary:
+malformed text leaked into structured logs, draft/trace, SQLite and exported
+telemetry. This local repair discards rejected text and retains bounded
+diagnostic metadata. Offline saved-state replay reaches verification; it is
+not a successful live application run. The repair has no remote integration
+or exact-SHA CI yet, and requires independent acceptance.
+
+**Production readiness: NOT ACHIEVED.** The next operational milestone is one
+freshly authorized, bounded live draft diagnostic using the saved retrieval
+state after independent acceptance and feature integration. No Gate 1/Gate 2
+success or provider-backed complete E2E has been demonstrated.
+
+## Historical status — 2026-10-13
 
 **Phase 5 authoritative retrieval qualification: CLOSED / HOLDOUT-V2 PASS.**
 `PHASE5-AUTH-PROTOCOL-1` closed; exactly one production V2 attempt qualified

@@ -127,7 +127,9 @@ def test_draft_success_failure_fences_request_neutrality(base_state, monkeypatch
     monkeypatch.setattr(nodes, "_get_client", lambda: failure_client)
     failed = nodes.draft_node(base_state)
     assert failed["draft_status"] == "invalid" and failure_client.calls == 1
-    assert failed["draft_sections"]["technical_dive"] == broken
+    assert failed["draft_sections"]["technical_dive"] == ""
+    assert failed["draft_markdown"] == ""
+    assert broken not in json.dumps(failed)
     assert _records(failed)[0]["parse"] == {
         "status": "failed", "error_class": "JSONDecodeError"}
 
