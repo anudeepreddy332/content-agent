@@ -1,7 +1,7 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-10-13 (Phase-5 qualification,
-failed supervised E2E, frozen workflow, structured-output corrections, and feature CI)._
+_Canonical current-state snapshot. Last synchronized: 2026-11-03 (integrated
+HTML equivalence, failed first live E2E, local draft recovery, and feature CI)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -122,13 +122,15 @@ bounded offline scope (380 focused tests; 1,855 ordinary tests, 37 warnings).
 The correction and feature CI do **not** prove live reliability at 12,000 tokens,
 claim completeness, semantic Call B/reflection success, or application E2E PASS.
 
-## Next bounded technical work
+## Next bounded technical work — reconciled 2026-11-03
 
 Current application blockers are: (1) bounded live inventory validation at 12,000 tokens
 and independent claim-completeness evidence; (2) successful semantic Call B and
-reflection validation; (3) initial HTML content-equivalence guard implementation;
-(4) a fresh successful supervised provider-backed E2E of the corrected application;
-and (5) Phase-5 PR, PR-only evaluation, final merge audit, and main merge. Work must be separately
+reflection validation; (3) a fresh successful supervised provider-backed E2E of
+the corrected application; and (4) Phase-5 PR, PR-only evaluation, final merge
+audit, and main merge. Initial deterministic HTML equivalence is implemented on
+the feature at `102983ef08109522421c1098d3effd99e26f3c0b` (CI `40077527862`
+SUCCESS), but has not been exercised in a completed live E2E. Work must be separately
 authorized at the applicable provider/release boundaries. Do not reopen qualified
 retrieval, alter sealed evidence, or rerun holdouts by implication. Phase 5 is not
 complete; external pilot remains **NOT READY**.
@@ -136,9 +138,11 @@ complete; external pilot remains **NOT READY**.
 ## Authoritative SHA roles and retained historical anchors
 
 - **Current main:** `86712d200fd46382a876f2083f824f03a83341ab`.
-- **Current feature application runtime / exact-SHA CI:**
-  `82284129dcee8cc10f3d959e0994bacae6a5683b` / push CI `38373655918`
-  SUCCESS; application-only descendant, not holdout-tested.
+- **Last verified remote feature application runtime before draft-recovery integration / exact-SHA CI:**
+  `102983ef08109522421c1098d3effd99e26f3c0b` / CI `40077527862`
+  SUCCESS; application-only descendant, not holdout-tested. Local draft-recovery
+  candidate `cef9e12eb18e46a92abaa85ce09128f23dc6ef1e` is not yet
+  integrated; any future integrated feature SHA requires separate verification.
 - **Historical instrumentation candidate:** `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`;
   independently audited metadata-only milestone, now included in the feature branch.
 - **Historical frozen-workflow runtime / exact-SHA CI:**

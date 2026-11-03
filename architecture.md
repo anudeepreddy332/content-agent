@@ -58,8 +58,12 @@ belong here until independent review accepts them. Material decision history rem
 
 The October-5 workflow contract in section 1 is accepted architecture implemented and
 independently audited on the feature branch at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`.
-The current feature descendant is `82284129dcee8cc10f3d959e0994bacae6a5683b`;
-its output-capacity change does not amend the frozen workflow contract.
+The last verified remote feature descendant before draft-recovery integration is
+`102983ef08109522421c1098d3effd99e26f3c0b` (CI `40077527862` SUCCESS);
+its deterministic HTML and structural-equivalence implementation does not amend
+the frozen workflow contract. Local draft-recovery candidate
+`cef9e12eb18e46a92abaa85ce09128f23dc6ef1e` is not yet integrated; any
+future feature integration SHA must be verified separately.
 The security and earlier implementation records below retain their scoped validation; their old
 next-mission/status statements are historical, not current project authorization.
 
@@ -218,10 +222,13 @@ an attempt. A trusted previous render may remain available for approval after a 
 revision. A third changes request terminates. If actual article content must change, this run
 ends and a new content workflow must begin.
 
-**Accepted implementation requirement — PENDING:** initial HTML generation must preserve
-Gate-1-approved visible content/code, allowing only authorized formatting/citation additions.
-This initial-render equivalence guard is not claimed implemented. Existing trusted rendering,
-layout-revision content preservation, artifact approval binding, and publication guards remain.
+**Implemented on the verified feature SHA `102983ef08109522421c1098d3effd99e26f3c0b`:**
+deterministic initial HTML rendering and structural equivalence bind
+Gate-1-approved visible content/code and citations to the rendered artifact.
+The October 23–24 qualification and CI `40077527862` closed the scoped
+implementation requirement; they do not establish a completed live E2E or
+production readiness. Layout-revision content preservation, artifact approval
+binding, and publication guards remain separate requirements.
 
 ### 1.6 Explicit supersession and retained implementation baseline
 
