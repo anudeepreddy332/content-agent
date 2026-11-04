@@ -1,14 +1,13 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-11-03 (integrated
-HTML equivalence and draft recovery, failed live E2E runs, and independently
-accepted nested citation-placement repair and exact-SHA feature CI)._
+_Canonical current-state snapshot. Last synchronized: 2026-11-04 (one live
+supervised run after the integrated citation repair; terminal quality stop)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
-## Current status — 2026-11-03
+## Current status — 2026-11-04
 
 **Verified application-bearing feature head:**
 `753a27a4a55e548540708a1f8cbe5be1af4a55a8` was fast-forwarded to
@@ -95,10 +94,26 @@ sections. It does not resolve seven material claims: preterminal routing remains
 independent read-only acceptance passed; exact-SHA feature CI passed. See
 `D-2026-11-03-07` and `EXP-2026-11-03-04`.
 
+**November 4 supervised application run: TERMINAL QUALITY EXHAUSTION.** At
+exact approved feature SHA `4a6445121b90bdffb444b656668226031e7da700`,
+one new run `1d3f2b1b-9880-43ff-9533-4abd12fbc3ae` retrieved 10 web and 11
+local KB rows and produced two valid drafts. Attempt 1 Call A parsed; Call B
+parsed but failed exact quote binding (`quote_not_found:KB-008`), triggering the
+one allowed redraft. Attempt 2 Call B completed: 69 claims, 55 verified, 9 weak,
+5 unverified, grounding 0.895, UVR 0.072. Citation policy passed with 42
+anchor groups and zero placement failures; five of 59 material claims remained
+unresolved. The frozen two-attempt limit ended `terminal_quality_exhausted`.
+Reflection, Gate 1, HTML, Gate 2, archive and publication were NOT REACHED.
+Six logical DeepSeek calls accounted for 69,825 provider-reported tokens;
+Tavily made three logical queries. Application-estimated cost was `$0.04616224`;
+physical attempts and provider billing are UNKNOWN. The private checkpoint,
+telemetry and safe summary remain in `/private/tmp/content-agent-live-e2e-20261104/outputs/`.
+See `D-2026-11-04-01` and `EXP-2026-11-04-01`.
+
 **Production readiness: NOT ACHIEVED.** No Gate 1/Gate 2 success or
-provider-backed complete E2E has been demonstrated. The next operational
-milestone, after integration acceptance, is a separately authorized supervised
-run to observe whether the normal revision path resolves material claims.
+provider-backed complete E2E has been demonstrated. Next: bounded offline
+analysis of the saved KB-008 quote-binding failure and five unresolved
+material claims before another paid run is proposed.
 
 ## Historical status — 2026-10-13
 

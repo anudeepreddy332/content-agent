@@ -1,6 +1,6 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-11-03. Workflow contract ACCEPTED / FROZEN —
+_Accepted contract synchronized 2026-11-04. Workflow contract ACCEPTED / FROZEN —
 IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 (D-2026-10-05-04). Historical implementation anchors follow._
 
@@ -14,9 +14,11 @@ IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
 - **Last application-bearing feature integration:** canonical Phase-5 runtime code is
-  `21666700bf03abf5e6ec37de9705ab873fcaf215`; exact-SHA CI
-  [41627868865](https://github.com/anudeepreddy332/content-agent/actions/runs/41627868865)
-  concluded SUCCESS (lint and 1,994 tests PASS; push eval gate skipped).
+  `753a27a4a55e548540708a1f8cbe5be1af4a55a8`; exact-SHA CI
+  [41661283760](https://github.com/anudeepreddy332/content-agent/actions/runs/41661283760)
+  concluded SUCCESS (lint and 2,006 tests PASS; push eval gate skipped).
+  Earlier draft-recovery application integration `21666700bf03abf5e6ec37de9705ab873fcaf215`
+  passed CI `41627868865` (1,994 tests).
   Deterministic HTML was integrated at prior feature base `102983ef` with CI
   `40077527862` SUCCESS. The earlier Call-A capacity ancestor `82284129` passed
   CI `38373655918` (1,855 tests, 37 warnings). Main remains
@@ -25,9 +27,10 @@ IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
   descendant is not holdout-tested. The frozen workflow re-audit remains anchored
   at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` and CI `37599028135`.
   Deterministic initial HTML and structural equivalence are feature integrated.
-  The November 3 live run failed in drafting; diagnostic, accounting and
-  rejected-output repairs are feature integrated without a corrected live run. Claim
-  completeness, Call B/reflection, and application E2E remain open.
+  Subsequent supervised runs completed real drafting and Call A/Call B, but
+  verification did not pass material and citation policy on November 3, then
+  did not pass material policy after the permitted redraft on November 4.
+  Reflection, both human gates and full application E2E remain unqualified.
 - **Historical canonical P0-2b state:** exact
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. It contains the P0-2a integration commit,
   the P0-2b slice-1 integration commit, the P0-2b slice-2A integration commit, and the P0-2b

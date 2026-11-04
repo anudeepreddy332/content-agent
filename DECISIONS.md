@@ -4104,3 +4104,35 @@ run is implied.
 
 Status: **LOCAL CITATION REPAIR ACCEPTED OFFLINE; FEATURE INTEGRATION PENDING;
 LIVE E2E NOT QUALIFIED**.
+
+---
+Decision ID: D-2026-11-04-01
+Date: 2026-11-04
+
+Decision: **Keep the third supervised application run terminal and production
+qualification open.** One user-authorized run
+`1d3f2b1b-9880-43ff-9533-4abd12fbc3ae` executed the normal FastAPI graph at
+exact approved feature SHA `4a6445121b90bdffb444b656668226031e7da700`.
+Retrieval and two valid drafts completed. In quality attempt 1, Call A parsed,
+but Call B's otherwise parsed response failed exact evidence quote binding:
+`quote_not_found:KB-008`. The graph used its one allowed automatic redraft.
+In attempt 2, Call B completed with 69 claims (55 verified, 9 weak, 5
+unverified), grounding 0.895 and UVR 0.072. Citation policy passed with 42
+anchor groups, complete coverage and zero placement failures. Material policy
+still found five unresolved material claims and the graph ended
+`terminal_quality_exhausted` at its two-attempt limit.
+
+Accept the fail-closed outcome and preserve the checkpoint. Overriding the
+material result, manually retrying, or treating a citation pass as full
+verification acceptance were rejected. The new draft does not reproduce the
+November 3 nested anchors, so this run shows a live citation-policy pass on
+new content, not direct live replay of that exact repaired pair. Reflection,
+human Gates 1/2, HTML, archive and publication were NOT REACHED. Six logical
+DeepSeek calls accounted for 69,825 provider-reported tokens; three Tavily
+queries populated three private cache files. The application estimated
+`$0.04616224`; physical request attempts and provider billing remain UNKNOWN.
+See `EXP-2026-11-04-01` for exact evidence and limitations. The next action is
+bounded offline analysis of the saved KB-008 quote-binding failure and five
+unresolved material claims before seeking another paid run.
+
+Status: **LIVE E2E TERMINAL QUALITY EXHAUSTION / PRODUCTION NOT QUALIFIED**.
