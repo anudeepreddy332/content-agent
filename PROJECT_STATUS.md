@@ -110,10 +110,23 @@ physical attempts and provider billing are UNKNOWN. The private checkpoint,
 telemetry and safe summary remain in `/private/tmp/content-agent-live-e2e-20261104/outputs/`.
 See `D-2026-11-04-01` and `EXP-2026-11-04-01`.
 
+**Saved-run root-cause investigation complete; no code repair claimed.**
+The KB-008 rejection is confirmed, but its original Call B quote and associated
+claim ID were not retained, so the precise mismatch subtype remains UNKNOWN.
+Exact binder controls pass. All five material failures retain valid evidence
+bindings; they require qualification or stronger direct evidence. The saved
+empty report yielded empty revision feedback, and offline production-request
+capture proves initial and redraft messages identical. The frozen two-draft
+policy spent its last slot on an uninformed reroll. This is a demonstrated
+reliability limitation in the accepted contract, not an off-by-one source bug.
+92 focused tests passed. See `D-2026-11-04-02`, `EXP-2026-11-04-02`, and the
+private five-claim matrix under `/private/tmp/content-agent-live-e2e-evidence-20261104/`.
+
 **Production readiness: NOT ACHIEVED.** No Gate 1/Gate 2 success or
-provider-backed complete E2E has been demonstrated. Next: bounded offline
-analysis of the saved KB-008 quote-binding failure and five unresolved
-material claims before another paid run is proposed.
+provider-backed complete E2E has been demonstrated. Next milestone: explicitly
+decide invalid-verifier recovery semantics (immediate stop versus one separately
+capped same-draft observation retry) before implementing or authorizing another
+paid test. Frozen budgets and acceptance checks remain unchanged.
 
 ## Historical status — 2026-10-13
 

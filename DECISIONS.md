@@ -4136,3 +4136,41 @@ bounded offline analysis of the saved KB-008 quote-binding failure and five
 unresolved material claims before seeking another paid run.
 
 Status: **LIVE E2E TERMINAL QUALITY EXHAUSTION / PRODUCTION NOT QUALIFIED**.
+
+---
+Decision ID: D-2026-11-04-02
+Date: 2026-11-04
+
+Decision: **Close the bounded saved-run investigation without claiming a code
+repair; require an explicit recovery-contract decision before changing frozen
+retry semantics.** Investigation at `e14c0f9cdc172f2007ca36f5727148be90502298`
+of run `1d3f2b1b-9880-43ff-9533-4abd12fbc3ae` proves that an invalid Call B
+quote observation produced an empty report, followed by a redraft with exactly
+the same production request messages as the initial draft. That consumed the
+last of two draft slots before five material obligations could be repaired.
+This is the specified frozen routing behavior, not an off-by-one defect.
+
+KB-008's original rejected quote and associated claim ID were not retained;
+only response identity/hash and `quote_not_found:KB-008` survive. Fabrication,
+whitespace mismatch, evidence misattribution and source-context mismatch
+remain UNKNOWN. Exact binding controls pass; fuzzy quote acceptance and
+inventing a historical reproduction are rejected. All five unresolved rows
+have valid exact evidence spans; they comprise unsupported prevalence, omitted
+convergence conditions, an unsupported causal benefit, and an overstrong
+clipping outcome repeated twice. The OLS blocker explanation overstates “most”
+as universal, but that does not supply missing support or justify acceptance.
+
+No source fix is justified by the available evidence. Two recovery alternatives
+are PROPOSED, not accepted: stop immediately on an invalid verifier observation,
+or authorize one separately capped observation retry against the same immutable
+draft, claim roster and manifest, preserving cumulative cost and all acceptance
+checks. The latter adds provider usage and changes retry semantics. Blanket
+draft-budget increases, treating invalid partial observations as authoritative
+feedback, materiality downgrades and silently dropping failed claims are rejected.
+Bounded failure-context metadata (claim ID, evidence ID, role/index, quote
+length/hash, source hash, match count) is a future observability candidate;
+raw rejected payload retention is not authorized by this conclusion.
+See `EXP-2026-11-04-02` for evidence and offline validation.
+
+Status: **INVESTIGATION COMPLETE / RECOVERY CONTRACT DECISION REQUIRED;
+NO CODE REPAIR CLAIMED / PRODUCTION NOT QUALIFIED**.
