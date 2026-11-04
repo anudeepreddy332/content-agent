@@ -14,9 +14,12 @@ IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
 - **Last application-bearing feature integration:** canonical Phase-5 runtime code is
-  `753a27a4a55e548540708a1f8cbe5be1af4a55a8`; exact-SHA CI
+  `cf9cc23855a917c179fdea51d310cc0a9e3f74de`; exact-SHA CI
+  [41807379794](https://github.com/anudeepreddy332/content-agent/actions/runs/41807379794)
+  concluded SUCCESS (lint and tests PASS; push eval gate skipped). Previous
+  citation repair `753a27a4a55e548540708a1f8cbe5be1af4a55a8` passed
   [41661283760](https://github.com/anudeepreddy332/content-agent/actions/runs/41661283760)
-  concluded SUCCESS (lint and 2,006 tests PASS; push eval gate skipped).
+  (2,006 tests).
   Earlier draft-recovery application integration `21666700bf03abf5e6ec37de9705ab873fcaf215`
   passed CI `41627868865` (1,994 tests).
   Deterministic HTML was integrated at prior feature base `102983ef` with CI
