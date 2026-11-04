@@ -53,6 +53,8 @@ class SemanticAnalyzerResult:
     success: bool
     failure_kind: AnalyzerFailureKind | None = None
     failure_detail: str | None = None
+    quote_binding_reason: str | None = None
+    quote_failure: dict[str, Any] = field(default_factory=dict)
     raw_response: str | None = None
     returned_model: str | None = None
     provider_response_id: str | None = None
@@ -150,6 +152,7 @@ def analyze_semantic_evidence(
     max_tokens: int = CALL_B_MAX_TOKENS,
     schema_version: int = 1,
     response_format: dict[str, str] | None = None,
+    on_response: Any | None = None,
 ) -> SemanticAnalyzerResult:
     """End-to-end semantic analysis: manifest → LLM → bind → adjudicate → grounding_report."""
     result = SemanticAnalyzerResult(request_id=request_id, success=False)
@@ -181,7 +184,7 @@ def analyze_semantic_evidence(
         )
     except Exception as exc:
         result.failure_kind = "provider"
-        result.failure_detail = str(exc)
+        result.failure_detail = type(exc).__name__
         result.latency_ms = round((time.time() - started) * 1000, 3)
         return result
 
@@ -190,7 +193,7 @@ def analyze_semantic_evidence(
         raw_content, returned_model, response_id, usage, finish_reason = _extract_transport_payload(transport_response)
     except Exception as exc:
         result.failure_kind = "provider"
-        result.failure_detail = f"transport_shape:{exc}"
+        result.failure_detail = f"transport_shape:{type(exc).__name__}"
         return result
 
     result.raw_response = raw_content
@@ -199,6 +202,13 @@ def analyze_semantic_evidence(
     result.usage = usage
     result.finish_reason = finish_reason
     result.response_length = len(raw_content)
+    if on_response is not None:
+        on_response(
+            response_id=response_id,
+            returned_model=returned_model,
+            finish_reason=finish_reason,
+            usage=usage,
+        )
 
     try:
         quote_contract = parse_analyzer_response(raw_content)
@@ -227,7 +237,17 @@ def analyze_semantic_evidence(
         )
     except QuoteBindingError as exc:
         result.failure_kind = "quote_binding"
-        result.failure_detail = str(exc)
+        result.quote_binding_reason = exc.reason
+        result.failure_detail = exc.reason
+        valid_claim_ids = {claim["claim_id"] for claim in claims}
+        valid_evidence_ids = {entry["evidence_id"] for entry in evidence_manifest}
+        result.quote_failure = {
+            **exc.diagnostic,
+            "claim_id": (exc.diagnostic.get("claim_id")
+                         if exc.diagnostic.get("claim_id") in valid_claim_ids else None),
+            "evidence_id": (exc.diagnostic.get("evidence_id")
+                            if exc.diagnostic.get("evidence_id") in valid_evidence_ids else None),
+        }
         return result
 
     result.canonical_observations = canonical_observations

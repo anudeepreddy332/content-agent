@@ -4174,3 +4174,57 @@ See `EXP-2026-11-04-02` for evidence and offline validation.
 
 Status: **INVESTIGATION COMPLETE / RECOVERY CONTRACT DECISION REQUIRED;
 NO CODE REPAIR CLAIMED / PRODUCTION NOT QUALIFIED**.
+
+---
+Decision ID: D-2026-11-04-03
+Date: 2026-11-04
+
+Decision: **Permit one durable, same-draft Call B observation recovery for a
+strict `quote_binding/quote_not_found` failure.** This intentionally amends
+the frozen invalid-observation routing described in `D-2026-11-04-02`; the
+two-draft content budget and all semantic, material, citation, reflection and
+human-review acceptance rules remain unchanged. Run
+`1d3f2b1b-9880-43ff-9533-4abd12fbc3ae` at `4a6445121b90bdffb444b656668226031e7da700`
+proved that the earlier empty grounding report spent the sole content-repair
+slot without actionable feedback. The original rejected KB-008 quote is not
+recoverable, so its exact mismatch subtype remains UNKNOWN.
+
+The first implementation proposal stopped because Call A and Call B shared
+one LangGraph checkpoint: an in-state retry counter could reset after a
+crash, and lost provider usage could not be reconstructed. At source base
+`d8ce8283694eed7112ab82bd43179898fb936d81`, the approved repair adds a
+separate SQLite request journal. It commits an initial Call B reservation,
+including known Call A usage, before initial dispatch; it records normalized
+Call B response identity and usage before quote validation. A recovery request
+requires the same draft SHA-256, ordered claim-roster hash and full evidence
+manifest hash, a valid model-returned roster, a known first-response cost below
+the existing gate, and an atomic run-global retry reservation. SQLite's
+`BEGIN IMMEDIATE` and unique retry index permit only one additional logical
+Call B dispatch per run, across draft attempts, workers and restarts. The
+retry reruns neither Call A nor retrieval nor drafting.
+
+An existing reservation on replay ends the run; it never dispatches again.
+Known journaled usage is reconciled once. A response lost before durable
+usage recording is explicitly `UNKNOWN`, not zero or fabricated. Even when
+usage was recorded, a missing graph checkpoint cannot reconstruct the
+validated observation without retaining the raw payload, so restart remains
+terminal. This is at-most-once **application-level** dispatch, not exactly
+once provider execution or billing; the existing transport wrapper can make
+up to three physical attempts per logical call. The optional observation adds
+provider cost exposure, guarded by the existing cumulative cost check; the
+`$0.10` application gate is not a provider billing ceiling.
+
+Valid weak/unverified judgments, material/semantic/citation failures,
+unknown roster/evidence identities, other parser/binder errors, and provider
+transport failures are not observation-retry triggers. A second invalid
+observation ends `execution_failed` without an uninformed content redraft.
+Immediate stop for every exact quote miss and a blanket draft-budget increase
+were rejected; fuzzy binding, source invention, favorable-verdict rerolls,
+and raw rejected-payload retention remain forbidden. Metadata-only quote
+diagnostics retain validated IDs, role/index, length/hash, source hash and
+match count. Offline evidence and crash-window limits are indexed in
+`EXP-2026-11-04-03`. No paid replay, human approval or complete E2E has been
+performed under this decision.
+
+Status: **APPROVED CONTRACT; LOCAL OFFLINE IMPLEMENTATION INDEPENDENTLY ACCEPTED;
+PRODUCTION E2E NOT QUALIFIED**.

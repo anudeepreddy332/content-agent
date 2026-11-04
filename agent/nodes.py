@@ -78,6 +78,8 @@ from agent.semantic_analyzer.contract import (
     engine_compat_grounding_score,
 )
 from agent.semantic_analyzer.provider import analyze_semantic_evidence
+from agent.semantic_analyzer.contract import build_evidence_manifest
+from agent import call_b_journal
 from agent.claim_inventory import (
     build_claim_inventory,
     call_b_roster,
@@ -308,6 +310,66 @@ def _usage_total_tokens(usage) -> int:
     if isinstance(usage, dict):
         return int(usage.get("total_tokens") or 0)
     return int(getattr(usage, "total_tokens", 0) or 0)
+
+
+def _journal_usage(usage: dict | None) -> tuple[int | None, float | None]:
+    """Only complete provider usage is known; missing fields are never zero."""
+    if not isinstance(usage, dict):
+        return None, None
+    prompt = usage.get("prompt_tokens")
+    completion = usage.get("completion_tokens")
+    total = usage.get("total_tokens")
+    if type(prompt) is not int or prompt < 0 or type(completion) is not int or completion < 0:
+        return None, None
+    if total is None:
+        total = prompt + completion
+    if type(total) is not int or total < 0:
+        return None, None
+    cost = (prompt / 1_000_000 * DEEPSEEK_INPUT_COST_PER_M
+            + completion / 1_000_000 * DEEPSEEK_OUTPUT_COST_PER_M)
+    return total, cost
+
+
+def _journal_recovery_update(state: AgentState, verify_key: str) -> dict:
+    """Fail closed on replay; reconcile only journaled known usage once."""
+    rows = [call_b_journal.lookup(state["run_id"], "initial", verify_key)]
+    retry = call_b_journal.lookup(state["run_id"], "retry")
+    if retry is not None and retry["verify_key"] == verify_key:
+        rows.append(retry)
+    rows = [row for row in rows if row is not None]
+    accounted = set(state.get("call_b_accounted_requests") or [])
+    known_tokens = 0
+    known_cost = 0.0
+    unknown = state.get("provider_usage_status") == "unknown"
+    for row in rows:
+        if row["kind"] == "initial" and row["request_id"] + ":call_a" not in accounted:
+            if row["call_a_tokens"] is None or row["call_a_cost_usd"] is None:
+                unknown = True
+            else:
+                known_tokens += row["call_a_tokens"]
+                known_cost += row["call_a_cost_usd"]
+            accounted.add(row["request_id"] + ":call_a")
+        if row["request_id"] + ":" + row["kind"] not in accounted:
+            if (row["usage_status"] == "known" and row["total_tokens"] is not None
+                    and row["estimated_cost_usd"] is not None):
+                known_tokens += row["total_tokens"]
+                known_cost += row["estimated_cost_usd"]
+            else:
+                unknown = True
+            accounted.add(row["request_id"] + ":" + row["kind"])
+    return {
+        "grounding_report": [],
+        "grounding_score": 0.0,
+        "verification_status": "verification_error",
+        "provider_usage_status": "unknown" if unknown else "known",
+        "total_tokens": state.get("total_tokens", 0) + known_tokens,
+        "total_cost_usd": state.get("total_cost_usd", 0.0) + known_cost,
+        "call_b_accounted_requests": sorted(accounted),
+        "error_log": [*(state.get("error_log") or []),
+                      f"[verify] durable_call_b_replay_terminal run_id={state['run_id']} "
+                      f"provider_outcome=UNKNOWN usage={'UNKNOWN' if unknown else 'known'}"],
+        **workflow.terminal("execution_failed", "Call B outcome cannot be safely replayed."),
+    }
 
 def _assemble_markdown(topic: str, sections: DraftSections) -> str:
     """
@@ -1173,6 +1235,16 @@ def verify_node(state: AgentState) -> dict:
     t_start = time.time()
     iteration = state.get("iterations", 0)
     request_id = _verify_request_id(state)
+    try:
+        if call_b_journal.lookup(state["run_id"], "initial", request_id) is not None:
+            return _journal_recovery_update(state, request_id)
+    except Exception as exc:
+        return {
+            "verification_status": "verification_error",
+            "error_log": [*(state.get("error_log") or []),
+                          f"[verify] call_b_journal_unavailable {type(exc).__name__}"],
+            **workflow.terminal("execution_failed"),
+        }
 
     if state.get("total_cost_usd", 0) >= COST_GATE_USD:
         log.warning("verify.cost_gate_hit", run_id=state["run_id"],
@@ -1431,20 +1503,157 @@ def verify_node(state: AgentState) -> dict:
 
     claim_roster = call_b_roster(claim_inventory)
     specificity_by_id = _specificity_by_claim_id_from_inventory(claim_inventory)
-
-    analyzer_result = analyze_semantic_evidence(
+    manifest = build_evidence_manifest(
         request_id=request_id,
-        draft_text=draft_markdown,
-        claims=claim_roster,
         web_sources=state.get("web_sources") or [],
         kb_results=state.get("kb_results") or [],
-        llm_call=_make_semantic_llm_transport(client),
-        model=DEEPSEEK_MODEL,
     )
-    run_cost += _cost_from_usage(analyzer_result.usage)
-    total_new_tokens += _usage_total_tokens(analyzer_result.usage)
+    roster_sha256 = call_b_journal.digest(claim_roster)
+    manifest_sha256 = call_b_journal.digest(manifest)
+
+    def _identities_current() -> bool:
+        return (
+            sha256_utf8(state.get("draft_markdown") or "") == draft_sha256
+            and claim_inventory.get("draft_sha256") == draft_sha256
+            and call_b_journal.digest(call_b_roster(claim_inventory)) == roster_sha256
+            and call_b_journal.digest(build_evidence_manifest(
+                request_id=request_id,
+                web_sources=state.get("web_sources") or [],
+                kb_results=state.get("kb_results") or [],
+            )) == manifest_sha256
+        )
+
+    def _response_record(kind: str):
+        def save(*, response_id, returned_model, finish_reason, usage):
+            tokens, cost = _journal_usage(usage)
+            call_b_journal.record_response(
+                run_id=state["run_id"], kind=kind, verify_key=request_id,
+                response_id=response_id, returned_model=returned_model,
+                finish_reason=finish_reason, usage=usage,
+                total_tokens=tokens, estimated_cost_usd=cost,
+            )
+        return save
+
+    def _analyze(kind: str):
+        return analyze_semantic_evidence(
+            request_id=request_id,
+            draft_text=draft_markdown,
+            claims=claim_roster,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            llm_call=_make_semantic_llm_transport(client),
+            model=DEEPSEEK_MODEL,
+            on_response=_response_record(kind),
+        )
+
+    if not _identities_current():
+        return {"verification_status": "verification_error",
+                "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+                "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+                **workflow.terminal("execution_failed", "Call B identity changed.")}
+    try:
+        call_b_journal.reserve(
+            run_id=state["run_id"], kind="initial", verify_key=request_id,
+            request_id=request_id, draft_sha256=draft_sha256,
+            roster_sha256=roster_sha256, manifest_sha256=manifest_sha256,
+            call_a_tokens=total_new_tokens, call_a_cost_usd=run_cost,
+        )
+    except Exception as exc:
+        return {
+            "verification_status": "verification_error",
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "error_log": [*(state.get("error_log") or []),
+                          f"[verify] call_b_reservation_failed {type(exc).__name__}"],
+            **workflow.terminal("execution_failed"),
+        }
+    retried_observation = False
+    try:
+        analyzer_result = _analyze("initial")
+        initial_row = call_b_journal.lookup(state["run_id"], "initial", request_id)
+        if initial_row is None or initial_row["usage_status"] != "known":
+            return _journal_recovery_update(state, request_id)
+        total_new_tokens += initial_row["total_tokens"]
+        run_cost += initial_row["estimated_cost_usd"]
+        observed_ids = [row["claim_id"] for row in analyzer_result.quote_observations]
+        expected_ids = [row["claim_id"] for row in claim_roster]
+        retry_roster_valid = (
+            len(observed_ids) == len(expected_ids)
+            and len(set(observed_ids)) == len(observed_ids)
+            and set(observed_ids) == set(expected_ids)
+        )
+        if (analyzer_result.failure_kind == "quote_binding"
+                and analyzer_result.quote_binding_reason == "quote_not_found"
+                and retry_roster_valid
+                and analyzer_result.quote_failure.get("claim_id") is not None
+                and analyzer_result.quote_failure.get("evidence_id") is not None):
+            trace.setdefault("call_b_observation_attempts", []).append({
+                "request_id": request_id, "attempt": "initial", "failure_kind": "quote_binding",
+                "failure_reason": "quote_not_found",
+                "quote_failure": analyzer_result.quote_failure,
+                "provider_response_id": analyzer_result.provider_response_id,
+                "usage": analyzer_result.usage,
+            })
+            if (not _identities_current()
+                    or analyzer_result.request_id != request_id
+                    or call_b_journal.digest(analyzer_result.evidence_manifest) != manifest_sha256):
+                return _journal_recovery_update(state, request_id)
+            if state.get("total_cost_usd", 0) + run_cost >= COST_GATE_USD:
+                return {
+                    "verification_status": "skipped_cost_gate",
+                    "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+                    "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+                    "provider_usage_status": "known",
+                    "call_b_accounted_requests": sorted({
+                        *(state.get("call_b_accounted_requests") or []),
+                        request_id + ":call_a", request_id + ":initial",
+                    }),
+                    **workflow.terminal("resource_exhausted"),
+                }
+            call_b_journal.reserve(
+                run_id=state["run_id"], kind="retry", verify_key=request_id,
+                request_id=request_id, draft_sha256=draft_sha256,
+                roster_sha256=roster_sha256, manifest_sha256=manifest_sha256,
+            )
+            retried_observation = True
+            analyzer_result = _analyze("retry")
+            retry_row = call_b_journal.lookup(state["run_id"], "retry")
+            if retry_row is None or retry_row["usage_status"] != "known":
+                return _journal_recovery_update(state, request_id)
+            total_new_tokens += retry_row["total_tokens"]
+            run_cost += retry_row["estimated_cost_usd"]
+            trace["call_b_observation_attempts"].append({
+                "request_id": request_id, "attempt": "retry",
+                "failure_kind": analyzer_result.failure_kind,
+                "failure_reason": analyzer_result.quote_binding_reason,
+                "quote_failure": analyzer_result.quote_failure,
+                "provider_response_id": analyzer_result.provider_response_id,
+                "usage": analyzer_result.usage,
+            })
+    except Exception as exc:
+        try:
+            recovered = _journal_recovery_update(state, request_id)
+        except Exception:
+            recovered = {
+                "grounding_report": [], "grounding_score": 0.0,
+                "verification_status": "verification_error",
+                "provider_usage_status": "unknown",
+                "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+                "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+                "error_log": [*(state.get("error_log") or [])],
+                **workflow.terminal("execution_failed"),
+            }
+        recovered["error_log"].append(
+            f"[verify] call_b_dispatch_failed {type(exc).__name__}"
+        )
+        return recovered
 
     engine_status_by_claim = {}
+    accounted_requests = sorted({
+        *(state.get("call_b_accounted_requests") or []),
+        request_id + ":call_a", request_id + ":initial",
+        *([request_id + ":retry"] if retried_observation else []),
+    })
     if analyzer_result.adjudication is not None:
         engine_status_by_claim = dict(analyzer_result.adjudication.semantic_status_by_claim)
 
@@ -1486,11 +1695,14 @@ def verify_node(state: AgentState) -> dict:
             evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
             engine_status_by_claim=engine_status_by_claim,
             raw_response=analyzer_result.raw_response,
+            quote_failure=analyzer_result.quote_failure,
         )
-        if analyzer_result.failure_kind == "provider":
+        if analyzer_result.failure_kind in ("provider", "quote_binding"):
             verification_status = "verification_error"
         else:
             verification_status = "parse_failed"
+        if retried_observation:
+            verification_status = "verification_error"
         grounding_report = list(analyzer_result.grounding_report or [])
         _attach_specificity(grounding_report, specificity_by_id)
         _attach_inventory_fields(grounding_report, claim_inventory)
@@ -1521,6 +1733,10 @@ def verify_node(state: AgentState) -> dict:
             "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
             "latency_ms": existing_latency,
             "semantic_trace": trace,
+            "provider_usage_status": "known",
+            "call_b_accounted_requests": accounted_requests,
+            **(workflow.terminal("execution_failed", "Call B observation was invalid.")
+               if retried_observation or analyzer_result.failure_kind == "quote_binding" else {}),
         }
 
     grounding_report = copy.deepcopy(analyzer_result.grounding_report)
@@ -1573,6 +1789,7 @@ def verify_node(state: AgentState) -> dict:
         evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
         engine_status_by_claim=engine_status_by_claim,
         raw_response=analyzer_result.raw_response,
+        quote_failure=analyzer_result.quote_failure,
     )
 
     grounding_score = engine_compat_grounding_score(grounding_report)
@@ -1624,6 +1841,8 @@ def verify_node(state: AgentState) -> dict:
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
         "semantic_trace": trace,
+        "provider_usage_status": "known",
+        "call_b_accounted_requests": accounted_requests,
     }
 
 

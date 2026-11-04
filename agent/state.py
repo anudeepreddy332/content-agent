@@ -115,6 +115,8 @@ class AgentState(TypedDict):
     prompt_version: str
     total_tokens: int
     total_cost_usd: float
+    provider_usage_status: Literal["known", "unknown"]  # unknown means some dispatched usage was lost
+    call_b_accounted_requests: list[str]  # logical request IDs already included in known totals
     latency_ms: dict            # {draft, retrieve, verify, reflect, html_gen, git}
 
     # Per-iteration verify metrics (M4 instrumentation): one entry per verify pass.

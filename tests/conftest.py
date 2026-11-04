@@ -23,6 +23,12 @@ def offline_regression_guard(request, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def isolated_call_b_journal(monkeypatch, tmp_path):
+    """Keep durable request reservations local to each offline test case."""
+    monkeypatch.setenv("CALL_B_JOURNAL_PATH", str(tmp_path / "call_b_requests.sqlite"))
+
+
+@pytest.fixture(autouse=True)
 def no_retry_sleep(monkeypatch):
     """Neutralize tenacity's backoff (2s->4s->8s) so retry tests run in ms."""
     import tenacity.nap

@@ -107,6 +107,7 @@ def _write_telemetry(state: dict):
         "published_live_url": state.get("published_live_url"),
         "total_tokens": state.get("total_tokens", 0),
         "total_cost_usd": round(state.get("total_cost_usd", 0), 5),
+        "provider_usage_status": state.get("provider_usage_status", "known"),
         "latency_ms": state.get("latency_ms", {}),
         "error_log": state.get("error_log", []),
         # Structural policy evidence only; raw rejected provider output is
@@ -274,6 +275,8 @@ def _build_initial_state(
         "prompt_version": PROMPT_VERSION,
         "total_tokens": 0,
         "total_cost_usd": 0.0,
+        "provider_usage_status": "known",
+        "call_b_accounted_requests": [],
         "latency_ms": {},
         "error_log": [],
         "policy_diagnostics": [],

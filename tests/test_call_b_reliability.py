@@ -92,7 +92,7 @@ def test_null_assistant_content_is_empty_output_with_provider_metadata():
 def test_missing_content_field_is_transport_failure_not_empty_output():
     result = _analyze({"model": "deepseek-flash", "id": "bad-shape"})
     assert not result.success and result.failure_kind == "provider"
-    assert result.failure_detail == "transport_shape:transport dict missing content field"
+    assert result.failure_detail == "transport_shape:ValueError"
     assert result.parser_status == "not_run" and result.response_length is None
 
 
@@ -293,4 +293,5 @@ def test_call_b_transient_errors_retry_three_times_then_terminate(base_state, mo
     assert result["grounding_report"] == []
     assert nodes.route_after_verify(merged) != "reflect"
     from agent import workflow
-    assert workflow.verification_failure(merged)["terminal_status"] == "execution_failed"
+    assert merged["terminal_status"] == "execution_failed"
+    assert merged["provider_usage_status"] == "unknown"

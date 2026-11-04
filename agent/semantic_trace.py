@@ -337,6 +337,7 @@ def record_semantic_analyzer(
     evidence_ids: list[str] | None = None,
     engine_status_by_claim: dict[str, str | None] | None = None,
     raw_response: str | None = None,
+    quote_failure: dict | None = None,
 ) -> None:
     """Audit trail for quote-based semantic analyzer (production path)."""
     slot = _slot(trace, iteration)
@@ -357,6 +358,7 @@ def record_semantic_analyzer(
         "evidence_ids": evidence_ids or [],
         "engine_status_by_claim": engine_status_by_claim or {},
         "raw_response_sha256": sha256_utf8(raw_response or ""),
+        "quote_failure": quote_failure or {},
     }
     trace["trace_status"] = "in_progress"
 

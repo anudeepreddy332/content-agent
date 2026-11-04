@@ -799,11 +799,13 @@ def test_new_claim_after_revision_evaluated_from_current_inventory(base_state, m
     graph = graph_mod.build_graph()
     init = dict(base_state)
     init.update(iterations=0, grounding_report=[], verification_status="not_started",
-                claim_inventory=None)
+                claim_inventory=None,
+                web_sources=[{"title": "fixture", "url": "https://fixture.invalid/source",
+                              "content": claim_v1, "score": 0.9}], kb_results=[])
     result = graph.invoke(init)
     final_inv = result["claim_inventory"]
     assert compute_claim_id(claim_new) in {c["claim_id"] for c in final_inv["claims"]}
-    assert result["terminal_status"] == "execution_failed"
+    assert result["terminal_status"] == "terminal_quality_exhausted"
     assert result.get("html_output") is None
 
 

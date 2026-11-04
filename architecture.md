@@ -166,6 +166,23 @@ After every content redraft, verification is fresh; reflection runs only after v
 Non-repairable policy/execution failures terminate rather than entering editorial review.
 Remote publication remains a separate human-triggered action under existing publication guards.
 
+**November 4 bounded verifier-observation amendment (`D-2026-11-04-03`):** A
+completed Call B result rejected for exact `quote_not_found` may receive one
+additional Call B observation on the unchanged draft, Call A roster and
+evidence manifest, provided identities and the existing cost gate pass. A
+separate SQLite journal commits both the initial Call B reservation and the
+run-global recovery reservation before dispatch; the latter is unique across
+episodes and workers. Response metadata and known usage are committed before
+validation. A replay of an existing reservation is terminal and cannot issue
+another Call B. Missing response usage is recorded as UNKNOWN while known
+prior usage remains accounted. The single verify-node checkpoint means a
+crashed observation cannot be reconstructed from metadata alone, so restart
+does not continue verification. This is at-most-once application dispatch,
+not exactly-once provider execution or billing; transport retries remain
+bounded separately. Valid adverse judgments never receive an observation
+reroll. The two-draft content limit and Gate-1 eligibility contract below
+are unchanged. This offline amendment has not qualified a live E2E.
+
 ### 1.2 Separate frozen loop budgets
 
 | Loop | Frozen allowance | Accounting |

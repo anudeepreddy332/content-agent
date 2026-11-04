@@ -122,11 +122,27 @@ reliability limitation in the accepted contract, not an off-by-one source bug.
 92 focused tests passed. See `D-2026-11-04-02`, `EXP-2026-11-04-02`, and the
 private five-claim matrix under `/private/tmp/content-agent-live-e2e-evidence-20261104/`.
 
+**November 4 bounded verifier-observation recovery: LOCAL OFFLINE CANDIDATE.**
+Decision `D-2026-11-04-03` approves one separately capped Call B recovery only
+for a completed, exact `quote_not_found` observation with current draft, Call A
+roster and evidence identities. The candidate based on feature head
+`d8ce8283694eed7112ab82bd43179898fb936d81` uses a durable SQLite
+pre-dispatch journal for initial and recovery Call B requests. Its run-global
+unique recovery reservation survives restart and concurrent workers. Restart
+does not replay an existing request; it ends safely and records lost usage as
+UNKNOWN while retaining known journaled usage. A valid material failure keeps
+the normal targeted content-revision route. The original rejected KB-008 quote
+remains unavailable, and all five material obligations in the November 4 run
+remain unresolved. See `EXP-2026-11-04-03` for offline evidence and limits.
+Independent read-only acceptance passed after a reproduced UNKNOWN-usage
+carry-forward defect was corrected; 2,024 full offline tests passed. Feature
+integration and exact-SHA CI are pending.
+
 **Production readiness: NOT ACHIEVED.** No Gate 1/Gate 2 success or
-provider-backed complete E2E has been demonstrated. Next milestone: explicitly
-decide invalid-verifier recovery semantics (immediate stop versus one separately
-capped same-draft observation retry) before implementing or authorizing another
-paid test. Frozen budgets and acceptance checks remain unchanged.
+provider-backed complete E2E has been demonstrated. The next operational
+milestone, after independent offline acceptance and feature CI, is one
+separately authorized supervised application run. The two-draft budget and
+all acceptance checks remain unchanged.
 
 ## Historical status — 2026-10-13
 
