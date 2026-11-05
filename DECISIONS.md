@@ -4423,3 +4423,66 @@ the 36-claim/usage preservation and closed/reopened SQLite resume proof, and
 passed fatal Ruff, diff/scope and canonical documentation review. Complete
 offline regression evidence is 2,056 PASS / 37 warnings; reviewer inspected
 that log and did not repeat the full suite. Live E2E remains unqualified.
+
+
+---
+Decision ID: D-2026-11-05-04
+Date: 2026-11-05
+
+Decision: **Accept the terminal failed-closed result of the one authorized
+post-repair supervised application run; do not resume or rerun it.** Run
+`f6e866dd-2a2a-4c81-a3de-7415afbf5820` executed once through the production
+FastAPI `/runs` graph from a fresh private snapshot of exact feature SHA
+`5e88793996f2f38a3a62ee8c7a4ccf6870973166`. The remote feature SHA and
+all 427 tracked snapshot blobs matched before dispatch. Its private checkpoint,
+journal, telemetry and source-identity manifest are retained outside Git; see
+`EXP-2026-11-05-04`.
+
+Retrieval completed with 10 web and 11 local KB rows. One valid four-section
+draft consumed one quality attempt. Call A returned a current 73-claim
+inventory: 57 material, 16 nonmaterial, zero missing anchors and one explicit
+`ANCHOR_AMBIGUOUS`. The material factual update-rule claim
+`clm-02ca1b85a26b65a9` anchored the same formula at both
+`[1027,1044)` and `[4604,4621)` in draft SHA-256
+`4fa07c0edb5dd15bae2e9f8ea6a70ef25fca08e66590bbb95fe43017a6e758b3`.
+No authoritative occurrence identity was available. The accepted current-
+inventory guard ended `execution_failed` after `inventory_failed` with the
+fixed reason that content redraft was blocked. It preserved every claim and
+both occurrences, and dispatched no second draft. This live run demonstrates
+the fail-fast route for a new ambiguous claim; it does not prove a safe anchor
+resolution method.
+
+Call B was not reached: its durable journal has zero reservations and no
+semantic disposition. Bounded quote-miss recovery was **NOT EXERCISED**.
+Material and citation policies reported unresolved-anchor integrity failure,
+not substantive verified/weak/unverified or placement acceptance. No targeted
+claim feedback, reflection, Gate 1/2, HTML or local archive was reached.
+There was no human approval, website change, Git publication or `/publish`
+invocation. The historical ten weak material obligations remain unresolved;
+this new draft's material support was not evaluated.
+
+Two logical DeepSeek operations (draft and Call A) reported 5,984 and 12,290
+tokens, 18,274 total, with known usage and exact checkpoint application
+estimate `$0.01430136` (rounded telemetry `$0.0143`). Two successful DeepSeek
+HTTP POST responses are observable. Three fresh Tavily cache entries support
+the three production query paths, but complete physical attempts, Tavily
+charges and provider invoicing are unverified. The `$0.10` application estimate
+guard is not a billing ceiling. The server was shut down after terminal
+evidence preservation; original and backup ordered checkpoint blobs match.
+
+Independent read-only terminal evidence review **PASS**: the reviewer checked
+the current inventory and both offsets, one-attempt routing, empty Call B
+journal, known usage, source identity and unreached stages. Runtime telemetry
+does not stamp a verified Git SHA; the external full-file snapshot manifest
+establishes the execution SHA. This result qualifies only the accepted
+ambiguity fail-fast behavior live. A complete E2E, material/citation
+acceptance, live Call B recovery and human gates remain unqualified.
+
+Next engineering action: separately scope an **offline, evidence-bound
+duplicate-anchor investigation** on this saved draft and Call A inventory.
+Test whether an occurrence can be identified uniquely without guessing or
+weakened binding, and propose a specific correction only if that evidence
+exists. No new paid run or source change is authorized by this decision.
+
+Status: **TERMINAL E2E FAILURE ACCEPTED; FAIL-FAST OBSERVED LIVE;
+PRODUCTION E2E QUALIFICATION OPEN**.

@@ -1,13 +1,48 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-11-05 (approved ambiguous-anchor fail-fast repair;
-offline validation, historical E2E still failed)._
+_Canonical current-state snapshot. Last synchronized: 2026-11-05 (one
+post-repair supervised E2E failed closed at a new ambiguous anchor)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
 ## Current status — 2026-11-05
+
+**Latest supervised application run: TERMINAL `execution_failed`; fail-fast
+observed live; complete E2E qualification remains OPEN.** One explicitly
+authorized production `/runs` request created run
+`f6e866dd-2a2a-4c81-a3de-7415afbf5820` from fresh isolated snapshot of
+feature SHA `5e88793996f2f38a3a62ee8c7a4ccf6870973166` (427 tracked blobs
+verified; execution-head CI `41996912479` SUCCESS / 2,056 tests PASS).
+Retrieval returned 10 web and 11 local KB rows. One valid four-section draft
+used one quality attempt. Current Call A inventory retained 73 claims, 57
+material, with zero missing and one ambiguous anchor. Material factual claim
+`clm-02ca1b85a26b65a9` matched a repeated formula at both `[1027,1044)` and
+`[4604,4621)`; the draft SHA-256 is
+`4fa07c0edb5dd15bae2e9f8ea6a70ef25fca08e66590bbb95fe43017a6e758b3`.
+The accepted current-inventory guard ended `inventory_failed` →
+`execution_failed` with no content redraft or further provider dispatch.
+
+Call B was not reached: journal zero reservations, semantic classifications
+unavailable, bounded recovery **NOT EXERCISED**. Material/citation policy
+recorded unresolved-anchor integrity failure, not substantive acceptance;
+grounding score 0.0 is a non-evaluation sentinel. No targeted feedback,
+reflection, Gate 1/2, HTML or local archive occurred. No approval, Git push,
+website change or publication occurred in the application run. Two logical
+DeepSeek operations reported 18,274 tokens, known usage, checkpoint app
+estimate `$0.01430136`; complete physical attempts, Tavily charges and
+provider billing remain unverified. Independent read-only terminal evidence
+review PASS. The private checkpoint and verified read-only backup remain under
+`/private/tmp/content-agent-live-e2e-failfast-20261105` and
+`/private/tmp/content-agent-live-e2e-failfast-evidence-20261105`.
+This qualifies the fail-fast route for a new ambiguity only. The historical ten
+weak material obligations remain unresolved, this draft received no Call B
+material assessment, and live Call B recovery remains unqualified. See
+`D-2026-11-05-04` / `EXP-2026-11-05-04`. Next engineering action: separately
+scope an offline evidence-bound duplicate-anchor investigation on this saved
+draft and inventory; establish unique intended occurrence before proposing any
+code change. No additional paid application run is authorized.
 
 **November 5 ambiguous-anchor fail-fast repair: OWNER APPROVED / IMPLEMENTED.**
 Alternative A from `D-2026-11-05-02` was explicitly authorized and implemented
@@ -28,10 +63,11 @@ source scope, restart proof and preserved evidence.
 See `D-2026-11-05-03` and `EXP-2026-11-05-03`.
 The ten historical weak material obligations remain unresolved. This prevents
 wasteful redrafts; it does NOT qualify a complete E2E or demonstrate live Call B
-recovery. No new provider call/live run, main merge, publication or holdout run.
-A new supervised application run requires separate owner authorization.
+recovery. The offline implementation milestone itself made no provider call,
+main merge, publication or holdout run. Any future paid run requires separate
+owner authorization.
 
-**Latest supervised application run: FAILED CLOSED; recovery NOT EXERCISED.**
+**Prior supervised application run: FAILED CLOSED; recovery NOT EXERCISED.**
 Run `34cc2a46-05d9-4f8a-8662-7d18e9ef158f` executed at exact feature SHA
 `085ea315652686d4578d962de3d00071254201a0` after explicit paid authorization.
 All 426 tracked snapshot blobs remained unchanged. Retrieval returned 10 web /
