@@ -1,7 +1,7 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-11-05 (offline anchor/revision RCA;
-terminal E2E remains failed, narrow routing amendment proposed only)._
+_Canonical current-state snapshot. Last synchronized: 2026-11-05 (approved ambiguous-anchor fail-fast repair;
+offline validation, historical E2E still failed)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
@@ -9,27 +9,27 @@ remains preserved in `FREEZE.md`.
 
 ## Current status — 2026-11-05
 
-**November 5 offline RCA complete; routing amendment PROPOSED ONLY.**
-The exact first-draft inventory is reproduced: one subjectless predicate anchor
-matches two sections and differs from its extracted standalone proposition.
-The conservative binder retained both matches and correctly reported ambiguity;
-no implementation defect or qualified no-guess disambiguation is established.
-Current routing permits another draft for inventory failure, but the empty
-report supplies no repair feedback. Offline capture proves initial/redraft
-production requests identical. All ten final material obligations and their
-22 evidence spans remain valid weak results. Several assertions overreach
-sources, but not all are proven false: the adapted 2-D code output is
-algebraically consistent while lacking current source entailment. Systematic
-prompt causality is unproven.
-Recommended alternative A would terminate a CURRENT ambiguous inventory as
-`execution_failed`, retaining all claims/diagnostics/usage, without new retries,
-anchor changes or a larger two-draft allowance. This is not an accepted runtime
-contract and has not been implemented. Owner approval is required before a
-separate coding mission. Existing Call B recovery, material/citation/human
-acceptance and original failed E2E remain unchanged. No further provider call,
-application run or source change occurred. See `D-2026-11-05-02`,
-`EXP-2026-11-05-02` and the private RCA report. Final independent read-only RCA/documentation acceptance passed; runtime
-amendment remains unapproved and unimplemented.
+**November 5 ambiguous-anchor fail-fast repair: OWNER APPROVED / IMPLEMENTED.**
+Alternative A from `D-2026-11-05-02` was explicitly authorized and implemented
+on base `10c27b4195034d7aa5a69db4cf1ca6fb602d9bc5`; production delta is
+`agent/workflow.py` only. Current ambiguous inventory after separate verification
+and inventory identity checks terminates `execution_failed` with a fixed safe
+reason. It preserves every claim/occurrence, usage/diagnostic and consumed
+attempt, preventing the uninformed redraft without another provider operation.
+Other failure routing, binder, prompts, thresholds, two-draft budget, Call B
+retry and genuine human/publication gates remain unchanged.
+Saved-artifact replay retains all 36 first-draft claims and both original
+matches, stops at attempt one, and resumes twice from a closed/reopened scratch
+SQLite checkpoint without dispatch or duplicate usage. Focused 198 tests PASS;
+full offline 2,056 tests PASS / 37 warnings; Ruff fatal tier and diff check PASS.
+Independent read-only implementation and documentation acceptance PASS;
+reviewer independently reran 198 focused tests and verified saved-state routing,
+source scope, restart proof and preserved evidence.
+See `D-2026-11-05-03` and `EXP-2026-11-05-03`.
+The ten historical weak material obligations remain unresolved. This prevents
+wasteful redrafts; it does NOT qualify a complete E2E or demonstrate live Call B
+recovery. No new provider call/live run, main merge, publication or holdout run.
+A new supervised application run requires separate owner authorization.
 
 **Latest supervised application run: FAILED CLOSED; recovery NOT EXERCISED.**
 Run `34cc2a46-05d9-4f8a-8662-7d18e9ef158f` executed at exact feature SHA
@@ -57,7 +57,7 @@ outcome. Execution-head CI `41808866709` was verified SUCCESS; application
 repair CI remains `41807379794` SUCCESS. A documentation-only descendant may
 advance the feature ref without changing the executed application.
 
-**Verified application-bearing feature head:**
+**Prior application-bearing integration (before fail-fast amendment):**
 `cf9cc23855a917c179fdea51d310cc0a9e3f74de` was fast-forwarded to
 `feature/phase5-rag-hardening` from `d8ce8283694eed7112ab82bd43179898fb936d81`.
 Exact-SHA CI [41807379794](https://github.com/anudeepreddy332/content-agent/actions/runs/41807379794)
@@ -195,8 +195,8 @@ and tests. This is offline recovery qualification, not a successful live run.
 **Production readiness: NOT ACHIEVED.** No Gate 1/Gate 2 success or
 provider-backed complete E2E has been demonstrated. The November 5 separately
 authorized run ended at the material-quality limit;
-recovery and targeted material repair were not exercised. The next step is an
-owner decision on a separately scoped mission before more paid execution.
+recovery and targeted material repair were not exercised. The fail-fast amendment is now owner-approved and implemented offline; a new
+supervised application E2E still requires separate paid-run authorization.
 The two-draft budget and
 all acceptance checks remain unchanged.
 

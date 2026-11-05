@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 
 from config import COST_GATE_USD, REFLECTION_THRESHOLD
+from agent.claim_inventory import ANCHOR_AMBIGUOUS
 from agent.reviewer_identity import approval_origin_valid
 
 QUALITY_ATTEMPTS = 2
@@ -191,6 +192,23 @@ def verification_failure(state):
     from agent import nodes
     if state.get("verification_identity") != identity(state):
         return failure(state, "execution_failed", repairable=False)
+    inventory = state.get("claim_inventory")
+    claims = inventory.get("claims") if isinstance(inventory, dict) else None
+    if (
+        state.get("verification_status") == "inventory_failed"
+        and inventory_current(state)
+        and isinstance(claims, list)
+        and all(isinstance(claim, dict) for claim in claims)
+        and any(claim.get("anchor_validity") == ANCHOR_AMBIGUOUS for claim in claims)
+    ):
+        # A location-integrity failure supplies no semantic repair obligations.
+        # Retain the inventory and usage; do not spend a draft on an uninformed reroll.
+        outcome = failure(state, "execution_failed", repairable=False)
+        if outcome.get("terminal_status") == "execution_failed":
+            outcome["terminal_message"] = (
+                "Claim inventory has an ambiguous draft anchor; content redraft blocked."
+            )
+        return outcome
     if state.get("verification_status") != "completed":
         # Output/schema failure may use the one remaining draft. Exhausted
         # transport/execution errors terminate; transport retries stay in SDK nodes.

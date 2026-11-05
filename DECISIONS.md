@@ -4365,3 +4365,61 @@ new run created, sealed holdout evaluated or historical checkpoint modified.
 
 Status: **RCA PROVEN WITH STATED LIMITS; ALTERNATIVE A PROPOSED ONLY / OWNER
 DECISION REQUIRED BEFORE IMPLEMENTATION**.
+
+
+---
+Decision ID: D-2026-11-05-03
+Date: 2026-11-05
+
+Decision: **Approve and implement Alternative A: fail fast on a current
+ambiguous claim-inventory anchor instead of generating an uninformed redraft.**
+The owner explicitly authorized this narrow runtime amendment after
+`D-2026-11-05-02` / `EXP-2026-11-05-02`. Implementation base is exact feature
+`10c27b4195034d7aa5a69db4cf1ca6fb602d9bc5`. This supersedes only that
+proposal's pending-approval status and the demonstrated ambiguity subtype's
+repairable-output routing; earlier RCA evidence remains unchanged.
+
+Production scope is `agent/workflow.py` only. After the existing verification
+identity check, the new branch requires `verification_status=inventory_failed`,
+separately current inventory identity, and a list of dictionary claim rows
+containing explicit `ANCHOR_AMBIGUOUS`. It returns non-repairable
+`execution_failed`, with a fixed metadata-only reason: claim inventory has an
+ambiguous draft anchor; content redraft blocked. It changes no inventory,
+occurrence, usage, diagnostic or attempt field. Existing terminal/resource
+precedence is preserved. An eligibility flag cannot hide an ambiguous inventory
+claim. No anchor is selected, expanded, rebound or inferred from section labels.
+
+Other output failures and malformed/stale inventory retain their established
+bounded failure routing. They receive no new acceptance authority; completed
+stale inventory and wrong verification identity remain terminal. The narrow
+branch does not change binder, prompts, retrieval, evidence, semantic/material/
+citation thresholds, two-draft limit, graph topology, reviewer authentication,
+publication guards, or the accepted durable Call B retry.
+
+Before/after proof uses the preserved November 5 run
+`34cc2a46-05d9-4f8a-8662-7d18e9ef158f`, originally executed at
+`085ea315652686d4578d962de3d00071254201a0`. The original first inventory and
+both target occurrences `[1463,1490)` / `[3271,3298)` reproduce exactly.
+The pre-repair route was another draft with empty feedback and byte-identical
+production requests. A fresh offline replay through real verify_node with only
+the provider response doubled now preserves all 36 claims and recorded usage,
+ends after attempt one, and dispatches neither Call B nor another draft.
+A separate scratch production-graph SQLite replay closes and reopens its
+connection and resumes twice without dispatch or duplicate accounting.
+The historical checkpoint is never resumed or changed.
+
+This correction prevents wasteful redrafts. It does NOT resolve the ten
+historical material-claim obligations, qualify a complete E2E, demonstrate live
+Call B recovery, improve extraction completeness, or establish exactly-once
+Call A execution/billing. A Call A response lost before its graph checkpoint
+retains the existing replay limitation. No new retry/journal is introduced.
+A later live application run requires separate authorization.
+
+Validation and independent acceptance are recorded in `EXP-2026-11-05-03`.
+Status: **OWNER-APPROVED AMENDMENT IMPLEMENTED; INDEPENDENT OFFLINE ACCEPTANCE
+PASS**. Separate read-only reviewer independently reran 198 focused tests,
+verified exact saved-state before/after routes and request identities, checked
+the 36-claim/usage preservation and closed/reopened SQLite resume proof, and
+passed fatal Ruff, diff/scope and canonical documentation review. Complete
+offline regression evidence is 2,056 PASS / 37 warnings; reviewer inspected
+that log and did not repeat the full suite. Live E2E remains unqualified.

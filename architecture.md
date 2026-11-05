@@ -1,6 +1,6 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-11-04. Workflow contract ACCEPTED / FROZEN —
+_Accepted contract synchronized 2026-11-05. Workflow contract ACCEPTED / FROZEN —
 IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 (D-2026-10-05-04). Historical implementation anchors follow._
 
@@ -13,7 +13,7 @@ IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
 - **P0-2a implementation base (historical):** `ca29d32b4869269daa47142615d298580a577a77`
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
-- **Last application-bearing feature integration:** canonical Phase-5 runtime code is
+- **Pre-amendment application-bearing feature integration:** canonical Phase-5 runtime code is
   `cf9cc23855a917c179fdea51d310cc0a9e3f74de`; exact-SHA CI
   [41807379794](https://github.com/anudeepreddy332/content-agent/actions/runs/41807379794)
   concluded SUCCESS (lint and tests PASS; push eval gate skipped). Previous
@@ -185,6 +185,22 @@ not exactly-once provider execution or billing; transport retries remain
 bounded separately. Valid adverse judgments never receive an observation
 reroll. The two-draft content limit and Gate-1 eligibility contract below
 are unchanged. This offline amendment has not qualified a live E2E.
+
+**November 5 ambiguous-anchor amendment (`D-2026-11-05-03`):** When
+`inventory_failed` carries a current inventory with an explicit
+`ANCHOR_AMBIGUOUS` claim, matching verification and inventory identities are
+required separately. The workflow terminates `execution_failed` with a fixed
+safe ambiguity reason, retaining every claim/occurrence, diagnostic, known
+usage and consumed attempt. It never spends the remaining content attempt on
+that uninformed redraft. It selects no occurrence and grants no binding
+authority to section or eligibility metadata. Other failure subtypes retain
+their established bounded routing; stale/malformed artifacts grant no semantic
+or human-gate acceptance. The two-draft allowance, material/citation/reflection
+and human/publication gates, and durable Call B recovery remain unchanged.
+After the terminal graph checkpoint is durable, restart stays terminal. A Call A
+response lost before that checkpoint retains its existing replay limitation.
+This offline correction does not resolve the ten historical material claims,
+qualify a complete E2E, or demonstrate live recovery.
 
 ### 1.2 Separate frozen loop budgets
 
