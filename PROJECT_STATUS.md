@@ -1,13 +1,35 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-11-05 (one supervised live
-run after durable Call B recovery; terminal quality exhaustion, recovery not exercised)._
+_Canonical current-state snapshot. Last synchronized: 2026-11-05 (offline anchor/revision RCA;
+terminal E2E remains failed, narrow routing amendment proposed only)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
 ## Current status — 2026-11-05
+
+**November 5 offline RCA complete; routing amendment PROPOSED ONLY.**
+The exact first-draft inventory is reproduced: one subjectless predicate anchor
+matches two sections and differs from its extracted standalone proposition.
+The conservative binder retained both matches and correctly reported ambiguity;
+no implementation defect or qualified no-guess disambiguation is established.
+Current routing permits another draft for inventory failure, but the empty
+report supplies no repair feedback. Offline capture proves initial/redraft
+production requests identical. All ten final material obligations and their
+22 evidence spans remain valid weak results. Several assertions overreach
+sources, but not all are proven false: the adapted 2-D code output is
+algebraically consistent while lacking current source entailment. Systematic
+prompt causality is unproven.
+Recommended alternative A would terminate a CURRENT ambiguous inventory as
+`execution_failed`, retaining all claims/diagnostics/usage, without new retries,
+anchor changes or a larger two-draft allowance. This is not an accepted runtime
+contract and has not been implemented. Owner approval is required before a
+separate coding mission. Existing Call B recovery, material/citation/human
+acceptance and original failed E2E remain unchanged. No further provider call,
+application run or source change occurred. See `D-2026-11-05-02`,
+`EXP-2026-11-05-02` and the private RCA report. Final independent read-only RCA/documentation acceptance passed; runtime
+amendment remains unapproved and unimplemented.
 
 **Latest supervised application run: FAILED CLOSED; recovery NOT EXERCISED.**
 Run `34cc2a46-05d9-4f8a-8662-7d18e9ef158f` executed at exact feature SHA

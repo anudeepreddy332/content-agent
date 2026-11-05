@@ -4277,3 +4277,91 @@ a favorable outcome. Evidence, stage accounting and limitations are indexed in
 
 Status: **ONE LIVE RUN FAILED CLOSED; RECOVERY NOT EXERCISED; PRODUCTION E2E
 NOT QUALIFIED**.
+
+
+---
+Decision ID: D-2026-11-05-02
+Date: 2026-11-05
+
+Decision: **Record proven November 5 anchor/revision RCA and propose a narrow
+terminal stop for current ambiguous inventory anchors. The runtime amendment
+is PROPOSED ONLY, pending owner approval and separate implementation.**
+
+Run `34cc2a46-05d9-4f8a-8662-7d18e9ef158f` executed at
+`085ea315652686d4578d962de3d00071254201a0`; documentation base is
+`0106cf9e07627dd36c83486aa9f95878f550f766`. Read-only reproduction of the
+saved first draft and Call A output rebuilds the entire 36-claim inventory
+exactly. Claim `clm-ebf1275a7473078e` has a subjectless predicate anchor with
+two exact matches, `[1463,1490)` in technical_dive and `[3271,3298)` in
+takeaways. The standalone proposition differs from that repeated anchor.
+The conservative multiple-match rule therefore returns `ANCHOR_AMBIGUOUS`.
+Normalization and duplicate merge did not cause the ambiguity. All matches
+and the claim remain present. Model section metadata does not establish the
+complete intended occurrence set. No binder implementation defect or safe
+additional deterministic disambiguation rule is demonstrated.
+
+The inventory failure precedes Call B and yields an empty grounding report.
+The current workflow permits another draft for `inventory_failed` while an
+attempt remains; feedback construction requires a nonempty grounding report.
+Offline capture of the actual production request builder proves the initial
+and redraft requests byte-identical, not merely similar feedback summaries.
+The remaining attempt was spent without an actionable semantic/material
+obligation. This is an accepted-contract reliability limitation, not an
+attempt-count bug or loss of already-generated material feedback.
+
+All ten final material obligations remain valid weak results, with 22 exact
+support/blocker spans matching the fixed production evidence manifest. Their
+issues include unsupported absolutes/prevalence, unbiasedness/escape
+mechanisms, necessity/superlative claims, and two code-source entailment gaps.
+Do not equate source non-entailment with falsity: the two-dimensional example's
+reported output is algebraically consistent with its own code; the cited source
+is one-dimensional. API clipping order is unestablished by the retrieved
+clipping formula, not proven incorrect. Neither distinction upgrades current
+verification. Several overreaching statements in one draft are demonstrated;
+a systematic causal prompt defect is not. Prompt tensions remain hypotheses.
+
+Alternatives:
+
+- **A — RECOMMENDED / PROPOSED:** after existing identity checks, a CURRENT
+  `inventory_failed` result with explicit acceptance-critical
+  `ANCHOR_AMBIGUOUS` ends `execution_failed`, before the generic repairable
+  output branch. Preserve inventory, all matches, usage, diagnostics and the
+  consumed attempt. Future scope: `agent/workflow.py`, focused tests and
+  accepted contract documentation only. No binder, prompt, graph, provider,
+  journal, threshold, counter or two-draft-budget change. No new retry.
+- **B — DEFERRED / NOT QUALIFIED:** additional deterministic resolution.
+  Existing unique exact binding stays valid. This case supplies no new
+  authoritative location signal; picking a match or promoting section metadata
+  alone risks completeness and citation/semantic provenance. It is not
+  accepted as a correction here.
+- **C — DEFERRED:** generalized invalid-observation/content-quality separation.
+  Conceptually useful but changes more parse/length/missing-anchor policy than
+  this evidence requires. Any new observation requires separate necessity,
+  cost, identity, durable-dispatch and restart justification. No such retry is
+  proposed or authorized.
+
+A prevents this uninformed reroll and adds no provider operation. It reduces
+automatic completion opportunities; it does not resolve the ten claims or
+supply semantic feedback. On the recorded trace it would avoid the later
+32,870 reported tokens / `$0.02175982` application-estimated work, not prove
+invoice savings or historical success. A durable terminal checkpoint must
+remain terminal on restart without duplicate accounting. No new guarantee is
+claimed for a Call A response lost before its graph checkpoint; the accepted
+Call B durable recovery and its limitations remain unchanged.
+
+The focused deterministic acceptance plan is retained in the private RCA
+report and indexed by `EXP-2026-11-05-02`: full saved-inventory preservation,
+strict negative anchor controls, stale identity rejection, no additional
+dispatch after terminal ambiguity, usable material-feedback controls, two-draft
+exhaustion, existing Call B recovery, restart/accounting, and unchanged human
+and publication gates. None is a historical-success claim.
+
+RCA evidence and proposed documentation independent review: ACCEPTED. This
+acceptance covers conclusions/documentation only, not the runtime amendment.
+A future coder must validate `inventory_current` separately from
+`verification_identity`; current-verification identity alone is insufficient.
+No source code was changed, candidate correction implemented, provider called,
+new run created, sealed holdout evaluated or historical checkpoint modified.
+
+Status: **RCA PROVEN WITH STATED LIMITS; ALTERNATIVE A PROPOSED ONLY / OWNER
+DECISION REQUIRED BEFORE IMPLEMENTATION**.
