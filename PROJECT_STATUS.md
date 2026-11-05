@@ -1,13 +1,40 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-11-05 (one
-post-repair supervised E2E failed closed at a new ambiguous anchor)._
+_Canonical current-state snapshot. Last synchronized: 2026-11-05 (P3
+repeated-anchor RCA and prospective design; no implementation)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
 ## Current status — 2026-11-05
+
+**P3 repeated-anchor investigation: RCA PROVEN WITH LIMITS; A + D PROPOSED
+ONLY / OWNER DECISION REQUIRED BEFORE CODING.** On verified feature base
+`6e10943e10f41b672275a15356deafd51a82152d`, immutable read-only reconstruction
+matches the entire saved 73-claim inventory exactly; the prior November 5
+ambiguous inventory also reproduces all 36 claims. Both formula contexts in
+the latest draft affirm the same update rule, but the saved row establishes
+neither one as its sole intended occurrence nor an authoritative complete
+occurrence set. Section labels and source resemblance cannot choose a match.
+A unique longer exact anchor is possible prospectively; no historical row was
+rebound, deleted or resumed. Binding both formula spans also creates a
+shared-endpoint conflict with the separate retained takeaway claim.
+Recommend only prospective context-complete unique verbatim extraction
+anchors, retaining current exact binder/fail-fast behavior. This is no generic
+semantic resolver or repeated-occurrence representation fix: lexical-equality
+`bound_multiple` can match quoted/prohibited text, and merging one canonical
+claim across different unique anchor texts fails existing Gate-1 quote checks.
+Both limits are explicit negative controls; no claim deletion or gate weakening
+is an acceptable workaround. Thirteen deterministic before/after data fixtures
+plus nine controls characterize existing behavior; 171 existing guard tests
+PASS / 1 warning, zero provider. These do not establish revised-prompt efficacy,
+semantic/material/citation acceptance or an E2E success. Two independent read-only reviewers accepted the design/evidence/canonical
+documentation and independently reproduced the 73-claim inventory and fixture
+outcomes; implementation and prompt efficacy remain unqualified. See `D-2026-11-05-05`,
+`EXP-2026-11-05-05` and `docs/design/P3_REPEATED_ANCHOR_FIXTURES_20261105.json`.
+All runtime, prompt, threshold, human/publication gates and `FREEZE.md` remain
+unchanged. No implementation or paid execution is authorized.
 
 **Latest supervised application run: TERMINAL `execution_failed`; fail-fast
 observed live; complete E2E qualification remains OPEN.** One explicitly
@@ -39,10 +66,9 @@ review PASS. The private checkpoint and verified read-only backup remain under
 This qualifies the fail-fast route for a new ambiguity only. The historical ten
 weak material obligations remain unresolved, this draft received no Call B
 material assessment, and live Call B recovery remains unqualified. See
-`D-2026-11-05-04` / `EXP-2026-11-05-04`. Next engineering action: separately
-scope an offline evidence-bound duplicate-anchor investigation on this saved
-draft and inventory; establish unique intended occurrence before proposing any
-code change. No additional paid application run is authorized.
+`D-2026-11-05-04` / `EXP-2026-11-05-04`. The separately scoped duplicate-anchor investigation is now recorded above;
+its prospective design remains owner-pending. No additional paid application
+run is authorized.
 
 **November 5 ambiguous-anchor fail-fast repair: OWNER APPROVED / IMPLEMENTED.**
 Alternative A from `D-2026-11-05-02` was explicitly authorized and implemented

@@ -1,0 +1,495 @@
+{
+  "schema": "p3-anchor-design-fixtures-v1",
+  "status": "DESIGN ONLY: existing production behavior plus hand-authored hypothetical extractor outputs; no candidate implementation or provider qualification",
+  "cases": [
+    {
+      "id": "01-complete-proposition-two-sections",
+      "draft": "## Detail\nThe update subtracts the gradient.\n## Summary\nThe update subtracts the gradient.",
+      "before_rows": [
+        {
+          "claim_text": "The update subtracts the gradient.",
+          "anchor_quote": "The update subtracts the gradient.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "bound_multiple"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "The update subtracts the gradient.",
+          "anchor_quote": "The update subtracts the gradient.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "bound_multiple"
+      ],
+      "note": "One identical complete proposition, two retained spans; no new bind-all inference."
+    },
+    {
+      "id": "02-unique-longer-exact-anchor",
+      "draft": "## Detail\nThe update rule is:\n\nθ = θ - η * ∇J(θ)\n## Summary\nThe core update rule is θ = θ - η * ∇J(θ).",
+      "before_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "The update rule is:\n\nθ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "bound"
+      ],
+      "note": "Manually authored hypothetical future Call A output, not a resolver or historical repair. Location only; no semantic acceptance."
+    },
+    {
+      "id": "03-same-formula-opposite-assertions",
+      "draft": "For descent use θ = θ - η * ∇J(θ).\nFor descent do not use θ = θ - η * ∇J(θ).",
+      "before_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        },
+        {
+          "claim_text": "For descent do not use θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "ANCHOR_AMBIGUOUS",
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "For descent use θ = θ - η * ∇J(θ).",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        },
+        {
+          "claim_text": "For descent do not use θ = θ - η * ∇J(θ).",
+          "anchor_quote": "For descent do not use θ = θ - η * ∇J(θ).",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "bound",
+        "bound"
+      ],
+      "note": "Keep both conflicting propositions and send both to semantic authority. Formula equality does not prove same proposition."
+    },
+    {
+      "id": "04-paraphrased-genuine-two-occurrence",
+      "draft": "Gradient descent uses θ = θ - η * ∇J(θ).\nThe core descent rule is θ = θ - η * ∇J(θ).",
+      "before_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "note": "Human reading supports both; no generic deterministic semantic equivalence rule is added."
+    },
+    {
+      "id": "05-no-reliable-identity",
+      "draft": "## A\nθ = θ - η * ∇J(θ)\n## B\nθ = θ - η * ∇J(θ)",
+      "before_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "note": "Neither section nor first match is authority; must remain blocked."
+    },
+    {
+      "id": "06-near-identical-material-qualifiers",
+      "draft": "Momentum usually helps. Momentum always helps.",
+      "before_rows": [
+        {
+          "claim_text": "Momentum usually helps.",
+          "anchor_quote": "Momentum usually helps.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        },
+        {
+          "claim_text": "Momentum always helps.",
+          "anchor_quote": "Momentum always helps.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "bound",
+        "bound"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "Momentum usually helps.",
+          "anchor_quote": "Momentum usually helps.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        },
+        {
+          "claim_text": "Momentum always helps.",
+          "anchor_quote": "Momentum always helps.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "bound",
+        "bound"
+      ],
+      "note": "Two canonical IDs remain; no fuzzy or semantic dedup, no status upgrade."
+    },
+    {
+      "id": "07-fenced-code-comment-vs-literal",
+      "draft": "```python\n# The update is θ = θ - η * ∇J(θ)\nlabel = \"θ = θ - η * ∇J(θ)\"\n```",
+      "before_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "note": "Literal string is not the same proposition as a comment; type/section cannot authorize bind-all."
+    },
+    {
+      "id": "08-heading-inline-code-vs-assertion",
+      "draft": "## `θ = θ - η * ∇J(θ)`\nUse `θ = θ - η * ∇J(θ)` for descent.",
+      "before_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "The gradient descent update rule is θ = θ - η * ∇J(θ).",
+          "anchor_quote": "θ = θ - η * ∇J(θ)",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "note": "Heading and inline code appearance alone does not establish same assertion."
+    },
+    {
+      "id": "09-markdown-exactness",
+      "draft": "- **The update subtracts the gradient.**",
+      "before_rows": [
+        {
+          "claim_text": "The update subtracts the gradient.",
+          "anchor_quote": "The update **subtracts** the gradient.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "ANCHOR_FAILED"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "The update subtracts the gradient.",
+          "anchor_quote": "**The update subtracts the gradient.**",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "bound"
+      ],
+      "note": "No Markdown stripping or normalization in binder; corrected exact substring is manually supplied."
+    },
+    {
+      "id": "10-unicode-anchor-exactness",
+      "draft": "Café uses descent.",
+      "before_rows": [
+        {
+          "claim_text": "Café uses descent.",
+          "anchor_quote": "Café uses descent.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "ANCHOR_FAILED"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "Café uses descent.",
+          "anchor_quote": "Café uses descent.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "ANCHOR_FAILED"
+      ],
+      "note": "Canonical claim NFC does not normalize the immutable draft anchor."
+    },
+    {
+      "id": "11-subjectless-cross-section-predicate",
+      "draft": "Momentum is discussed. This damps oscillations in ravines and accelerates convergence.\n## Summary\nMomentum damps oscillations and accelerates convergence in ravines.",
+      "before_rows": [
+        {
+          "claim_text": "Momentum accelerates convergence.",
+          "anchor_quote": "and accelerates convergence",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "ANCHOR_AMBIGUOUS"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "Momentum accelerates convergence.",
+          "anchor_quote": "This damps oscillations in ravines and accelerates convergence.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "bound"
+      ],
+      "note": "Unique longer anchor locates text only; antecedent and modifier scope still belong to extraction and semantic verification."
+    },
+    {
+      "id": "12-same-canonical-different-unique-quotes",
+      "draft": "Descent subtracts the gradient.\nThe rule uses the negative gradient.",
+      "before_rows": [
+        {
+          "claim_text": "Descent subtracts the gradient.",
+          "anchor_quote": "Descent subtracts the gradient.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        },
+        {
+          "claim_text": "Descent subtracts the gradient.",
+          "anchor_quote": "The rule uses the negative gradient.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "bound_multiple"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "Descent subtracts the gradient.",
+          "anchor_quote": "Descent subtracts the gradient.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        },
+        {
+          "claim_text": "Descent subtracts the gradient.",
+          "anchor_quote": "The rule uses the negative gradient.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "bound_multiple"
+      ],
+      "note": "Negative control: merge retains first anchor_quote but two different slices; existing Gate-1 material_review_bundle must reject stale material-claim anchor. Prompt-only proposal cannot promise this representation works."
+    },
+    {
+      "id": "12b-complete-proposition-under-quotation",
+      "draft": "Momentum accelerates convergence.\nDo not claim \"Momentum accelerates convergence.\".",
+      "before_rows": [
+        {
+          "claim_text": "Momentum accelerates convergence.",
+          "anchor_quote": "Momentum accelerates convergence.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_before": [
+        "bound_multiple"
+      ],
+      "after_rows": [
+        {
+          "claim_text": "Momentum accelerates convergence.",
+          "anchor_quote": "Momentum accelerates convergence.",
+          "section": "technical_dive",
+          "claim_type": "factual",
+          "material": true
+        }
+      ],
+      "expected_after": [
+        "bound_multiple"
+      ],
+      "note": "Known existing location-heuristic limitation: the second literal match is quoted within a prohibition, not an affirmative assertion. This fixture characterizes current bound_multiple behavior; it does not qualify same-proposition occurrence identity or citation attachment. Prompt-only improvement is not a general deterministic cure.",
+      "safety_expectation": "Do not treat exact repeated proposition text alone as proof that both surrounding statements assert it; no semantic/citation approval follows. Unique context-complete extraction is prospective; unresolved assertion identity remains outside this proposal."
+    }
+  ],
+  "controls": [
+    {
+      "id": "13-missing-inventory",
+      "mutation": "claim_inventory=null",
+      "expected": "inventory_current=false; no verification acceptance"
+    },
+    {
+      "id": "14-missing-draft",
+      "mutation": "draft_markdown=empty",
+      "expected": "inventory_current=false; no verification acceptance"
+    },
+    {
+      "id": "15-stale-draft",
+      "mutation": "append one character without rebuilding inventory",
+      "expected": "inventory_current=false; no verification acceptance"
+    },
+    {
+      "id": "16-wrong-run",
+      "mutation": "change state.run_id only",
+      "expected": "inventory_current=false"
+    },
+    {
+      "id": "17-wrong-iteration",
+      "mutation": "increment state.iterations only",
+      "expected": "inventory_current=false"
+    },
+    {
+      "id": "18-no-silent-deletion",
+      "mutation": "remove one grounding report row for an intact inventory",
+      "expected": "citation/material integrity rejects roster mismatch; semantic acceptance false"
+    },
+    {
+      "id": "19-shared-endpoint-citation",
+      "spans": [
+        [
+          4604,
+          4621
+        ],
+        [
+          4580,
+          4621
+        ]
+      ],
+      "expected": "placement conflict true; retain both claims and support obligations"
+    },
+    {
+      "id": "20-strict-interior-citation-control",
+      "spans": [
+        [
+          0,
+          30
+        ],
+        [
+          5,
+          20
+        ]
+      ],
+      "expected": "placement conflict false; independent claim/evidence groups remain required"
+    },
+    {
+      "id": "21-authority-and-gates",
+      "mutation": "supply anchors without semantic report or genuine human approvals",
+      "expected": "no VERIFIED/material/citation approval inferred; Gate 1 and publication remain ineligible; FREEZE and production files unchanged"
+    }
+  ]
+}

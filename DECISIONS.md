@@ -4486,3 +4486,135 @@ exists. No new paid run or source change is authorized by this decision.
 
 Status: **TERMINAL E2E FAILURE ACCEPTED; FAIL-FAST OBSERVED LIVE;
 PRODUCTION E2E QUALIFICATION OPEN**.
+
+
+---
+Decision ID: D-2026-11-05-05
+Date: 2026-11-05
+
+Decision: **Accept the bounded repeated-anchor RCA; recommend prospective
+context-complete unique verbatim extraction anchors (Alternative A), retaining
+existing exact binding and fail-fast behavior (D). PROPOSED ONLY: owner approval
+and a separate implementation mission are required. No saved-run repair.**
+
+Base: verified feature `6e10943e10f41b672275a15356deafd51a82152d`.
+Historical run `f6e866dd-2a2a-4c81-a3de-7415afbf5820`, executed at
+`5e88793996f2f38a3a62ee8c7a4ccf6870973166`, remains the accepted terminal
+failure in `D-2026-11-05-04` / `EXP-2026-11-05-04`. This additive investigation
+neither rewrites that result nor authorizes resumption. Exact reproduction,
+fixture data and custody are indexed in `EXP-2026-11-05-05`.
+
+**Proven identity and mechanism.** Read-only immutable checkpoint reconstruction
+reparses the saved Call A response: 73 raw rows produce all 73 canonical claims,
+and the entire rebuilt inventory equals the checkpoint. Target raw row 15,
+`clm-02ca1b85a26b65a9`, states `The gradient descent update rule is θ = θ - η *
+∇J(θ).`; its exact anchor is `θ = θ - η * ∇J(θ)`. Both literal spans are retained:
+`[1027,1044)` and `[4604,4621)` (zero-based, half-open Python string offsets,
+not UTF-8 byte offsets). Draft SHA-256 is
+`4fa07c0edb5dd15bae2e9f8ea6a70ef25fca08e66590bbb95fe43017a6e758b3`.
+The first context introduces gradient descent and says `The update rule is:`;
+the second says `The core update rule is` and explains gradient subtraction.
+Human inspection establishes that both fixed draft contexts affirm this same
+update-rule proposition. It does not establish the extractor row's intended
+one-versus-both occurrence set. Neither occurrence is uniquely defensible as
+its sole intended match; model `section=technical_dive` is not location authority.
+
+The row is factual, material=true, substantive, citation-required and eligible
+for Call B; these fields establish no offset or source support. One raw row
+exists for the target. Normalization and duplicate merge do not cause the
+ambiguity. Two matches plus unequal canonical proposition/anchor strings yield
+`ANCHOR_AMBIGUOUS` exactly under `_row_anchor_validity`. All claims and both
+candidates remain present. Call A receives no evidence sources. Retrieved
+update-rule passages are potential verification evidence, not occurrence
+selectors; Call B never evaluated this draft. Source resemblance cannot upgrade
+semantic status or provide a citation binding.
+
+**Alternatives and authority.**
+
+| Alternative | Evidence needed / observed | Decision and failure behavior |
+| --- | --- | --- |
+| A — longer unique verbatim anchor | Exact current-draft substring, one match, enough local assertion/subject context. `The update rule is:\n\nθ = θ - η * ∇J(θ)` occurs uniquely at `[1006,1044)`; the fuller antecedent paragraph `[924,1044)` is also unique. | Smallest prospective improvement, within existing Call A. Supplied uniqueness proves location only. Do not choose this anchor retroactively because it is first or in a named section. Missing/repeated output retains existing failure behavior. |
+| B — deterministic contextual selector | An independently authoritative, draft-bound selector would have to distinguish the intended set. No such selector is present. Expanding each candidate until each is unique does not choose between them. | Not qualified. Do not promote section labels, another claim's location, sources, nearest/first match or arbitrary context windows into authority. Remain blocked. No new contextual inference/retry is proposed. |
+| C — bind every genuinely same-proposition occurrence | Contextual assertion identity for every occurrence, complete inventory and valid downstream occurrence/citation representation. Human reading supports both formula passages here; generic inference is unproven. | Direct bind-all rejected as a correction: target `[4604,4621)` shares its end with existing takeaway claim `[4580,4621)`, which citation policy blocks. Keep both claims and their separate support obligations. No generic semantic binder is proposed. |
+| D — existing fail closed | Current exact matches, unequal claim/anchor and absent authoritative occurrence set. | Accepted current production result. Preserve all 73 claims, diagnostics, candidate spans and consumed attempt; no Call B, redraft, new model call or publication. |
+
+Raw row 62 is a separate retained material factual claim,
+`clm-1c550630ed8aefdd`, `The core update rule is θ = θ - η * ∇J(θ).`,
+anchored `[4580,4621)`. It contextualizes the takeaway but cannot authorize
+removing the target's second candidate. Semantic resemblance is not permission
+to delete, coalesce or reword either canonical claim. The saved bind-all
+candidate creates a concrete shared-endpoint citation conflict; this is an
+offline counterfactual, not a downstream event observed in the failed run.
+
+**Recurring pattern, bounded conclusion.** The prior November 5 case only
+(`D-2026-11-05-02`, run `34cc2a46-05d9-4f8a-8662-7d18e9ef158f`) reproduces
+all 36 claims exactly. `Momentum accelerates convergence.` was anchored by
+`and accelerates convergence`, at `[1463,1490)` and `[3271,3298)`. It requires
+antecedent/qualifier interpretation; modifier placement differs between the
+technical sentence and takeaway. The current case repeats a complete formula
+with explicit update-rule context in both places. Both pair a standalone
+semantic proposition with an insufficiently distinctive literal anchor.
+`prompts/claim_inventory_system.md` requires exact substrings but no uniqueness
+or context sufficiency, while forbidding model offsets/occurrence indices.
+The contract therefore permits this recurring ambiguity. Two runs establish a
+structural vulnerability, not a measured incidence or universal prompt cause.
+A addresses the shared extraction under-specification prospectively; it does
+not prove a deterministic resolution or guaranteed cure for either saved row.
+The already implemented fail-fast amendment addresses wasted redrafting only.
+No unrelated RCA or historical material obligation is reopened.
+
+**Proposed smallest correction and explicit limits.** A separate approved
+mission may amend extraction guidance/examples only: prefer/require enough
+verbatim local assertion context to identify a unique intended location when
+an anchor is repeated, preserve subject/conditions, and inventory every
+assertion/restatement. Formula/code/headings alone must not stand in for
+contextual identity. Preserve schema, canonical propositions, materiality,
+all claim rows, exact binder, current-inventory checks and fail-fast route.
+No new call, retry, source lookup or recovery of this saved run is proposed.
+If reliable unique text is unavailable or coverage cannot be represented,
+retain the current failure rather than guessing or deleting claims.
+
+Two independently reproduced limitations constrain this recommendation:
+
+- Existing `bound_multiple` uses canonical claim/anchor lexical equality.
+  Exact proposition text inside a quotation or prohibition can still match;
+  lexical equality alone is not proof that every surrounding statement asserts
+  it. Fixture 12b characterizes this existing limitation, not a qualified safe
+  semantic result. No broad bind-all rule is accepted.
+- Same canonical claim rows with different unique anchors are merged, unioning
+  spans but retaining the first `anchor_quote`. Gate-1 `material_review_bundle`
+  then rejects the differing slice as `stale material-claim anchor`. Do not
+  prescribe this as a working repeated-occurrence representation, omit a row,
+  invent distinct claim wording, or weaken signoff. Representation changes
+  require a separately scoped design/approval. A cannot promise generic
+  repeated-proposition completeness or downstream acceptance.
+
+**Offline design qualification.** The committed JSON fixture document contains
+13 concrete before/after extraction-data cases plus nine authority/identity
+controls. Existing production functions reproduced their declared location
+outcomes, the shared-endpoint rejection and different-anchor signoff failure.
+A hand-authored counterfactual changes only target anchor data, retaining all
+73 IDs, order and non-anchor metadata; it becomes uniquely bound. This is
+neither a candidate resolver implementation nor proof that a revised prompt
+will elicit that output. Negative controls include divergent formula contexts,
+near-identical qualifiers, true repetitions, irreducible ambiguity, code,
+Markdown/Unicode exactness, missing/stale identity, roster deletion, quotation
+and both downstream representation limits. Existing focused guard tests:
+171 PASS / 1 warning, zero provider, socket-denied. Acceptance concerns design
+and documentation only. No semantic/material/citation threshold or authority,
+evidence set, human authentication/signoff, HTML or publication gate changes.
+`FREEZE.md` and all production source/prompt/test files remain byte-preserved.
+
+Independent final design/evidence/documentation acceptance: **ACCEPTED** by
+two separate read-only reviewers. Both independently reproduced the full
+73-claim inventory and all 13 fixture cases; the forensic reviewer also reran
+the private runner including the full 36-claim prior inventory. They checked
+shared-endpoint rejection, different-quote signoff failure, quotation caveat,
+documentation/source scope, fixture hash and diff check. Both inspected the
+171-pass log without repeating that suite. Acceptance covers evidence/design/
+documentation only; implementation and prompt efficacy remain unqualified.
+Documentation-only feature fast-forward and exact-SHA CI are authorized next;
+no main merge/publication.
+
+Status: **RCA PROVEN WITH LIMITS; A + D PROPOSED ONLY; OWNER DECISION REQUIRED
+BEFORE CODING; COMPLETE E2E REMAINS UNQUALIFIED**.
