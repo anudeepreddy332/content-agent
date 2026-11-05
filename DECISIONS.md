@@ -4228,3 +4228,52 @@ performed under this decision.
 
 Status: **APPROVED CONTRACT; LOCAL OFFLINE IMPLEMENTATION INDEPENDENTLY ACCEPTED;
 PRODUCTION E2E NOT QUALIFIED**.
+
+
+---
+Decision ID: D-2026-11-05-01
+Date: 2026-11-05
+
+Decision: **Record the one authorized November 5 production application run as
+terminal quality exhaustion; bounded Call B recovery NOT EXERCISED.** Run
+`34cc2a46-05d9-4f8a-8662-7d18e9ef158f` executed at exact feature SHA
+`085ea315652686d4578d962de3d00071254201a0`, including application repair
+`cf9cc23855a917c179fdea51d310cc0a9e3f74de`, after separate explicit paid-run
+authorization. The existing private snapshot retained all 426 tracked blobs,
+private SQLite/output isolation, no Git metadata/remote, disabled publication
+and tracing, and distinct genuine reviewer credentials. No source changed.
+
+Retrieval returned 10 web and 11 local KB rows. Both drafts were structurally
+valid. Attempt 1 Call A found 36 claims (32 material), with one ambiguous
+anchor; `inventory_failed` prevented Call B. The permitted second draft had
+empty claim-level revision feedback, semantic obligations and unverified targets:
+no material diagnosis existed before that redraft. Attempt 2 Call A found 57
+claims (47 material), all anchored; Call B returned a valid observation with
+39 verified, 18 weak and zero unverified. All 18 blockers were limitations;
+no contradiction blocker was recorded. Grounding 0.921 and UVR 0.0 did not
+override ten unresolved material claims (37/47 resolved). Material policy was
+`exhausted` / `unresolved_material_claim`; the graph correctly stopped
+`terminal_quality_exhausted`. Its legacy policy label `hitl_required` did not
+make Gate 1 eligible. Citation policy passed: 37 anchor groups, coverage 1.0,
+zero missing, invalid, dangling or placement failures.
+
+The durable journal contains one initial Call B reservation with a responded,
+known-usage result and no retry reservation. There was no quote-binding miss;
+this run does not qualify live recovery. Targeted material-repair feedback was
+also not exercised: those obligations appeared only on the final attempt.
+Reflection, both human gates, HTML, local archive and Git/publication were not
+reached. No second application run, holdout or automatic approval occurred.
+Five logical DeepSeek calls reported 45,217 tokens; application-estimated cost
+was `$0.02999217`. Five successful DeepSeek HTTP POSTs were logged; a complete
+physical-attempt census, Tavily billing and provider invoice totals remain
+unverified. Known DeepSeek usage is not evidence of zero unobserved billing.
+
+Read-only independent terminal-evidence acceptance passed. No implementation
+defect or source repair is established by this execution record. Preserve the
+terminal evidence and obtain an owner decision on a separately scoped next
+mission before further paid execution; do not rerun this application to seek
+a favorable outcome. Evidence, stage accounting and limitations are indexed in
+`EXP-2026-11-05-01`. Earlier RCA conclusions remain unchanged.
+
+Status: **ONE LIVE RUN FAILED CLOSED; RECOVERY NOT EXERCISED; PRODUCTION E2E
+NOT QUALIFIED**.

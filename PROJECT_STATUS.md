@@ -1,13 +1,39 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-11-04 (one live
-supervised run after the integrated citation repair; terminal quality stop)._
+_Canonical current-state snapshot. Last synchronized: 2026-11-05 (one supervised live
+run after durable Call B recovery; terminal quality exhaustion, recovery not exercised)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
-## Current status — 2026-11-04
+## Current status — 2026-11-05
+
+**Latest supervised application run: FAILED CLOSED; recovery NOT EXERCISED.**
+Run `34cc2a46-05d9-4f8a-8662-7d18e9ef158f` executed at exact feature SHA
+`085ea315652686d4578d962de3d00071254201a0` after explicit paid authorization.
+All 426 tracked snapshot blobs remained unchanged. Retrieval returned 10 web /
+11 local KB rows. First-draft Call A failed one ambiguous anchor (36 claims),
+and the permitted second draft received no claim-level repair feedback.
+Second-draft Call A found 57 anchored claims; Call B returned 39 verified,
+18 weak, zero unverified. Grounding 0.921 / UVR 0.0 did not override ten
+unresolved material claims (37/47 resolved). Citation policy passed, coverage
+1.0, 37 anchor groups, zero missing/invalid/placement failures. The graph ended
+`terminal_quality_exhausted` after two drafts. All blockers were limitations;
+no contradiction blocker was recorded. The journal has one known-usage initial
+response and zero retry rows: no eligible quote miss occurred. Targeted
+material-repair feedback was not exercised, since those obligations first
+appeared on the final attempt. Reflection, human gates, HTML and archive were
+not reached; no automatic approvals, publication, second run or source repair.
+Five logical DeepSeek calls reported 45,217 tokens; app estimate `$0.02999217`.
+Complete physical attempts, Tavily cost and provider billing remain unverified.
+Read-only independent evidence acceptance passed. See `D-2026-11-05-01` and
+`EXP-2026-11-05-01`; private terminal evidence is preserved. No implementation
+defect is established. Obtain an owner decision on a separately scoped next
+mission before further paid execution; do not repeat the run to seek a favorable
+outcome. Execution-head CI `41808866709` was verified SUCCESS; application
+repair CI remains `41807379794` SUCCESS. A documentation-only descendant may
+advance the feature ref without changing the executed application.
 
 **Verified application-bearing feature head:**
 `cf9cc23855a917c179fdea51d310cc0a9e3f74de` was fast-forwarded to
@@ -145,9 +171,11 @@ feature readback matched `cf9cc238`; exact-SHA CI `41807379794` passed lint
 and tests. This is offline recovery qualification, not a successful live run.
 
 **Production readiness: NOT ACHIEVED.** No Gate 1/Gate 2 success or
-provider-backed complete E2E has been demonstrated. The next operational
-milestone is one separately authorized supervised application run on the
-integrated feature. The two-draft budget and
+provider-backed complete E2E has been demonstrated. The November 5 separately
+authorized run ended at the material-quality limit;
+recovery and targeted material repair were not exercised. The next step is an
+owner decision on a separately scoped mission before more paid execution.
+The two-draft budget and
 all acceptance checks remain unchanged.
 
 ## Historical status — 2026-10-13
