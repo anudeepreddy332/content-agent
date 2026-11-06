@@ -90,10 +90,39 @@ def build_evidence_manifest(
                 },
             }
         )
-    for index, result in enumerate((kb_results or [])[:kb_limit], start=1):
+    kb_items = list(kb_results or [])
+    if (
+        kb_items
+        and kb_items[0].get("qualified_contract") == "DRAFTER_PACKED_EVIDENCE_V1"
+    ):
+        kb_slice = kb_items
+    else:
+        kb_slice = kb_items[:kb_limit]
+    for index, result in enumerate(kb_slice, start=1):
         source_text = result.get("text")
         if not isinstance(source_text, str):
             raise ValueError(f"kb result {index} missing string text")
+        provenance = {
+            "kind": "kb",
+            "source": result.get("source"),
+            "chunk_index": result.get("chunk_index"),
+            "distance": result.get("distance"),
+            "rrf_score": result.get("rrf_score"),
+        }
+        if result.get("qualified_contract"):
+            provenance.update(
+                {
+                    "qualified_contract": result.get("qualified_contract"),
+                    "chunk_id": result.get("chunk_id"),
+                    "seed_rank": result.get("seed_rank"),
+                    "seed_chunk_id": result.get("seed_chunk_id"),
+                    "relation": result.get("relation"),
+                    "source_intervals": result.get("source_intervals"),
+                    "packed_order": result.get("packed_order"),
+                    "serialized_text_sha256": result.get("serialized_text_sha256"),
+                    "cl100k_tokens": result.get("cl100k_tokens"),
+                }
+            )
         manifest.append(
             {
                 "evidence_id": _kb_evidence_id(index),
@@ -101,13 +130,7 @@ def build_evidence_manifest(
                 "source_text": source_text,
                 "source_sha256": sha256_utf8(source_text),
                 "verifier_visible": True,
-                "provenance": {
-                    "kind": "kb",
-                    "source": result.get("source"),
-                    "chunk_index": result.get("chunk_index"),
-                    "distance": result.get("distance"),
-                    "rrf_score": result.get("rrf_score"),
-                },
+                "provenance": provenance,
             }
         )
     return manifest

@@ -1,0 +1,145 @@
+{
+  "contract_sha256": "00883c0a08c149eb686a22ec541436495929adfd28e6eff052e7fe42f2f18d1d",
+  "schema_version": "phase5e1_qualification_v1",
+  "name": "Phase-5 one-shot retrieval qualification (5E1A frozen)",
+  "frozen_before_holdout": true,
+  "parent_commit": "e2a8fce61bc90016bfe45cc9060c0ea9e5422848",
+  "historical_dev_packed_recall": {
+    "value": 0.93939394,
+    "context": "33-query golden v2 gating subset; not a required holdout score"
+  },
+  "primary_metric": {
+    "id": "macro_packed_evidence_recall",
+    "description": "Macro mean packed-layer exact evidence span recall over evidence-bearing queries (ANSWERABLE + PARTIAL)",
+    "function": "agent.retrieval.metrics.evidence_recall",
+    "layer": "packed",
+    "population": "evidence_bearing",
+    "floor": 0.875
+  },
+  "stratum_metrics": {
+    "answerable_packed_macro": {
+      "population": "ANSWERABLE",
+      "floor": 0.8333
+    },
+    "partial_packed_per_query": {
+      "population": "PARTIAL",
+      "rule": "every PARTIAL query packed available-evidence recall == 1.0",
+      "pooling": "never pooled as ANSWERABLE"
+    }
+  },
+  "secondary_metrics": {
+    "layers": ["retrieved", "expanded", "packed"],
+    "evidence_recall_at_k": [1, 3, 5],
+    "source_recall_at_k": [1, 3, 5],
+    "mrr_k": 10,
+    "graded_ndcg_at_k": [1, 3, 5],
+    "functions": {
+      "span_covered": "agent.retrieval.metrics.span_covered",
+      "evidence_recall": "agent.retrieval.metrics.evidence_recall",
+      "source_recall_at_k": "scripts.phase5a0_baseline.source_recall_at_k",
+      "reciprocal_rank": "scripts.phase5a0_baseline.reciprocal_rank",
+      "graded_ndcg_at_k": "scripts.phase5a0_baseline.graded_ndcg_at_k"
+    }
+  },
+  "partial_scoring": {
+    "denominator": "adjudicated spans in relevant_sources[].evidence only",
+    "exclude": "evidence_obligations with status missing",
+    "per_query_pass": "packed available-span recall == 1.0",
+    "hard_fail_below_one": true,
+    "never_pool_as_answerable": true
+  },
+  "absent_scoring": {
+    "included_in_primary_macro": false,
+    "score_as_zero_chunks": false,
+    "abstention_claims_allowed": false,
+    "diagnostics": [
+      "hard_negative_exposure",
+      "source_concentration",
+      "dense_top1_distance",
+      "dense_top1_similarity",
+      "bm25_top_score",
+      "hybrid_top1_rrf_score",
+      "max_dense_similarity",
+      "retrieved_chunk_count",
+      "packed_chunk_count"
+    ]
+  },
+  "hard_fail_gates": [
+    {
+      "id": "provenance_mismatch",
+      "description": "Corpus/index/model fingerprint drift or qualified_contract != DRAFTER_PACKED_EVIDENCE_V1"
+    },
+    {
+      "id": "backend_identity_mismatch",
+      "description": "cswp_local vs cswp_qdrant chunk_id list mismatch on same queries"
+    },
+    {
+      "id": "critical_grade2_lost_at_packed",
+      "description": "Any grade-2 span covered at retrieved but not at packed"
+    },
+    {
+      "id": "partial_available_recall_below_one",
+      "description": "Any PARTIAL query packed available-span recall < 1.0"
+    },
+    {
+      "id": "packed_below_retrieved_recall",
+      "description": "Any evidence-bearing query with packed recall < retrieved recall"
+    },
+    {
+      "id": "macro_packed_below_floor",
+      "description": "Evidence-bearing macro packed recall < 0.875"
+    },
+    {
+      "id": "answerable_macro_below_floor",
+      "description": "ANSWERABLE-only macro packed recall < 0.8333"
+    },
+    {
+      "id": "determinism_mismatch",
+      "description": "Two consecutive runs differ on per-query packed chunk_ids or metric floats"
+    }
+  ],
+  "backend_parity": {
+    "backends": ["cswp_local", "cswp_qdrant"],
+    "compare_fields": [
+      "retrieval_seeds.chunk_id",
+      "packed_rows.chunk_id",
+      "dense_top20.chunk_id",
+      "bm25_rank_order.chunk_id",
+      "hybrid_seed_top5.chunk_id"
+    ],
+    "expected_ann_deviation": false
+  },
+  "provenance_gate": {
+    "required_qualified_contract": "DRAFTER_PACKED_EVIDENCE_V1",
+    "expected_cswp_unit_count": 159,
+    "expected_minilm_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+  },
+  "one_shot_discipline": {
+    "archive_root": "reports/phase5/phase5e1a/holdout-run-1",
+    "archive_fail_closed": true,
+    "post_failure_retune_before_disposition": false,
+    "artifacts": {
+      "per_query": "per_query.json",
+      "summary": "summary.json",
+      "parity": "parity.json",
+      "manifest": "manifest.json",
+      "disposition": "disposition.json"
+    }
+  },
+  "accepted_oracle_schemas": [
+    "retrieval_golden_v2",
+    "retrieval_holdout_v1",
+    "phase5e1_qualification_oracle_v1"
+  ],
+  "disposition_values": [
+    "PHASE-5E1A-HOLDOUT-PASS",
+    "PHASE-5E1A-HOLDOUT-FAIL"
+  ],
+  "e2e_deferred": [
+    "draft text quality",
+    "verifier UVR / SV",
+    "ABSENT refusal wording",
+    "HITL gates",
+    "end-to-end hallucination rate"
+  ]
+}

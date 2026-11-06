@@ -35,11 +35,11 @@ def _safe_diag(exc: PolicyError) -> dict:
     return diagnostic
 
 
-def test_html_policy_version_is_v2():
-    assert HTML_POLICY_VERSION == "p0-1-v2"
+def test_html_policy_version_is_v3():
+    assert HTML_POLICY_VERSION == "p0-1-v3"
     article = _article()
-    assert article.policy_version == "p0-1-v2"
-    assert sanitize_fragment("<p>ok</p>").policy_version == "p0-1-v2"
+    assert article.policy_version == "p0-1-v3"
+    assert sanitize_fragment("<p>ok</p>").policy_version == "p0-1-v3"
 
 
 def test_ordinary_paragraph_placeholder_rejected():
@@ -196,7 +196,10 @@ def test_diagnostic_scope_body_document_revised():
 
 
 def test_html_revise_scanner_failure_persists_safe_diagnostic(base_state, monkeypatch, tmp_path):
+    from tests.signoff_fixtures import approved_material_state
+    base_state.update(gate1_reviewer_id="layout-reviewer", gate1_review_origin="authenticated")
     import agent.nodes as nodes
+    monkeypatch.setattr(nodes, "initial_equivalence_valid", lambda _state: True)
 
     original = _article()
     original_body = "<p>{{TOPIC}}</p>"
@@ -211,7 +214,7 @@ def test_html_revise_scanner_failure_persists_safe_diagnostic(base_state, monkey
     monkeypatch.setattr(nodes, "_get_client", lambda: object())
     monkeypatch.setattr(nodes, "_llm_call", lambda c, **kw: fake_response(revised))
 
-    out = nodes.html_revise_node(base_state)
+    out = nodes.html_revise_node(approved_material_state(base_state, reviewer_id="layout-reviewer"))
 
     assert out["html_output"] == original.html
     assert out["article_body_html"] == original_body

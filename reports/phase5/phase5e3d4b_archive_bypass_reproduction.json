@@ -1,0 +1,19 @@
+{
+  "baseline_commit": "eb81bd4adf7fd8c40f97bb125255b4be535b50f1",
+  "evidence_scope": "temporary synthetic authoritative-shape archive; no sealed holdout, historical sealed blob, or provider",
+  "reproduced_before_repair": {
+    "hash_valid_execution_two_qdrant_hybrid_top10_mutation": {
+      "determinism_passed": true,
+      "manifest_refreshed": true,
+      "archive_verification_failure": null,
+      "archive_is_successful": true
+    },
+    "hash_valid_nonempty_determinism_mismatches_with_passed_true": {
+      "determinism_passed": true,
+      "manifest_refreshed": true,
+      "archive_verification_failure": null,
+      "archive_is_successful": true
+    }
+  },
+  "repair_requirement": "archive verification must reconstruct deterministic snapshots from archived raw and per-backend structured execution evidence, compare executions with the runtime comparator, and reject all contradictory stored assertions"
+}

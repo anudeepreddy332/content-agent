@@ -165,4 +165,6 @@ def test_build_frozen_fixtures_matches_committed_json():
 def test_production_source_context_limits_unchanged():
     nodes = Path("agent/nodes.py").read_text(encoding="utf-8")
     assert "WEB_CHARS = 1500" in nodes
-    assert "KB_CHARS  = 2000" in nodes
+    assert "build_drafter_kb_context" in nodes
+    assert "_build_legacy_kb_source_context" in nodes
+    assert "KB_CHARS = 2000" in nodes

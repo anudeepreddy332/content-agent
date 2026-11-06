@@ -1,0 +1,1647 @@
+[
+  {
+    "gating_eligible": true,
+    "query": "how gradient descent updates weights",
+    "query_id": "Q01",
+    "seeds": [
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:c72b8711d970fb0bc3e6a217082cc9226a988af009923ddd78c380d735b7b68b",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "gradient-descent"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:b02cf4445aee999146912bf17f7d734ccf98b9e11204e305659c8c55589529b6",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.03226646,
+        "source": "gradient-descent"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:5fab877996a598f686785150b632090097cc44d365423cb106309ce7ba472c96",
+        "dense_rank": 3,
+        "rank": 3,
+        "rrf_score": 0.03225806,
+        "source": "gradient-descent"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:20e6f9ebe7572c4c13acdb404fb414aa02d79ff38f59c643dd18c08d0c04f7e1",
+        "dense_rank": 6,
+        "rank": 4,
+        "rrf_score": 0.03100962,
+        "source": "gradient-descent"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:723c824506665a6f8f218112a701f42c9d320d9ed9ea99461b6e3cd371f587ac",
+        "dense_rank": 11,
+        "rank": 5,
+        "rrf_score": 0.03095238,
+        "source": "gradient-descent"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "query key value in self-attention",
+    "query_id": "Q02",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:5235bfb998a6ed1478547a95e4a0006ad571e63562cb95579682075dac1231a2",
+        "dense_rank": 5,
+        "rank": 1,
+        "rrf_score": 0.03229167,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 8,
+        "chunk_id": "ca:cswp:a4f5bdab8380db1f15e0f760ceb11f3c97226fa01c4c8f37fbac6164a64127e4",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.03159204,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:6bfb19e606afe0899bb9aef922c4c4a16ea8bce5770c210e3a299c9d9f94d919",
+        "dense_rank": 3,
+        "rank": 3,
+        "rrf_score": 0.03128055,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:ea8c1c58b0e6b21125804146e5bdc4b453d9f37cf0baa07aacdc130392a2c95a",
+        "dense_rank": 7,
+        "rank": 4,
+        "rrf_score": 0.03077652,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:13472dc7b8712adffa31a69e90d6bd38520c0a5a5ceef707cf24846c6dd4e42c",
+        "dense_rank": 16,
+        "rank": 5,
+        "rrf_score": 0.02946237,
+        "source": "embedding-models-vector-search"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "difference between lasso and ridge regression",
+    "query_id": "Q03",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:b0d6c74aaddd22bb7a3db2f6d8a2105c206a4da169e173e7181c15b5ec67dd7e",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03333333,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:71b1f774011d603bb0ecd8bf8485eac59cc7c829fe5cfa607c2a7a1e1e981f39",
+        "dense_rank": 4,
+        "rank": 2,
+        "rrf_score": 0.03226646,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:67de5fcd7b4caa2dd312a54315cc343fc26b4d53650a64fbafd0cade3efea14f",
+        "dense_rank": 2,
+        "rank": 3,
+        "rrf_score": 0.03154496,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:e188a627c35442fe41d087d70b18ede25bd3b2c8a8458bbd179dbc25e034d249",
+        "dense_rank": 3,
+        "rank": 4,
+        "rrf_score": 0.03151365,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:ade01a49437b3424cd112f3c78c6fb2d0fc871f5a56098c619831bace62f0106",
+        "dense_rank": 6,
+        "rank": 5,
+        "rrf_score": 0.03125763,
+        "source": "ridge-lasso-elasticnet"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "what is CatBoost categorical feature handling",
+    "query_id": "Q04",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:4df03e828ab3e9bb73296ac796e167c31145d8eacfb3660fd373f5377481502b",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03333333,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:e8b8b185fcd8721fcf210610b1e0ad6203fb262fc80afbd9b70c6a8d317f8859",
+        "dense_rank": 5,
+        "rank": 2,
+        "rrf_score": 0.03201844,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:ace9880737aa35a8ac17c99a8501aaff6decdbf6f2440d502b430d9e96027171",
+        "dense_rank": 4,
+        "rank": 3,
+        "rrf_score": 0.03200205,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:53fc487925de07c29d459b88d7d7718cfba2a3fcb3f5a0574f66ad3a1076a702",
+        "dense_rank": 3,
+        "rank": 4,
+        "rrf_score": 0.03128055,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:efa7bdaf008d3bde654cb49373f3e06d89e7f5f30a0991cc86f4ddd62f60d558",
+        "dense_rank": 6,
+        "rank": 5,
+        "rrf_score": 0.03125763,
+        "source": "catboost"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "ReAct agent pattern reasoning and acting",
+    "query_id": "Q05",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:5325e623a7312dec67bf544f73d92befa6c176927a62984b662b1dae543ae7ed",
+        "dense_rank": 2,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:6e38c3a33b457adaee30b55a4a1bcc0ec0cbd11ca9ff2832fad9e7a3209617c8",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.0327957,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:2bba0a0205636c2bb04a432fd3f6afa0eb99e1baf7e61ab3fe1f7ff225a16eaf",
+        "dense_rank": 3,
+        "rank": 3,
+        "rrf_score": 0.03252247,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:b37a5da7cde09a2c651c0c4dc9f55f8d47680c4fd66d23909196941ab22f680a",
+        "dense_rank": 5,
+        "rank": 4,
+        "rrf_score": 0.03149802,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:b94c5d34fab7301200279327b141369b5d6be93b51a9599d32b1a4b23b1893e6",
+        "dense_rank": 4,
+        "rank": 5,
+        "rrf_score": 0.03149802,
+        "source": "react-agent-pattern"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "k nearest neighbors algorithm basics",
+    "query_id": "Q06",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:5c40d0d442c73373d76af9eeec33a23a2908a49e82da76ee6b0ed5f80e4dc5db",
+        "dense_rank": 2,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "k-nearest-neighbors"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:e87107b95d23f6480823495b538a1bcf23a87b48dfac7ace2ceb2c5e1d66ec4d",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.03229167,
+        "source": "k-nearest-neighbors"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:2b8f20431f7299e98105e9b3cd03a2a0bed227845fe1623fc3f5602879255e11",
+        "dense_rank": 4,
+        "rank": 3,
+        "rrf_score": 0.03200205,
+        "source": "k-nearest-neighbors"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:2513f50f262b69942684be1de602f76c3422726d5f71596ef350feca37bd99b0",
+        "dense_rank": 6,
+        "rank": 4,
+        "rrf_score": 0.03177806,
+        "source": "k-nearest-neighbors"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:861b33d40346afb935772fa342d1bebe3ce5a4dbaba763f755e613ee5a778524",
+        "dense_rank": 5,
+        "rank": 5,
+        "rrf_score": 0.03149802,
+        "source": "k-nearest-neighbors"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "XGBoost regularization parameters",
+    "query_id": "Q07",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:76df490d97c8dd077f61e24f301ab771fcc0d0177bc455764f25bed13fef9563",
+        "dense_rank": 3,
+        "rank": 1,
+        "rrf_score": 0.0327957,
+        "source": "xgboost"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:02528c35aa95ac160a4eb9c8c995658c06831bb3c24fcf8b07d7aa356d9d75cb",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.03278689,
+        "source": "xgboost"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:a7220b965038c83dd337d950f350e9e333dc62a9577798d28d8766ccf7b04263",
+        "dense_rank": 1,
+        "rank": 3,
+        "rrf_score": 0.03205128,
+        "source": "xgboost"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:31a35f8bf03f3378c19b7376a9c3d194eda98b2227f50aee5543c7b2b5dab37f",
+        "dense_rank": 4,
+        "rank": 4,
+        "rrf_score": 0.03174603,
+        "source": "xgboost"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:f08c5664cd602a7e448104afd560f0a36140f32a8ac1d7a13e666093828d865e",
+        "dense_rank": 5,
+        "rank": 5,
+        "rrf_score": 0.03125,
+        "source": "xgboost"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "what is a feedforward neural network",
+    "query_id": "Q08",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:8fc4dbe3884bf90260298f621b5f81f81f65575f69ff191a6fc794e629206459",
+        "dense_rank": 2,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:3cf7642cf85db63aac1a7bca89791347a276d8e0927387e2c06ae0eae0c28598",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.03253968,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:25370cc81cba632627ec3dd3abf98eec50395bdc5df8fe16427b920a371e775f",
+        "dense_rank": 6,
+        "rank": 3,
+        "rrf_score": 0.03177806,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:9059a6008323a22964912b04eedfe8c12b3be2a49779bbfb8e5e65c2bf8fa292",
+        "dense_rank": 4,
+        "rank": 4,
+        "rrf_score": 0.03149802,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:dbda03bdcf6872696369d872690fe97336c83c41ff576387f1eeffa5cf035763",
+        "dense_rank": 7,
+        "rank": 5,
+        "rrf_score": 0.03128055,
+        "source": "backpropagation"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "support vector machine margin maximization",
+    "query_id": "Q09",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:2408c2a68eadc8467596c19fe4cf95c99aa3eb2c17a68df7bb61a0dd18d59414",
+        "dense_rank": 2,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "support-vector-machines"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:8c2cf446fc31eb38c6dec8136a05afb4521ca62c0e40a4e052e92d09f33c242c",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.03229167,
+        "source": "support-vector-machines"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:2b9554b692b5c4614cd59c692ccc5bcf6c15ce13eedd0fa5a33be93c81677e12",
+        "dense_rank": 5,
+        "rank": 3,
+        "rrf_score": 0.03201844,
+        "source": "support-vector-machines"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:9dae35f936d4fcf5e1f62bed0d47bbe43f874f2cbcdfa61d713fb24d163af062",
+        "dense_rank": 3,
+        "rank": 4,
+        "rrf_score": 0.03200205,
+        "source": "support-vector-machines"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:3d625bb970fae72a5d3f44893ce139e71e5b37ae8832117b230f6b5f366e3fec",
+        "dense_rank": 7,
+        "rank": 5,
+        "rrf_score": 0.03128055,
+        "source": "support-vector-machines"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "Naive Bayes conditional independence assumption",
+    "query_id": "Q10",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:205fbd7711053979bb7eaff8849b668c83dc0e66a75187fe611117e937a707a9",
+        "dense_rank": 2,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "naive-bayes"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:08a3ac734b2c52d178c0767b4b3fcb3c1049eb92d3297173708051a49dee546f",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.0327957,
+        "source": "naive-bayes"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:7ff2262e0a2987f9deb4debf1799292bd9ea187bcaa831259a615fbb1df8a53c",
+        "dense_rank": 5,
+        "rank": 3,
+        "rrf_score": 0.03201844,
+        "source": "naive-bayes"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:a6764c9e3c998b8bcba2f1e427c3c9c00173158f6d6040c82a13977f2988595e",
+        "dense_rank": 4,
+        "rank": 4,
+        "rrf_score": 0.03174603,
+        "source": "naive-bayes"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:481997c66d36c5c4036a88e95da7bb6908a78042f22ae716c9129ba46a626676",
+        "dense_rank": 3,
+        "rank": 5,
+        "rrf_score": 0.03128055,
+        "source": "naive-bayes"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "vanishing gradient problem in deep networks",
+    "query_id": "Q11",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:f2dfe9e452ecfcc538aaadd84b28b0627ccd377451d346464ec4bdb75b966d37",
+        "dense_rank": 4,
+        "rank": 1,
+        "rrf_score": 0.03253968,
+        "source": "backpropagation"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:9c6cc6c330f33b403dfe45bd56633cfd842f185f02913a7ec69fa81c0274a395",
+        "dense_rank": 5,
+        "rank": 2,
+        "rrf_score": 0.03175403,
+        "source": "gradient-descent"
+      },
+      {
+        "bm25_rank": 8,
+        "chunk_id": "ca:cswp:9059a6008323a22964912b04eedfe8c12b3be2a49779bbfb8e5e65c2bf8fa292",
+        "dense_rank": 1,
+        "rank": 3,
+        "rrf_score": 0.03159204,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:a42720d3b48ea8cbc7e94a2f3b6ff68b97bf9bf610e66a409fee1ffb80b98851",
+        "dense_rank": 8,
+        "rank": 4,
+        "rrf_score": 0.03131882,
+        "source": "backpropagation"
+      },
+      {
+        "bm25_rank": 9,
+        "chunk_id": "ca:cswp:dbda03bdcf6872696369d872690fe97336c83c41ff576387f1eeffa5cf035763",
+        "dense_rank": 3,
+        "rank": 5,
+        "rrf_score": 0.03083491,
+        "source": "backpropagation"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "why random forests reduce overfitting compared to a single decision tree",
+    "query_id": "Q12",
+    "seeds": [
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:806b822d7a317ef43a148ff36dcb166e533588a3413f89a3e1162c6922d2a6c4",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03253968,
+        "source": "random-forest"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:17c91291c42798facff5d59e70d7d524d9d9da36857ddd31df0ad0ad0cd89996",
+        "dense_rank": 3,
+        "rank": 2,
+        "rrf_score": 0.03151365,
+        "source": "random-forest"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:225af8695548da8af494b047d77d8e3e58b8d7564b630efb33f6500f555ea364",
+        "dense_rank": 10,
+        "rank": 3,
+        "rrf_score": 0.03115942,
+        "source": "decision-trees"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:80fc0bc999dccaa222ce60e7fedbb7ae167bf451394a0e283014ec3c273dd449",
+        "dense_rank": 4,
+        "rank": 4,
+        "rrf_score": 0.03102453,
+        "source": "random-forest"
+      },
+      {
+        "bm25_rank": 11,
+        "chunk_id": "ca:cswp:20b721c0e7d3d3a84e1fedb462072c22019efbb45de96c7ba29505a7ee1cb91c",
+        "dense_rank": 2,
+        "rank": 5,
+        "rrf_score": 0.03067916,
+        "source": "random-forest"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "how to deploy LLM agents with reliability and cost control",
+    "query_id": "Q13",
+    "seeds": [
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:d58417ad0e7c65ed60a06c854c5d7a4866213645f0ac435ab2d6dea6bef68edd",
+        "dense_rank": 5,
+        "rank": 1,
+        "rrf_score": 0.03201844,
+        "source": "langgraph-state-machines"
+      },
+      {
+        "bm25_rank": 10,
+        "chunk_id": "ca:cswp:04f693959e1905e8ae1b2158c45fef8fade74d3608a3b867608127b28dca7e36",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.0308862,
+        "source": "multi-agent-systems"
+      },
+      {
+        "bm25_rank": 8,
+        "chunk_id": "ca:cswp:fd12ffbb99f5a51284e859e0a6a9d05f091b6d5422719b80b222d1e70a85bc1c",
+        "dense_rank": 4,
+        "rank": 3,
+        "rrf_score": 0.03079839,
+        "source": "agentic-ai-production"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:2ca91b2347b7a78bfdaed23c7461ebd943a7b59c4cdcf83badbf49f5b946cd9b",
+        "dense_rank": 12,
+        "rank": 4,
+        "rrf_score": 0.03075117,
+        "source": "langgraph-state-machines"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:9c20a41d9d21425a05a1337ec65bfeb178ada1cdcf2923687848b721e81c9102",
+        "dense_rank": 6,
+        "rank": 5,
+        "rrf_score": 0.03053613,
+        "source": "agentic-ai-production"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "logistic regression probability estimation formula",
+    "query_id": "Q14",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:0390518c53e835383bf28702bba26b4ad3d5315fbbbb80f8b8ea479b11f0712b",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03333333,
+        "source": "linear-logistic-regression"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:561e51f33cf68d9b415d384ab53f8fb8427ccb532cf742e7e8369edb20e73e13",
+        "dense_rank": 3,
+        "rank": 2,
+        "rrf_score": 0.03200205,
+        "source": "linear-logistic-regression"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:5eaaaaeb6e3ee22dd2e35c4d70de3ac64ff3372e2ad45b9ad2edd4ded8e5962d",
+        "dense_rank": 4,
+        "rank": 3,
+        "rrf_score": 0.03200205,
+        "source": "linear-logistic-regression"
+      },
+      {
+        "bm25_rank": 9,
+        "chunk_id": "ca:cswp:44d62acd34bafe336e3545793f55753bad5ec57108cf1e8aabab096673d741ae",
+        "dense_rank": 2,
+        "rank": 4,
+        "rrf_score": 0.03109932,
+        "source": "linear-logistic-regression"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:e8f0ddb0dde5b2932d30d908c48e97e43901aeb1e79a6385dd287b16ab39a8a1",
+        "dense_rank": 10,
+        "rank": 5,
+        "rrf_score": 0.0308862,
+        "source": "linear-logistic-regression"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "LangGraph for cyclic agent workflows",
+    "query_id": "Q15",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:f1f33300e485ab12b56033f02f10b892801582cf3dd27a88e7d03c99ee1dd4ea",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03333333,
+        "source": "langgraph-state-machines"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:2f81c16739add947c9aab843a127a64f0ebb507c411915319c50ebefd98395e9",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.03278689,
+        "source": "langgraph-state-machines"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:0878a0862b7ff201dd2014f380fd7565460d2dc027f3b64dc6c6e62f75de6259",
+        "dense_rank": 3,
+        "rank": 3,
+        "rrf_score": 0.03225806,
+        "source": "multi-agent-systems"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:7b2515f0c4a5f8075fe694eb5def9a8fa7d94455057a4c8a7f1dc6cb7511d197",
+        "dense_rank": 5,
+        "rank": 4,
+        "rrf_score": 0.03149802,
+        "source": "langgraph-state-machines"
+      },
+      {
+        "bm25_rank": 9,
+        "chunk_id": "ca:cswp:76e466b1d10126864a27a1dfb768d192833efd39590b276712f1ea0ff3d50fe1",
+        "dense_rank": 4,
+        "rank": 5,
+        "rrf_score": 0.0305789,
+        "source": "langgraph-state-machines"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "prompt engineering best practices for production",
+    "query_id": "Q16",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:87f9f03cdd4415c5dcf51ecc70a589f3deb8e176e8bd5d2e64d7aeae03573767",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03333333,
+        "source": "prompt-engineering-production"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:452d64a2bead78363c38944b2f75cd017e0ef674bab462c06fab5611bf729109",
+        "dense_rank": 3,
+        "rank": 2,
+        "rrf_score": 0.03252247,
+        "source": "prompt-engineering-production"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:829b4106431357d165d493030ff954983f594b0b0468bd6525b65ce2b9532d97",
+        "dense_rank": 2,
+        "rank": 3,
+        "rrf_score": 0.03201844,
+        "source": "prompt-engineering-production"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:d0c9abc6327b4fdec106651439926c2613cd0b83a40277f1d0cab691c8132bbd",
+        "dense_rank": 4,
+        "rank": 4,
+        "rrf_score": 0.03174603,
+        "source": "prompt-engineering-production"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:9badb1edbdbdcf6bdc1e54fe65346eaa34a0256d91b48937f2d643a7ac94acb4",
+        "dense_rank": 8,
+        "rank": 5,
+        "rrf_score": 0.03105441,
+        "source": "prompt-engineering-production"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "when to use multi-agent systems vs single agent",
+    "query_id": "Q17",
+    "seeds": [
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:c027e19c54bd04744eda8994bc835299c41708caf2f2f95b0845b22f316cbe9b",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.0327957,
+        "source": "multi-agent-systems"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:0878a0862b7ff201dd2014f380fd7565460d2dc027f3b64dc6c6e62f75de6259",
+        "dense_rank": 5,
+        "rank": 2,
+        "rrf_score": 0.03229167,
+        "source": "multi-agent-systems"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:334f45b6e2e2eb2d608b9d5554720155a05a83b4162d4b4701899942edc930dd",
+        "dense_rank": 4,
+        "rank": 3,
+        "rrf_score": 0.03226646,
+        "source": "multi-agent-systems"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:b3bbf442d745bd8f609c9a41e9cff9f6079ad41bd8c8d40383055c8bff5b412f",
+        "dense_rank": 3,
+        "rank": 4,
+        "rrf_score": 0.03200205,
+        "source": "multi-agent-systems"
+      },
+      {
+        "bm25_rank": 9,
+        "chunk_id": "ca:cswp:b2d6380a36fba205a090d00c455a38a477b9f9db449ed57a62b1313a853a6e7d",
+        "dense_rank": 2,
+        "rank": 5,
+        "rrf_score": 0.03109932,
+        "source": "multi-agent-systems"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "elastic net combining L1 and L2 penalties",
+    "query_id": "Q18",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:b0d6c74aaddd22bb7a3db2f6d8a2105c206a4da169e173e7181c15b5ec67dd7e",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03333333,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:e188a627c35442fe41d087d70b18ede25bd3b2c8a8458bbd179dbc25e034d249",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.03278689,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:9b717873f7dd8b03d48ba0cc42cdb1638362d80c2b382b2c446c6a3cb1f4b86c",
+        "dense_rank": 7,
+        "rank": 3,
+        "rrf_score": 0.03128055,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:e8f0ddb0dde5b2932d30d908c48e97e43901aeb1e79a6385dd287b16ab39a8a1",
+        "dense_rank": 9,
+        "rank": 4,
+        "rrf_score": 0.0305789,
+        "source": "linear-logistic-regression"
+      },
+      {
+        "bm25_rank": null,
+        "chunk_id": "ca:cswp:67de5fcd7b4caa2dd312a54315cc343fc26b4d53650a64fbafd0cade3efea14f",
+        "dense_rank": 3,
+        "rank": 5,
+        "rrf_score": 0.01612903,
+        "source": "ridge-lasso-elasticnet"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "how RAG reduces hallucination in LLMs",
+    "query_id": "Q19",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:b29dc16e0a8b7cea718eef8c2d7474224de7ea590aa042f039ae522683e91448",
+        "dense_rank": 3,
+        "rank": 1,
+        "rrf_score": 0.0327957,
+        "source": "retrieval-augmented-generation"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:75bb2ceeeabbd20939cfbcea41edfea612ec1935ebb8dfc6d05631a76338d01e",
+        "dense_rank": 4,
+        "rank": 2,
+        "rrf_score": 0.03226646,
+        "source": "retrieval-augmented-generation"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:07dbb5179bbc0ad2e7f15857652ac35acf850be515ed596e3a06b22a63f51181",
+        "dense_rank": 5,
+        "rank": 3,
+        "rrf_score": 0.03149802,
+        "source": "retrieval-augmented-generation"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:f2dfe9e452ecfcc538aaadd84b28b0627ccd377451d346464ec4bdb75b966d37",
+        "dense_rank": 9,
+        "rank": 4,
+        "rrf_score": 0.03083491,
+        "source": "backpropagation"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:a42720d3b48ea8cbc7e94a2f3b6ff68b97bf9bf610e66a409fee1ffb80b98851",
+        "dense_rank": 13,
+        "rank": 5,
+        "rrf_score": 0.02951389,
+        "source": "backpropagation"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "embedding vectors for semantic search",
+    "query_id": "Q20",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:411095ec1efe6dddda11cf9bbc862a11968a82bb982bed63a84ba48cafdbea38",
+        "dense_rank": 2,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "embedding-models-vector-search"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:e3ba8c9b156e6b7545d45a9dc48055175bf4dc778e5337dc52ee3547bfb46b40",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.03205128,
+        "source": "embedding-models-vector-search"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:b689b17d41f07db0b6500345e3207674a6bb2931892e369731b85ebf53df9e40",
+        "dense_rank": 5,
+        "rank": 3,
+        "rrf_score": 0.03201844,
+        "source": "embedding-models-vector-search"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:13472dc7b8712adffa31a69e90d6bd38520c0a5a5ceef707cf24846c6dd4e42c",
+        "dense_rank": 4,
+        "rank": 4,
+        "rrf_score": 0.03200205,
+        "source": "embedding-models-vector-search"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:17450c946352f47c911db481c2ae02b9c73231785b97e4644db0e0b1eabaa728",
+        "dense_rank": 3,
+        "rank": 5,
+        "rrf_score": 0.03128055,
+        "source": "embedding-models-vector-search"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "my neural net is deep but gradients become tiny \u2014 which algorithm computes them and how do I avoid this?",
+    "query_id": "Q21",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:dbda03bdcf6872696369d872690fe97336c83c41ff576387f1eeffa5cf035763",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03333333,
+        "source": "backpropagation"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:9059a6008323a22964912b04eedfe8c12b3be2a49779bbfb8e5e65c2bf8fa292",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.03226646,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:6bd06293118323043fbf8f511392a94f712274a16ac2e288016b551209459f8c",
+        "dense_rank": 8,
+        "rank": 3,
+        "rrf_score": 0.03131882,
+        "source": "backpropagation"
+      },
+      {
+        "bm25_rank": 8,
+        "chunk_id": "ca:cswp:9c6cc6c330f33b403dfe45bd56633cfd842f185f02913a7ec69fa81c0274a395",
+        "dense_rank": 5,
+        "rank": 4,
+        "rrf_score": 0.03055037,
+        "source": "gradient-descent"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:6f84f955b40e5915de7d6d0d179b8c20b7b2b75f1cec2dc67e2f60e24ac05e0b",
+        "dense_rank": 13,
+        "rank": 5,
+        "rrf_score": 0.0292735,
+        "source": "backpropagation"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "tree ensemble that uses gradient and hessian and can handle missing values automatically",
+    "query_id": "Q22",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:a7220b965038c83dd337d950f350e9e333dc62a9577798d28d8766ccf7b04263",
+        "dense_rank": 5,
+        "rank": 1,
+        "rrf_score": 0.03229167,
+        "source": "xgboost"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:225af8695548da8af494b047d77d8e3e58b8d7564b630efb33f6500f555ea364",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.03201844,
+        "source": "decision-trees"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:53fc487925de07c29d459b88d7d7718cfba2a3fcb3f5a0574f66ad3a1076a702",
+        "dense_rank": 4,
+        "rank": 3,
+        "rrf_score": 0.03200205,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:722b2c6b5a4d5d5d12c3db41222ea243374345ba27a51ba352373be0a49b67e0",
+        "dense_rank": 9,
+        "rank": 4,
+        "rrf_score": 0.03109932,
+        "source": "xgboost"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:7d6e51c91aabe2b2fe5e17a10bf34faeed27830d6cdcaeab147c395e8862ad51",
+        "dense_rank": 7,
+        "rank": 5,
+        "rrf_score": 0.03053613,
+        "source": "decision-trees"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "I want to classify text with many features but features are not independent \u2014 is there a fast probabilistic model that still works well?",
+    "query_id": "Q23",
+    "seeds": [
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:205fbd7711053979bb7eaff8849b668c83dc0e66a75187fe611117e937a707a9",
+        "dense_rank": 3,
+        "rank": 1,
+        "rrf_score": 0.03252247,
+        "source": "naive-bayes"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:e8b8b185fcd8721fcf210610b1e0ad6203fb262fc80afbd9b70c6a8d317f8859",
+        "dense_rank": 5,
+        "rank": 2,
+        "rrf_score": 0.03229167,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:6fb993bfe7c00accc78c04902046a78204f44ff79fd7801cada79304abf14085",
+        "dense_rank": 1,
+        "rank": 3,
+        "rrf_score": 0.03181818,
+        "source": "naive-bayes"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:7ff2262e0a2987f9deb4debf1799292bd9ea187bcaa831259a615fbb1df8a53c",
+        "dense_rank": 2,
+        "rank": 4,
+        "rrf_score": 0.03177806,
+        "source": "naive-bayes"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:20b721c0e7d3d3a84e1fedb462072c22019efbb45de96c7ba29505a7ee1cb91c",
+        "dense_rank": 16,
+        "rank": 5,
+        "rrf_score": 0.02946237,
+        "source": "random-forest"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "what happens to the decision boundary when you increase k in k-NN from 1 to a large number?",
+    "query_id": "Q24",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:e5fbfe15bc37d160fed7115f4c58d6adf2d543aa419b76ea15aec05e9a600332",
+        "dense_rank": 2,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "k-nearest-neighbors"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:5c40d0d442c73373d76af9eeec33a23a2908a49e82da76ee6b0ed5f80e4dc5db",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.03205128,
+        "source": "k-nearest-neighbors"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:1f923662cedc42ac5672dc337a54cc9c521dfb8fc1aadac53e5a0bc2f55af561",
+        "dense_rank": 6,
+        "rank": 3,
+        "rrf_score": 0.03177806,
+        "source": "decision-trees"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:2b8f20431f7299e98105e9b3cd03a2a0bed227845fe1623fc3f5602879255e11",
+        "dense_rank": 3,
+        "rank": 4,
+        "rrf_score": 0.03128055,
+        "source": "k-nearest-neighbors"
+      },
+      {
+        "bm25_rank": 11,
+        "chunk_id": "ca:cswp:861b33d40346afb935772fa342d1bebe3ce5a4dbaba763f755e613ee5a778524",
+        "dense_rank": 4,
+        "rank": 5,
+        "rrf_score": 0.03015873,
+        "source": "k-nearest-neighbors"
+      }
+    ]
+  },
+  {
+    "gating_eligible": false,
+    "query": "compare the objective functions of ridge regression and support vector regression \u2014 how do they penalize coefficients differently?",
+    "query_id": "Q25",
+    "seeds": [
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:b0d6c74aaddd22bb7a3db2f6d8a2105c206a4da169e173e7181c15b5ec67dd7e",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.0327957,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:2408c2a68eadc8467596c19fe4cf95c99aa3eb2c17a68df7bb61a0dd18d59414",
+        "dense_rank": 8,
+        "rank": 2,
+        "rrf_score": 0.03159204,
+        "source": "support-vector-machines"
+      },
+      {
+        "bm25_rank": 7,
+        "chunk_id": "ca:cswp:71b1f774011d603bb0ecd8bf8485eac59cc7c829fe5cfa607c2a7a1e1e981f39",
+        "dense_rank": 3,
+        "rank": 3,
+        "rrf_score": 0.03128055,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:9b717873f7dd8b03d48ba0cc42cdb1638362d80c2b382b2c446c6a3cb1f4b86c",
+        "dense_rank": 6,
+        "rank": 4,
+        "rrf_score": 0.03125763,
+        "source": "ridge-lasso-elasticnet"
+      },
+      {
+        "bm25_rank": 8,
+        "chunk_id": "ca:cswp:561d3594f381842a6b8cbcfb6b706ee1e4c9e3af32193bfb91021097107d9580",
+        "dense_rank": 5,
+        "rank": 5,
+        "rrf_score": 0.03055037,
+        "source": "support-vector-machines"
+      }
+    ]
+  },
+  {
+    "gating_eligible": false,
+    "query": "I need to build a chatbot that can look up company documents, but also remember conversation state and loop to ask follow-up questions. Which two frameworks should I combine?",
+    "query_id": "Q26",
+    "seeds": [
+      {
+        "bm25_rank": 10,
+        "chunk_id": "ca:cswp:0878a0862b7ff201dd2014f380fd7565460d2dc027f3b64dc6c6e62f75de6259",
+        "dense_rank": 3,
+        "rank": 1,
+        "rrf_score": 0.03062179,
+        "source": "multi-agent-systems"
+      },
+      {
+        "bm25_rank": 14,
+        "chunk_id": "ca:cswp:d58417ad0e7c65ed60a06c854c5d7a4866213645f0ac435ab2d6dea6bef68edd",
+        "dense_rank": 5,
+        "rank": 2,
+        "rrf_score": 0.02932363,
+        "source": "langgraph-state-machines"
+      },
+      {
+        "bm25_rank": 16,
+        "chunk_id": "ca:cswp:2ca91b2347b7a78bfdaed23c7461ebd943a7b59c4cdcf83badbf49f5b946cd9b",
+        "dense_rank": 6,
+        "rank": 3,
+        "rrf_score": 0.02871795,
+        "source": "langgraph-state-machines"
+      },
+      {
+        "bm25_rank": 9,
+        "chunk_id": "ca:cswp:76e466b1d10126864a27a1dfb768d192833efd39590b276712f1ea0ff3d50fe1",
+        "dense_rank": 18,
+        "rank": 4,
+        "rrf_score": 0.0276929,
+        "source": "langgraph-state-machines"
+      },
+      {
+        "bm25_rank": 11,
+        "chunk_id": "ca:cswp:2f81c16739add947c9aab843a127a64f0ebb507c411915319c50ebefd98395e9",
+        "dense_rank": 19,
+        "rank": 5,
+        "rrf_score": 0.02710623,
+        "source": "langgraph-state-machines"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "how does CatBoost's ordered target encoding prevent leakage compared to regular target encoding?",
+    "query_id": "Q27",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:4df03e828ab3e9bb73296ac796e167c31145d8eacfb3660fd373f5377481502b",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03333333,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:ace9880737aa35a8ac17c99a8501aaff6decdbf6f2440d502b430d9e96027171",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.03226646,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:e8b8b185fcd8721fcf210610b1e0ad6203fb262fc80afbd9b70c6a8d317f8859",
+        "dense_rank": 5,
+        "rank": 3,
+        "rrf_score": 0.03201844,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 9,
+        "chunk_id": "ca:cswp:efa7bdaf008d3bde654cb49373f3e06d89e7f5f30a0991cc86f4ddd62f60d558",
+        "dense_rank": 3,
+        "rank": 4,
+        "rrf_score": 0.03083491,
+        "source": "catboost"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:53fc487925de07c29d459b88d7d7718cfba2a3fcb3f5a0574f66ad3a1076a702",
+        "dense_rank": 6,
+        "rank": 5,
+        "rrf_score": 0.03076923,
+        "source": "catboost"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "In the ReAct pattern, what is the risk if the model hallucinates an observation instead of executing a tool?",
+    "query_id": "Q28",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:5325e623a7312dec67bf544f73d92befa6c176927a62984b662b1dae543ae7ed",
+        "dense_rank": 2,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:b94c5d34fab7301200279327b141369b5d6be93b51a9599d32b1a4b23b1893e6",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.0327957,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:2bba0a0205636c2bb04a432fd3f6afa0eb99e1baf7e61ab3fe1f7ff225a16eaf",
+        "dense_rank": 3,
+        "rank": 3,
+        "rrf_score": 0.03252247,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:0584345b2faa035ff4b19a8ae6ab21fdbac5f861c68d89eaeb05028242187da7",
+        "dense_rank": 4,
+        "rank": 4,
+        "rrf_score": 0.03125763,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:fff6f668e230b82c8711df2f8d8d25222456d438569e64541064adb14cf3294e",
+        "dense_rank": 7,
+        "rank": 5,
+        "rrf_score": 0.03102453,
+        "source": "multi-agent-systems"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "design a production prompt for sentiment analysis that includes JSON output, version control, and injection protection \u2014 what are the key engineering practices?",
+    "query_id": "Q29",
+    "seeds": [
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:9badb1edbdbdcf6bdc1e54fe65346eaa34a0256d91b48937f2d643a7ac94acb4",
+        "dense_rank": 2,
+        "rank": 1,
+        "rrf_score": 0.03278689,
+        "source": "prompt-engineering-production"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:829b4106431357d165d493030ff954983f594b0b0468bd6525b65ce2b9532d97",
+        "dense_rank": 4,
+        "rank": 2,
+        "rrf_score": 0.03253968,
+        "source": "prompt-engineering-production"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:452d64a2bead78363c38944b2f75cd017e0ef674bab462c06fab5611bf729109",
+        "dense_rank": 3,
+        "rank": 3,
+        "rrf_score": 0.03225806,
+        "source": "prompt-engineering-production"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:14fffa6d9734cf29a5de0f384eb05852e63c7b8824c0c04540160b3bf088b974",
+        "dense_rank": 1,
+        "rank": 4,
+        "rrf_score": 0.03205128,
+        "source": "prompt-engineering-production"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:d0c9abc6327b4fdec106651439926c2613cd0b83a40277f1d0cab691c8132bbd",
+        "dense_rank": 6,
+        "rank": 5,
+        "rrf_score": 0.03125763,
+        "source": "prompt-engineering-production"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "when would you choose a linear model over a random forest even if the random forest has higher accuracy?",
+    "query_id": "Q30",
+    "seeds": [
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:863926fd323a8c1af4bdd771e74eec5577880f1397e5ae771b2c3b78362483c5",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03306011,
+        "source": "random-forest"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:80fc0bc999dccaa222ce60e7fedbb7ae167bf451394a0e283014ec3c273dd449",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.03252247,
+        "source": "random-forest"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:806b822d7a317ef43a148ff36dcb166e533588a3413f89a3e1162c6922d2a6c4",
+        "dense_rank": 8,
+        "rank": 3,
+        "rrf_score": 0.03159204,
+        "source": "random-forest"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:17c91291c42798facff5d59e70d7d524d9d9da36857ddd31df0ad0ad0cd89996",
+        "dense_rank": 4,
+        "rank": 4,
+        "rrf_score": 0.03149802,
+        "source": "random-forest"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:b7d8241cdea48e4ee3e8b72c030857ee3e7fa857580042ebdd9afdbb3dedb0b5",
+        "dense_rank": 5,
+        "rank": 5,
+        "rrf_score": 0.03149802,
+        "source": "random-forest"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "what is the BERT architecture and how does masking work?",
+    "query_id": "Q31",
+    "seeds": [
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:a4f5bdab8380db1f15e0f760ceb11f3c97226fa01c4c8f37fbac6164a64127e4",
+        "dense_rank": 4,
+        "rank": 1,
+        "rrf_score": 0.03200205,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 9,
+        "chunk_id": "ca:cswp:6bfb19e606afe0899bb9aef922c4c4a16ea8bce5770c210e3a299c9d9f94d919",
+        "dense_rank": 1,
+        "rank": 2,
+        "rrf_score": 0.03137255,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:5325e623a7312dec67bf544f73d92befa6c176927a62984b662b1dae543ae7ed",
+        "dense_rank": null,
+        "rank": 3,
+        "rrf_score": 0.01666667,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": null,
+        "chunk_id": "ca:cswp:070e72f5ba19ba4a32560fd52e2cf14eaebd48f6bb909bb3b655d7740ee25dbe",
+        "dense_rank": 2,
+        "rank": 4,
+        "rrf_score": 0.01639344,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:b94c5d34fab7301200279327b141369b5d6be93b51a9599d32b1a4b23b1893e6",
+        "dense_rank": null,
+        "rank": 5,
+        "rrf_score": 0.01639344,
+        "source": "react-agent-pattern"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "explain convolutional neural networks and pooling layers",
+    "query_id": "Q32",
+    "seeds": [
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:8fc4dbe3884bf90260298f621b5f81f81f65575f69ff191a6fc794e629206459",
+        "dense_rank": 3,
+        "rank": 1,
+        "rrf_score": 0.03252247,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 4,
+        "chunk_id": "ca:cswp:9059a6008323a22964912b04eedfe8c12b3be2a49779bbfb8e5e65c2bf8fa292",
+        "dense_rank": 2,
+        "rank": 2,
+        "rrf_score": 0.03226646,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 3,
+        "chunk_id": "ca:cswp:d79230e3f6cd61fb94f93f5971d20d7a63d0aa1652c48bd5a031f25806819442",
+        "dense_rank": 4,
+        "rank": 3,
+        "rrf_score": 0.03200205,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 12,
+        "chunk_id": "ca:cswp:6bfb19e606afe0899bb9aef922c4c4a16ea8bce5770c210e3a299c9d9f94d919",
+        "dense_rank": 1,
+        "rank": 4,
+        "rrf_score": 0.03075117,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:3cf7642cf85db63aac1a7bca89791347a276d8e0927387e2c06ae0eae0c28598",
+        "dense_rank": 13,
+        "rank": 5,
+        "rrf_score": 0.03055556,
+        "source": "feedforward-neural-networks"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "how does batch normalization stabilize training?",
+    "query_id": "Q33",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:9059a6008323a22964912b04eedfe8c12b3be2a49779bbfb8e5e65c2bf8fa292",
+        "dense_rank": 5,
+        "rank": 1,
+        "rrf_score": 0.03229167,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 5,
+        "chunk_id": "ca:cswp:5235bfb998a6ed1478547a95e4a0006ad571e63562cb95579682075dac1231a2",
+        "dense_rank": 3,
+        "rank": 2,
+        "rrf_score": 0.03175403,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": null,
+        "chunk_id": "ca:cswp:a42720d3b48ea8cbc7e94a2f3b6ff68b97bf9bf610e66a409fee1ffb80b98851",
+        "dense_rank": 1,
+        "rank": 3,
+        "rrf_score": 0.01666667,
+        "source": "backpropagation"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:570d5e3e6284524a65794ac95bfe581e8d8f4756d7e27aabba10fff38cec94ee",
+        "dense_rank": null,
+        "rank": 4,
+        "rrf_score": 0.01639344,
+        "source": "embedding-models-vector-search"
+      },
+      {
+        "bm25_rank": null,
+        "chunk_id": "ca:cswp:f2dfe9e452ecfcc538aaadd84b28b0627ccd377451d346464ec4bdb75b966d37",
+        "dense_rank": 2,
+        "rank": 5,
+        "rrf_score": 0.01639344,
+        "source": "backpropagation"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "what is the difference between vanilla RNNs and LSTMs?",
+    "query_id": "Q34",
+    "seeds": [
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:a4f5bdab8380db1f15e0f760ceb11f3c97226fa01c4c8f37fbac6164a64127e4",
+        "dense_rank": 6,
+        "rank": 1,
+        "rrf_score": 0.03076923,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 10,
+        "chunk_id": "ca:cswp:a42720d3b48ea8cbc7e94a2f3b6ff68b97bf9bf610e66a409fee1ffb80b98851",
+        "dense_rank": 9,
+        "rank": 2,
+        "rrf_score": 0.02919864,
+        "source": "backpropagation"
+      },
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:5325e623a7312dec67bf544f73d92befa6c176927a62984b662b1dae543ae7ed",
+        "dense_rank": null,
+        "rank": 3,
+        "rrf_score": 0.01666667,
+        "source": "react-agent-pattern"
+      },
+      {
+        "bm25_rank": null,
+        "chunk_id": "ca:cswp:d79230e3f6cd61fb94f93f5971d20d7a63d0aa1652c48bd5a031f25806819442",
+        "dense_rank": 1,
+        "rank": 4,
+        "rrf_score": 0.01666667,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 2,
+        "chunk_id": "ca:cswp:17450c946352f47c911db481c2ae02b9c73231785b97e4644db0e0b1eabaa728",
+        "dense_rank": null,
+        "rank": 5,
+        "rrf_score": 0.01639344,
+        "source": "embedding-models-vector-search"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query": "explain the Adam optimizer and its hyperparameters",
+    "query_id": "Q35",
+    "seeds": [
+      {
+        "bm25_rank": 1,
+        "chunk_id": "ca:cswp:056fa9e20bc917c6512b4496a541a0f276630fb8f3442b92f642f702231a87f6",
+        "dense_rank": 1,
+        "rank": 1,
+        "rrf_score": 0.03333333,
+        "source": "gradient-descent"
+      },
+      {
+        "bm25_rank": 11,
+        "chunk_id": "ca:cswp:cfbf62dbf8071d73619998482c6551d8280078f766685e0ecf4acbbedf4e0bfc",
+        "dense_rank": 3,
+        "rank": 2,
+        "rrf_score": 0.03041475,
+        "source": "feedforward-neural-networks"
+      },
+      {
+        "bm25_rank": 6,
+        "chunk_id": "ca:cswp:84ad4b1cb8f386acc42c5aec700e4651178c72557a467182892125cd888690ad",
+        "dense_rank": 9,
+        "rank": 3,
+        "rrf_score": 0.0300905,
+        "source": "support-vector-machines"
+      },
+      {
+        "bm25_rank": 17,
+        "chunk_id": "ca:cswp:6bfb19e606afe0899bb9aef922c4c4a16ea8bce5770c210e3a299c9d9f94d919",
+        "dense_rank": 2,
+        "rank": 4,
+        "rrf_score": 0.02955134,
+        "source": "attention-transformers"
+      },
+      {
+        "bm25_rank": 13,
+        "chunk_id": "ca:cswp:5c40d0d442c73373d76af9eeec33a23a2908a49e82da76ee6b0ed5f80e4dc5db",
+        "dense_rank": 5,
+        "rank": 5,
+        "rrf_score": 0.02951389,
+        "source": "k-nearest-neighbors"
+      }
+    ]
+  }
+]

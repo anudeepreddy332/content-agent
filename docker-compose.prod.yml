@@ -23,6 +23,7 @@ services:
     container_name: content-agent-api
     env_file: .env                       # DEEPSEEK_API_KEY, TAVILY_API_KEY, API_BEARER_TOKEN
     environment:
+      KB_BACKEND: "cswp_qdrant"          # durable CSWP serving via kb_cswp_serving alias
       QDRANT_URL: "http://qdrant:6333"   # service DNS, not localhost
       GIT_PUSH_ENABLED: "false"          # locked for the freeze; git_node stays dry-run
     ports:

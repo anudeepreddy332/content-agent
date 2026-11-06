@@ -40,10 +40,24 @@ jobs:
       - run: uv run playwright install --with-deps chromium
       # Warm tiktoken encoding cache before tests that deny socket I/O (qualification runners).
       - run: uv run python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
-      # B2 failure-injection suite + B1 slug tests. Zero network, zero API cost
-      # (verified offline 2026-06-13). Imports pull torch via sentence-transformers,
-      # so the first uncached sync is the slow step (~3-5 min), not the tests.
+      - name: Cache pinned MiniLM snapshot (~90MB)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2
+          key: minilm-l6-v2-1110a243fdf4706b3f48f1d95db1a4f5529b4d41
+      - name: Provision pinned MiniLM snapshot (network-enabled prep)
+        run: uv run python scripts/provision_minilm_snapshot.py
+      - name: Clean inference smoke (offline, zero provider)
+        run: uv run python scripts/inference_smoke.py
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+      # B2 failure-injection suite + Phase-5 gates. Zero network after prep,
+      # zero API cost. Default CI does not require the experimental BGE weights.
       - run: uv run pytest tests/ -v
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 

@@ -23,6 +23,10 @@
         <label>Bearer token (API_BEARER_TOKEN)</label>
         <input id="token" type="password" placeholder="paste server token" autocomplete="off"/>
       </div>
+      <div>
+        <label>Reviewer credential (HITL_REVIEWER_TOKEN)</label>
+        <input id="reviewerToken" type="password" placeholder="paste distinct reviewer credential" autocomplete="off"/>
+      </div>
     </div>
     <div class="row">
       <div>
@@ -48,7 +52,12 @@
     <h2 class="section">Gate 1 · Content review</h2>
     <div class="muted" id="g1meta"></div>
     <iframe id="g1frame" sandbox="" referrerpolicy="no-referrer" title="draft review"></iframe>
-    <div id="g1grounding"></div>
+    <div id="g1materialReview"></div>
+    <div class="evidence-attestation">
+      <label><input type="checkbox" id="g1noOmissions"/> I reviewed the full draft and found no omitted material claims.</label>
+      <label><input type="checkbox" id="g1materiality"/> I reviewed the full draft and agree with the materiality classifications.</label>
+      <p class="muted">These are your review declarations, not proof that extraction is complete. If either is false, request changes and describe the issue.</p>
+    </div>
     <label>Revision feedback (optional → sends the draft back to revise)</label>
     <textarea id="g1fb" placeholder="e.g. tighten the problem framing; add a failure mode"></textarea>
     <div class="btns">

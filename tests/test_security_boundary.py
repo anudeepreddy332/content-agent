@@ -84,14 +84,17 @@ def test_index_has_no_marked_or_innerhtml_source():
 
 
 def test_malicious_reviewer_feedback_is_sanitized_before_persist(base_state, monkeypatch):
+    from tests.signoff_fixtures import approved_material_state
+    base_state.update(gate1_reviewer_id="security-reviewer", gate1_review_origin="authenticated")
     import agent.nodes as nodes
+    monkeypatch.setattr(nodes, "initial_equivalence_valid", lambda _state: True)
     base_state["article_body_html"] = "<p>Gradient descent minimizes loss.</p>"
     base_state["html_output"] = "<p>Gradient descent minimizes loss.</p>"
     base_state["html_feedback"] = "<script>alert(1)</script> make it bold"
     unsafe = '<script>alert(1)</script><p onclick="alert(1)">Gradient descent minimizes loss.</p>'
     monkeypatch.setattr(nodes, "_get_client", lambda: object())
     monkeypatch.setattr(nodes, "_llm_call", lambda c, **kw: fake_response(unsafe))
-    out = nodes.html_revise_node(base_state)
+    out = nodes.html_revise_node(approved_material_state(base_state, reviewer_id="security-reviewer"))
     html = out["html_output"]
     assert "<script>" not in html.lower()
     assert "onclick" not in html.lower()

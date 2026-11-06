@@ -1,0 +1,123 @@
+{
+  "schema_version": "phase5e1_qualification_oracle_v1",
+  "dataset_status": "SYNTHETIC_QUALIFICATION_FIXTURE",
+  "expected_runtime_identity": {
+    "cswp_local": {
+      "source_corpus_fingerprint": "corpus",
+      "index_fingerprint": "index",
+      "minilm_model_id": "all-MiniLM-L6-v2",
+      "minilm_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+      "qualified_contract": "DRAFTER_PACKED_EVIDENCE_V1"
+    },
+    "cswp_qdrant": {
+      "source_corpus_fingerprint": "corpus",
+      "index_fingerprint": "index",
+      "minilm_model_id": "all-MiniLM-L6-v2",
+      "minilm_model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+      "qualified_contract": "DRAFTER_PACKED_EVIDENCE_V1",
+      "collection_name": "qualified",
+      "live_collection_fingerprint": "index"
+    }
+  },
+  "queries": [
+    {
+      "query_id": "SYN-A1",
+      "query": "synthetic answerable one",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "doc-a",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "doc-a:1",
+              "grade": 2,
+              "char_start": 0,
+              "char_end": 10
+            },
+            {
+              "span_id": "doc-a:2",
+              "grade": 1,
+              "char_start": 10,
+              "char_end": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "query_id": "SYN-A2",
+      "query": "synthetic answerable two",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "doc-b",
+          "grade": 2,
+          "evidence": [
+            {
+              "span_id": "doc-b:1",
+              "grade": 2,
+              "char_start": 0,
+              "char_end": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "query_id": "SYN-A3",
+      "query": "synthetic answerable three",
+      "answerability": "ANSWERABLE",
+      "relevant_sources": [
+        {
+          "source": "doc-c",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "doc-c:1",
+              "grade": 1,
+              "char_start": 0,
+              "char_end": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "query_id": "SYN-P1",
+      "query": "synthetic partial one",
+      "answerability": "PARTIAL",
+      "relevant_sources": [
+        {
+          "source": "doc-p",
+          "grade": 1,
+          "evidence": [
+            {
+              "span_id": "doc-p:1",
+              "grade": 1,
+              "char_start": 0,
+              "char_end": 10
+            }
+          ]
+        }
+      ],
+      "evidence_obligations": [
+        {
+          "description": "missing corpus detail",
+          "status": "missing"
+        }
+      ]
+    },
+    {
+      "query_id": "SYN-ABS1",
+      "query": "synthetic absent diagnostic",
+      "answerability": "ABSENT",
+      "hard_negatives": [
+        {
+          "source": "doc-hn",
+          "chunk_id": "doc-hn__0001"
+        }
+      ]
+    }
+  ]
+}

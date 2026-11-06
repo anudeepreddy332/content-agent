@@ -4,9 +4,26 @@
 grounded HTML article, verifies claims, and requires human review before publication.**
 
 > **Current engineering status:** enterprise production is **BLOCKED**. The P0-1
-> active-content/credential-boundary architecture is approved, but its implementation is not yet
-> validated, merged, or deployed. Read `PROJECT_STATUS.md` before relying on historical demo or
-> production-readiness claims.
+> active-content/credential boundary is validated and integrated within its scoped contract;
+> current deployment identity is not established. Phase-5 HOLDOUT-V2 retrieval qualification
+> passed only at `e0cfe0b566134f848feb731a777f315eb1456dd2`. The reviewed application-only
+> ancestor `82284129dcee8cc10f3d959e0994bacae6a5683b` includes the independently
+> re-audited frozen workflow and an independently audited 12,000-token Call-A capacity
+> correction. Exact-SHA push CI
+> [38373655918](https://github.com/anudeepreddy332/content-agent/actions/runs/38373655918)
+> succeeded (1,855 tests, 37 warnings; PR-only evaluation skipped).
+> The October-5 real application E2E remains a historical FAIL / Gate-1 rejection.
+> The October-23–24 deterministic initial HTML equivalence correction is feature
+> integrated at `102983ef08109522421c1098d3effd99e26f3c0b` with successful
+> exact-SHA CI `40077527862`. The November-3 provider-backed run
+> `f9f6f92d-5dbd-4370-aca2-83af159968ae` failed during drafting before Gate 1.
+> Draft accounting and rejected-output safety repairs are feature integrated at
+> `21666700bf03abf5e6ec37de9705ab873fcaf215` with successful exact-SHA CI
+> [41627868865](https://github.com/anudeepreddy332/content-agent/actions/runs/41627868865).
+> Live inventory reliability, claim completeness, and successful Call B/reflection
+> remain unverified. A corrected complete E2E has not passed. External pilot is
+> **NOT READY**; main has not received Phase 5. Read `PROJECT_STATUS.md` and
+> `architecture.md` for current state and contract.
 
 ## 🎥 Live Demo
 
@@ -21,11 +38,18 @@ grounding verification → reflection → human approval → live publish.
 
 ## What this does
 
-Takes a topic as input. Produces a publish-ready HTML article for themachinist.org,
-pushed to a feature branch on the themachinist-website repo (or its demo fork).
+Takes a topic as input and supports supervised article drafting, verification, HTML review,
+and guarded Git preparation for the website repository or demo fork. Successful end-to-end
+completion is not guaranteed; the October-5 run failed claim inventory and the November-3
+run failed during drafting. Neither generated final article HTML or published.
 
-Pipeline: Retrieve → Draft → Verify → Reflect → [revise ≤2] → HITL (content) → HTML Gen →
+Historical October-5 topology: Retrieve → Draft → Verify → Reflect → bounded automatic
+redraft → HITL (content) → HTML Gen →
 HITL (layout) → Git (local merge only — a human always does the actual `git push`).
+This topology reached Gate 1 with failed quality in the October-5 run. The frozen correction
+is now implemented and independently audited on the feature branch: valid draft → accepted
+verification → genuine current reflection score ≥7 before Gate 1, with two drafts per quality
+episode and separately bounded content/layout feedback. A fresh corrected E2E has not passed.
 Source-aware drafting (retrieve runs before draft, not after) was locked at M3 — see
 `DECISIONS.md`, 2026-06-09.
 
@@ -62,14 +86,23 @@ uv sync
 cp .env.example .env
 # Edit .env — add DEEPSEEK_API_KEY and TAVILY_API_KEY
 
-# 4. Start Qdrant (Docker required)
+# 4. (Optional) Start Qdrant for legacy ingest or cswp_qdrant serving
 docker-compose up -d
 
-# 5. Seed the knowledge base
+# 5. (Optional) Seed the legacy Qdrant collection
 uv run python scripts/ingest.py --source kb/seed_docs/
+```
 
-# 6. Verify KB is populated
-uv run python scripts/ingest.py --stats
+**Local inference without Qdrant:** the default `KB_BACKEND=cswp_local` serves the
+production CSWP index from `kb/indexes/cswp_v1/` in memory. No Qdrant container is
+required for pipeline runs, inference smoke, or pytest. Set `KB_BACKEND=cswp_qdrant`
+only when a durable Qdrant instance has the `kb_cswp_serving` alias pointed at a
+qualified CSWP collection (production compose sets this automatically).
+
+```bash
+# Provision pinned MiniLM and run zero-provider inference smoke (cswp_local default)
+uv run python scripts/provision_minilm_snapshot.py
+uv run python scripts/inference_smoke.py
 ```
 
 ---

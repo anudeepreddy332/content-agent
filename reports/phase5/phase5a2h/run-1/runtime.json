@@ -1,0 +1,203 @@
+{
+  "external_network_calls": 0,
+  "latency": {
+    "mean_ms": 619.650158,
+    "p50_ms": 602.311708,
+    "p95_ms": 787.353208,
+    "total_ms": 21687.755541
+  },
+  "latency_scope": "one pass over all 35 queries; includes pair tokenization, batching, inference and sorting, excludes model loading; first query cold; no warmup or retries",
+  "model_load_ms": 55.206041,
+  "per_query": [
+    {
+      "candidates": 29,
+      "elapsed_ms": 606.796667,
+      "query_id": "Q01"
+    },
+    {
+      "candidates": 29,
+      "elapsed_ms": 582.088084,
+      "query_id": "Q02"
+    },
+    {
+      "candidates": 27,
+      "elapsed_ms": 527.350334,
+      "query_id": "Q03"
+    },
+    {
+      "candidates": 30,
+      "elapsed_ms": 619.612792,
+      "query_id": "Q04"
+    },
+    {
+      "candidates": 26,
+      "elapsed_ms": 517.321333,
+      "query_id": "Q05"
+    },
+    {
+      "candidates": 28,
+      "elapsed_ms": 553.908583,
+      "query_id": "Q06"
+    },
+    {
+      "candidates": 29,
+      "elapsed_ms": 569.421375,
+      "query_id": "Q07"
+    },
+    {
+      "candidates": 26,
+      "elapsed_ms": 498.196291,
+      "query_id": "Q08"
+    },
+    {
+      "candidates": 29,
+      "elapsed_ms": 579.055417,
+      "query_id": "Q09"
+    },
+    {
+      "candidates": 28,
+      "elapsed_ms": 559.223166,
+      "query_id": "Q10"
+    },
+    {
+      "candidates": 28,
+      "elapsed_ms": 559.7135,
+      "query_id": "Q11"
+    },
+    {
+      "candidates": 29,
+      "elapsed_ms": 602.311708,
+      "query_id": "Q12"
+    },
+    {
+      "candidates": 27,
+      "elapsed_ms": 547.569875,
+      "query_id": "Q13"
+    },
+    {
+      "candidates": 28,
+      "elapsed_ms": 560.511042,
+      "query_id": "Q14"
+    },
+    {
+      "candidates": 24,
+      "elapsed_ms": 485.995375,
+      "query_id": "Q15"
+    },
+    {
+      "candidates": 26,
+      "elapsed_ms": 514.154125,
+      "query_id": "Q16"
+    },
+    {
+      "candidates": 28,
+      "elapsed_ms": 571.675125,
+      "query_id": "Q17"
+    },
+    {
+      "candidates": 36,
+      "elapsed_ms": 725.355208,
+      "query_id": "Q18"
+    },
+    {
+      "candidates": 34,
+      "elapsed_ms": 683.539041,
+      "query_id": "Q19"
+    },
+    {
+      "candidates": 30,
+      "elapsed_ms": 589.277333,
+      "query_id": "Q20"
+    },
+    {
+      "candidates": 32,
+      "elapsed_ms": 690.64675,
+      "query_id": "Q21"
+    },
+    {
+      "candidates": 31,
+      "elapsed_ms": 646.006041,
+      "query_id": "Q22"
+    },
+    {
+      "candidates": 32,
+      "elapsed_ms": 719.31525,
+      "query_id": "Q23"
+    },
+    {
+      "candidates": 28,
+      "elapsed_ms": 611.829709,
+      "query_id": "Q24"
+    },
+    {
+      "candidates": 30,
+      "elapsed_ms": 648.335833,
+      "query_id": "Q25"
+    },
+    {
+      "candidates": 34,
+      "elapsed_ms": 809.093375,
+      "query_id": "Q26"
+    },
+    {
+      "candidates": 30,
+      "elapsed_ms": 636.641834,
+      "query_id": "Q27"
+    },
+    {
+      "candidates": 34,
+      "elapsed_ms": 726.632125,
+      "query_id": "Q28"
+    },
+    {
+      "candidates": 30,
+      "elapsed_ms": 653.966666,
+      "query_id": "Q29"
+    },
+    {
+      "candidates": 29,
+      "elapsed_ms": 628.082417,
+      "query_id": "Q30"
+    },
+    {
+      "candidates": 38,
+      "elapsed_ms": 787.353208,
+      "query_id": "Q31"
+    },
+    {
+      "candidates": 28,
+      "elapsed_ms": 583.020292,
+      "query_id": "Q32"
+    },
+    {
+      "candidates": 29,
+      "elapsed_ms": 584.417125,
+      "query_id": "Q33"
+    },
+    {
+      "candidates": 38,
+      "elapsed_ms": 785.063042,
+      "query_id": "Q34"
+    },
+    {
+      "candidates": 32,
+      "elapsed_ms": 724.2755,
+      "query_id": "Q35"
+    }
+  ],
+  "provider_calls": 0,
+  "resources": {
+    "device": "cpu",
+    "float32_parameter_bytes": 90854404,
+    "machine": "arm64",
+    "parameters": 22713601,
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "process_peak_rss_after_evaluation_bytes": 1230979072,
+    "process_peak_rss_before_model_bytes": 549322752,
+    "python_version": "3.14.0",
+    "rss_scope": "process lifetime peak, includes Python/torch/transformers/evaluator and model, not isolated model allocation",
+    "threads": 1,
+    "weights_file_bytes": 90870598
+  },
+  "result_sha256": "9490f45a57392d8a9399e006d01a8215d98e7a25d89406efa807f2729a61def5"
+}

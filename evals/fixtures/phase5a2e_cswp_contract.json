@@ -1,0 +1,43 @@
+{
+  "schema_version": "phase5a2e_cswp_contract_v1",
+  "required_parent": "fa7eefbc0eeb6eb8570577a8e19497bfbd2a21b8",
+  "candidate": "CSWP",
+  "packing_version": "cswp-v1",
+  "hypothesis": "Exact-span evidence fails on B because structural children omit inter-block seams and treat H2-H6 headings as retrieval barriers. Lossless contiguous windows that absorb H2-H6 headings and whitespace seams, with deterministic left overlap, should recover evidence toward A without semantic chunking or Candidate C.",
+  "algorithm": "Build a lossless source-segment ledger from frozen B children plus whitespace seams. Greedy left-to-right cores from consecutive packable segments (paragraph, complete list unit, H2-H6 heading, whitespace seam) until the complete serialization would exceed 254 content tokens or a hard barrier. After each core, prepend the maximal immediately preceding compatible suffix that still fits. One retrieval unit per core. No backtracking or post-result overlap tuning.",
+  "compatible_types": ["paragraph", "list", "heading_h2_h6", "seam"],
+  "hard_barriers": ["heading_h1", "fenced_code", "code", "table", "blockquote", "html", "thematic_break", "source_gap", "document_root"],
+  "serialization": {
+    "order": [
+      "frozen document title",
+      "entry breadcrumb of the first non-seam segment, excluding headings whose full source text is already in the slice",
+      "blank line",
+      "verbatim contiguous source slice from retrieval_start to retrieval_end"
+    ],
+    "separators": "title + LF + join(breadcrumb, ' > ') + LF + LF + slice"
+  },
+  "content_token_limit": 254,
+  "total_token_limit": 256,
+  "truncation": false,
+  "held_constant_from": "reports/phase5/phase5a2/experiment_manifest.json",
+  "b_packed_control_from": "reports/phase5/phase5a2b/results.json",
+  "metric_implementation": "scripts.phase5a2_shadow_ab.evaluate_arm reused unchanged",
+  "classification": "Reuse frozen 5A2 hybrid QUALITY_KEYS against A as the primary reference and against B and B-PACKED diagnostically",
+  "advance_gate": {
+    "primary_quality_reference": "A",
+    "hybrid_evidence_recall_at_5_material_recovery_toward_or_exceeding_A": true,
+    "gating_query_regressions_vs_A": 0,
+    "silent_truncation": 0,
+    "provenance_gaps": 0,
+    "source_coverage_gaps": 0,
+    "unlabelled_overlaps": 0,
+    "deterministic_build_and_retrieval_repetitions": 2
+  },
+  "diagnostic_non_gating_queries": ["Q25", "Q26"],
+  "absence_metrics": null,
+  "candidate_C_implemented": false,
+  "semantic_chunking": false,
+  "provider_calls": 0,
+  "external_network_calls_during_evaluation": 0,
+  "tuning_after_results": false
+}

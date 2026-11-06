@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Any, Literal
 
 QuoteBindingFailure = Literal[
@@ -27,6 +28,7 @@ class QuoteBindingError(ValueError):
     def __init__(self, reason: QuoteBindingFailure, *, detail: str | None = None) -> None:
         self.reason = reason
         self.detail = detail
+        self.diagnostic: dict[str, Any] = {}
         message = reason if detail is None else f"{reason}:{detail}"
         super().__init__(message)
 
@@ -111,24 +113,46 @@ def convert_quote_observation_to_canonical(
 ) -> dict[str, Any]:
     """Convert one quote-based analyzer observation into canonical span observations."""
     support_spans: list[dict[str, Any]] = []
+    evidence_by_id = {entry["evidence_id"]: entry for entry in evidence_manifest}
+
+    def bind_with_context(quote_row: dict, *, role: str, index: int) -> QuoteBindingResult:
+        try:
+            return bind_quote_against_manifest(
+                evidence_id=quote_row["evidence_id"],
+                quote=quote_row["quote"],
+                evidence_manifest=evidence_manifest,
+            )
+        except QuoteBindingError as exc:
+            quote = quote_row["quote"]
+            evidence_id = quote_row["evidence_id"]
+            source = evidence_by_id.get(evidence_id)
+            exc.diagnostic = {
+                "claim_id": observation["claim_id"],
+                "evidence_id": evidence_id,
+                "quote_role": role,
+                "quote_index": index,
+                "quote_length": len(quote),
+                "quote_sha256": sha256(quote.encode("utf-8")).hexdigest(),
+                "source_sha256": source["source_sha256"] if source else None,
+                "exact_match_count": (
+                    len(find_exact_quote_matches(source["source_text"], quote))
+                    if source else None
+                ),
+            }
+            raise
+
     for index, quote_row in enumerate(observation["support_quotes"]):
-        result = bind_quote_against_manifest(
-            evidence_id=quote_row["evidence_id"],
-            quote=quote_row["quote"],
-            evidence_manifest=evidence_manifest,
-        )
+        result = bind_with_context(quote_row, role="support", index=index)
         support_spans.append(
             {"evidence_id": result.evidence_id, "start": result.start, "end": result.end}
         )
 
     blockers: list[dict[str, Any]] = []
-    for blocker in observation["blockers"]:
+    for blocker_index, blocker in enumerate(observation["blockers"]):
         evidence_spans: list[dict[str, Any]] = []
-        for quote_row in blocker["evidence_quotes"]:
-            result = bind_quote_against_manifest(
-                evidence_id=quote_row["evidence_id"],
-                quote=quote_row["quote"],
-                evidence_manifest=evidence_manifest,
+        for quote_index, quote_row in enumerate(blocker["evidence_quotes"]):
+            result = bind_with_context(
+                quote_row, role=f"blocker_{blocker_index}", index=quote_index,
             )
             evidence_spans.append(
                 {"evidence_id": result.evidence_id, "start": result.start, "end": result.end}

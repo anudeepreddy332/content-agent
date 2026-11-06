@@ -1,0 +1,24 @@
+{
+  "average_children_per_packed_unit": 1.1111111111111112,
+  "children_above_254": 0,
+  "deterministic_fingerprint": "017bcb283683943f30fb18849344ea3b0eac7f3327a22ff306cef5f8d0fd645f",
+  "duplicate_logical_ids": 0,
+  "group_size_histogram": {
+    "1": 431,
+    "2": 17,
+    "3": 4,
+    "4": 4,
+    "5": 1,
+    "6": 2
+  },
+  "packing_groups": 28,
+  "provenance_failures": 0,
+  "retrieval_chunks": 459,
+  "structural_boundary_violations": 0,
+  "token_distribution": {
+    "max": 254,
+    "median": 31,
+    "min": 7,
+    "p95": 209
+  }
+}

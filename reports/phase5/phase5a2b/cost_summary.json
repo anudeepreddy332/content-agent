@@ -1,0 +1,41 @@
+{
+  "B_PACKED_minus_A_ms": {
+    "bm25": 0.2982625,
+    "dense": 0.20115850000000002,
+    "hybrid": -0.00020950000000000135
+  },
+  "B_PACKED_over_A": {
+    "bm25": 3.700515634266364,
+    "dense": 5.12053832051374,
+    "hybrid": 0.9894652150956679
+  },
+  "B_PACKED_over_B": {
+    "bm25": 0.9057052412076838,
+    "dense": 0.8994825700221651,
+    "hybrid": 0.9684039568876421
+  },
+  "document_embedding_ms": {
+    "A": 645.340146,
+    "B": 1850.8903545,
+    "B-PACKED": 1973.7505835
+  },
+  "fusion_latency_scope": "hybrid timing measures RRF fusion only, excluding dense and BM25",
+  "latency_ms": {
+    "A": {
+      "bm25": 0.1104465,
+      "dense": 0.0488185,
+      "hybrid": 0.0198865
+    },
+    "B": {
+      "bm25": 0.4512605,
+      "dense": 0.27791200000000005,
+      "hybrid": 0.020319
+    },
+    "B-PACKED": {
+      "bm25": 0.408709,
+      "dense": 0.249977,
+      "hybrid": 0.019677
+    }
+  },
+  "scope": "mean of two per-run means; each run uses all 35 queries; milliseconds; descriptive local observations, not capacity evidence"
+}

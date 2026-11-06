@@ -126,6 +126,7 @@ def _run_fixture_case(
 ) -> dict:
     case = _load_case(case_id)
     state = _fixture_state(case)
+    state["run_id"] = f"{state['run_id']}-{material}-{claim_type}"
     inventory = json.dumps([
         _inventory_row(case["draft_text"], material=material, claim_type=claim_type)
     ])
@@ -291,7 +292,7 @@ def test_legacy_transport_failure_is_verification_error(monkeypatch, base_state)
                     ]
                 }
             ),
-            "parse_failed",
+            "verification_error",  # one invalid observation retry, then terminal
         ),
         (json.dumps({"observations": []}), "parse_failed"),
     ],

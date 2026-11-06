@@ -5,6 +5,8 @@ import json
 from openai import AuthenticationError, RateLimitError, APITimeoutError
 
 import agent.nodes as nodes
+from langgraph.graph import END
+from tests.workflow_fixtures import current_quality
 from tests.conftest import FakeLLMClient, fake_response, openai_error
 
 # ---------- Fault 1: DeepSeek auth / timeout / rate limit ----------
@@ -47,7 +49,13 @@ def test_retrieve_tavily_empty_results(base_state, monkeypatch):
         return []
 
     monkeypatch.setattr(nodes, "web_search", empty_search)
-    monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: base_state["kb_results"])
+    monkeypatch.setattr(
+        "agent.kb_backend.retrieve_kb",
+        lambda query, n_seeds=5: {
+            "kb_results": base_state["kb_results"],
+            "kb_backend": "cswp_local",
+        },
+    )
 
     result = nodes.retrieve_node(base_state)
 
@@ -64,7 +72,10 @@ def test_retrieve_tavily_errors_logged_not_fatal(base_state, monkeypatch):
         raise ConnectionError("tavily unreachable")
 
     monkeypatch.setattr(nodes, "web_search", exploding_search)
-    monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: [])
+    monkeypatch.setattr(
+        "agent.kb_backend.retrieve_kb",
+        lambda query, n_seeds=5: {"kb_results": [], "kb_backend": "cswp_local"},
+    )
 
     result = nodes.retrieve_node(base_state)  # must not raise
 
@@ -99,7 +110,10 @@ def test_retrieve_survives_kb_down(base_state, monkeypatch):
                         lambda query, max_results=5, force_refresh=False:
                         [{"title": "t", "url": f"https://e.com/{query[:10]}",
                           "content": "c", "score": 0.9}])
-    monkeypatch.setattr(nodes, "query_kb", lambda query, n_results=5: [])
+    monkeypatch.setattr(
+        "agent.kb_backend.retrieve_kb",
+        lambda query, n_seeds=5: {"kb_results": [], "kb_backend": "cswp_local"},
+    )
     result = nodes.retrieve_node(base_state)
     assert result["kb_results"] == []
     assert result["web_sources"], "web path unaffected by KB outage"
@@ -162,9 +176,9 @@ def test_draft_malformed_output_degrades_gracefully(base_state, monkeypatch):
 
     result = nodes.draft_node(base_state)  # must not raise
 
-    assert "[PARSE ERROR]" in result["draft_markdown"]
-    assert "not json at all" in result["draft_markdown"], \
-        "raw output preserved for debugging"
+    assert result["draft_status"] == "invalid"
+    assert result["draft_markdown"] == ""
+    assert "not json at all" not in json.dumps(result)
 
 
 # ---------- Fault 5: cost-gate breach ----------
@@ -194,14 +208,14 @@ def test_reflect_cost_gate_skips_llm(base_state, monkeypatch):
 def test_route_cost_gate_forces_hitl_over_revision(base_state):
     base_state.update(total_cost_usd=nodes.COST_GATE_USD,
                       iterations=0, reflection_score=2, grounding_score=0.1)
-    assert nodes.route_after_reflect(base_state) == "hitl", \
-        "cost gate must beat the revise gate even on a terrible draft"
+    assert nodes.route_after_reflect(base_state) == END, \
+        "resource exhaustion must terminate instead of entering review"
 
 
 def test_route_max_iterations_forces_hitl(base_state):
     base_state.update(iterations=nodes.MAX_ITERATIONS,
                       reflection_score=2, grounding_score=0.1)
-    assert nodes.route_after_reflect(base_state) == "hitl"
+    assert nodes.route_after_reflect(base_state) == END
 
 
 def test_parse_failure_routes_to_revision_when_capacity_remains(base_state, monkeypatch):
@@ -211,6 +225,7 @@ def test_parse_failure_routes_to_revision_when_capacity_remains(base_state, monk
     assert result["verification_status"] == "parse_failed"
     routed = {**base_state, **result, "iterations": 1, "reflection_score": 10,
               "grounding_score": 0.99, "total_cost_usd": 0.0}
+    routed = current_quality(routed)
     assert nodes.route_after_reflect(routed) == "draft"
 
 
@@ -224,15 +239,15 @@ def test_skipped_verification_fails_closed_when_capacity_remains(base_state, mon
     assert result["verification_status"] == "skipped_cost_gate"
     routed = {**base_state, **result, "iterations": 1, "reflection_score": 10,
               "grounding_score": 0.99, "total_cost_usd": 0.0}
-    assert nodes.route_after_reflect(routed) == "draft"
+    assert nodes.route_after_reflect(routed) == END
 
 
 def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path):
+    from tests.signoff_fixtures import renderable_approved_state
+    base_state.update(gate1_reviewer_id="failure-reviewer", gate1_review_origin="authenticated")
     """B6 regression: html_filename must be <slug>.html regardless of local archive
     state, so republishing a topic is a modification (tagged_and_merged), not a new file."""
     import agent.nodes as nodes
-    monkeypatch.setattr(nodes, "_get_client", lambda: object())
-    monkeypatch.setattr(nodes, "_render_technical_dive_via_llm", lambda **kw: ("<p>td</p>", 0, 0.0))
     monkeypatch.chdir(tmp_path)
     (tmp_path / "prompts").mkdir()
     (tmp_path / "prompts" / "html_template.md").write_text(
@@ -241,8 +256,12 @@ def test_published_filename_always_slug_based(base_state, monkeypatch, tmp_path)
         '</main></body></html>')
     base_state.update(slug="republish-target",
                       draft_sections={"problem_framing": "x", "technical_dive": "y",
-                                      "code_snippets": "", "takeaways": "z"})
-    r1 = nodes.html_gen_node({**base_state, "run_id": "run-aaaaaa"})
-    r2 = nodes.html_gen_node({**base_state, "run_id": "run-bbbbbb"})  # archive now exists
+                                      "code_snippets": "print(1)", "takeaways": "z"})
+    r1 = nodes.html_gen_node(renderable_approved_state(
+        {**base_state, "run_id": "run-aaaaaa"}, reviewer_id="failure-reviewer",
+        sections=base_state["draft_sections"]))
+    r2 = nodes.html_gen_node(renderable_approved_state(
+        {**base_state, "run_id": "run-bbbbbb"}, reviewer_id="failure-reviewer",
+        sections=base_state["draft_sections"]))
     assert r1["html_filename"] == "republish-target.html"
     assert r2["html_filename"] == "republish-target.html"   # NOT suffixed

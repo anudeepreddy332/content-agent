@@ -28,7 +28,7 @@ class AgentState(TypedDict):
 
     # Retrieval
     web_sources: list           # [{title, url, content, score}]
-    kb_results: list            # [{text, source, chunk_index, distance, rrf_score}]
+    kb_results: list            # qualified: packed CSWP units + provenance; legacy: [{text, source, ...}]
 
     # Verification
     grounding_report: list      # [{claim, source_url, confidence, status, specificity,
@@ -68,11 +68,26 @@ class AgentState(TypedDict):
     reflection_score: int       # 1–10
     reflection_notes: str
     reflection_provenance: dict # judge output vs deterministic fallback
-    iterations: int             # max 2
+    iterations: int             # monotonic lifetime draft ordinal; never routing authority
+    quality_episode: int
+    quality_attempts: int        # 0..2 in the current episode
+    content_feedback_count: int  # 0..2 accepted events per run
+    html_revision_attempts: int  # 0..2 attempts, including failed/discarded revisions
+    draft_status: str
+    verification_identity: dict | None
+    reflection_identity: dict | None
+    approved_draft_identity: dict | None
+    terminal_status: str | None
+    terminal_message: str | None
 
     # HITL
     hitl_status: Literal["pending", "approved", "rejected", "feedback"]
     hitl_feedback: str | None
+    gate1_reviewer_id: str | None   # server-authenticated principal, never a secret
+    gate2_reviewer_id: str | None
+    gate1_review_origin: Literal["authenticated", "synthetic"] | None
+    gate2_review_origin: Literal["authenticated", "synthetic"] | None
+    gate1_evidence_signoff: dict | None  # server-minted, current claim/source-bound receipt
     html_review_status: Literal["approved", "rejected", "changes"] | None   # P2 post-render gate
     html_feedback: str | None   # P2: design/layout note for html_revise — NEVER content
 
@@ -81,6 +96,7 @@ class AgentState(TypedDict):
     html_output: str | None
     html_filename: str | None
     article_body_html: str | None
+    initial_html_equivalence: dict | None  # current draft and initial visible-content binding
     html_sha256: str | None
     html_policy_version: str | None
     approved_html_sha256: str | None
@@ -99,6 +115,8 @@ class AgentState(TypedDict):
     prompt_version: str
     total_tokens: int
     total_cost_usd: float
+    provider_usage_status: Literal["known", "unknown"]  # unknown means some dispatched usage was lost
+    call_b_accounted_requests: list[str]  # logical request IDs already included in known totals
     latency_ms: dict            # {draft, retrieve, verify, reflect, html_gen, git}
 
     # Per-iteration verify metrics (M4 instrumentation): one entry per verify pass.

@@ -1,0 +1,75 @@
+{
+  "branch": "feature/phase5-rag-hardening",
+  "embeddings_generated": 0,
+  "execution_starting_head": "260dfd7450de30f4f5aa333c4fcd390d3eff8b7a",
+  "focused_tests": {
+    "duration_seconds": 4.37,
+    "exit_code": 0,
+    "files": [
+      "tests/test_phase5a1_shadow.py",
+      "tests/test_phase5a0_baseline.py",
+      "tests/test_retrieval_golden_v2.py"
+    ],
+    "passed": 54
+  },
+  "full_manifest_byte_comparison": "IDENTICAL",
+  "full_offline_suite": {
+    "duration_seconds": 27.98,
+    "errors": 0,
+    "exit_code": 0,
+    "failed": 0,
+    "network_audit": {
+      "external_socket_events": 0,
+      "local_harness_socket_events": 423
+    },
+    "network_audit_scope": "Python audit hooks for connect/getaddrinfo/sendto/sendmsg; loopback allowed for existing browser/server harnesses. Native browser process traffic is covered by existing browser assertions, not Python audit hooks.",
+    "passed": 1291,
+    "warnings": 3
+  },
+  "git_diff_check": "PASS",
+  "implementation_sha256": {
+    "scripts/phase5a1_shadow.py": "de071d380f51e84532080c56f694c533f55d519647ab76dfc4f9e123184ce8c8",
+    "tests/test_phase5a1_shadow.py": "e9aaeb421728512da26c2786b8f0f754eae4fe3460bc3a5dabd1ff34cf35e8b0"
+  },
+  "independent_cli_builds": 2,
+  "initial_sandbox_attempt": {
+    "cause": "macOS sandbox denied Chromium MachPortRendezvous startup and local socket binding",
+    "duration_seconds": 24.45,
+    "errors": 6,
+    "failed": 1,
+    "passed": 1284,
+    "resolution": "same full suite and audit guard rerun with approved local permissions; no production/test behavior changes"
+  },
+  "manifest_file_sha256": "bbea98a77a7cd67e744b596f0809379d067021850a91e6dac390aa8af11c9a65",
+  "production_retrieval_changed": false,
+  "provider_calls": 0,
+  "qdrant_mutated": false,
+  "ready_for_5a2": true,
+  "representation_checks": {
+    "block_count": 498,
+    "child_count": 510,
+    "children_above_254": 0,
+    "duplicate_logical_ids": 0,
+    "overflow_count": 0,
+    "provenance_failures": 0,
+    "source_count": 20,
+    "structural_boundary_violations": 0
+  },
+  "required_parent": "260dfd7450de30f4f5aa333c4fcd390d3eff8b7a",
+  "retrieval_golden_v2": {
+    "evidence_spans_validated": 54,
+    "invalid_source_refs": 0,
+    "query_count": 35,
+    "quote_span_mismatches": 0
+  },
+  "retrieval_quality_evaluation": "NOT_RUN; reserved for 5A2",
+  "ruff_fatal_tier": "PASS",
+  "ruff_new_python_files": "PASS",
+  "run_1_fingerprint": "a9402fea0c4fbbae6613346370c0759b0239d3d870a386526980e1c40815e852",
+  "run_2_fingerprint": "a9402fea0c4fbbae6613346370c0759b0239d3d870a386526980e1c40815e852",
+  "schema_version": "phase5a1_validation_v1",
+  "semantic_chunking_used": false,
+  "shadow_build_network_calls": 0,
+  "status": "PHASE-5A1-SHADOW-STRUCTURAL-CHUNKS-READY",
+  "unresolved_p0_p1": []
+}

@@ -16,8 +16,8 @@ Design (freeze-scoped, deliberately simple):
 Run state lives in two places:
   * Durable graph state -> SqliteSaver (survives restart).
   * In-memory REGISTRY (status, interrupt payload, result summary) -> volatile.
-    On restart, in-flight runs are recoverable from the checkpointer but the
-    registry is not rebuilt automatically. Documented freeze limitation.
+    On restart, pending reviews recover from the checkpointer on lookup with
+    fresh review IDs; completed run summaries remain a volatile limitation.
 """
 
 import os
@@ -26,8 +26,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import hmac
+import hashlib
 import json
 import queue
+import secrets
 import asyncio
 import subprocess
 import threading
@@ -48,6 +50,16 @@ from langgraph.types import Command
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from agent.graph import build_graph
+from agent.reviewer_identity import (
+    approval_origin_valid,
+    InvalidReviewerCredential,
+    ReviewerConfigurationError,
+    authenticate_reviewer,
+    reviewer_context,
+)
+from agent.evidence_signoff import EvidenceSignoffError, material_review_bundle, receipt_valid
+from agent.initial_html_equivalence import receipt_valid as initial_equivalence_valid
+from agent.workflow import terminal_api_status, terminal, project_terminal
 from agent.html_policy import REVIEWER_APP_CSP
 from main import _build_initial_state, _make_slug, _write_telemetry
 from observability.logger import get_logger
@@ -75,6 +87,108 @@ LOCK = threading.Lock()
 _STATIC_DIR = Path(__file__).parent.parent / "static"
 _SENTINEL = object()  # marks the end of one streamed compute segment in a run's event queue
 
+
+def _review_binding(run_id: str, payload: dict) -> tuple[str, str]:
+    gate = payload.get("type")
+    if gate not in ("hitl_review", "hitl_html_review") or payload.get("run_id", run_id) != run_id:
+        raise ValueError("unexpected review gate or run")
+    artifact = payload.get("draft_sha256" if gate == "hitl_review" else "html_sha256")
+    if gate == "hitl_review" and isinstance(payload.get("material_review"), dict):
+        if not isinstance(artifact, str) or len(artifact) != 64:
+            raise ValueError("missing Gate 1 draft identity")
+        evidence_digest = payload["material_review"].get("evidence_binding_sha256")
+        if not isinstance(evidence_digest, str) or len(evidence_digest) != 64:
+            raise ValueError("missing Gate 1 evidence identity")
+        artifact = hashlib.sha256(f"{artifact}:{evidence_digest}".encode()).hexdigest()
+    if not isinstance(artifact, str) or len(artifact) != 64:
+        # Historical mocked graph fixtures omit the artifact. Their entire
+        # interrupt payload remains bound; production interrupts carry the SHA.
+        stable_payload = {key: value for key, value in payload.items() if key != "review_id"}
+        artifact = hashlib.sha256(json.dumps(stable_payload, sort_keys=True, default=str).encode()).hexdigest()
+    return gate, artifact
+
+
+def _issue_review(run_id: str, payload: dict) -> dict:
+    """Issue a new opaque identity for this exact pending gate and artifact."""
+    gate, artifact = _review_binding(run_id, payload)
+    review_id = secrets.token_urlsafe(32)
+    review = {**payload, "review_id": review_id}
+    REGISTRY[run_id].update(
+        status="awaiting_review", interrupt_payload=review,
+        review_binding={"review_id": review_id, "gate": gate, "artifact": artifact, "run_id": run_id},
+        reserved_review=None,
+    )
+    return review
+
+
+def _recover_pending(run_id: str) -> dict | None:
+    """After restart, issue a fresh ID for a still-paused checkpoint."""
+    reg = REGISTRY.get(run_id)
+    if reg is not None:
+        return reg
+    config = {"configurable": {"thread_id": run_id}}
+    try:
+        snapshot = GRAPH.get_state(config)
+        payload = _extract_interrupt({}, config)
+    except Exception:
+        return None
+    if not isinstance(payload, dict) or payload.get("run_id") != run_id:
+        return None
+    reg = {"status": "queued", "initial_state": dict(getattr(snapshot, "values", {}) or {}),
+           "result": None, "interrupt_payload": None, "error": None, "events": queue.Queue()}
+    REGISTRY[run_id] = reg
+    _issue_review(run_id, payload)
+    return reg
+
+
+def _reserve_review(run_id: str, review_id: str) -> dict:
+    """Called under LOCK: one request consumes the pending identity before queueing."""
+    reg = _recover_pending(run_id)
+    if reg is None:
+        raise HTTPException(404, "unknown run_id")
+    if reg["status"] != "awaiting_review":
+        raise HTTPException(409, f"run is '{reg['status']}', not awaiting_review")
+    binding = reg.get("review_binding")
+    if not isinstance(binding, dict) or not review_id or not hmac.compare_digest(review_id, binding["review_id"]):
+        raise HTTPException(409, "missing or stale review_id")
+    reg.update(status="resuming", reserved_review=dict(binding),
+               reserved_payload=dict(reg["interrupt_payload"]), interrupt_payload=None)
+    return binding
+
+
+def _resume_binding_valid(run_id: str, invoke_input, config: dict) -> bool:
+    """Recheck the reserved gate/artifact against the persisted interrupt."""
+    if not isinstance(invoke_input, Command):
+        return True
+    with LOCK:
+        reg = REGISTRY.get(run_id) or {}
+        binding = reg.get("reserved_review")
+    if not isinstance(binding, dict) or invoke_input.resume.get("review_id") != binding["review_id"]:
+        return False
+    try:
+        snapshot = GRAPH.get_state(config)
+        pending = _extract_interrupt({}, config)
+    except Exception:
+        return False
+    if pending is None and not getattr(snapshot, "config", None):
+        # Legacy test graph doubles have no persisted checkpoint. Production
+        # SqliteSaver snapshots always carry a config and a pending interrupt.
+        pending = reg.get("reserved_payload")
+    if not isinstance(pending, dict):
+        return False
+    try:
+        gate, artifact = _review_binding(run_id, pending)
+    except ValueError:
+        return False
+    if gate == "hitl_review" and isinstance(pending.get("material_review"), dict):
+        try:
+            current = material_review_bundle(getattr(snapshot, "values", {}) or {})
+        except (EvidenceSignoffError, KeyError, TypeError):
+            return False
+        if current["evidence_binding_sha256"] != pending["material_review"].get("evidence_binding_sha256"):
+            return False
+    return gate == binding["gate"] and artifact == binding["artifact"]
+
 def _extract_interrupt(result, config):
     """Return the interrupt payload if the graph is paused, else None.
     Defensive across langgraph versions: checks the returned __interrupt__ first,
@@ -89,35 +203,41 @@ def _extract_interrupt(result, config):
             return it.value
     return None
 
-def _advance(run_id: str, invoke_input, finalizing: bool):
+def _advance(run_id: str, invoke_input, finalizing: bool, reviewer_id: str | None = None):
     """Run one compute segment to the next interrupt or to termination.
     Used for both the initial run (invoke_input=initial_state) and resumes
     (invoke_input=Command(resume=...))."""
     config = {"configurable": {"thread_id": run_id}}
+    if not _resume_binding_valid(run_id, invoke_input, config):
+        with LOCK:
+            REGISTRY[run_id].update(status="execution_failed", error="stale review binding")
+        return
     with LOCK:
         REGISTRY[run_id]["status"] = "finalizing" if finalizing else "running"
+        trusted_review_id = (REGISTRY[run_id].get("reserved_review") or {}).get("review_id")
     try:
-        result = GRAPH.invoke(invoke_input, config)
+        with reviewer_context(reviewer_id, run_id, review_id=trusted_review_id):
+            result = GRAPH.invoke(invoke_input, config)
     except Exception as e:  # mirror main.py crash handler
         log.error("api.run_crash", run_id=run_id, error=str(e))
         crash = dict(REGISTRY[run_id]["initial_state"])
         crash["error_log"] = [f"pipeline crash: {e}"]
         crash["verification_status"] = "upstream_failed"
+        crash.update(terminal("execution_failed"))
         _write_telemetry(crash)
         with LOCK:
-            REGISTRY[run_id].update(status="error", error=str(e))
+            REGISTRY[run_id].update(status="execution_failed", result=crash, error=str(e))
         return
 
+    result = project_terminal(result)
     payload = _extract_interrupt(result, config)
     with LOCK:
         if payload is not None:
-            REGISTRY[run_id].update(status="awaiting_review", interrupt_payload=payload)
+            _issue_review(run_id, payload)
             return
         # Terminal. Reject path never runs git; approve path does.
         REGISTRY[run_id]["result"] = result
-        rejected = (result.get("hitl_status") == "rejected"
-                    or result.get("html_review_status") == "rejected")
-        REGISTRY[run_id]["status"] = "rejected" if rejected else "complete"
+        REGISTRY[run_id]["status"] = terminal_api_status(result)
     if result.get("git_status") == "failed":
         # ERROR level (not just git_node's own log line) so this is grep-able for an
         # external log-based alert — docs/PRODUCTION_READINESS.md item 2. No dashboard here,
@@ -127,12 +247,12 @@ def _advance(run_id: str, invoke_input, finalizing: bool):
     _write_telemetry(result)
 
 
-def _submit(run_id, invoke_input, finalizing):
+def _submit(run_id, invoke_input, finalizing, reviewer_id=None):
     """Submit to the worker, or run inline when API_SYNC=1 (tests only)."""
     if os.environ.get("API_SYNC") == "1":
-        _advance(run_id, invoke_input, finalizing)
+        _advance(run_id, invoke_input, finalizing, reviewer_id)
     else:
-        EXECUTOR.submit(_advance, run_id, invoke_input, finalizing)
+        EXECUTOR.submit(_advance, run_id, invoke_input, finalizing, reviewer_id)
 
 
 # ---- streaming variant (drives the demo SPA) -------------------------------
@@ -151,10 +271,7 @@ def _node_headline(node: str, delta: dict) -> dict:
         d["kb_results"] = len(delta["kb_results"])
     if isinstance(delta.get("grounding_report"), list):
         d["claims"] = len(delta["grounding_report"])
-    if delta.get("grounding_score") is not None:
-        d["grounding_score"] = round(delta["grounding_score"], 3)
-    if delta.get("reflection_score") is not None:
-        d["reflection_score"] = delta["reflection_score"]
+    # Do not prime Gate-1 evidence review with favorable automated labels.
     if delta.get("iterations") is not None:
         d["iterations"] = delta["iterations"]
     if delta.get("html_filename"):
@@ -167,47 +284,56 @@ def _node_headline(node: str, delta: dict) -> dict:
     return d
 
 
-def _advance_streaming(run_id, invoke_input, finalizing):
+def _advance_streaming(run_id, invoke_input, finalizing, reviewer_id=None):
     """Run one compute segment with GRAPH.stream, emitting per-node events."""
     config = {"configurable": {"thread_id": run_id}}
+    if not _resume_binding_valid(run_id, invoke_input, config):
+        with LOCK:
+            REGISTRY[run_id].update(status="execution_failed", error="stale review binding")
+        q = REGISTRY[run_id]["events"]
+        q.put({"event": "error", "error": "stale review binding"})
+        q.put(_SENTINEL)
+        return
     q = REGISTRY[run_id]["events"]
     with LOCK:
         REGISTRY[run_id]["status"] = "finalizing" if finalizing else "running"
+        trusted_review_id = (REGISTRY[run_id].get("reserved_review") or {}).get("review_id")
     result: dict = {}
     try:
-        for mode, chunk in GRAPH.stream(invoke_input, config,
-                                        stream_mode=["updates", "values"]):
-            if mode == "values":
-                result = chunk
-                continue
-            if not isinstance(chunk, dict) or "__interrupt__" in chunk:
-                continue
-            for node_name, delta in chunk.items():
-                q.put({"event": "node", "node": node_name,
-                       "headline": _node_headline(node_name, delta or {})})
+        with reviewer_context(reviewer_id, run_id, review_id=trusted_review_id):
+            for mode, chunk in GRAPH.stream(invoke_input, config,
+                                            stream_mode=["updates", "values"]):
+                if mode == "values":
+                    result = chunk
+                    continue
+                if not isinstance(chunk, dict) or "__interrupt__" in chunk:
+                    continue
+                for node_name, delta in chunk.items():
+                    q.put({"event": "node", "node": node_name,
+                           "headline": _node_headline(node_name, delta or {})})
     except Exception as e:  # mirror _advance / main.py crash handler
         log.error("api.stream_crash", run_id=run_id, error=str(e))
         crash = dict(REGISTRY[run_id]["initial_state"])
         crash["error_log"] = [f"pipeline crash: {e}"]
         crash["verification_status"] = "upstream_failed"
+        crash.update(terminal("execution_failed"))
         _write_telemetry(crash)
         with LOCK:
-            REGISTRY[run_id].update(status="error", error=str(e))
+            REGISTRY[run_id].update(status="execution_failed", result=crash, error=str(e))
         q.put({"event": "error", "error": str(e)})
         q.put(_SENTINEL)
         return
 
     if not result:  # defensive: recover final state from the checkpoint
         result = getattr(GRAPH.get_state(config), "values", {}) or {}
+    result = project_terminal(result)
     payload = _extract_interrupt(result, config)
     with LOCK:
         if payload is not None:
-            REGISTRY[run_id].update(status="awaiting_review", interrupt_payload=payload)
+            payload = _issue_review(run_id, payload)
         else:
             REGISTRY[run_id]["result"] = result
-            rejected = (result.get("hitl_status") == "rejected"
-                        or result.get("html_review_status") == "rejected")
-            REGISTRY[run_id]["status"] = "rejected" if rejected else "complete"
+            REGISTRY[run_id]["status"] = terminal_api_status(result)
     if payload is not None:
         q.put({"event": "gate", "review": payload})
     else:
@@ -219,8 +345,11 @@ def _advance_streaming(run_id, invoke_input, finalizing):
                       error_log=result.get("error_log", []))
         _write_telemetry(result)
         q.put({"event": "done", "status": REGISTRY[run_id]["status"], "summary": {
+            "terminal_status": result.get("terminal_status"),
+            "terminal_message": result.get("terminal_message"),
             "grounding_score": result.get("grounding_score"),
             "total_cost_usd": result.get("total_cost_usd"),
+            "provider_usage_status": result.get("provider_usage_status", "known"),
             "git_status": result.get("git_status"),
             "html_filename": result.get("html_filename"),
             "slug": result.get("slug"),
@@ -228,11 +357,11 @@ def _advance_streaming(run_id, invoke_input, finalizing):
     q.put(_SENTINEL)
 
 
-def _submit_stream(run_id, invoke_input, finalizing):
+def _submit_stream(run_id, invoke_input, finalizing, reviewer_id=None):
     if os.environ.get("API_SYNC") == "1":
-        _advance_streaming(run_id, invoke_input, finalizing)
+        _advance_streaming(run_id, invoke_input, finalizing, reviewer_id)
     else:
-        EXECUTOR.submit(_advance_streaming, run_id, invoke_input, finalizing)
+        EXECUTOR.submit(_advance_streaming, run_id, invoke_input, finalizing, reviewer_id)
 
 
 # ---- auth (fail closed) ----
@@ -243,6 +372,15 @@ def require_auth(authorization: str = Header(default="")):
     presented = authorization[7:] if authorization.startswith("Bearer ") else ""
     if not hmac.compare_digest(presented, expected):
         raise HTTPException(401, "invalid or missing bearer token")
+
+
+def require_reviewer(x_reviewer_token: str = Header(default="")) -> str:
+    try:
+        return authenticate_reviewer(x_reviewer_token)
+    except ReviewerConfigurationError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except InvalidReviewerCredential as exc:
+        raise HTTPException(401, str(exc)) from exc
 
 # ---- request models ----
 class BriefRequirementInput(BaseModel):
@@ -275,9 +413,12 @@ def _seed_initial_state(body: CreateRun, *, slug: str, run_id: str) -> dict:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Pay the one-time encoder load + BM25 build at startup (M5 warmup), so the
-    # first run's retrieve_kb telemetry measures steady-state, same as the CLI.
-    from tools.query_kb import warmup as kb_warmup
+    # Warm the selected CSWP backend at startup so first-run retrieve_kb telemetry
+    # measures steady-state query cost, same as the CLI.
+    from agent.kb_backend.selector import abort_on_invalid_kb_backend
+    from agent.kb_backend import warmup as kb_warmup
+
+    abort_on_invalid_kb_backend()
     log.info("api.warmup", **kb_warmup())
     yield
     EXECUTOR.shutdown(wait=False)
@@ -330,7 +471,7 @@ def create_run(body: CreateRun):
 @app.get("/runs/{run_id}", dependencies=[Depends(require_auth)])
 def get_run(run_id: str):
     with LOCK:
-        reg = REGISTRY.get(run_id)
+        reg = _recover_pending(run_id)
         if not reg:
             raise HTTPException(404, "unknown run_id")
         out = {"run_id": run_id, "status": reg["status"], "error": reg["error"]}
@@ -339,8 +480,14 @@ def get_run(run_id: str):
         if reg["result"] is not None:
             r = reg["result"]
             out["summary"] = {
+                "terminal_status": r.get("terminal_status"),
+                "terminal_message": r.get("terminal_message"),
+                "quality_attempts": r.get("quality_attempts"),
+                "content_feedback_count": r.get("content_feedback_count"),
+                "html_revision_attempts": r.get("html_revision_attempts"),
                 "grounding_score": r.get("grounding_score"),
                 "total_cost_usd": r.get("total_cost_usd"),
+                "provider_usage_status": r.get("provider_usage_status", "known"),
                 "hitl_status": r.get("hitl_status"),
                 "html_review_status": r.get("html_review_status"),
                 "git_status": r.get("git_status"),
@@ -349,29 +496,27 @@ def get_run(run_id: str):
         return out
 
 
-def _resume(run_id: str, resume_value: dict):
+def _resume(run_id: str, resume_value: dict, reviewer_id: str, review_id: str):
     with LOCK:
-        reg = REGISTRY.get(run_id)
-        if not reg:
-            raise HTTPException(404, "unknown run_id")
-        if reg["status"] != "awaiting_review":
-            raise HTTPException(409, f"run is '{reg['status']}', not awaiting_review")
-    _submit(run_id, Command(resume=resume_value), finalizing=True)
+        binding = _reserve_review(run_id, review_id)
+    _submit(run_id, Command(resume={**resume_value, "review_id": binding["review_id"]}),
+            finalizing=True, reviewer_id=reviewer_id)
     return {"run_id": run_id, "status": "resuming"}
 
 
 @app.post("/runs/{run_id}/approve", dependencies=[Depends(require_auth)])
-def approve(run_id: str):
-    return _resume(run_id, {"action": "approve"})
+def approve(run_id: str, body: dict | None = None, reviewer_id: str = Depends(require_reviewer),
+            x_review_id: str = Header(default="")):
+    return _resume(run_id, {"action": "approve", "signoff": body}, reviewer_id, x_review_id)
 
 
 @app.post("/runs/{run_id}/reject", dependencies=[Depends(require_auth)])
-def reject(run_id: str):
-    return _resume(run_id, {"action": "reject"})
+def reject(run_id: str, reviewer_id: str = Depends(require_reviewer), x_review_id: str = Header(default="")):
+    return _resume(run_id, {"action": "reject"}, reviewer_id, x_review_id)
 
 @app.post("/runs/{run_id}/feedback", dependencies=[Depends(require_auth)])
-def feedback(run_id: str, body: Feedback):
-    return _resume(run_id, {"action": "feedback", "feedback": body.feedback})
+def feedback(run_id: str, body: Feedback, reviewer_id: str = Depends(require_reviewer), x_review_id: str = Header(default="")):
+    return _resume(run_id, {"action": "feedback", "feedback": body.feedback}, reviewer_id, x_review_id)
 
 
 # ---- demo SPA: streaming UI surface (additive) -----------------------------
@@ -394,30 +539,28 @@ def ui_create_run(body: CreateRun):
     return {"run_id": run_id, "status": "queued", "slug": slug}
 
 
-def _resume_stream(run_id: str, resume_value: dict):
+def _resume_stream(run_id: str, resume_value: dict, reviewer_id: str, review_id: str):
     with LOCK:
-        reg = REGISTRY.get(run_id)
-        if not reg:
-            raise HTTPException(404, "unknown run_id")
-        if reg["status"] != "awaiting_review":
-            raise HTTPException(409, f"run is '{reg['status']}', not awaiting_review")
-    _submit_stream(run_id, Command(resume=resume_value), finalizing=True)
+        binding = _reserve_review(run_id, review_id)
+    _submit_stream(run_id, Command(resume={**resume_value, "review_id": binding["review_id"]}),
+                   finalizing=True, reviewer_id=reviewer_id)
     return {"run_id": run_id, "status": "resuming"}
 
 
 @app.post("/ui/runs/{run_id}/approve", dependencies=[Depends(require_auth)])
-def ui_approve(run_id: str):
-    return _resume_stream(run_id, {"action": "approve"})
+def ui_approve(run_id: str, body: dict | None = None, reviewer_id: str = Depends(require_reviewer),
+               x_review_id: str = Header(default="")):
+    return _resume_stream(run_id, {"action": "approve", "signoff": body}, reviewer_id, x_review_id)
 
 
 @app.post("/ui/runs/{run_id}/reject", dependencies=[Depends(require_auth)])
-def ui_reject(run_id: str):
-    return _resume_stream(run_id, {"action": "reject"})
+def ui_reject(run_id: str, reviewer_id: str = Depends(require_reviewer), x_review_id: str = Header(default="")):
+    return _resume_stream(run_id, {"action": "reject"}, reviewer_id, x_review_id)
 
 
 @app.post("/ui/runs/{run_id}/feedback", dependencies=[Depends(require_auth)])
-def ui_feedback(run_id: str, body: Feedback):
-    return _resume_stream(run_id, {"action": "feedback", "feedback": body.feedback})
+def ui_feedback(run_id: str, body: Feedback, reviewer_id: str = Depends(require_reviewer), x_review_id: str = Header(default="")):
+    return _resume_stream(run_id, {"action": "feedback", "feedback": body.feedback}, reviewer_id, x_review_id)
 
 
 @app.get("/ui/runs/{run_id}/events", dependencies=[Depends(require_auth)])
@@ -494,6 +637,11 @@ def ui_publish(run_id: str):
         if not reg:
             raise HTTPException(404, "unknown run_id")
         result = reg.get("result") or {}
+        if (not approval_origin_valid(result, 1, publishing=True)
+                or not approval_origin_valid(result, 2, publishing=True)
+                or not receipt_valid(result, publishing=True)
+                or not initial_equivalence_valid(result)):
+            raise HTTPException(409, "current Gate 1, initial HTML, and Gate 2 approvals are required")
         git_status = result.get("git_status")
         if git_status not in ("merged", "tagged_and_merged"):
             raise HTTPException(409, f"run git_status is {git_status!r}, "

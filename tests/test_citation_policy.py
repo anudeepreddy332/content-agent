@@ -8,6 +8,7 @@ from __future__ import annotations
 from langgraph.graph import END
 
 import agent.nodes as nodes
+from tests.workflow_fixtures import current_quality
 from agent.semantic_analyzer.status_engine import sha256_utf8
 from agent.claim_inventory import build_claim_inventory
 from agent.citation_policy import (
@@ -55,7 +56,7 @@ def _inventory(draft, rows, reqs=None):
 
 
 def _span(*eids):
-    return [{"evidence_id": e, "start": 0, "end": 3, "text": e} for e in eids]
+    return [{"evidence_id": e, "start": 0, "end": len(e), "text": e} for e in eids]
 
 
 def _row(claim_id, status, *, support=None, analysis_validity="VALID"):
@@ -95,13 +96,13 @@ def _state_with(base_state, draft, inv, report, *, iterations=1, **extra):
         "evidence_registry": _registry(),
         "web_sources": [
             {"title": "Source One", "url": "https://example.com/e1",
-             "content": "e1 body", "score": 0.9},
+             "content": "WEB-001 body", "score": 0.9},
             {"title": "Source Two", "url": "https://example.com/e2",
-             "content": "e2 body", "score": 0.8},
+             "content": "WEB-002 body", "score": 0.8},
         ],
     })
     state.update(extra)
-    return state
+    return current_quality(state)
 
 
 def _verified(base_state, draft, rows, supports, **extra):
@@ -110,6 +111,8 @@ def _verified(base_state, draft, rows, supports, **extra):
         _row(c["claim_id"], "verified", support=s)
         for c, s in zip(inv["claims"], supports)
     ]
+    for claim, observation in zip(inv["claims"], report):
+        observation["claim"] = claim["claim_text"]
     return _state_with(base_state, draft, inv, report, **extra), inv
 
 
@@ -255,7 +258,7 @@ def test_I_overlapping_nonidentical_anchors_fail_closed(base_state):
     res = evaluate_citation_policy(state=state)
     assert res.decision == CITATION_HITL
     assert "overlapping_nonidentical_anchors" in res.reason_codes
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
 
 
 def test_J_nonmaterial_without_citation_does_not_hard_fail(base_state):
@@ -360,7 +363,7 @@ def test_O_high_reflection_cannot_override_citation_failure(base_state):
         "evidence_ids": [E1],
     }]
     state["reflection_score"] = 10
-    assert nodes.route_after_reflect(state) == "hitl"
+    assert nodes.route_after_reflect(state) == END
     assert nodes.publication_safety_accepted(state) is False
 
 
@@ -435,28 +438,45 @@ def test_Q_api_approve_cannot_bypass_citation_failure(base_state, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_R_citation_rendering_leaves_canonical_draft_sha_unchanged(base_state, monkeypatch):
-    draft = "Dropout randomly zeroes activations during training."
-    rows = [_claim_row(draft)]
-    state, inv = _verified(base_state, draft, rows, [[E1]])
-    state["draft_sections"] = {
-        "problem_framing": draft,
-        "technical_dive": draft,
+    from agent.reviewer_identity import reviewer_context
+    from tests.signoff_fixtures import supported_signoff
+    claim = "Dropout randomly zeroes activations during training."
+    sections = {
+        "problem_framing": claim,
+        "technical_dive": claim,
         "code_snippets": "```python\nprint(1)\n```",
         "takeaways": "- keep going",
     }
+    draft = nodes._assemble_markdown(base_state["topic"], sections)
+    rows = [_claim_row(claim)]
+    state, inv = _verified(base_state, draft, rows, [[E1]])
+    state["draft_sections"] = sections
+    with reviewer_context("citation-reviewer", state["run_id"], review_id="citation-review"):
+        state.update(nodes.hitl_approve_update(
+            state, supported_signoff(state), submitted_review_id="citation-review"))
     sha_before = sha256_utf8(state["draft_markdown"])
-    monkeypatch.setattr(
-        nodes, "_render_technical_dive_via_llm",
-        lambda **kw: (f"<p>{draft}</p>", 0, 0.0),
-    )
     out = nodes.html_gen_node(state)
     assert sha256_utf8(state["draft_markdown"]) == sha_before
     assert inv["draft_sha256"] == sha_before
     assert out.get("html_output")
     assert "⟦cite:" not in state["draft_markdown"]
     html = out["html_output"]
+    assert html.count("<sup>1</sup>") == len(inv["claims"][0]["occurrences"])
     assert "Source One" in html or "example.com/e1" in html
     assert "example.com/e2" not in html  # uncited retrieved source must not appear
+    from tests.conftest import fake_response
+
+    state.update(out)
+    state["html_feedback"] = "Improve layout"
+    moved = state["article_body_html"].replace(
+        f"{claim}<sup>1</sup>", f"<sup>1</sup>{claim}", 1)
+    assert moved != state["article_body_html"]
+    monkeypatch.setattr(nodes, "_get_client", lambda: object())
+    monkeypatch.setattr(nodes, "_llm_call", lambda _client, **_kw: fake_response(moved))
+    revision = nodes.html_revise_node(state)
+    assert revision["article_body_html"] == state["article_body_html"]
+    assert revision["html_sha256"] == state["html_sha256"]
+    assert any("DISCARDED" in entry for entry in revision["error_log"])
 
 
 def test_S_plan_for_draft_n_cannot_certify_draft_n1(base_state):
@@ -534,4 +554,4 @@ def test_pre2a_absent_inventory_preserves_slice1_pass(base_state):
     res = evaluate_citation_policy(state=state)
     assert res.decision == CITATION_PASS
     assert nodes.citation_policy_accepted(state) is True
-    assert nodes.route_after_hitl(state) == "html_gen"
+    assert nodes.route_after_hitl(state) == END

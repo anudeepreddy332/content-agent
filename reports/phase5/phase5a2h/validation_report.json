@@ -1,0 +1,124 @@
+{
+  "artifact_packaging": "Scoped tokenizer .gitattributes disables newline normalization. Staged Git blob bytes must exactly match the pinned local model/tokenizer file hashes.",
+  "contract_sha256": "4c28667f72fd5234c8e36d3765feeb4363abc291a689e77013b7fd710f95aecc",
+  "deterministic_runs": 2,
+  "diff_check": "PASS",
+  "embeddings_generated": 0,
+  "evaluation_complete": true,
+  "evaluation_external_network_calls": 0,
+  "focused_phase5_suite": {
+    "duration_seconds": 12.23,
+    "errors": 0,
+    "failed": 0,
+    "passed": 138
+  },
+  "full_offline_suite": {
+    "duration_seconds": 38.48,
+    "errors": 0,
+    "failed": 0,
+    "passed": 1375,
+    "warnings": 3
+  },
+  "full_result_files_byte_identical": true,
+  "full_suite_network_audit": {
+    "external_socket_events": 0,
+    "local_harness_socket_events": 417
+  },
+  "full_suite_network_audit_scope": "Python connect/getaddrinfo/sendto/sendmsg audit hook; local browser/loopback harnesses allowed. Native browser subprocess traffic is outside Python hooks and covered by existing browser test assertions.",
+  "golden_v2_validator": {
+    "answerability": {
+      "ABSENT": 0,
+      "ANSWERABLE": 30,
+      "PARTIAL": 5
+    },
+    "corpus_manifest_digest": "178f1de4dfaa471913e098c2268762256cd33c476dc938e721bb4f9eae047b59",
+    "development": 35,
+    "evidence_spans_validated": 54,
+    "gating_eligible": 33,
+    "holdout": 0,
+    "invalid_source_refs": 0,
+    "non_gating": 2,
+    "query_count": 35,
+    "quote_span_mismatches": 0,
+    "repo_head": "86712d200fd46382a876f2083f824f03a83341ab",
+    "schema_version": "retrieval_golden_v2",
+    "v1_label_verdict": {
+      "AMBIGUOUS": 2,
+      "CORRECT": 7,
+      "INCOMPLETE": 20,
+      "WRONG": 6
+    }
+  },
+  "model_downloads": 0,
+  "model_substitutions": 0,
+  "new_reranker_tests": 23,
+  "origin_tracking_ref": "2a87e8e3e756872667c4468d4a52c34ea8917416",
+  "pre_commit_correction": "Git staging warned of CRLF normalization in two tokenizer configs. Added scoped -text attributes and restaged exact original bytes before committing; no scorer, inference input or result changed.",
+  "pre_scoring_corrections": [
+    "Initial provenance preflight correctly stopped: the new checker initially compared CSWP core-only canonical_content to overlap-plus-core retrieval spans. Corrected the checker to verify core and full retrieval serialization separately, consistent with frozen CSWP. No corpus or policy change and no model scoring occurred before the correction.",
+    "Initial unit test over-assumed every candidate pool contains an H1. Narrowed that assertion to the required Q09/Q16 cases; exact union membership remains checked for every query. No candidate filtering changed."
+  ],
+  "production_qdrant_reads": 0,
+  "production_qdrant_writes": 0,
+  "production_retrieval_changed": false,
+  "provider_calls": 0,
+  "quality_gate": {
+    "critical_evidence_regressions": [
+      "Q13",
+      "Q20",
+      "Q22"
+    ],
+    "material_evidence_improvement": true,
+    "quality_pass": false
+  },
+  "reference_review": [
+    {
+      "pdf_pages": [
+        45,
+        46,
+        47,
+        48
+      ],
+      "title": "An Illustrated Guide to AI Agents",
+      "use": "retrieved shortlist relevance reranking; MMR is a separate redundancy/diversity intervention"
+    },
+    {
+      "pdf_pages": [
+        44,
+        284
+      ],
+      "title": "Building Applications with AI Agents",
+      "use": "cost/latency trade-offs and shadow/control instrumentation; no passage-reranker-specific claim drawn from its actor/critic example"
+    },
+    {
+      "pdf_pages": [
+        4,
+        5,
+        15,
+        16,
+        36
+      ],
+      "title": "BASWE - 100 AI Engineering Interview Questions",
+      "use": "broad cheap retrieval, query-document cross-encoder reranking, isolated retrieval metrics and single-variable evaluation discipline"
+    }
+  ],
+  "remote_verification_scope": "local remote-tracking reference; no network fetch",
+  "required_parent": "2a87e8e3e756872667c4468d4a52c34ea8917416",
+  "reranker_ready_to_advance": false,
+  "result_sha256": "9490f45a57392d8a9399e006d01a8215d98e7a25d89406efa807f2729a61def5",
+  "ruff_fatal_tier": "PASS",
+  "ruff_new_python_files": "PASS",
+  "schema_version": "phase5a2h_validation_v1",
+  "scoring_runner_sha256": "92ca40ea45259ee9527e82789e582bc40ea1111159549df9a04bee4d478fff98",
+  "starting_head": "2a87e8e3e756872667c4468d4a52c34ea8917416",
+  "starting_worktree_clean": true,
+  "status": "PHASE-5A2H-RERANKER-EVALUATION-READY",
+  "status_meaning": "Completed reproducible experiment is reviewable; quality gate failed and the reranker must not advance.",
+  "test_file_sha256": "b7e1c2fdf41f6d874c5c73a8f9a6adfd3768af41c387e3f6b8fe321ba4254e8a",
+  "token_safety": {
+    "candidate_pairs": 1046,
+    "max_pair_tokens": 293,
+    "pairs_exceeding_max_input": 0,
+    "pairs_truncated": 0
+  }
+}
