@@ -1735,8 +1735,7 @@ def verify_node(state: AgentState) -> dict:
             "semantic_trace": trace,
             "provider_usage_status": "known",
             "call_b_accounted_requests": accounted_requests,
-            **(workflow.terminal("execution_failed", "Call B observation was invalid.")
-               if retried_observation or analyzer_result.failure_kind == "quote_binding" else {}),
+            **workflow.terminal("execution_failed", "Call B observation was invalid; content redraft blocked."),
         }
 
     grounding_report = copy.deepcopy(analyzer_result.grounding_report)

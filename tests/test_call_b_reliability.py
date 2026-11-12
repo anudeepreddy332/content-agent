@@ -19,7 +19,7 @@ from tests.conftest import FakeLLMClient, fake_response, openai_error
 def _large_case():
     # Independent propositions and exact, unique source sentences. Successful JSON
     # parsing alone is insufficient: the status engine must bind every quote.
-    sentences = [f"Method {i} requires condition {i} for operation." for i in range(50)]
+    sentences = [f"Method {i} requires condition {i} for operation." for i in range(70)]
     draft = "\n".join(sentences)
     claims = [
         {"claim_id": f"claim-{i:03d}", "claim_text": sentence,
@@ -78,7 +78,7 @@ def test_historical_empty_response_retains_observable_metadata_without_reasoning
     saved = trace["iterations"][0]["semantic_analyzer"]
     assert saved["termination"] == "unknown" and saved["finish_reason"] is None
     assert saved["response_length"] == 0 and saved["parser_status"] == "failed"
-    assert saved["request"]["max_tokens"] == CALL_B_MAX_TOKENS == 8_000
+    assert saved["request"]["max_tokens"] == CALL_B_MAX_TOKENS == 32_000
     assert "private reasoning" not in json.dumps(saved)
 
 
@@ -98,7 +98,11 @@ def test_missing_content_field_is_transport_failure_not_empty_output():
 
 @pytest.mark.parametrize("content", ["", '{"observations": ['])
 def test_explicit_length_fails_closed_and_preserves_parser_truth(content):
-    result = _analyze(_response(content, finish="length", reasoning=2_000))
+    response = _response(content, finish="length", reasoning=2_000)
+    response.usage.completion_tokens = 8_000
+    response.usage.total_tokens = 18_147
+    result = _analyze(response)
+    assert result.usage["completion_tokens"] == 8_000
     assert not result.success and result.failure_detail == "provider_length"
     assert result.finish_reason == "length" and result.parser_status == "failed"
     assert result.parser_error in ("empty_response", "malformed_json:Expecting value")
@@ -121,7 +125,7 @@ def test_complete_large_roster_requires_all_exact_grounded_observations():
     assert result.max_tokens == CALL_B_MAX_TOKENS
     assert result.parser_status == "ok" and result.response_length == len(content)
     assert result.success and result.adjudication is not None
-    assert len(result.grounding_report) == 50
+    assert len(result.grounding_report) == 70
     assert all(row["status"] == "verified" for row in result.grounding_report)
 
     missing = _analyze(_response(json.dumps({"observations": observations[:-1]}), finish="stop"))
@@ -169,7 +173,7 @@ def test_sdk_serializes_large_call_b_budget_and_disabled_thinking():
     assert requests[0]["max_tokens"] == CALL_B_MAX_TOKENS
     assert requests[0]["thinking"] == {"type": "disabled"}
     assert requests[0]["response_format"] == {"type": "json_object"}
-    assert len(json.loads(requests[0]["messages"][1]["content"])["claims"]) == 50
+    assert len(json.loads(requests[0]["messages"][1]["content"])["claims"]) == 70
     assert result.finish_reason == "stop" and result.usage["reasoning_tokens"] == 0
 
 
@@ -223,7 +227,7 @@ def test_verify_failure_cannot_reflect_or_reuse_stale_acceptance(base_state, mon
                                       _response("", finish="length", reasoning=2_000)])
     monkeypatch.setattr(nodes, "_get_client", lambda: client)
     state = {**base_state, "draft_markdown": draft, "iterations": 1,
-             "quality_episode": 1, "quality_attempts": 2,
+             "quality_episode": 1, "quality_attempts": 1,
              "verification_status": "completed", "reflection_score": 10,
              "reflection_provenance": {"origin": "judge", "provider_called": True,
                                        "parse_status": "ok"}}
@@ -235,7 +239,8 @@ def test_verify_failure_cannot_reflect_or_reuse_stale_acceptance(base_state, mon
     assert nodes.route_after_verify(merged) != "reflect"
     from agent import workflow
     assert not workflow.gate1_eligible(merged)
-    assert workflow.verification_failure(merged)["terminal_status"] == "execution_failed"
+    assert merged["terminal_status"] == "execution_failed"
+    assert workflow.draft_step(merged, run=lambda _: pytest.fail("unexpected dispatch")) == {}
     assert client.calls == 2
 
 
