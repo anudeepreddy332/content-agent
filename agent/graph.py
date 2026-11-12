@@ -1,139 +1,52 @@
-"""
-agent/graph.py
---------------
-LangGraph state machine for the content-agent pipeline.
+"""Production graph: frozen quality episodes, two human gates, guarded Git."""
+from functools import partial
 
-What this file does:
-    Wires all nodes and edges into a compiled LangGraph graph.
-    This file contains ONLY graph structure — no logic lives here.
-    All node logic lives in nodes.py.
-
-How to run (not directly — use main.py):
-    from agent.graph import build_graph
-    graph = build_graph()
-    result = graph.invoke(initial_state)
-
-Pipeline flow:
-    draft → retrieve → verify → reflect → [loop back to draft if needed] → hitl → html_gen → git
-
-Edge logic:
-    After reflect_node: route_after_reflect() decides whether to revise or proceed.
-    After hitl_node: route_after_hitl() decides approve / reject / feedback loop.
-
-Vulnerabilities:
-    - If a node returns a partial state update with wrong keys, LangGraph merges silently.
-      This is why AgentState uses TypedDicts with typed fields — catch drift early.
-    - Interrupt for HITL (hitl_node) requires graph to be compiled with checkpointer
-      in main.py if you want to resume across process restarts. For now, in-process only.
-"""
 from langgraph.graph import StateGraph, END
 from agent.state import AgentState
+from agent import workflow
 from agent.nodes import (
-    draft_node,
-    retrieve_node,
-    verify_node,
-    reflect_node,
-    hitl_node,
-    html_gen_node,
-    git_node,
-    route_after_reflect,
-    route_after_hitl,
-    hitl_html_node,
-    route_after_html_review,
-    html_revise_node,
+    draft_node, retrieve_node, verify_node, reflect_node, hitl_node,
+    html_gen_node, git_node, hitl_html_node, html_revise_node,
+    route_after_draft, route_after_verify, route_after_reflect,
+    route_after_hitl, route_after_html_review,
 )
 
-def build_graph(checkpointer=None) -> StateGraph:
-    """
-    Build and compile the content-agent LangGraph state machine.
 
-    Returns:
-        Compiled LangGraph graph ready for .invoke() or .stream()
-
-    Node registration order doesn't matter - edges define execution order.
-    Entry point is always retrieve_node.
-
-    checkpointer: LangGraph checkpointer (e.g. SqliteSaver) enabling durable
-        interrupt/resume for async HITL. CLI passes None -> compile(checkpointer=None)
-        is identical to the previous bare compile(), so CLI behavior is unchanged.
-        The API server passes a SqliteSaver so hitl_node's interrupt() can pause
-        and the run can resume across process restarts.
+def _continue(state):
+    return END if state.get("terminal_status") else "continue"
 
 
-    """
-
+def build_graph(checkpointer=None):
     builder = StateGraph(AgentState)
-
-    # Register all nodes
-    builder.add_node("draft", draft_node)
     builder.add_node("retrieve", retrieve_node)
-    builder.add_node("verify", verify_node)
-    builder.add_node("reflect", reflect_node)
+    builder.add_node("start_quality_episode", workflow.start_episode)
+    builder.add_node("draft", partial(workflow.draft_step, run=draft_node))
+    builder.add_node("verify", partial(workflow.verify_step, run=verify_node))
+    builder.add_node("reflect", partial(workflow.reflect_step, run=reflect_node))
     builder.add_node("hitl", hitl_node)
-    builder.add_node("html_gen", html_gen_node)
+    builder.add_node("html_gen", partial(workflow.html_step, run=html_gen_node))
     builder.add_node("hitl_html", hitl_html_node)
-    builder.add_node("html_revise", html_revise_node)
+    builder.add_node("html_revise", partial(workflow.layout_step, run=html_revise_node))
     builder.add_node("git", git_node)
-
-    # M2 toggle: source-aware drafting reorders retrieve BEFORE draft so the
-    # draft writes against retrieved evidence. Default (unset/0) keeps blind drafting.
     builder.set_entry_point("retrieve")
-    builder.add_edge("retrieve", "draft")
-    builder.add_edge("draft", "verify")
-    builder.add_edge("verify", "reflect")
-
-    # Conditional edge after reflect
-    # route_after_reflect returns "draft" (revise) or "hitl" (proceed)
-    builder.add_conditional_edges(
-        "reflect",
-        route_after_reflect,
-        {
-            "draft": "draft",   # revise: loop back
-            "hitl": "hitl"  # proceed to human gate
-        }
-    )
-
-    # Conditional edge after HITL
-    # router_after_hitl returns "html_gen" (approved), "draft" (feedback), or END (rejected)
-    builder.add_conditional_edges(
-        "hitl",
-        route_after_hitl,
-        {
-            "html_gen": "html_gen",
-            "draft": "draft",
-            END: END,
-        }
-    )
-
-    # Linear edges to finish
-    builder.add_edge("html_gen", "hitl_html")
-    builder.add_conditional_edges(
-        "hitl_html",
-        route_after_html_review,
-        {
-            "git": "git",  # approved -> publish
-            "html_revise": "html_revise",   # request_changes -> layout revision (content frozen)
-            END: END,   # rejected -> nothing published
-        },
-    )
-    builder.add_edge("html_revise", "hitl_html")     # re-verify the revised render
+    builder.add_edge("retrieve", "start_quality_episode")
+    builder.add_conditional_edges("start_quality_episode", _continue, {"continue": "draft", END: END})
+    builder.add_conditional_edges("draft", route_after_draft, {
+        "verify": "verify", "draft": "draft", END: END,
+    })
+    builder.add_conditional_edges("verify", route_after_verify, {
+        "reflect": "reflect", "draft": "draft", END: END,
+    })
+    builder.add_conditional_edges("reflect", route_after_reflect, {
+        "draft": "draft", "hitl": "hitl", END: END,
+    })
+    builder.add_conditional_edges("hitl", route_after_hitl, {
+        "html_gen": "html_gen", "draft": "draft", END: END,
+    })
+    builder.add_conditional_edges("html_gen", _continue, {"continue": "hitl_html", END: END})
+    builder.add_conditional_edges("hitl_html", route_after_html_review, {
+        "git": "git", "html_revise": "html_revise", END: END,
+    })
+    builder.add_conditional_edges("html_revise", _continue, {"continue": "hitl_html", END: END})
     builder.add_edge("git", END)
-
     return builder.compile(checkpointer=checkpointer)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,0 +1,1728 @@
+[
+  {
+    "gating_eligible": true,
+    "query_id": "Q01",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 2,
+        "first_cover_reranked_full_pool": 2,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:b02cf4445aee999146912bf17f7d734ccf98b9e11204e305659c8c55589529b6",
+            "cross_encoder_score": 3.072085380554199,
+            "reranked_rank": 2,
+            "source_intervals": [
+              [
+                19,
+                917
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:5fab877996a598f686785150b632090097cc44d365423cb106309ce7ba472c96",
+            "cross_encoder_score": 2.1063411235809326,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                826,
+                917
+              ],
+              [
+                917,
+                1580
+              ]
+            ]
+          }
+        ],
+        "span_id": "gradient-descent::gradient-descent:12-14"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q02",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 2,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:a4f5bdab8380db1f15e0f760ceb11f3c97226fa01c4c8f37fbac6164a64127e4",
+            "cross_encoder_score": 3.7485666275024414,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                37,
+                914
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:ea8c1c58b0e6b21125804146e5bdc4b453d9f37cf0baa07aacdc130392a2c95a",
+            "cross_encoder_score": 2.6859934329986572,
+            "reranked_rank": 2,
+            "source_intervals": [
+              [
+                774,
+                914
+              ],
+              [
+                914,
+                1551
+              ]
+            ]
+          }
+        ],
+        "span_id": "attention-transformers::attention-transformers:10-12"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q03",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 4,
+        "first_cover_reranked_full_pool": 4,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:b0d6c74aaddd22bb7a3db2f6d8a2105c206a4da169e173e7181c15b5ec67dd7e",
+            "cross_encoder_score": 6.126771926879883,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                28,
+                832
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:e188a627c35442fe41d087d70b18ede25bd3b2c8a8458bbd179dbc25e034d249",
+            "cross_encoder_score": 1.8088150024414062,
+            "reranked_rank": 4,
+            "source_intervals": [
+              [
+                830,
+                832
+              ],
+              [
+                832,
+                1677
+              ]
+            ]
+          }
+        ],
+        "span_id": "ridge-lasso-elasticnet::ridge-lasso-elasticnet:10-13"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q04",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:4df03e828ab3e9bb73296ac796e167c31145d8eacfb3660fd373f5377481502b",
+            "cross_encoder_score": 8.273832321166992,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                11,
+                1003
+              ]
+            ]
+          }
+        ],
+        "span_id": "catboost::catboost:4"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 3,
+        "first_cover_reranked_full_pool": 4,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:ace9880737aa35a8ac17c99a8501aaff6decdbf6f2440d502b430d9e96027171",
+            "cross_encoder_score": 3.2068943977355957,
+            "reranked_rank": 4,
+            "source_intervals": [
+              [
+                944,
+                1003
+              ],
+              [
+                1003,
+                1886
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:53fc487925de07c29d459b88d7d7718cfba2a3fcb3f5a0574f66ad3a1076a702",
+            "cross_encoder_score": 0.3138102889060974,
+            "reranked_rank": 5,
+            "source_intervals": [
+              [
+                1512,
+                1886
+              ],
+              [
+                1886,
+                2728
+              ]
+            ]
+          }
+        ],
+        "span_id": "catboost::catboost:12-14"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q05",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:5325e623a7312dec67bf544f73d92befa6c176927a62984b662b1dae543ae7ed",
+            "cross_encoder_score": 9.881645202636719,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                22,
+                797
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:2bba0a0205636c2bb04a432fd3f6afa0eb99e1baf7e61ab3fe1f7ff225a16eaf",
+            "cross_encoder_score": 8.143770217895508,
+            "reranked_rank": 2,
+            "source_intervals": [
+              [
+                421,
+                797
+              ],
+              [
+                797,
+                1347
+              ]
+            ]
+          }
+        ],
+        "span_id": "react-agent-pattern::react-agent-pattern:4-4"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q06",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:5c40d0d442c73373d76af9eeec33a23a2908a49e82da76ee6b0ed5f80e4dc5db",
+            "cross_encoder_score": 7.4949951171875,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                22,
+                1048
+              ]
+            ]
+          }
+        ],
+        "span_id": "k-nearest-neighbors::k-nearest-neighbors:4"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:5c40d0d442c73373d76af9eeec33a23a2908a49e82da76ee6b0ed5f80e4dc5db",
+            "cross_encoder_score": 7.4949951171875,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                22,
+                1048
+              ]
+            ]
+          }
+        ],
+        "span_id": "k-nearest-neighbors::k-nearest-neighbors:9"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q07",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 3,
+        "first_cover_reranked_full_pool": 5,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:76df490d97c8dd077f61e24f301ab771fcc0d0177bc455764f25bed13fef9563",
+            "cross_encoder_score": 6.240252494812012,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                959,
+                961
+              ],
+              [
+                961,
+                1496
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:a7220b965038c83dd337d950f350e9e333dc62a9577798d28d8766ccf7b04263",
+            "cross_encoder_score": 2.5081429481506348,
+            "reranked_rank": 5,
+            "source_intervals": [
+              [
+                1455,
+                1496
+              ],
+              [
+                1496,
+                2603
+              ]
+            ]
+          }
+        ],
+        "span_id": "xgboost::xgboost:18-28"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q08",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:8fc4dbe3884bf90260298f621b5f81f81f65575f69ff191a6fc794e629206459",
+            "cross_encoder_score": 10.67974853515625,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                30,
+                847
+              ]
+            ]
+          }
+        ],
+        "span_id": "feedforward-neural-networks::feedforward-neural-networks:4"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 3,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:8fc4dbe3884bf90260298f621b5f81f81f65575f69ff191a6fc794e629206459",
+            "cross_encoder_score": 10.67974853515625,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                30,
+                847
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:25370cc81cba632627ec3dd3abf98eec50395bdc5df8fe16427b920a371e775f",
+            "cross_encoder_score": 5.764741897583008,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                615,
+                847
+              ],
+              [
+                847,
+                1361
+              ]
+            ]
+          }
+        ],
+        "span_id": "feedforward-neural-networks::feedforward-neural-networks:12-17"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q09",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 6,
+        "first_cover_reranked_full_pool": 4,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:2408c2a68eadc8467596c19fe4cf95c99aa3eb2c17a68df7bb61a0dd18d59414",
+            "cross_encoder_score": 7.426685333251953,
+            "reranked_rank": 2,
+            "source_intervals": [
+              [
+                26,
+                904
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:561d3594f381842a6b8cbcfb6b706ee1e4c9e3af32193bfb91021097107d9580",
+            "cross_encoder_score": 5.684937477111816,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                1144,
+                1276
+              ],
+              [
+                1276,
+                1718
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:9dae35f936d4fcf5e1f62bed0d47bbe43f874f2cbcdfa61d713fb24d163af062",
+            "cross_encoder_score": 4.40266227722168,
+            "reranked_rank": 4,
+            "source_intervals": [
+              [
+                262,
+                904
+              ],
+              [
+                904,
+                1276
+              ]
+            ]
+          }
+        ],
+        "span_id": "support-vector-machines::support-vector-machines:8-12"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q10",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:205fbd7711053979bb7eaff8849b668c83dc0e66a75187fe611117e937a707a9",
+            "cross_encoder_score": 8.248903274536133,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                14,
+                998
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:a6764c9e3c998b8bcba2f1e427c3c9c00173158f6d6040c82a13977f2988595e",
+            "cross_encoder_score": 5.922492980957031,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                827,
+                998
+              ],
+              [
+                998,
+                1317
+              ]
+            ]
+          }
+        ],
+        "span_id": "naive-bayes::naive-bayes:10-10"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q11",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:a42720d3b48ea8cbc7e94a2f3b6ff68b97bf9bf610e66a409fee1ffb80b98851",
+            "cross_encoder_score": 2.0841546058654785,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                4789,
+                5437
+              ],
+              [
+                5437,
+                5667
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:f2dfe9e452ecfcc538aaadd84b28b0627ccd377451d346464ec4bdb75b966d37",
+            "cross_encoder_score": -1.0978879928588867,
+            "reranked_rank": 6,
+            "source_intervals": [
+              [
+                4559,
+                5437
+              ]
+            ]
+          }
+        ],
+        "span_id": "backpropagation::backpropagation:76-77"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 2,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:9c6cc6c330f33b403dfe45bd56633cfd842f185f02913a7ec69fa81c0274a395",
+            "cross_encoder_score": 4.8205885887146,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                2523,
+                2542
+              ],
+              [
+                2542,
+                3591
+              ]
+            ]
+          }
+        ],
+        "span_id": "gradient-descent::gradient-descent:49"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q12",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:806b822d7a317ef43a148ff36dcb166e533588a3413f89a3e1162c6922d2a6c4",
+            "cross_encoder_score": 5.529572486877441,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                16,
+                999
+              ]
+            ]
+          }
+        ],
+        "span_id": "random-forest::random-forest:7-7"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": null,
+        "first_cover_reranked_full_pool": 20,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:225af8695548da8af494b047d77d8e3e58b8d7564b630efb33f6500f555ea364",
+            "cross_encoder_score": 1.4732465744018555,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                2821,
+                2869
+              ],
+              [
+                2869,
+                4060
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:7d6e51c91aabe2b2fe5e17a10bf34faeed27830d6cdcaeab147c395e8862ad51",
+            "cross_encoder_score": -7.274256706237793,
+            "reranked_rank": 20,
+            "source_intervals": [
+              [
+                1585,
+                1654
+              ],
+              [
+                1654,
+                2869
+              ]
+            ]
+          }
+        ],
+        "span_id": "decision-trees::decision-trees:31"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q13",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": null,
+        "first_cover_reranked_full_pool": 17,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:fd12ffbb99f5a51284e859e0a6a9d05f091b6d5422719b80b222d1e70a85bc1c",
+            "cross_encoder_score": -4.030831336975098,
+            "reranked_rank": 6,
+            "source_intervals": [
+              [
+                1143,
+                1366
+              ],
+              [
+                1366,
+                2225
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:f1d234fe3e534960ab2a0e6867309851f73be351281ef50831feb1e3ebf7c5aa",
+            "cross_encoder_score": -7.93733024597168,
+            "reranked_rank": 17,
+            "source_intervals": [
+              [
+                491,
+                772
+              ],
+              [
+                772,
+                1366
+              ]
+            ]
+          }
+        ],
+        "span_id": "agentic-ai-production::agentic-ai-production:10-10"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q14",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 4,
+        "first_cover_reranked_full_pool": 2,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:44d62acd34bafe336e3545793f55753bad5ec57108cf1e8aabab096673d741ae",
+            "cross_encoder_score": 6.7172393798828125,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                665,
+                739
+              ],
+              [
+                739,
+                1391
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:0390518c53e835383bf28702bba26b4ad3d5315fbbbb80f8b8ea479b11f0712b",
+            "cross_encoder_score": 5.069915771484375,
+            "reranked_rank": 2,
+            "source_intervals": [
+              [
+                33,
+                739
+              ]
+            ]
+          }
+        ],
+        "span_id": "linear-logistic-regression::linear-logistic-regression:11-15"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q15",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 2,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:2f81c16739add947c9aab843a127a64f0ebb507c411915319c50ebefd98395e9",
+            "cross_encoder_score": 4.391011714935303,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                608,
+                845
+              ],
+              [
+                845,
+                1667
+              ]
+            ]
+          }
+        ],
+        "span_id": "langgraph-state-machines::langgraph-state-machines:16"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 5,
+        "first_cover_reranked_full_pool": 5,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:76e466b1d10126864a27a1dfb768d192833efd39590b276712f1ea0ff3d50fe1",
+            "cross_encoder_score": 4.1264519691467285,
+            "reranked_rank": 5,
+            "source_intervals": [
+              [
+                1423,
+                1667
+              ],
+              [
+                1667,
+                2510
+              ]
+            ]
+          }
+        ],
+        "span_id": "langgraph-state-machines::langgraph-state-machines:28-30"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q16",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 6,
+        "first_cover_reranked_full_pool": 5,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:14fffa6d9734cf29a5de0f384eb05852e63c7b8824c0c04540160b3bf088b974",
+            "cross_encoder_score": 3.7655372619628906,
+            "reranked_rank": 5,
+            "source_intervals": [
+              [
+                1515,
+                1663
+              ],
+              [
+                1663,
+                2566
+              ]
+            ]
+          }
+        ],
+        "span_id": "prompt-engineering-production::prompt-engineering-production:22-27"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q17",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 7,
+        "first_cover_reranked_full_pool": 4,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:04f693959e1905e8ae1b2158c45fef8fade74d3608a3b867608127b28dca7e36",
+            "cross_encoder_score": 6.080490589141846,
+            "reranked_rank": 4,
+            "source_intervals": [
+              [
+                2857,
+                3521
+              ],
+              [
+                3521,
+                3938
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:eb9b19625168fb42bbc2c8831ec5de7ef6084ad9d831ef05275a9bfc1164a000",
+            "cross_encoder_score": 5.010528087615967,
+            "reranked_rank": 6,
+            "source_intervals": [
+              [
+                2413,
+                2615
+              ],
+              [
+                2615,
+                3521
+              ]
+            ]
+          }
+        ],
+        "span_id": "multi-agent-systems::multi-agent-systems:35-37"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 7,
+        "first_cover_reranked_full_pool": 4,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:04f693959e1905e8ae1b2158c45fef8fade74d3608a3b867608127b28dca7e36",
+            "cross_encoder_score": 6.080490589141846,
+            "reranked_rank": 4,
+            "source_intervals": [
+              [
+                2857,
+                3521
+              ],
+              [
+                3521,
+                3938
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:eb9b19625168fb42bbc2c8831ec5de7ef6084ad9d831ef05275a9bfc1164a000",
+            "cross_encoder_score": 5.010528087615967,
+            "reranked_rank": 6,
+            "source_intervals": [
+              [
+                2413,
+                2615
+              ],
+              [
+                2615,
+                3521
+              ]
+            ]
+          }
+        ],
+        "span_id": "multi-agent-systems::multi-agent-systems:37"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q18",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 2,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:e188a627c35442fe41d087d70b18ede25bd3b2c8a8458bbd179dbc25e034d249",
+            "cross_encoder_score": 3.1884818077087402,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                830,
+                832
+              ],
+              [
+                832,
+                1677
+              ]
+            ]
+          }
+        ],
+        "span_id": "ridge-lasso-elasticnet::ridge-lasso-elasticnet:13-13"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q19",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 3,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:07dbb5179bbc0ad2e7f15857652ac35acf850be515ed596e3a06b22a63f51181",
+            "cross_encoder_score": -0.5162502527236938,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                39,
+                1082
+              ]
+            ]
+          }
+        ],
+        "span_id": "retrieval-augmented-generation::retrieval-augmented-generation:4"
+      },
+      {
+        "candidate_pool_contains_complete_span": false,
+        "first_cover_control_within_top10": null,
+        "first_cover_reranked_full_pool": null,
+        "grade": 2,
+        "intersecting_candidates": [],
+        "span_id": "retrieval-augmented-generation::retrieval-augmented-generation:32"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q20",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:411095ec1efe6dddda11cf9bbc862a11968a82bb982bed63a84ba48cafdbea38",
+            "cross_encoder_score": 7.921256065368652,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                35,
+                781
+              ]
+            ]
+          }
+        ],
+        "span_id": "embedding-models-vector-search::embedding-models-vector-search:4"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 5,
+        "first_cover_reranked_full_pool": 6,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:17450c946352f47c911db481c2ae02b9c73231785b97e4644db0e0b1eabaa728",
+            "cross_encoder_score": 3.4886441230773926,
+            "reranked_rank": 6,
+            "source_intervals": [
+              [
+                781,
+                1655
+              ]
+            ]
+          }
+        ],
+        "span_id": "embedding-models-vector-search::embedding-models-vector-search:10"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q21",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:dbda03bdcf6872696369d872690fe97336c83c41ff576387f1eeffa5cf035763",
+            "cross_encoder_score": 1.0646681785583496,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                18,
+                917
+              ]
+            ]
+          }
+        ],
+        "span_id": "backpropagation::backpropagation:4"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 10,
+        "first_cover_reranked_full_pool": 10,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:f2dfe9e452ecfcc538aaadd84b28b0627ccd377451d346464ec4bdb75b966d37",
+            "cross_encoder_score": -6.833440780639648,
+            "reranked_rank": 10,
+            "source_intervals": [
+              [
+                4559,
+                5437
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:a42720d3b48ea8cbc7e94a2f3b6ff68b97bf9bf610e66a409fee1ffb80b98851",
+            "cross_encoder_score": -7.595542907714844,
+            "reranked_rank": 12,
+            "source_intervals": [
+              [
+                4789,
+                5437
+              ],
+              [
+                5437,
+                5667
+              ]
+            ]
+          }
+        ],
+        "span_id": "backpropagation::backpropagation:76-77"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q22",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 10,
+        "first_cover_reranked_full_pool": 9,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:722b2c6b5a4d5d5d12c3db41222ea243374345ba27a51ba352373be0a49b67e0",
+            "cross_encoder_score": -0.3762875199317932,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                10,
+                961
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:76df490d97c8dd077f61e24f301ab771fcc0d0177bc455764f25bed13fef9563",
+            "cross_encoder_score": -6.834604263305664,
+            "reranked_rank": 9,
+            "source_intervals": [
+              [
+                959,
+                961
+              ],
+              [
+                961,
+                1496
+              ]
+            ]
+          }
+        ],
+        "span_id": "xgboost::xgboost:14-16"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:a7220b965038c83dd337d950f350e9e333dc62a9577798d28d8766ccf7b04263",
+            "cross_encoder_score": -2.073962450027466,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                1455,
+                1496
+              ],
+              [
+                1496,
+                2603
+              ]
+            ]
+          }
+        ],
+        "span_id": "xgboost::xgboost:34"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q23",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 4,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:6fb993bfe7c00accc78c04902046a78204f44ff79fd7801cada79304abf14085",
+            "cross_encoder_score": 1.474019169807434,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                2921,
+                3232
+              ],
+              [
+                3232,
+                4120
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:7ff2262e0a2987f9deb4debf1799292bd9ea187bcaa831259a615fbb1df8a53c",
+            "cross_encoder_score": 0.18651077151298523,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                1863,
+                2174
+              ],
+              [
+                2174,
+                3232
+              ]
+            ]
+          }
+        ],
+        "span_id": "naive-bayes::naive-bayes:22-25"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q24",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 2,
+        "first_cover_reranked_full_pool": 2,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:5c40d0d442c73373d76af9eeec33a23a2908a49e82da76ee6b0ed5f80e4dc5db",
+            "cross_encoder_score": -3.6729133129119873,
+            "reranked_rank": 2,
+            "source_intervals": [
+              [
+                22,
+                1048
+              ]
+            ]
+          }
+        ],
+        "span_id": "k-nearest-neighbors::k-nearest-neighbors:7"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:e5fbfe15bc37d160fed7115f4c58d6adf2d543aa419b76ea15aec05e9a600332",
+            "cross_encoder_score": -0.403105765581131,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                1990,
+                2087
+              ],
+              [
+                2087,
+                3110
+              ]
+            ]
+          }
+        ],
+        "span_id": "k-nearest-neighbors::k-nearest-neighbors:23"
+      }
+    ]
+  },
+  {
+    "gating_eligible": false,
+    "query_id": "Q25",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": null,
+        "first_cover_reranked_full_pool": 14,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:e188a627c35442fe41d087d70b18ede25bd3b2c8a8458bbd179dbc25e034d249",
+            "cross_encoder_score": -7.549448490142822,
+            "reranked_rank": 14,
+            "source_intervals": [
+              [
+                830,
+                832
+              ],
+              [
+                832,
+                1677
+              ]
+            ]
+          }
+        ],
+        "span_id": "ridge-lasso-elasticnet::ridge-lasso-elasticnet:11-11"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 5,
+        "first_cover_reranked_full_pool": 8,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:561d3594f381842a6b8cbcfb6b706ee1e4c9e3af32193bfb91021097107d9580",
+            "cross_encoder_score": -4.011377334594727,
+            "reranked_rank": 8,
+            "source_intervals": [
+              [
+                1144,
+                1276
+              ],
+              [
+                1276,
+                1718
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:84ad4b1cb8f386acc42c5aec700e4651178c72557a467182892125cd888690ad",
+            "cross_encoder_score": -6.080953598022461,
+            "reranked_rank": 11,
+            "source_intervals": [
+              [
+                1623,
+                1718
+              ],
+              [
+                1718,
+                2525
+              ]
+            ]
+          }
+        ],
+        "span_id": "support-vector-machines::support-vector-machines:14-14"
+      }
+    ]
+  },
+  {
+    "gating_eligible": false,
+    "query_id": "Q26",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": null,
+        "first_cover_reranked_full_pool": 13,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:07dbb5179bbc0ad2e7f15857652ac35acf850be515ed596e3a06b22a63f51181",
+            "cross_encoder_score": -10.385710716247559,
+            "reranked_rank": 13,
+            "source_intervals": [
+              [
+                39,
+                1082
+              ]
+            ]
+          }
+        ],
+        "span_id": "retrieval-augmented-generation::retrieval-augmented-generation:4-4"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": null,
+        "first_cover_reranked_full_pool": 7,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:f1f33300e485ab12b56033f02f10b892801582cf3dd27a88e7d03c99ee1dd4ea",
+            "cross_encoder_score": -9.590717315673828,
+            "reranked_rank": 7,
+            "source_intervals": [
+              [
+                43,
+                845
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:2f81c16739add947c9aab843a127a64f0ebb507c411915319c50ebefd98395e9",
+            "cross_encoder_score": -10.471403121948242,
+            "reranked_rank": 15,
+            "source_intervals": [
+              [
+                608,
+                845
+              ],
+              [
+                845,
+                1667
+              ]
+            ]
+          }
+        ],
+        "span_id": "langgraph-state-machines::langgraph-state-machines:7-7"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q27",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 2,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:ace9880737aa35a8ac17c99a8501aaff6decdbf6f2440d502b430d9e96027171",
+            "cross_encoder_score": -1.3326783180236816,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                944,
+                1003
+              ],
+              [
+                1003,
+                1886
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:53fc487925de07c29d459b88d7d7718cfba2a3fcb3f5a0574f66ad3a1076a702",
+            "cross_encoder_score": -1.4046599864959717,
+            "reranked_rank": 4,
+            "source_intervals": [
+              [
+                1512,
+                1886
+              ],
+              [
+                1886,
+                2728
+              ]
+            ]
+          }
+        ],
+        "span_id": "catboost::catboost:12-14"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q28",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 2,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:b94c5d34fab7301200279327b141369b5d6be93b51a9599d32b1a4b23b1893e6",
+            "cross_encoder_score": 0.7071638107299805,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                2057,
+                2182
+              ],
+              [
+                2182,
+                3187
+              ]
+            ]
+          }
+        ],
+        "span_id": "react-agent-pattern::react-agent-pattern:32-32"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q29",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 4,
+        "first_cover_reranked_full_pool": 4,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:14fffa6d9734cf29a5de0f384eb05852e63c7b8824c0c04540160b3bf088b974",
+            "cross_encoder_score": 1.9186387062072754,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                1515,
+                1663
+              ],
+              [
+                1663,
+                2566
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:829b4106431357d165d493030ff954983f594b0b0468bd6525b65ce2b9532d97",
+            "cross_encoder_score": -0.5500432848930359,
+            "reranked_rank": 4,
+            "source_intervals": [
+              [
+                2566,
+                3611
+              ]
+            ]
+          }
+        ],
+        "span_id": "prompt-engineering-production::prompt-engineering-production:29-30"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 2,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:9badb1edbdbdcf6bdc1e54fe65346eaa34a0256d91b48937f2d643a7ac94acb4",
+            "cross_encoder_score": 0.9581848382949829,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                4136,
+                4491
+              ]
+            ]
+          }
+        ],
+        "span_id": "prompt-engineering-production::prompt-engineering-production:52-58"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q30",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": false,
+        "first_cover_control_within_top10": null,
+        "first_cover_reranked_full_pool": null,
+        "grade": 1,
+        "intersecting_candidates": [],
+        "span_id": "linear-logistic-regression::linear-logistic-regression:30"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:863926fd323a8c1af4bdd771e74eec5577880f1397e5ae771b2c3b78362483c5",
+            "cross_encoder_score": -0.4865846335887909,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                2926,
+                3693
+              ],
+              [
+                3693,
+                4136
+              ]
+            ]
+          },
+          {
+            "chunk_id": "ca:cswp:20b721c0e7d3d3a84e1fedb462072c22019efbb45de96c7ba29505a7ee1cb91c",
+            "cross_encoder_score": -2.651167392730713,
+            "reranked_rank": 7,
+            "source_intervals": [
+              [
+                2511,
+                2774
+              ],
+              [
+                2774,
+                3693
+              ]
+            ]
+          }
+        ],
+        "span_id": "random-forest::random-forest:32"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q31",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 2,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:6bfb19e606afe0899bb9aef922c4c4a16ea8bce5770c210e3a299c9d9f94d919",
+            "cross_encoder_score": -2.6676299571990967,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                1188,
+                1551
+              ],
+              [
+                1551,
+                2362
+              ]
+            ]
+          }
+        ],
+        "span_id": "attention-transformers::attention-transformers:26"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 4,
+        "first_cover_reranked_full_pool": 3,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:070e72f5ba19ba4a32560fd52e2cf14eaebd48f6bb909bb3b655d7740ee25dbe",
+            "cross_encoder_score": -9.635370254516602,
+            "reranked_rank": 3,
+            "source_intervals": [
+              [
+                3396,
+                4299
+              ]
+            ]
+          }
+        ],
+        "span_id": "attention-transformers::attention-transformers:55"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q32",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 3,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:d79230e3f6cd61fb94f93f5971d20d7a63d0aa1652c48bd5a031f25806819442",
+            "cross_encoder_score": -1.2189455032348633,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                3062,
+                3104
+              ],
+              [
+                3104,
+                4099
+              ]
+            ]
+          }
+        ],
+        "span_id": "feedforward-neural-networks::feedforward-neural-networks:56-56"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q33",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:9059a6008323a22964912b04eedfe8c12b3be2a49779bbfb8e5e65c2bf8fa292",
+            "cross_encoder_score": -1.2157268524169922,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                1987,
+                2031
+              ],
+              [
+                2031,
+                3104
+              ]
+            ]
+          }
+        ],
+        "span_id": "feedforward-neural-networks::feedforward-neural-networks:44-44"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q34",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 4,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:d79230e3f6cd61fb94f93f5971d20d7a63d0aa1652c48bd5a031f25806819442",
+            "cross_encoder_score": -5.673962116241455,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                3062,
+                3104
+              ],
+              [
+                3104,
+                4099
+              ]
+            ]
+          }
+        ],
+        "span_id": "feedforward-neural-networks::feedforward-neural-networks:52"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 4,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:d79230e3f6cd61fb94f93f5971d20d7a63d0aa1652c48bd5a031f25806819442",
+            "cross_encoder_score": -5.673962116241455,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                3062,
+                3104
+              ],
+              [
+                3104,
+                4099
+              ]
+            ]
+          }
+        ],
+        "span_id": "feedforward-neural-networks::feedforward-neural-networks:57"
+      }
+    ]
+  },
+  {
+    "gating_eligible": true,
+    "query_id": "Q35",
+    "spans": [
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 7,
+        "first_cover_reranked_full_pool": 8,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:723c824506665a6f8f218112a701f42c9d320d9ed9ea99461b6e3cd371f587ac",
+            "cross_encoder_score": -7.595736980438232,
+            "reranked_rank": 8,
+            "source_intervals": [
+              [
+                3082,
+                3591
+              ],
+              [
+                3591,
+                4097
+              ]
+            ]
+          }
+        ],
+        "span_id": "gradient-descent::gradient-descent:60"
+      },
+      {
+        "candidate_pool_contains_complete_span": true,
+        "first_cover_control_within_top10": 1,
+        "first_cover_reranked_full_pool": 1,
+        "grade": 1,
+        "intersecting_candidates": [
+          {
+            "chunk_id": "ca:cswp:056fa9e20bc917c6512b4496a541a0f276630fb8f3442b92f642f702231a87f6",
+            "cross_encoder_score": 2.5495212078094482,
+            "reranked_rank": 1,
+            "source_intervals": [
+              [
+                4299,
+                4976
+              ]
+            ]
+          }
+        ],
+        "span_id": "gradient-descent::gradient-descent:78"
+      }
+    ]
+  }
+]

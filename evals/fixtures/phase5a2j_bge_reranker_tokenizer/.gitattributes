@@ -1,0 +1,5 @@
+# Preserve the pinned upstream tokenizer bytes, including CRLF endings.
+*.json -text
+sentencepiece.bpe.model -text
+special_tokens_map.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+tokenizer_config.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

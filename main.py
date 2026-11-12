@@ -61,6 +61,12 @@ def _write_telemetry(state: dict):
         "prompt_hashes": PROMPT_HASHES,
 
         "iterations": state.get("iterations", 0),
+        "quality_episode": state.get("quality_episode"),
+        "quality_attempts": state.get("quality_attempts"),
+        "content_feedback_count": state.get("content_feedback_count"),
+        "html_revision_attempts": state.get("html_revision_attempts"),
+        "terminal_status": state.get("terminal_status"),
+        "terminal_message": state.get("terminal_message"),
         # M4: per-iteration verify metrics + experiment toggles. The independent
         # variable must be visible in every run record (preflight rule).
         "iteration_metrics": state.get("iteration_metrics", []),
@@ -101,6 +107,7 @@ def _write_telemetry(state: dict):
         "published_live_url": state.get("published_live_url"),
         "total_tokens": state.get("total_tokens", 0),
         "total_cost_usd": round(state.get("total_cost_usd", 0), 5),
+        "provider_usage_status": state.get("provider_usage_status", "known"),
         "latency_ms": state.get("latency_ms", {}),
         "error_log": state.get("error_log", []),
         # Structural policy evidence only; raw rejected provider output is
@@ -233,8 +240,18 @@ def _build_initial_state(
             "parse_status": "not_started",
         },
         "iterations": 0,
+        "quality_episode": 0, "quality_attempts": 0,
+        "content_feedback_count": 0, "html_revision_attempts": 0,
+        "draft_status": "not_started", "verification_identity": None,
+        "reflection_identity": None, "approved_draft_identity": None,
+        "terminal_status": None, "terminal_message": None,
         "hitl_status": "pending",
         "hitl_feedback": None,
+        "gate1_reviewer_id": None,
+        "gate2_reviewer_id": None,
+        "gate1_review_origin": None,
+        "gate2_review_origin": None,
+        "gate1_evidence_signoff": None,
         "html_review_status": None,
         "html_feedback": None,
         "html_output": None,
@@ -258,6 +275,8 @@ def _build_initial_state(
         "prompt_version": PROMPT_VERSION,
         "total_tokens": 0,
         "total_cost_usd": 0.0,
+        "provider_usage_status": "known",
+        "call_b_accounted_requests": [],
         "latency_ms": {},
         "error_log": [],
         "policy_diagnostics": [],
@@ -289,6 +308,10 @@ def cli():
 )
 
 def run(topic, card_id, series, auto, brief_requirements_json):
+    if auto:
+        from agent.reviewer_identity import test_auto_reviewer_id
+        if test_auto_reviewer_id() is None:
+            raise click.UsageError("--auto requires isolated test identity and disabled publishing")
     # Validate required credentials before doing any work.
     # Fail here instead of mid-pipeline with a cryptic API error.
     missing = [v for v in ("DEEPSEEK_API_KEY", "TAVILY_API_KEY") if not os.getenv(v)]
@@ -317,9 +340,12 @@ def run(topic, card_id, series, auto, brief_requirements_json):
         topic, slug, card_id, series, run_id, brief_requirements=brief_reqs,
     )
 
-    # KB warmup (M5): pay the one-time encoder load + BM25 build BEFORE the graph
-    # runs, so latency_ms.retrieve_kb measures steady-state query cost only.
-    from tools.query_kb import warmup as kb_warmup
+    # KB warmup (M5): warm the selected CSWP backend BEFORE the graph runs so
+    # latency_ms.retrieve_kb measures steady-state query cost only.
+    from agent.kb_backend import warmup as kb_warmup
+    from agent.kb_backend.selector import abort_on_invalid_kb_backend
+
+    abort_on_invalid_kb_backend()
     warmup_times = kb_warmup()
     get_logger("main").info("kb.warmup", run_id=run_id, **warmup_times)
 
@@ -330,11 +356,19 @@ def run(topic, card_id, series, auto, brief_requirements_json):
     except Exception as e:
         initial_state["error_log"] = [f"pipeline crash: {e}"]
         initial_state["verification_status"] = "upstream_failed"
+        initial_state["terminal_status"] = "execution_failed"
         _write_telemetry(initial_state)
         raise
 
+    from agent.workflow import project_terminal, terminal_api_status
+    result = project_terminal(result)
     telemetry_path = _write_telemetry(result)
-    click.echo(f"\nRun complete. Telemetry: {telemetry_path}")
+    status = terminal_api_status(result)
+    if status == "complete":
+        click.echo(f"\nRun complete. Telemetry: {telemetry_path}")
+    else:
+        click.echo(f"\nRun ended: {status}. Telemetry: {telemetry_path}")
+        click.echo(result.get("terminal_message") or status.replace("_", " "))
     click.echo(
         f"Cost: ${result['total_cost_usd']:.4f} | "
         f"Grounding: {result['grounding_score']:.2f} | "

@@ -1,0 +1,35 @@
+{
+  "contract_sha256": "6c7d45ad97bc52924a31a3210b7187b41beef67401aa86020d18cac80d517f27",
+  "external_network_calls": 0,
+  "input_file_sha256": {
+    "agent/drafter_packed_evidence.py": "2687ba026a4d89fdd1fb97c5513377f2434a0b7ddbb79cc73d991eb6a2546973",
+    "evals/fixtures/phase5b1_candidate_c_contract.json": "3a081d5650dff1a3b3609d550599c5acd110817caf5da8cd7fee5e59791710cc",
+    "scripts/phase5b2a_drafter_pack_contract.py": "798fd9fdbf35b1a410f852dcc5b67372a5f8b2f72a3f5e2c0345251565d69082"
+  },
+  "legacy_control": {
+    "character_prefix_per_seed_group": 2000,
+    "id": "LEGACY_DRAFTER_KB_V1",
+    "k": 3
+  },
+  "name": "DRAFTER_PACKED_EVIDENCE_V1 shadow drafter KB contract",
+  "production_drafter_changed": false,
+  "production_retrieval_changed": false,
+  "provider_calls": 0,
+  "required_parent": "fe6d35970e9c2b4ed5e494a2cea07a0287fc3f4b",
+  "schema_version": "phase5b2a_drafter_pack_contract_v1",
+  "shadow_contract": {
+    "budget": "2000 cl100k_base tokens/query enforced upstream by Candidate-C pack",
+    "id": "DRAFTER_PACKED_EVIDENCE_V1",
+    "input": "Candidate-C PACKED seed-groups from Phase 5B1",
+    "rules": [
+      "consume every surviving packed KB group",
+      "preserve Candidate-C pack order",
+      "preserve provenance and group identity",
+      "no kb_results[:3] gate",
+      "no secondary 2000-character per-group clip",
+      "no repack, reorder, split, or regeneration"
+    ]
+  },
+  "upstream_contract_sha256": "ba454249922025492caa926a17ca5d9671857d234f1ce0bfcef207e8b3c88992",
+  "verifier_changed": false
+}

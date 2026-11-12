@@ -9,6 +9,623 @@ Older entries are preserved in their original format; later evidence supersedes 
 conclusion without rewriting their history.
 
 ---
+Decision ID: D-2026-09-19-05
+Date: 2026-09-19
+
+Decision: **Phase 5D4C Qdrant serving contract hardening — mandatory
+fingerprint, alias-only resolution, startup validation, atomic alias swap,
+stage telemetry, real Docker v1.9.2 acceptance.**
+
+Reason: Phase 5D4B proved 33-query in-memory parity but left serving-integrity
+gaps: optional fingerprint gate, physical-collection fallback for
+`kb_cswp_serving`, deferred validation (KeyError risk), non-atomic alias
+repoint, and no real Qdrant acceptance.
+
+Repair (no retrieval-semantics change; no holdout eval):
+
+- **`cswp_qdrant` startup** — always validates dim 384, cosine, payload
+  schema, compiler version, MiniLM pin `1110a243…`, required payload fields,
+  point count, and index fingerprint against
+  `kb/indexes/cswp_v1/qdrant_shadow_manifest.json`; no env opt-out.
+- **Alias-only serving** — refuses physical collection named `kb_cswp_serving`
+  without a real alias mapping.
+- **Atomic alias swap** — `create_serving_alias` deletes existing alias and
+  creates new mapping in one `update_collection_aliases` transaction.
+- **Stage telemetry** — `retrieve()` returns per-stage ms (hydrate, dense,
+  bm25, fusion, expand, pack, total); `validate_startup()` returns full
+  contract pins.
+- **`tests/test_phase5d4c_serving_hardening.py`** — hardening gates plus
+  isolated Docker `qdrant/qdrant:v1.9.2` 33-query parity (packed recall
+  0.93939394, zero RRF/packed regressions).
+
+Parity at parent `e2a8fce61bc90016bfe45cc9060c0ea9e5422848`: local and Qdrant
+packed recall both 0.93939394; exact RRF top-5 identity; zero provider calls.
+
+Status: **PHASE-5D4C-SERVING-HARDENING-READY** (pending GitHub CI).
+
+Confidence: 0.94
+
+---
+Decision ID: D-2026-09-19-04
+Date: 2026-09-19
+
+Decision: **Phase 5D4B explicit CSWP serving backend — fail-closed
+`KB_BACKEND` selector, local default, durable Qdrant serving via
+`kb_cswp_serving` alias with payload hydration; 33-query parity proven.**
+
+Reason: Phase 5D3 proved shadow Qdrant parity but serving remained
+hard-wired to in-memory qualified RAG. Phase 5D4B adds an explicit backend
+contract so production can serve from local CSWP artifacts (developer default)
+or from durable Qdrant without silent fallback, legacy `query_kb` authority,
+or `machinist_evergreen` reads.
+
+Repair (no retrieval-semantics change; no holdout eval; no production alias
+activation outside isolated tests):
+
+- **`KB_BACKEND=cswp_local | cswp_qdrant`** — unset → `cswp_local`; unknown
+  values (`memory`, `qdrant`, `auto`) abort at startup.
+- **`agent/kb_backend/`** — selector, local wrapper, Qdrant serving with
+  BM25/expand/pack hydrated from Qdrant payloads (not `units.jsonl`).
+- **`kb_cswp_serving`** — code-pinned alias; `BLOCKED_COLLECTIONS` includes
+  `machinist_evergreen`; serving URL is `QDRANT_URL` only.
+- **Warmup** — API lifespan and CLI warm the selected backend; legacy
+  `tools.query_kb.warmup` removed from API path.
+- **`docker-compose.prod.yml`** — `KB_BACKEND=cswp_qdrant`.
+- **`tests/test_phase5d4b_serving_backend.py`** — selector gates, payload
+  hydration proof (corrupt local units.jsonl), alias swap/rollback, 33-query
+  packed recall 0.93939394 both backends, zero regressions.
+
+Parity at parent `0f0b992ff66aa0cc5679b4f42a29536135fb411b`: local and Qdrant
+packed recall both 0.93939394; zero per-query regressions; alias swap/rollback
+verified in-memory; zero provider calls; legacy `query_kb` not imported by
+Qdrant serving path.
+
+Status: **PHASE-5D4B-SERVING-BACKEND-READY** (pending GitHub CI).
+
+Confidence: 0.93
+
+---
+Decision ID: D-2026-09-19-03
+Date: 2026-09-19
+
+Decision: **Phase 5D3 durable shadow Qdrant CSWP index — production retrieval
+extracted, versioned non-serving collection, 33-query parity proven; no alias
+cutover.**
+
+Reason: Production `qualified_rag` imported experiment scripts for hybrid
+ranking, expansion, and packing. Phase 5D3 extracts those primitives into
+`agent/retrieval/`, builds a durable shadow Qdrant index from production-owned
+`kb/indexes/cswp_v1/`, and proves exact dense/BM25/RRF/packed parity against
+the in-memory qualified path before any serving cutover.
+
+Repair (no serving alias swap, no `machinist_evergreen` mutation):
+
+- **`agent/retrieval/`** — production chunks, encoder pin, fusion, expansion,
+  metrics (extracted from phase5a2/phase5b1 algorithms unchanged).
+- **`agent/shadow_qdrant/`** — index lifecycle (full rebuild, upsert document,
+  update/delete by version), payload contract, exact-search shadow retrieval.
+- **`agent/qualified_rag.py`** — imports production modules only; no
+  `scripts/` or `reports/` authority.
+- **`kb/indexes/cswp_v1/qdrant_shadow_manifest.json`** — index fingerprint,
+  collection `ca_cswp_v1_5141e33453611e44`, 159 points, MiniLM
+  `1110a243…`, payload schema v1.
+- **`scripts/phase5a2_shadow_ab.py` / `scripts/phase5b1_candidate_c.py`** —
+  thin wrappers re-exporting production modules for historical evals.
+- **`tests/test_phase5d3_qdrant_shadow.py`** — deterministic IDs, payload,
+  neighbors, lifecycle, 33-query parity gate (packed recall 0.93939394).
+
+Parity at parent `7024d522f2117688c5f10894dfea22f516e652ac`: dense top-20
+identity match 33/33; BM25 identity 33/33; RRF top-5 identity 33/33; baseline
+and shadow packed recall both 0.93939394; zero packed regressions; rebuild
+deterministic; update/delete lifecycle verified; zero provider calls; zero
+production Qdrant writes.
+
+Status: **PHASE-5D3-QDRANT-SHADOW-READY** (local commit; not pushed).
+
+Confidence: 0.94
+
+---
+Decision ID: D-2026-09-19-02
+Date: 2026-09-19
+
+Decision: **Phase 5D2 production CSWP ingest compiler — production-owned
+`kb/indexes/cswp_v1/` artifacts with current-corpus qualification parity; no
+Qdrant write.**
+
+Reason: Qualified runtime previously depended on
+`reports/phase5/phase5a2e/candidate_cswp_manifest.json` and experiment script
+modules for authoritative corpus data. Phase 5D2 extracts parser → structural
+children → CSWP-v1 packer into `agent/cswp/`, compiles the frozen 20-document
+seed corpus deterministically, attaches same-document neighbor metadata, and
+writes production-owned `units.jsonl` + `manifest.json`. Historical
+representation fingerprint `439ccdf…` is asserted only in qualification
+tests, not hardcoded as a generic compiler gate.
+
+Repair (no Qdrant / ranking / serving cutover beyond fail-closed production
+loader):
+
+- **`agent/cswp/`** — production structural parser, CSWP packer, compiler,
+  loader, CLI (`python -m agent.cswp`).
+- **`kb/indexes/cswp_v1/`** — compiled 159-unit index with neighbor metadata.
+- **`agent/qualified_rag.py`** — loads production index; fail-closed on
+  fingerprint mismatch with historical qualified representation.
+- **`scripts/phase5a1_shadow.py` / `scripts/phase5a2e_cswp.py`** — thin
+  wrappers over production module so Phase-5 evals keep working without a
+  second algorithm.
+- **`tests/test_phase5d2_cswp_compiler.py`** — current-corpus parity gate.
+
+Parity at parent `514a2bc5216cd5c744e9b3a80335b103fe3b0768`: 159 units;
+representation fingerprint `439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`;
+byte-identical rebuild; zero silent truncation; zero provider/Qdrant writes.
+
+Status: **PHASE-5D2-CSWP-COMPILER-READY** (local commit; not pushed).
+
+Confidence: 0.95
+
+---
+Decision ID: D-2026-09-19-01
+Date: 2026-09-19
+
+Decision: **Phase 5D0 CI/runtime reproducibility repair — hermetic default CI
+with pinned MiniLM provisioning and BGE tokenizer fixture isolation.**
+
+Reason: GitHub Actions CI on `feature/phase5-rag-hardening` failed with four
+test errors: two BGE tokenizer setup errors (`config.json` identity mismatch
+against runner HF cache state) and two production-integration failures
+(`resolve_local_model_snapshot` could not find pinned MiniLM
+`1110a243…` on a clean runner). Lint passed; 1402 other tests passed.
+
+Repair (no retrieval/ranking/packing architecture changes):
+
+- **MiniLM (production runtime dependency):**
+  `scripts/provision_minilm_snapshot.py` downloads/verifies
+  `sentence-transformers/all-MiniLM-L6-v2@1110a243…` before tests; CI caches
+  the snapshot directory and sets `HF_HUB_OFFLINE=1` /
+  `TRANSFORMERS_OFFLINE=1` for smoke + pytest. `SentenceTransformer(…,
+  local_files_only=True)` remains fail-closed.
+- **BGE (experimental, not production path):** committed
+  `evals/fixtures/phase5a2j_bge_reranker_tokenizer/` (tokenizer/config only);
+  default-CI pair-length tests use the fixture instead of runner HF cache.
+  Full ~1GB BGE weights remain off the default CI path.
+- **Clean inference smoke:** `scripts/inference_smoke.py` — warmup + one
+  deterministic qualified KB retrieval, zero provider calls.
+
+Artifacts:
+
+- `scripts/provision_minilm_snapshot.py`
+- `scripts/inference_smoke.py`
+- `evals/fixtures/phase5a2j_bge_reranker_tokenizer/`
+- `.github/workflows/ci.yml`
+- `scripts/phase5a2j_bge_rerank.py` (`TOKENIZER_FIXTURE`)
+- `tests/test_phase5a2j_bge_rerank.py`
+
+Status: **PHASE-5D0-CI-RUNTIME-REPAIR-LANDED** (pending GitHub CI confirmation).
+
+Confidence: 0.93
+
+---
+Decision ID: D-2026-09-18-06
+Date: 2026-09-18
+
+Decision: **Phase 5B3 production qualified RAG integration complete;
+production path live-wired and parity-verified.**
+
+Reason: Exact required parent
+`912342ac0e735af152833d21cf1c8e821532a600` was clean and pushed before
+implementation. Production `retrieve_node` now uses local CSWP manifest
+hybrid retrieval (all-MiniLM-L6-v2 dense + raw BM25 + RRF k=60), ±1
+expansion, seed-first pack, and `DRAFTER_PACKED_EVIDENCE_V1` drafter
+exposure. Verifier manifest consumes the same packed KB identity. Legacy
+`kb_results[:3]` and per-KB 2000-character clipping are bypassed for
+qualified KB results. Production Qdrant is not read/written on this path.
+
+Gating exposure recall measured on production code: retrieved
+`0.78787879`, expanded/packed/drafter/verifier `0.93939394`. Q22 packed
+1.0. Q19/Q21/Q30 unchanged at 0.5. Zero seed-identity mismatches vs frozen
+CSWP hybrid top-5. Two runs share
+`d0030d8e96dad388ee9c67144bc01e50f9c037a79e544fc628f06dacc9000548`.
+
+Artifacts:
+
+- `agent/qualified_rag.py`
+- `agent/nodes.py` (retrieve + draft wiring)
+- `agent/semantic_analyzer/contract.py` (verifier parity)
+- `scripts/phase5b3_production_integration.py`
+- `reports/phase5/phase5b3/`
+- `tests/test_phase5b3_production_integration.py`
+
+Status: **PHASE-5B3-PRODUCTION-RAG-INTEGRATION-READY.** Q19/Q21/Q30
+retrieval gaps remain upstream.
+
+Confidence: 0.96
+
+---
+Decision ID: D-2026-09-18-05
+Date: 2026-09-18
+
+Decision: **Phase 5B2C seed-first packing integration complete; combined
+Candidate-C + DRAFTER_PACKED_EVIDENCE_V1 contract ready for live-wiring
+consideration (not yet wired).**
+
+Reason: Exact required parent
+`41261a1a12ffba8a8051debc84b27055985c1b4f` was clean and pushed before
+implementation. The only change was Candidate-C packing priority: pass-1
+unique frozen top-5 SEED units, pass-2 deduplicated ±1 neighbors within
+the existing 2000 cl100k whole-unit budget. Contiguous Structural Window
+Packing representation, retrieval, expansion, dedup, and
+DRAFTER_PACKED_EVIDENCE_V1 shadow contract were preserved; production
+`draft_node` unchanged.
+
+On 33 gating queries, exposure recall is retrieved `0.78787879`,
+expanded `0.93939394`, seed-first packed `0.93939394`, packed-contract
+drafter `0.93939394`, verifier `0.93939394`. Q22 recovers 0.5→1.0 at
+pack (primary seed-first test). All six prior drafter-recovered cases
+remain at 1.0. Q19/Q21/Q30 unchanged at 0.5. Zero regressions vs
+expanded; zero seeds exceeding 2000 cl100k alone; seed-preservation
+invariant holds on all queries. Median packed tokens 1578 (legacy
+frozen-order median 1578; max 1986). Two runs share
+`75ab169bd69408e984d788952ee8d7b699b8edb8ede037112effb85dcf32f4cf`.
+
+Artifacts:
+
+- `scripts/phase5b1_candidate_c.py` (`pack_units_seed_first`)
+- `scripts/phase5b2c_seed_first_pack.py`
+- `evals/fixtures/phase5b2c_seed_first_pack_contract.json`
+- `reports/phase5/phase5b2c/`
+- `tests/test_phase5b2c_seed_first_pack.py`
+
+Status: **PHASE-5B2C-COMBINED-EXPOSURE-READY.** Combined deterministic
+contract qualified; live wiring of pack policy + drafter shadow contract
+remains a separate gated step. Q19/Q21/Q30 retrieval gaps remain
+upstream.
+
+Confidence: 0.97
+
+---
+Decision ID: D-2026-09-18-04
+Date: 2026-09-18
+
+Decision: **Phase 5B2A DRAFTER_PACKED_EVIDENCE_V1 shadow contract evaluation
+complete; shadow contract ready for live-wiring consideration (not yet wired).**
+
+Reason: Exact required parent
+`fe6d35970e9c2b4ed5e494a2cea07a0287fc3f4b` was clean. Production
+`draft_node`, retrieval, Candidate-C pack, and verifier were unchanged.
+The only variable was a shadow drafter KB exposure contract that consumes
+all Candidate-C PACKED groups with no secondary top-3 gate or 2000-char
+clip.
+
+On 33 gating queries, exposure recall is packed `0.92424242`, legacy
+drafter `0.75757576`, packed-contract drafter `0.92424242`, verifier
+`0.92424242`. All six known PACKED→legacy drafter losses (Q09, Q17, Q28,
+Q31, Q32, Q34) recover under the shadow contract. Q22 remains 0.5 (lost at
+PACKED; not falsely attributed to drafter). Top-K losses eliminated on
+Q09/Q17/Q31/Q34; clipping losses eliminated on Q28/Q32. Zero new
+regressions; packed-group identity and verifier evidence-set parity hold.
+Median packed-contract drafter context: 4 groups, 6842 chars, 1578 cl100k
+tokens (legacy median 3 / 4000 / 1078). Two runs share
+`d71f5f8f49565ca05b4c239dbb4ca1b02058eb27ef70d54003eb227a713f6402`.
+
+The downstream drafter exposure gap is contract-caused, not retrieval- or
+pack-caused. Live wiring remains a separate gated step.
+
+Artifacts:
+
+- `agent/drafter_packed_evidence.py`
+- `evals/fixtures/phase5b2a_drafter_pack_contract.json`
+- `scripts/phase5b2a_drafter_pack_contract.py`
+- `reports/phase5/phase5b2a/`
+- `tests/test_phase5b2a_drafter_pack_contract.py`
+
+Status: **PHASE-5B2A-DRAFTER-PACK-CONTRACT-READY.** Shadow contract
+qualified; do not wire to production `draft_node` without explicit
+go-ahead. Q22 pack-order loss and Q19/Q21/Q30 retrieval gaps remain
+upstream blockers for full Candidate-C promotion.
+
+Confidence: 0.97
+
+---
+Decision ID: D-2026-09-18-03
+Date: 2026-09-18
+
+Decision: **Phase 5B1 Candidate C v1 bounded adjacent-neighbor expansion
+evaluation complete; Candidate C v1 does not qualify to advance.**
+
+Reason: Exact required parent
+`f67b07054a8823ffbc6b3ebc23c3233f9e5e7496` was clean and was pushed to
+`origin/feature/phase5-rag-hardening` before implementation. Retrieval
+ranks stayed bit-identical to the frozen 5A2E CSWP hybrid/RRF top-5.
+The only new variable was post-retrieval ±1 same-document neighbor
+expansion plus a standalone 2000 `cl100k_base` whole-unit pack. This is
+not full parent-child retrieval, not a reranker, and not a production
+change. No BGE/MS-MARCO seeds, embeddings, RRF, gold-driven neighbors,
+distance-2, or H1 dumps.
+
+On 33 gating queries, exact-span evidence recall is retrieved
+`0.78787879`, expanded `0.93939394`, packed `0.92424242`,
+drafter-exposed `0.75757576`, verifier-exposed `0.92424242`. Expanded
+is not retrieval Recall@5. Q13 recovers at every layer (0→1). Q09
+recovers at expanded/packed/verifier but not drafter (rank-4 completing
+neighbor). Q22 recovers only at expanded; the 2000-token skip-and-continue
+pack drops a complementary piece. Q19/Q21/Q30 remain unsolved as
+preregistered. Zero grade-2 spans retrieved at top-5 were lost at packed.
+Median retrieved/expanded/packed tokens are 986 / 1578 / 1578 cl100k;
+packed max 1988. Two runs share
+`74b2dac5179630690ecc12741613318ba9c5ec1384569e01425d35f8fe3b08c9`.
+
+Expanded-only gains are not sufficient for promotion. Q13 is a real
+exposure win; Q22 packing and Q09 drafter K=3 remain blocking.
+
+Artifacts:
+
+- `evals/fixtures/phase5b1_candidate_c_contract.json`
+- `scripts/phase5b1_candidate_c.py`
+- `reports/phase5/phase5b1/`
+- `tests/test_phase5b1_candidate_c.py`
+
+Status: **PHASE-5B1-CANDIDATE-C-EVALUATION-READY; CANDIDATE C v1 NOT READY
+TO ADVANCE.** Keep frozen retrieval. Next: inspect Q22 pack-order
+complementary-span loss and Q09 drafter K=3 miss. Do not dump parents,
+change ranking, or mix Q19/Q30 candidate generation into this arm.
+
+Confidence: 0.96
+
+---
+Decision ID: D-2026-09-18-02
+Date: 2026-09-18
+
+Decision: **Phase 5A2E CSWP-v1 contiguous packing evaluation complete;
+CSWP-v1 does not qualify to advance.**
+
+Reason: Exact required parent
+`fa7eefbc0eeb6eb8570577a8e19497bfbd2a21b8` was clean, contained the 5A2B
+checkpoint, and was pushed to `origin/feature/phase5-rag-hardening` before
+implementation. CSWP-v1 is a new shadow representation. Frozen A, B, and
+B-PACKED were not modified. The packer builds a lossless source-segment
+ledger, packs source-adjacent paragraphs/lists/seams/complete H2–H6 headings,
+keeps H1 and protected blocks as barriers, serializes title plus
+in-slice-aware breadcrumb plus verbatim contiguous source, and prepends
+labelled left overlap. MiniLM
+`all-MiniLM-L6-v2@1110a243`, dense cosine, BM25 `lower().split()`, candidate
+K=20, RRF k=60, final K=10, golden-v2, and metric implementation were held
+identical. No reranker, query rewrite, semantic chunking, Candidate C, or
+embedding change. Production retrieval and Qdrant were unused; provider and
+external evaluation network calls were zero.
+
+CSWP reduced 510 B children to 159 retrieval units (median/p95/max 254
+content tokens; 0 units above 254; 0 coverage gaps; 0 unlabelled overlaps;
+0 provenance failures). Both builds share fingerprint
+`439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`. Two
+retrieval repetitions share result SHA-256
+`ad8203ddbbd95fc6f46c0566eef5ab5f83e451350cb27f31704d894df866cfd7`.
+Historical A/B metrics reproduced 5A2; B-PACKED reproduced 5A2B.
+
+On the 33 gating queries, hybrid exact evidence-span Recall@5 is
+`A=0.84848485 / B=0.51515152 / B-PACKED=0.50000000 / CSWP=0.78787879`.
+CSWP MRR@10 is `0.95707071` versus A `0.97979798`; nDCG@5 is `0.95478073`
+versus A `0.97094024`. Versus A: 4 improved (Q11/Q15/Q30/Q31), 23 same
+including recovered Q07/Q14/Q23, and 6 regressed (Q09/Q13/Q16/Q17/Q22/Q34).
+Q09 remains correctly split when the window exceeds 254 but is not retrieved
+at hybrid K=5. Q02/Q19/Q20/Q21 match A and are not claimed as representation
+wins. Vector count is `2.178x` A (159 vs 73), versus B `6.99x`. Hybrid top-5
+unique sources are `1.939` versus A `2.970`; remaining crowding is
+same-document large-window occupancy, not B's small-child occupancy.
+Descriptive dense latency is `1.37x` A.
+
+Beating B is not success. A remains the quality reference. CSWP-v1 does not
+advance: evidence recovery is incomplete, and averages hide gating
+regressions versus A.
+
+Artifacts:
+
+- `evals/fixtures/phase5a2e_cswp_contract.json`
+- `scripts/phase5a2e_cswp.py`
+- `reports/phase5/phase5a2e/`
+- `tests/test_phase5a2e_cswp.py`
+
+Status: **PHASE-5A2E-CSWP-EVALUATION-READY; CSWP-v1 NOT READY TO ADVANCE.**
+Retain A as control, retain frozen B/B-PACKED/CSWP-v1 unchanged, and
+adjudicate remaining split-window misses and ranking-only failures
+read-only. Do not retune overlap, implement C, or change production
+retrieval.
+
+Confidence: 0.97
+
+---
+Decision ID: D-2026-09-18-01
+Date: 2026-09-18
+
+Decision: **Phase 5A2 A-vs-B shadow retrieval evaluation complete; frozen
+Candidate B does not qualify to advance as-is.**
+
+Reason: Exact required parent
+`4a1567544005eba30c5f679aa66de3dc76b567d3` was clean, contained required
+ancestors `260dfd7`, `5823cc8`, and `f269ab7`, and was pushed to
+`origin/feature/phase5-rag-hardening` before 5A2 work. The experiment rebuilt
+isolated local indexes for the 73 legacy chunks and 510 frozen 5A1 children.
+Both arms used the same local `all-MiniLM-L6-v2@1110a243`, encoder call,
+normalized exhaustive cosine search, `rank_bm25.BM25Okapi` with
+`lower().split()`, raw golden-v2 query text, candidate K=20, RRF k=60, final
+K=10, and Phase-5A0 metric functions. Production retrieval and Qdrant were not
+imported, read, or mutated; external network and provider calls were zero.
+
+On the 33 gating queries, hybrid exact evidence-span Recall@1/3/5/10 changed
+from A `0.57575758 / 0.78787879 / 0.84848485 / 0.90909091` to B
+`0.09090909 / 0.28787879 / 0.51515152 / 0.56060606`. Hybrid MRR@10 changed
+`0.97979798 → 0.96969697`; graded nDCG@1/3/5/10 changed
+`0.96969697 / 0.97094024 / 0.97094024 / 0.97094024` to
+`0.91919192 / 0.95448330 / 0.95807764 / 0.95807764`. Hybrid source Recall@5
+held at `0.98484848`, demonstrating again that source presence does not prove
+exact evidence coverage. B's Precision@5 rose `0.56969697 → 0.82424242`, but
+this coincided with average hybrid top-10 source diversity falling
+`5.60 → 2.74285714` and repeated-source slots rising `4.40 → 7.25714286`;
+precision therefore cannot be treated as the winner signal.
+
+Conservative per-query authority classified Q30, Q31, and Q34 improved; Q15
+same; and 19 gating queries regressed, including Q07, Q19, Q21, corrected-gold
+Q22, and Q23. Q19 and Q21 each fell from exact-span Recall@5 `0.5` to `0.0`;
+Q22 fell `1.0 → 0.5`; Q07 and Q23 fell `1.0 → 0.0`. Supported mechanisms
+include evidence split across structural children, RRF interaction, and
+small-child candidate crowding. Narrower claims about serialization or BM25
+lexical dilution remain unproven without separate ablations.
+
+Corpus cost was explicit: vectors and document embedding outputs grew by 437,
+or `6.98630137x`; float32 vector payload grew by 671,232 bytes before metadata
+or index overhead; effective embedded content WordPieces grew
+`17,650 → 31,963`. Small-child crowding met the frozen diagnostic definition
+on 26/35 queries. Across the two local repetitions, mean dense retrieval
+latency was `4.42–5.31x` A and BM25 retrieval latency was `2.43–3.96x` A;
+these are descriptive single-machine observations, not capacity claims.
+
+Artifacts:
+
+- `scripts/phase5a2_shadow_ab.py`
+- `reports/phase5/phase5a2/experiment_manifest.json`
+- `reports/phase5/phase5a2/aggregate_comparison.json`
+- `reports/phase5/phase5a2/per_query_comparison.json`
+- `reports/phase5/phase5a2/failure_analysis.json`
+- `reports/phase5/phase5a2/runtime_summary.json`
+- `tests/test_phase5a2_shadow_ab.py`
+
+Two repeated runs produced identical deterministic result SHA-256
+`70b4552f4cc3f908b44030df2fe3439e19486b1bb30d7f9b042fa8a5cbfcab56`.
+Candidate B still has zero overflows, tokenizer violations, provenance
+failures, structural-boundary violations, and duplicate logical IDs. Those
+representation properties are necessary but did not compensate for retrieval
+regression.
+
+Status: **PHASE-5A2-A-B-EVALUATION-READY; B NOT READY TO ADVANCE AS FROZEN.**
+The next recommended experiment is one pre-registered structural-packing
+ablation: combine adjacent compatible blocks only inside the same structural
+parent up to the unchanged 254-WordPiece hard limit, assign a new
+chunker/serialization identity, then compare A vs frozen B vs packed B under
+the identical model, raw queries, candidate K, fusion, metrics, and per-query
+regression gates. Do not alter the frozen 5A2 evidence.
+
+Confidence: 0.98
+
+---
+Decision ID: D-2026-09-17-04
+Date: 2026-09-17
+
+Decision: **Phase 5A0 Baseline A measured; production RAG hardening contract frozen.**
+
+Reason: The corrected retrieval-golden v2 foundation now supports a reproducible
+source-only control. Baseline A was reconstructed at required starting HEAD
+`f269ab760fc78f0b3a65618ae0c744649d1a0a2e` from 20 ordered Markdown sources
+and 73 exact legacy 400/50 chunks, without reading or mutating an operational
+Qdrant collection. Local MiniLM revision `1110a243…` reproduces silent
+truncation exposure in 64/73 chunks; 24/35 queries have at least one adjudicated
+span intersecting a truncated tail in an overlapping legacy chunk. Tail
+intersection remains exposure evidence, not automatically a causal ranking
+claim.
+
+Measured 33-query gating slice at hybrid K=5: source recall `0.98484848`,
+Precision@5 `0.56969697`, graded nDCG@5 `0.97094024`, exact evidence-span recall
+`0.83333333`, MRR@10 `0.97979798`. Four gating queries (Q15, Q19, Q21, Q22)
+miss a grade-2 exact evidence span at hybrid K=5. Q07 and Q23 lose evidence
+between retrieved top-5 and drafter-exposed top-3; verifier exposure adds no
+top-5 loss. No ABSENT metric was invented because v2 has zero ABSENT cases.
+
+Frozen architecture: deterministic document/version/block/chunk/index IDs;
+exact Markdown/PDF-ready provenance; canonical content separate from payload
+metadata and retrieval text; Candidate A legacy control; Candidate B structural
+tokenizer-safe children; Candidate C bit-identical B retrieval plus deterministic
+same-parent expansion under an A-matched consumer token budget; dense and BM25
+rank the same canonical child IDs; RRF fuses IDs; immutable digest-named shadow
+indexes; explicit retrieved/expanded/packed/drafter/verifier manifests.
+
+Conditional only: BM25 redesign, reranking, query transformation, generated
+context, semantic chunking, embedding replacement, HNSW tuning, late
+interaction, and GraphRAG. Promotion cannot hide a critical per-query
+regression or rely on aggregate gain/zero truncation alone.
+
+Artifacts:
+
+- `scripts/phase5a0_baseline.py`
+- `reports/phase5/phase5a0/baseline_a_manifest.json`
+- `reports/phase5/phase5a0/legacy_chunk_truncation.json`
+- `reports/phase5/phase5a0/baseline_a_report.json`
+- `evals/fixtures/phase5a0_abc_contract.json`
+- `docs/PHASE5_RAG_ARCHITECTURE_CONTRACT.md`
+- `tests/test_phase5a0_baseline.py`
+
+Operational boundary: production retrieval behavior unchanged; production
+Qdrant reads/writes 0; provider calls 0; no reranker, BM25 redesign, query
+transformation, embedding change, semantic chunking, push, PR, or deployment.
+
+Status: **PHASE-5A0-RAG-HARDENING-CONTRACT-READY.** Next authorized slice is
+5A1 shadow Markdown parser/provenance/deterministic-ID/structural-child
+implementation, stopping before embedding or Qdrant writes unless separately
+authorized.
+
+Confidence: 0.95
+
+---
+Decision ID: D-2026-09-17-03
+Date: 2026-09-17
+
+Decision: **Retrieval golden v2 integrity correction + Phase-5 eval contract hardened (PRE-5A0).**
+
+Reason: Independent adjudication distinguishes ambiguity from partial answerability.
+Q25/Q26 were incorrectly encoded as PARTIAL; corrected to ANSWERABLE with
+gating_eligible=false. Authoritative aggregate: ANSWERABLE=30, PARTIAL=5 (Q31–Q35),
+ABSENT=0. Phase-5 evaluation contract now requires three non-collapsible layers
+(retrieval with Precision@K and graded nDCG, evidence exposure, end-to-end),
+per-query regression reporting, golden-set roadmap, true holdout contract,
+mandatory future ABSENT slice, living regression lifecycle, and production RAG
+principles.
+
+Artifacts:
+
+- `evals/fixtures/retrieval_golden_v2.json` — dataset_status
+  DEVELOPMENT/DIAGNOSTIC NUCLEUS; answerability aggregate corrected.
+- `scripts/retrieval_golden_v2.py` — enforces Q25/Q26 ANSWERABLE, 30/5/0 aggregate,
+  adjudication_summary consistency.
+- `docs/PHASE5_RAG_EVALUATION_CONTRACT.md` — canonical Phase-5 eval design.
+
+Does NOT change: production retrieval, chunking, embeddings, Qdrant, v1 GOLDEN_SET.
+
+Status: **RETRIEVAL-GOLD-V2-INTEGRITY-CORRECTED.** Phase 5A0 may restart.
+
+Confidence: 0.94
+
+---
+Decision ID: D-2026-09-17-02
+Date: 2026-09-17
+
+Decision: **Retrieval golden set v2 — diagnostic evaluator contract frozen (PRE-5A0).**
+
+Reason: Phase 5A0 was blocked on invalid v1 retrieval labels. Independent
+35-query corpus adjudication found v1 CORRECT=7, INCOMPLETE=20, WRONG=6,
+AMBIGUOUS=2; old OOS genuinely ABSENT=0, PARTIAL=5 (Q31–Q35). V1
+`required_concepts` substring checks are not authoritative in v2; evidence
+obligations bound to adjudicated source spans are.
+
+Artifacts:
+
+- `evals/fixtures/retrieval_golden_v2.json` — schema `retrieval_golden_v2`, 35
+  queries, graded relevance (1/2), evidence spans, answerability separate from
+  retrieval relevance.
+- `scripts/retrieval_golden_v2.py` — deterministic validator (no semantic model).
+- `evals/fixtures/retrieval_baseline_a_identity.json` — Baseline A identity
+  sidecar for 5A0 restart (73-chunk clean reconstruction, MiniLM-L6-v2 local
+  revision `1110a243…`, production revision NOT_VERIFIABLE).
+
+Preserved unchanged: `scripts/retrieval_eval.py` (v1 GOLDEN_SET), archived
+retrieval eval reports, historical thresholds.
+
+V2 policy: zero ABSENT queries; zero holdout; Q25/Q26 AMBIGUOUS non-gating;
+Q31–Q35 PARTIAL not OOS; absence/OOS rejection quality not measurable from this
+set; `min_distance_threshold=0.5` not reused as absence oracle.
+
+Does NOT change: production retrieval, chunking, embeddings, Qdrant.
+
+Status: **RETRIEVAL-GOLD-V2-FROZEN.** Phase 5A0 may restart; 5A0 not complete.
+
+Confidence: 0.92
+
+---
 Decision ID: D-2026-09-17-01
 Date: 2026-09-17
 
@@ -2995,3 +3612,1009 @@ Evidence: draft_node signature (topic/series/feedback only) + graph.py edge orde
 Tradeoffs: M1 must run first to size how much of the gap M2 must close; do not start M2 before M1 returns.
 
 Status: Accepted as priority (locked); execution gated on M1 outcome.
+
+
+---
+Decision ID: D-2026-10-05-01
+Date: 2026-10-05 (canonical reconciliation of completed qualification)
+
+Decision: **Phase-5 authoritative qualification protocol CLOSED; one-shot
+HOLDOUT-V2 PASS belongs only to the exact qualified base.**
+
+Evidence: `PHASE5-AUTH-PROTOCOL-1`, frozen checklist/validation documents;
+qualified SHA `e0cfe0b566134f848feb731a777f315eb1456dd2`; historical exact-SHA
+CI `36997080859`; immutable attempt archive
+`reports/phase5/phase5e1a/holdout-run-1` (20 artifacts). Exactly one production
+V2 attempt executed, with its protocol-required executions inside that attempt;
+no retry or tuning. Evidence-bearing macro packed recall `0.93333333`,
+ANSWERABLE `0.91666667`, every PARTIAL available-evidence gate PASS;
+determinism, local/Qdrant parity, score truth and independent completed
+verification PASS. See ledger `VAL-2026-10-05-01`.
+
+Reason: Protocol readiness, public parity, finalized archive, and independently
+verified completed qualification are distinct authorities. The completed V2
+attempt is authoritative retrieval qualification for that code SHA only.
+Application-only descendants require separate review/CI/application evidence;
+they are not retroactively holdout-tested. Neither retrieval qualification nor
+CI establishes application E2E PASS, deployment identity, or pilot readiness.
+
+Status: **CLOSED / PHASE-5-HOLDOUT-V2-PASS**, qualified base only. No holdout
+execution/access, evidence regeneration, approval mutation, or retrieval change
+is authorized by this reconciliation.
+
+Supersession: Closes pending authoritative Phase-5 qualification status, not
+historical failed/invalid evidence or unrelated application-quality questions.
+
+---
+Decision ID: D-2026-10-05-02
+Date: 2026-10-05
+
+Decision: **Post-qualification HTML API rejection correction accepted,
+independently audited and fast-forward integrated with exact-SHA CI.**
+
+Defect: Real FastAPI reject endpoints construct dictionary resume values
+`{"action":"reject"}`. In API mode, the production HTML review node previously
+fell through to forbidden CLI `input()` for that rejection.
+
+Correction: Candidate `2a1d95f98b2b240750288924116f8a77b3492250`, single parent
+`e0cfe0b566134f848feb731a777f315eb1456dd2`, adds terminal fail-closed rejection
+to `hitl_html_node`'s API branch. Supporting real interrupt/resume/API regressions
+are in `tests/test_real_hitl_api.py`. Reject and missing/unknown action terminate
+rejected without CLI input/publication; approve and feedback/request_changes
+preserve existing behavior. Real article-gate approve/reject/feedback dictionary
+contracts were checked without broadening article-gate code.
+
+Evidence: Isolated two-file application/test delta; independent bounded audit
+PASS; normal fast-forward push, no rewritten/new integration SHA; GitHub push CI
+[37296752071](https://github.com/anudeepreddy332/content-agent/actions/runs/37296752071)
+completed successfully at exact `2a1d95f` (lint/test PASS, PR-only eval skipped).
+See ledger `VAL-2026-10-05-02`.
+
+Boundary: No retrieval, corpus, model/index identity, ranking, expansion/packing,
+qualification protocol, metric/threshold, approval record, sealed evidence, or
+publication architecture delta. V2 PASS remains attributed solely to `e0cfe0b`.
+Direct scalar `Command(resume=...)` at the article gate is outside the current
+FastAPI dictionary payload contract: NONBLOCKING / optional P2 hardening,
+absent a demonstrated reachable HTTP path. It did not broaden this correction.
+
+Status: **VALIDATED / INTEGRATED / EXACT-SHA CI PASS**, application-only scope.
+Not a holdout-tested descendant or application E2E PASS.
+
+---
+Decision ID: D-2026-10-05-03
+Date: 2026-10-05
+
+Decision: **APPLICATION-E2E-RUN-1 = FAILED / REJECTED AT GATE 1. Preserve the
+failure and separate output reliability/routing findings from retrieval success.**
+
+Evidence: One real authenticated FastAPI run
+`50b11781-3513-46d6-92c6-ff1f3d1cd56a`, execution SHA
+`2a1d95f98b2b240750288924116f8a77b3492250`, topic “Gradient Descent: A Beginner
+Learning Note,” card `standalone`, series `Learning Log`. Real `cswp_local`
+retrieval returned 10 web sources and 11 packed KB evidence items. Six DeepSeek
+requests (draft/inventory/reflection twice), three Tavily searches, no retries;
+reported model-cost estimate `$0.02307958`. Final structured draft output was
+truncated/malformed and both claim-inventory extractions were unusable.
+Semantic analyzer Call B never executed; `verification_status=parse_failed`,
+grounding `0.0`, reflection `3`, publication safety false. Historical routing
+reflected despite failed verification, automatically redrafted once, and then
+reached the real `hitl_review` interrupt at the global iteration ceiling.
+
+The operator did not approve. During this reconciliation, the original process
+was alive and the same run awaited Gate 1. The authorized authenticated reject
+terminated with API `status=rejected`, `hitl_status=rejected`, checkpoint next
+nodes empty, and zero additional provider calls. No final article HTML or
+publication occurred. Local raw evidence is under
+`/tmp/content-agent-oct5-live-e2e/`; rejection receipt is
+`docs-reconciliation/run-final.json` there. Canonical result: ledger
+`EXP-2026-10-05-01`.
+
+Reason: Empty claim summaries/obligations and `no_inventory` policy defaults
+are not verified safety. Gate 1 arrival is not automated-quality acceptance;
+retrieval success does not prove semantic-verifier execution or E2E success.
+Structured-output reliability investigation remains OPEN; no retry-until-green,
+new provider run, or frozen retrieval change was performed here.
+
+Status: **APPLICATION E2E FAIL / REJECTED**. External pilot NOT READY.
+This finding motivates D-2026-10-05-04; no runtime correction is implemented
+by this documentation decision.
+
+---
+Decision ID: D-2026-10-05-04
+Date: 2026-10-05
+
+Decision: **Adopt the Astra-frozen workflow contract: quality-accepted editorial
+Gate 1, conditional verification/reflection, independent bounded feedback episodes,
+and explicit terminal outcomes.**
+
+Status: **ACCEPTED / FROZEN — IMPLEMENTATION PENDING**.
+Architecture authority: `architecture.md` section 1. Current implementation
+remains the application runtime at `2a1d95f`; this docs-only descendant does not
+implement the accepted contract.
+
+Topology: retrieve -> start quality episode -> draft. Only a valid structured
+draft reaches verify. Invalid/recoverable draft output consumes the current
+attempt and retries draft only if an attempt remains. Verify accepted ->
+reflect; VERIFY FAILED -> NEVER reflect. A repairable verification failure may
+redraft within the episode, otherwise terminates as quality/policy/execution
+failure. Reflection accepted -> Gate 1; reflection failed may redraft within
+the episode, followed by fresh verify and reflection only after verify passes;
+otherwise terminal quality failure. Cumulative resource stops always remain
+terminal, never editorial review.
+
+Frozen budgets:
+
+- LOOP A: **2 total draft attempts per quality episode: initial + 1 automatic redraft**.
+- LOOP B: **maximum 2 accepted Gate-1 content-feedback events per run**. Each
+  accepted event starts a fresh episode with its own 2-draft allowance; third
+  feedback request -> `content_revision_limit`.
+- LOOP C: **maximum 2 Gate-2 layout revision attempts after initial HTML**.
+  Failed/discarded revision consumes an attempt; third changes request ->
+  `layout_revision_limit`.
+
+Counters are separate. Previous automatic attempts do not consume a fresh
+human-feedback episode; layout revisions do not consume content attempts.
+Cumulative cost/resource limits never reset; provider transport retries remain
+separate. Lifetime `iterations` is only a monotonic trace/draft ordinal, not
+routing-budget authority. Historical P2.3 rejected `MAX_ITERATIONS > 2`; this
+keeps two drafts **per quality episode**, not one global run budget, and does
+not resurrect the rejected higher-ceiling grounding experiment.
+
+Gate1Eligible requires structurally valid current draft; current inventory /
+identity integrity; successful semantic execution; semantic acceptance;
+material/required-content acceptance; citation acceptance; valid genuine/current
+reflection bound to that same draft/attempt, score >=7; and no terminal/resource
+stop. Missing/malformed/skipped/fallback/stale reflection cannot pass. Enforce
+before the interrupt and again on approval. Gate 1 approve -> HTML; reject ->
+`terminal_rejected`; accepted content feedback -> fresh quality episode.
+
+Gate 2 is content-frozen layout/design review: approve -> existing guarded Git
+path; reject -> terminal rejected; accepted layout feedback -> html_revise ->
+Gate 2, never draft/verify/reflect. Trusted prior render may remain approvable
+after a failed layout revision. If article content must change, this run ends
+and a new content workflow begins. Initial HTML must preserve Gate-1-approved
+visible content/code, allowing only authorized formatting/citation additions:
+this equivalence guard is an accepted **IMPLEMENTATION PENDING** requirement.
+Remote publication remains separately human-triggered.
+
+Terminal outcomes: `terminal_rejected`, `terminal_quality_exhausted`,
+`policy_blocked`, `execution_failed`, `resource_exhausted`,
+`content_revision_limit`, `layout_revision_limit`, `rendering_failed`.
+They are not successful, complete, or human-reviewable outcomes. Default message:
+“Quality gates were not met within the allowed attempts. Please try again.”
+
+Explicit supersession: supersedes **only conflicting destination/routing clauses**
+in `D-2026-08-21-01`, `D-2026-09-14-05`, and
+`D-2026-09-16-06`, `D-2026-09-16-07`, and `D-2026-09-16-08`:
+unconditional verify -> reflect; exhausted failed
+quality -> HITL; failed/UNKNOWN quality -> HITL/HOLD; unbounded human revisions;
+fallback reflection score as acceptance. Preserve their valid semantic/status,
+blocker, UVR, material/required-content, inventory-integrity, citation-authority,
+and publication-safety findings. UNKNOWN remains UNKNOWN; it is not converted
+to acceptance or given an invented semantic resolver.
+
+Reason: October-5 Run 1 demonstrated that failed execution and failed quality
+could reach an editorial interrupt. Human review must review an already
+quality-accepted current artifact rather than serve as the destination for
+failed automated quality. No retrieval redesign or new verifier semantics.
+
+Governance: A material milestone is not CLOSED until relevant canonical docs
+agree with validated evidence: architecture -> architecture.md + DECISIONS.md;
+project state -> PROJECT_STATUS.md; experiment/evaluation/E2E ->
+docs/EXPERIMENT_LEDGER.md; externally visible validated capability -> README.md
+if applicable. FREEZE.md is historical. Chat and /tmp receipts are evidence
+inputs, not canonical project state.
+
+---
+Decision ID: D-2026-10-07-01
+Date: 2026-10-07
+
+Decision: **Close implementation of the frozen October-5 workflow contract on the
+canonical feature branch.** Contract authority remains `D-2026-10-05-04` and
+`architecture.md` section 1; this decision changes implementation status, not
+the frozen workflow semantics.
+
+Status: **WORKFLOW IMPLEMENTATION CLOSED ON FEATURE BRANCH / MAIN MERGE PENDING**.
+
+Initial implementation `278a8c1d52eed01cd735021e16686982c1f15dce` was
+independently audited and blocked on three P1s. Corrected candidate
+`4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` passed independent re-audit:
+reflection execution failures terminate without redraft or Gate 1; non-repairable
+execution/policy blockers precede repairable quality failures; failure terminals
+are presented truthfully across graph, API, SSE, browser, and CLI. All three prior
+P1s are CLOSED; the complete A–M frozen-workflow matrix is preserved; no remaining
+P0/P1 was found against `D-2026-10-05-04`.
+
+The corrected application-only candidate was integrated by normal fast-forward
+push to `feature/phase5-rag-hardening`. Exact-SHA push CI
+[37599028135](https://github.com/anudeepreddy332/content-agent/actions/runs/37599028135)
+completed SUCCESS (lint PASS; 1,832 tests PASS, 37 warnings; PR-only eval-gate
+skipped by design). Main remains `86712d200fd46382a876f2083f824f03a83341ab`
+and unmerged; no Phase-5 PR exists. HOLDOUT-V2 PASS remains attributable only to
+`e0cfe0b566134f848feb731a777f315eb1456dd2`; the corrected candidate was not
+holdout-tested. No corrected application E2E PASS, Phase-5 closure, or external
+pilot readiness is claimed.
+
+---
+Decision ID: D-2026-10-08-01
+Date: 2026-10-08
+
+Decision: **Accept the independently audited local metadata-only structured-output
+instrumentation as a bounded observability milestone; feature integration and
+exact-SHA CI remain pending.** This does not revise the frozen workflow authority
+in `D-2026-10-05-04` or close structured-output behavioral reliability.
+
+The October-7 forensic review of the failed October-5 E2E found incomplete draft
+JSON and unusable/empty claim-inventory output. Reported reasoning/output-budget
+pressure was supported, but provider length termination was **not proven** because
+the historical response did not retain `finish_reason`. A speculative model,
+budget, parser, retry, or routing change is therefore rejected at this milestone.
+New raw-response persistence was also rejected: existing checkpoint/telemetry
+custody did not justify adding exact assistant or reasoning text. Candidate
+`ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc` instead appends bounded metadata
+for draft, claim-inventory extraction, and reflection to the existing trace:
+request/response settings, explicit termination classification, token and
+reasoning counts, content/parser-input lengths and SHA-256, and sanitized parse
+classification. Missing `finish_reason` remains `unknown`; a token-ceiling match
+alone never proves `provider_length`. No new raw assistant/parser/reasoning text,
+prompt, credential, or sensitive header is persisted or exposed through API/SSE.
+
+Independent Sol High audit verdict **CONTENT-AGENT-OUTPUT-METADATA-AUDIT-PASS**:
+180 focused tests PASS; 1,840 ordinary offline tests PASS with 37 warnings;
+Ruff PASS; behavioral neutrality and no new P0/P1 against the instrumentation
+scope. Existing trace validation does not independently authenticate every new
+diagnostic field; this is nonblocking for metadata observability. There was no
+provider-backed instrumentation validation, holdout execution, retrieval change,
+or new V2 qualification. HOLDOUT-V2 PASS remains only at
+`e0cfe0b566134f848feb731a777f315eb1456dd2`. Remote feature remains
+`4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`; main remains
+`86712d200fd46382a876f2083f824f03a83341ab`. The candidate is not pushed,
+CI-qualified on its exact SHA, merged to main, or evidence of E2E/pilot readiness.
+
+Status: **INSTRUMENTATION VALIDATED LOCALLY / FEATURE INTEGRATION AND CI PENDING**.
+
+---
+Decision ID: D-2026-10-13-01
+Date: 2026-10-13
+
+Decision: **Record the bounded structured-output corrections and close their
+feature integration and exact-SHA deterministic CI milestone. Keep provider-backed
+reliability and Phase-5 release gates OPEN.**
+
+The October-8 metadata candidate `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`
+was followed by draft correction `97a55a570dab121bb56e4faadadeead5f32dd529`
+and October-9 inventory correction `15ba11f3e71859485db9794eba2fe725213278bb`.
+Draft and Call-A inventory requests disable thinking; an explicit
+`finish_reason=length` rejects even parseable output before downstream acceptance.
+Parser success/failure remains separately recorded; absent termination metadata
+remains unknown. Prompts, schemas, semantic Call B, reflection, and frozen workflow
+budgets/routing were not broadened by these corrections.
+
+The saved October-9 run `e7c56174-11bc-4272-87b8-d4f17908e431`
+(`outputs/runs/e7c56174-11bc-4272-87b8-d4f17908e431.json`) records two
+successfully parsed drafts, both with `finish_reason=stop`. Both Call-A inventory
+responses had empty assistant content and explicit `finish_reason=length`; each
+reported 4,000 completion tokens, all 4,000 classified as reasoning tokens.
+Inventory parsing failed twice and the application ended `execution_failed`,
+without semantic Call B, reflection, or a HITL event. The telemetry explicitly
+marks verified runtime code identity unavailable; no SHA is attributed to this
+run. This empty-output failure is distinct from the October-12 visible JSON
+that ended mid-structure.
+
+The October-12 inventory failure yielded two truncated, unusable outputs at the
+former 4,000-token Call-A limit. Independent forensic review and offline replay
+confirmed rejection before semantic Call B, reflection, or Gate 1. The evidence
+supports a bounded output-capacity correction; it does not prove complete claim
+extraction, population reliability, or a successful corrected application E2E.
+Candidate `82284129dcee8cc10f3d959e0994bacae6a5683b`, direct parent
+`15ba11f3e71859485db9794eba2fe725213278bb`, changes only `agent/nodes.py`
+and `tests/test_output_diagnostics.py`: one 12,000-token Call-A constant drives
+the request and diagnostic. Model, temperature, thinking setting, response format,
+parser, retries, Call B, reflection, and workflow contract remain unchanged.
+
+Independent Sol High verdict **CONTENT-AGENT-CALL-A-CAPACITY-AUDIT-PASS** applied
+to the bounded offline candidate: 380 focused tests passed; 1,855 ordinary tests
+passed with 37 warnings; fatal Ruff and diff check passed. Truncated inventories
+and explicit length termination still fail closed. The application-only commit
+was integrated by normal fast-forward push to `feature/phase5-rag-hardening`.
+Exact-SHA push CI [38373655918](https://github.com/anudeepreddy332/content-agent/actions/runs/38373655918)
+completed SUCCESS at `82284129` (lint PASS; 1,855 tests PASS, 37 warnings;
+PR-only eval-gate skipped). Main remains
+`86712d200fd46382a876f2083f824f03a83341ab`; no Phase-5 PR or main merge.
+
+Status: **BOUNDED CORRECTION AUDITED / FEATURE INTEGRATED / EXACT-SHA CI PASS**.
+HOLDOUT-V2 qualification remains solely at
+`e0cfe0b566134f848feb731a777f315eb1456dd2`; no descendant is holdout-tested.
+Live inventory reliability at 12,000 tokens is UNTESTED; claim completeness is
+UNPROVEN; semantic Call B/reflection have not been validated on a successful
+corrected run; full application E2E has not passed. Initial HTML equivalence,
+Phase-5 PR/evaluation/main merge, and external pilot readiness remain open.
+The larger request can increase the existing non-transactional cost overshoot;
+the `$0.10` resource gate is not a per-request ceiling. No provider, holdout,
+application, merge, or publication execution is authorized by this decision.
+
+---
+Decision ID: D-2026-11-03-01
+Date: 2026-11-03 (records October 23–24 qualification)
+
+Decision: **Accept the deterministic initial HTML and structural-equivalence
+qualification on the feature branch, without claiming application E2E success.**
+The October 23–24 chain `8f9d84b` → `1d871ad` → `c3ead1e` → `b9ca579` →
+`102983ef08109522421c1098d3effd99e26f3c0b` binds the Gate-1-approved
+Markdown to rendered structure, citations, Gate 2, archive and publication guards.
+The three independently reproduced citation, table-cell and numeric-subscript
+P1s were closed at `102983ef`. Independent focused checks: 182 passed,
+1 warning; Chromium checks: 22 passed, 2 warnings. Exact-SHA CI run
+`40077527862` concluded SUCCESS at `102983ef` (independently verified).
+Remote `feature/phase5-rag-hardening` was read-only verified at that SHA on
+November 3. See ledger `VAL-2026-10-24-01`.
+
+Status: **FEATURE INTEGRATED / EXACT-SHA CI SUCCESS; APPLICATION E2E OPEN**.
+
+---
+Decision ID: D-2026-11-03-02
+Date: 2026-11-03 (records October 24 disposition)
+
+Decision: **Abandon the unintegrated no-archive E2E execution-mode experiment
+`a6dc1d8a1ff461bc7040a1222db8627dcb9e17c4` for this rehearsal.**
+Independent checkpoint-tampering acceptance found two P1 trust-boundary
+failures: mutable `run_mode` allowed both mode switches, and forged terminal
+state reported completion before Gate 2. A second check of mutable checkpoint
+fields was rejected as insufficient authority. The integrated production graph
+at `102983ef` with Git push disabled permits a disposable local dry-run archive
+and avoids integrating that experiment. This is a rehearsal isolation decision,
+not a repair or approval of the unintegrated mode. See ledger
+`VAL-2026-10-24-02`.
+
+Status: **EXPERIMENT ABANDONED / NOT INTEGRATED**.
+
+---
+Decision ID: D-2026-11-03-03
+Date: 2026-11-03
+
+Decision: **Keep the November 3 live drafting failure's historical cause
+UNKNOWN; accept the reproduced token-accounting correction and the bounded
+rejected-draft diagnostic-safety repair locally.** The first provider-backed
+run `f9f6f92d-5dbd-4370-aca2-83af159968ae` at integrated base `102983ef`
+ended `execution_failed` before verification or Gate 1. Its checkpoint records
+10 web and 11 KB items and 9,144 ms draft latency, but no response envelope,
+exception or provider usage; neither a billed request count nor the precise
+historical exception is proven. Diagnostic commit
+`61e89a7a553c695502272c6f23ec219ef68c8ff4` records safe failure phase,
+class and timestamp. Candidate `46c14ea8484a57cb6f8b8fc94c0fe4467633d69c`
+reproduced a real SDK contract defect: missing/null total tokens with valid
+60+40 component counts crashed post-response accounting; the candidate derives
+100 only from valid components and preserves the provider-reported field.
+Saved 10-web/11-KB state replay reached verification offline. Canary
+reproduction then proved a separate P1: malformed output entered logs,
+draft state, trace, SQLite and telemetry. This bounded repair retains rejected
+content length/hash, finish reason, usage, phase/class and timestamp where
+available while discarding rejected text. Valid draft content and verification
+eligibility remain intact. Retaining raw rejected text for debugging and
+claiming the accounting defect as the historical cause were rejected. No
+provider, prompt, retry, quality-gate, HTML or publication change is accepted.
+See ledger `EXP-2026-11-03-01` and `VAL-2026-11-03-01`.
+
+Status: **LOCAL REPAIR; INDEPENDENT ACCEPTANCE, FEATURE INTEGRATION, EXACT-SHA
+CI AND CORRECTED LIVE E2E PENDING**.
+
+---
+Decision ID: D-2026-11-03-04
+Date: 2026-11-03
+
+Decision: **Close feature integration of the bounded draft-recovery code and
+documentation delta at application-bearing SHA
+`21666700bf03abf5e6ec37de9705ab873fcaf215`.** Independent read-only
+documentation acceptance passed at that exact cumulative SHA, finding only
+`PROJECT_STATUS.md` and `architecture.md` changed from reviewed repair
+`cef9e12eb18e46a92abaa85ce09128f23dc6ef1e`. The feature ref was fetched
+at expected base `102983ef08109522421c1098d3effd99e26f3c0b`, advanced by
+normal fast-forward, and read back at `2166670`. Exact-SHA GitHub Actions run
+`41627868865` concluded SUCCESS: lint PASS, test PASS (1,994 tests,
+37 warnings), push-only eval gate skipped. This closes integration and CI for
+the scoped repair, not the historical draft-cause investigation or live E2E.
+The original exception remains UNKNOWN; production readiness is NOT ACHIEVED.
+Next operational action is one freshly authorized bounded live draft diagnostic
+from saved retrieval, without an implied second application run. See ledger
+`VAL-2026-11-03-02`.
+
+Status: **FEATURE INTEGRATED / EXACT-SHA CI PASS; LIVE E2E OPEN**.
+
+---
+Decision ID: D-2026-11-03-05
+Date: 2026-11-03
+
+Decision: **Record one successful live drafting diagnostic at exact feature
+head `3298e7bc3503408436923c515d052986e3074fa1`, without promoting it
+to a semantic-verification or E2E pass.** New run
+`3ed18574-8e98-416a-8aeb-348416b6e15f` used a new production-initialized
+state and the exact 10 web/11 KB rows from original failed run
+`f9f6f92d-5dbd-4370-aca2-83af159968ae` (full-list identities in ledger
+`EXP-2026-11-03-02`). One `workflow.draft_step` call of production
+`draft_node` returned four nonempty sections and complete Markdown. DeepSeek
+response `c88e9749-5ab0-4fe5-82fd-08afbc7fcb16` reported model
+`deepseek-flash`, `finish_reason=stop`, 4,281 prompt, 1,184 completion and
+5,465 total tokens; the application used the provider total and estimated
+`$0.00245827` at 8,365 ms draft latency. State and trace survived a separate
+SQLite checkpoint reread; `route_after_draft` returned `verify`, but Verify
+was not invoked. Physical HTTP attempts and provider billing remain UNKNOWN.
+No Tavily, Call A/B, reflection, human gate, archive, Git or publication call
+occurred. The original historical draft exception remains UNKNOWN: a later
+successful response cannot identify that prior cause. Production readiness
+remains NOT ACHIEVED. The next action requires fresh authorization for one
+bounded Call-A claim-inventory diagnostic using this valid draft.
+
+Status: **LIVE DRAFT DIAGNOSTIC PASS / VERIFICATION ELIGIBLE; E2E OPEN**.
+
+---
+Decision ID: D-2026-11-03-06
+Date: 2026-11-03
+
+Decision: **Classify the second live supervised application run as a fail-closed
+verification-policy block, not an E2E qualification.** Run
+`e3ea06a8-cf22-458a-af3b-dfdeeedd1f54` used the normal production FastAPI
+graph at exact feature head `1978fa5fddbce9c077117b4fc4dd29b58cdb5568`.
+Retrieval and valid drafting completed; `verify_node` completed both its internal
+Call A and Call B operations. Call A yielded 62 claims; Call B yielded 43
+verified, 17 weak and 2 unverified (grounding 0.899; UVR 0.032). Material
+policy required revision for seven unresolved material claims. Citation policy
+reported `placement_integrity_failure` / `overlapping_nonidentical_anchors`
+for two material claims anchored at `[1265,1367)` and `[1311,1329)` in the
+same draft. The production route therefore ended `policy_blocked` before
+reflection, Gate 1, HTML, Gate 2 or archive. The exact immediate policy trigger
+is PROVEN; a safe correction is not yet established. Do not override the
+guard or attribute the original run's UNKNOWN draft exception to this new
+outcome. Three logical DeepSeek calls accounted for 33,860 provider-reported
+tokens and `$0.02228774` application-estimated cost; Tavily made three logical
+queries. Physical request attempts and provider billing remain UNKNOWN. No
+human approvals, graph Git node, website mutation, publication or holdout run
+occurred. Preserve this terminal checkpoint and diagnose the overlapping
+anchors offline before seeking any further live-run authorization. See ledger
+`EXP-2026-11-03-03`.
+
+Status: **LIVE E2E FAILED CLOSED / PRODUCTION NOT QUALIFIED**.
+
+---
+Decision ID: D-2026-11-03-07
+Date: 2026-11-03
+
+Decision: **Permit separate citation placement for strictly nested claim anchors
+with distinct endpoints and independently verified evidence bindings.** The
+saved checkpoint of run `e3ea06a8-cf22-458a-af3b-dfdeeedd1f54` (execution SHA
+`1978fa5fddbce9c077117b4fc4dd29b58cdb5568`) reproduces the blanket-overlap
+failure: material outer `clm-d3b34d6449c1269e` at `[1265,1367)` requires
+`KB-006`; material inner `clm-4c6ad60b809f5a34` at `[1311,1329)` requires
+`KB-002`. These are two propositions in one passage, each verified against its
+own source. The policy rejected strict containment solely because its overlap
+guard classified every nonidentical overlap as ambiguous.
+
+The bounded repair retains both original claim groups and required evidence
+sets, places each marker at its own endpoint, and rechecks supplied citation
+plans against current Call-B support. It rejects crossing or shared-endpoint
+overlaps, ambiguous model-written nested citation hints, and stale support.
+Coalescing evidence into an unqualified source union, dropping a claim, or
+turning overlap into semantic verification were rejected. The saved-state
+before/after replay and negative controls are indexed in `EXP-2026-11-03-04`.
+The repaired citation policy passes on the saved draft, but seven material
+claims still require revision; routing remains `draft`, not reflection or
+human review. This does not retroactively change the terminal failed run or
+qualify a complete E2E. Independent read-only acceptance passed for the
+cumulative repair; feature integration remains pending. No further provider
+run is implied.
+
+Status: **LOCAL CITATION REPAIR ACCEPTED OFFLINE; FEATURE INTEGRATION PENDING;
+LIVE E2E NOT QUALIFIED**.
+
+---
+Decision ID: D-2026-11-04-01
+Date: 2026-11-04
+
+Decision: **Keep the third supervised application run terminal and production
+qualification open.** One user-authorized run
+`1d3f2b1b-9880-43ff-9533-4abd12fbc3ae` executed the normal FastAPI graph at
+exact approved feature SHA `4a6445121b90bdffb444b656668226031e7da700`.
+Retrieval and two valid drafts completed. In quality attempt 1, Call A parsed,
+but Call B's otherwise parsed response failed exact evidence quote binding:
+`quote_not_found:KB-008`. The graph used its one allowed automatic redraft.
+In attempt 2, Call B completed with 69 claims (55 verified, 9 weak, 5
+unverified), grounding 0.895 and UVR 0.072. Citation policy passed with 42
+anchor groups, complete coverage and zero placement failures. Material policy
+still found five unresolved material claims and the graph ended
+`terminal_quality_exhausted` at its two-attempt limit.
+
+Accept the fail-closed outcome and preserve the checkpoint. Overriding the
+material result, manually retrying, or treating a citation pass as full
+verification acceptance were rejected. The new draft does not reproduce the
+November 3 nested anchors, so this run shows a live citation-policy pass on
+new content, not direct live replay of that exact repaired pair. Reflection,
+human Gates 1/2, HTML, archive and publication were NOT REACHED. Six logical
+DeepSeek calls accounted for 69,825 provider-reported tokens; three Tavily
+queries populated three private cache files. The application estimated
+`$0.04616224`; physical request attempts and provider billing remain UNKNOWN.
+See `EXP-2026-11-04-01` for exact evidence and limitations. The next action is
+bounded offline analysis of the saved KB-008 quote-binding failure and five
+unresolved material claims before seeking another paid run.
+
+Status: **LIVE E2E TERMINAL QUALITY EXHAUSTION / PRODUCTION NOT QUALIFIED**.
+
+---
+Decision ID: D-2026-11-04-02
+Date: 2026-11-04
+
+Decision: **Close the bounded saved-run investigation without claiming a code
+repair; require an explicit recovery-contract decision before changing frozen
+retry semantics.** Investigation at `e14c0f9cdc172f2007ca36f5727148be90502298`
+of run `1d3f2b1b-9880-43ff-9533-4abd12fbc3ae` proves that an invalid Call B
+quote observation produced an empty report, followed by a redraft with exactly
+the same production request messages as the initial draft. That consumed the
+last of two draft slots before five material obligations could be repaired.
+This is the specified frozen routing behavior, not an off-by-one defect.
+
+KB-008's original rejected quote and associated claim ID were not retained;
+only response identity/hash and `quote_not_found:KB-008` survive. Fabrication,
+whitespace mismatch, evidence misattribution and source-context mismatch
+remain UNKNOWN. Exact binding controls pass; fuzzy quote acceptance and
+inventing a historical reproduction are rejected. All five unresolved rows
+have valid exact evidence spans; they comprise unsupported prevalence, omitted
+convergence conditions, an unsupported causal benefit, and an overstrong
+clipping outcome repeated twice. The OLS blocker explanation overstates “most”
+as universal, but that does not supply missing support or justify acceptance.
+
+No source fix is justified by the available evidence. Two recovery alternatives
+are PROPOSED, not accepted: stop immediately on an invalid verifier observation,
+or authorize one separately capped observation retry against the same immutable
+draft, claim roster and manifest, preserving cumulative cost and all acceptance
+checks. The latter adds provider usage and changes retry semantics. Blanket
+draft-budget increases, treating invalid partial observations as authoritative
+feedback, materiality downgrades and silently dropping failed claims are rejected.
+Bounded failure-context metadata (claim ID, evidence ID, role/index, quote
+length/hash, source hash, match count) is a future observability candidate;
+raw rejected payload retention is not authorized by this conclusion.
+See `EXP-2026-11-04-02` for evidence and offline validation.
+
+Status: **INVESTIGATION COMPLETE / RECOVERY CONTRACT DECISION REQUIRED;
+NO CODE REPAIR CLAIMED / PRODUCTION NOT QUALIFIED**.
+
+---
+Decision ID: D-2026-11-04-03
+Date: 2026-11-04
+
+Decision: **Permit one durable, same-draft Call B observation recovery for a
+strict `quote_binding/quote_not_found` failure.** This intentionally amends
+the frozen invalid-observation routing described in `D-2026-11-04-02`; the
+two-draft content budget and all semantic, material, citation, reflection and
+human-review acceptance rules remain unchanged. Run
+`1d3f2b1b-9880-43ff-9533-4abd12fbc3ae` at `4a6445121b90bdffb444b656668226031e7da700`
+proved that the earlier empty grounding report spent the sole content-repair
+slot without actionable feedback. The original rejected KB-008 quote is not
+recoverable, so its exact mismatch subtype remains UNKNOWN.
+
+The first implementation proposal stopped because Call A and Call B shared
+one LangGraph checkpoint: an in-state retry counter could reset after a
+crash, and lost provider usage could not be reconstructed. At source base
+`d8ce8283694eed7112ab82bd43179898fb936d81`, the approved repair adds a
+separate SQLite request journal. It commits an initial Call B reservation,
+including known Call A usage, before initial dispatch; it records normalized
+Call B response identity and usage before quote validation. A recovery request
+requires the same draft SHA-256, ordered claim-roster hash and full evidence
+manifest hash, a valid model-returned roster, a known first-response cost below
+the existing gate, and an atomic run-global retry reservation. SQLite's
+`BEGIN IMMEDIATE` and unique retry index permit only one additional logical
+Call B dispatch per run, across draft attempts, workers and restarts. The
+retry reruns neither Call A nor retrieval nor drafting.
+
+An existing reservation on replay ends the run; it never dispatches again.
+Known journaled usage is reconciled once. A response lost before durable
+usage recording is explicitly `UNKNOWN`, not zero or fabricated. Even when
+usage was recorded, a missing graph checkpoint cannot reconstruct the
+validated observation without retaining the raw payload, so restart remains
+terminal. This is at-most-once **application-level** dispatch, not exactly
+once provider execution or billing; the existing transport wrapper can make
+up to three physical attempts per logical call. The optional observation adds
+provider cost exposure, guarded by the existing cumulative cost check; the
+`$0.10` application gate is not a provider billing ceiling.
+
+Valid weak/unverified judgments, material/semantic/citation failures,
+unknown roster/evidence identities, other parser/binder errors, and provider
+transport failures are not observation-retry triggers. A second invalid
+observation ends `execution_failed` without an uninformed content redraft.
+Immediate stop for every exact quote miss and a blanket draft-budget increase
+were rejected; fuzzy binding, source invention, favorable-verdict rerolls,
+and raw rejected-payload retention remain forbidden. Metadata-only quote
+diagnostics retain validated IDs, role/index, length/hash, source hash and
+match count. Offline evidence and crash-window limits are indexed in
+`EXP-2026-11-04-03`. No paid replay, human approval or complete E2E has been
+performed under this decision.
+
+Status: **APPROVED CONTRACT; LOCAL OFFLINE IMPLEMENTATION INDEPENDENTLY ACCEPTED;
+PRODUCTION E2E NOT QUALIFIED**.
+
+
+---
+Decision ID: D-2026-11-05-01
+Date: 2026-11-05
+
+Decision: **Record the one authorized November 5 production application run as
+terminal quality exhaustion; bounded Call B recovery NOT EXERCISED.** Run
+`34cc2a46-05d9-4f8a-8662-7d18e9ef158f` executed at exact feature SHA
+`085ea315652686d4578d962de3d00071254201a0`, including application repair
+`cf9cc23855a917c179fdea51d310cc0a9e3f74de`, after separate explicit paid-run
+authorization. The existing private snapshot retained all 426 tracked blobs,
+private SQLite/output isolation, no Git metadata/remote, disabled publication
+and tracing, and distinct genuine reviewer credentials. No source changed.
+
+Retrieval returned 10 web and 11 local KB rows. Both drafts were structurally
+valid. Attempt 1 Call A found 36 claims (32 material), with one ambiguous
+anchor; `inventory_failed` prevented Call B. The permitted second draft had
+empty claim-level revision feedback, semantic obligations and unverified targets:
+no material diagnosis existed before that redraft. Attempt 2 Call A found 57
+claims (47 material), all anchored; Call B returned a valid observation with
+39 verified, 18 weak and zero unverified. All 18 blockers were limitations;
+no contradiction blocker was recorded. Grounding 0.921 and UVR 0.0 did not
+override ten unresolved material claims (37/47 resolved). Material policy was
+`exhausted` / `unresolved_material_claim`; the graph correctly stopped
+`terminal_quality_exhausted`. Its legacy policy label `hitl_required` did not
+make Gate 1 eligible. Citation policy passed: 37 anchor groups, coverage 1.0,
+zero missing, invalid, dangling or placement failures.
+
+The durable journal contains one initial Call B reservation with a responded,
+known-usage result and no retry reservation. There was no quote-binding miss;
+this run does not qualify live recovery. Targeted material-repair feedback was
+also not exercised: those obligations appeared only on the final attempt.
+Reflection, both human gates, HTML, local archive and Git/publication were not
+reached. No second application run, holdout or automatic approval occurred.
+Five logical DeepSeek calls reported 45,217 tokens; application-estimated cost
+was `$0.02999217`. Five successful DeepSeek HTTP POSTs were logged; a complete
+physical-attempt census, Tavily billing and provider invoice totals remain
+unverified. Known DeepSeek usage is not evidence of zero unobserved billing.
+
+Read-only independent terminal-evidence acceptance passed. No implementation
+defect or source repair is established by this execution record. Preserve the
+terminal evidence and obtain an owner decision on a separately scoped next
+mission before further paid execution; do not rerun this application to seek
+a favorable outcome. Evidence, stage accounting and limitations are indexed in
+`EXP-2026-11-05-01`. Earlier RCA conclusions remain unchanged.
+
+Status: **ONE LIVE RUN FAILED CLOSED; RECOVERY NOT EXERCISED; PRODUCTION E2E
+NOT QUALIFIED**.
+
+
+---
+Decision ID: D-2026-11-05-02
+Date: 2026-11-05
+
+Decision: **Record proven November 5 anchor/revision RCA and propose a narrow
+terminal stop for current ambiguous inventory anchors. The runtime amendment
+is PROPOSED ONLY, pending owner approval and separate implementation.**
+
+Run `34cc2a46-05d9-4f8a-8662-7d18e9ef158f` executed at
+`085ea315652686d4578d962de3d00071254201a0`; documentation base is
+`0106cf9e07627dd36c83486aa9f95878f550f766`. Read-only reproduction of the
+saved first draft and Call A output rebuilds the entire 36-claim inventory
+exactly. Claim `clm-ebf1275a7473078e` has a subjectless predicate anchor with
+two exact matches, `[1463,1490)` in technical_dive and `[3271,3298)` in
+takeaways. The standalone proposition differs from that repeated anchor.
+The conservative multiple-match rule therefore returns `ANCHOR_AMBIGUOUS`.
+Normalization and duplicate merge did not cause the ambiguity. All matches
+and the claim remain present. Model section metadata does not establish the
+complete intended occurrence set. No binder implementation defect or safe
+additional deterministic disambiguation rule is demonstrated.
+
+The inventory failure precedes Call B and yields an empty grounding report.
+The current workflow permits another draft for `inventory_failed` while an
+attempt remains; feedback construction requires a nonempty grounding report.
+Offline capture of the actual production request builder proves the initial
+and redraft requests byte-identical, not merely similar feedback summaries.
+The remaining attempt was spent without an actionable semantic/material
+obligation. This is an accepted-contract reliability limitation, not an
+attempt-count bug or loss of already-generated material feedback.
+
+All ten final material obligations remain valid weak results, with 22 exact
+support/blocker spans matching the fixed production evidence manifest. Their
+issues include unsupported absolutes/prevalence, unbiasedness/escape
+mechanisms, necessity/superlative claims, and two code-source entailment gaps.
+Do not equate source non-entailment with falsity: the two-dimensional example's
+reported output is algebraically consistent with its own code; the cited source
+is one-dimensional. API clipping order is unestablished by the retrieved
+clipping formula, not proven incorrect. Neither distinction upgrades current
+verification. Several overreaching statements in one draft are demonstrated;
+a systematic causal prompt defect is not. Prompt tensions remain hypotheses.
+
+Alternatives:
+
+- **A — RECOMMENDED / PROPOSED:** after existing identity checks, a CURRENT
+  `inventory_failed` result with explicit acceptance-critical
+  `ANCHOR_AMBIGUOUS` ends `execution_failed`, before the generic repairable
+  output branch. Preserve inventory, all matches, usage, diagnostics and the
+  consumed attempt. Future scope: `agent/workflow.py`, focused tests and
+  accepted contract documentation only. No binder, prompt, graph, provider,
+  journal, threshold, counter or two-draft-budget change. No new retry.
+- **B — DEFERRED / NOT QUALIFIED:** additional deterministic resolution.
+  Existing unique exact binding stays valid. This case supplies no new
+  authoritative location signal; picking a match or promoting section metadata
+  alone risks completeness and citation/semantic provenance. It is not
+  accepted as a correction here.
+- **C — DEFERRED:** generalized invalid-observation/content-quality separation.
+  Conceptually useful but changes more parse/length/missing-anchor policy than
+  this evidence requires. Any new observation requires separate necessity,
+  cost, identity, durable-dispatch and restart justification. No such retry is
+  proposed or authorized.
+
+A prevents this uninformed reroll and adds no provider operation. It reduces
+automatic completion opportunities; it does not resolve the ten claims or
+supply semantic feedback. On the recorded trace it would avoid the later
+32,870 reported tokens / `$0.02175982` application-estimated work, not prove
+invoice savings or historical success. A durable terminal checkpoint must
+remain terminal on restart without duplicate accounting. No new guarantee is
+claimed for a Call A response lost before its graph checkpoint; the accepted
+Call B durable recovery and its limitations remain unchanged.
+
+The focused deterministic acceptance plan is retained in the private RCA
+report and indexed by `EXP-2026-11-05-02`: full saved-inventory preservation,
+strict negative anchor controls, stale identity rejection, no additional
+dispatch after terminal ambiguity, usable material-feedback controls, two-draft
+exhaustion, existing Call B recovery, restart/accounting, and unchanged human
+and publication gates. None is a historical-success claim.
+
+RCA evidence and proposed documentation independent review: ACCEPTED. This
+acceptance covers conclusions/documentation only, not the runtime amendment.
+A future coder must validate `inventory_current` separately from
+`verification_identity`; current-verification identity alone is insufficient.
+No source code was changed, candidate correction implemented, provider called,
+new run created, sealed holdout evaluated or historical checkpoint modified.
+
+Status: **RCA PROVEN WITH STATED LIMITS; ALTERNATIVE A PROPOSED ONLY / OWNER
+DECISION REQUIRED BEFORE IMPLEMENTATION**.
+
+
+---
+Decision ID: D-2026-11-05-03
+Date: 2026-11-05
+
+Decision: **Approve and implement Alternative A: fail fast on a current
+ambiguous claim-inventory anchor instead of generating an uninformed redraft.**
+The owner explicitly authorized this narrow runtime amendment after
+`D-2026-11-05-02` / `EXP-2026-11-05-02`. Implementation base is exact feature
+`10c27b4195034d7aa5a69db4cf1ca6fb602d9bc5`. This supersedes only that
+proposal's pending-approval status and the demonstrated ambiguity subtype's
+repairable-output routing; earlier RCA evidence remains unchanged.
+
+Production scope is `agent/workflow.py` only. After the existing verification
+identity check, the new branch requires `verification_status=inventory_failed`,
+separately current inventory identity, and a list of dictionary claim rows
+containing explicit `ANCHOR_AMBIGUOUS`. It returns non-repairable
+`execution_failed`, with a fixed metadata-only reason: claim inventory has an
+ambiguous draft anchor; content redraft blocked. It changes no inventory,
+occurrence, usage, diagnostic or attempt field. Existing terminal/resource
+precedence is preserved. An eligibility flag cannot hide an ambiguous inventory
+claim. No anchor is selected, expanded, rebound or inferred from section labels.
+
+Other output failures and malformed/stale inventory retain their established
+bounded failure routing. They receive no new acceptance authority; completed
+stale inventory and wrong verification identity remain terminal. The narrow
+branch does not change binder, prompts, retrieval, evidence, semantic/material/
+citation thresholds, two-draft limit, graph topology, reviewer authentication,
+publication guards, or the accepted durable Call B retry.
+
+Before/after proof uses the preserved November 5 run
+`34cc2a46-05d9-4f8a-8662-7d18e9ef158f`, originally executed at
+`085ea315652686d4578d962de3d00071254201a0`. The original first inventory and
+both target occurrences `[1463,1490)` / `[3271,3298)` reproduce exactly.
+The pre-repair route was another draft with empty feedback and byte-identical
+production requests. A fresh offline replay through real verify_node with only
+the provider response doubled now preserves all 36 claims and recorded usage,
+ends after attempt one, and dispatches neither Call B nor another draft.
+A separate scratch production-graph SQLite replay closes and reopens its
+connection and resumes twice without dispatch or duplicate accounting.
+The historical checkpoint is never resumed or changed.
+
+This correction prevents wasteful redrafts. It does NOT resolve the ten
+historical material-claim obligations, qualify a complete E2E, demonstrate live
+Call B recovery, improve extraction completeness, or establish exactly-once
+Call A execution/billing. A Call A response lost before its graph checkpoint
+retains the existing replay limitation. No new retry/journal is introduced.
+A later live application run requires separate authorization.
+
+Validation and independent acceptance are recorded in `EXP-2026-11-05-03`.
+Status: **OWNER-APPROVED AMENDMENT IMPLEMENTED; INDEPENDENT OFFLINE ACCEPTANCE
+PASS**. Separate read-only reviewer independently reran 198 focused tests,
+verified exact saved-state before/after routes and request identities, checked
+the 36-claim/usage preservation and closed/reopened SQLite resume proof, and
+passed fatal Ruff, diff/scope and canonical documentation review. Complete
+offline regression evidence is 2,056 PASS / 37 warnings; reviewer inspected
+that log and did not repeat the full suite. Live E2E remains unqualified.
+
+
+---
+Decision ID: D-2026-11-05-04
+Date: 2026-11-05
+
+Decision: **Accept the terminal failed-closed result of the one authorized
+post-repair supervised application run; do not resume or rerun it.** Run
+`f6e866dd-2a2a-4c81-a3de-7415afbf5820` executed once through the production
+FastAPI `/runs` graph from a fresh private snapshot of exact feature SHA
+`5e88793996f2f38a3a62ee8c7a4ccf6870973166`. The remote feature SHA and
+all 427 tracked snapshot blobs matched before dispatch. Its private checkpoint,
+journal, telemetry and source-identity manifest are retained outside Git; see
+`EXP-2026-11-05-04`.
+
+Retrieval completed with 10 web and 11 local KB rows. One valid four-section
+draft consumed one quality attempt. Call A returned a current 73-claim
+inventory: 57 material, 16 nonmaterial, zero missing anchors and one explicit
+`ANCHOR_AMBIGUOUS`. The material factual update-rule claim
+`clm-02ca1b85a26b65a9` anchored the same formula at both
+`[1027,1044)` and `[4604,4621)` in draft SHA-256
+`4fa07c0edb5dd15bae2e9f8ea6a70ef25fca08e66590bbb95fe43017a6e758b3`.
+No authoritative occurrence identity was available. The accepted current-
+inventory guard ended `execution_failed` after `inventory_failed` with the
+fixed reason that content redraft was blocked. It preserved every claim and
+both occurrences, and dispatched no second draft. This live run demonstrates
+the fail-fast route for a new ambiguous claim; it does not prove a safe anchor
+resolution method.
+
+Call B was not reached: its durable journal has zero reservations and no
+semantic disposition. Bounded quote-miss recovery was **NOT EXERCISED**.
+Material and citation policies reported unresolved-anchor integrity failure,
+not substantive verified/weak/unverified or placement acceptance. No targeted
+claim feedback, reflection, Gate 1/2, HTML or local archive was reached.
+There was no human approval, website change, Git publication or `/publish`
+invocation. The historical ten weak material obligations remain unresolved;
+this new draft's material support was not evaluated.
+
+Two logical DeepSeek operations (draft and Call A) reported 5,984 and 12,290
+tokens, 18,274 total, with known usage and exact checkpoint application
+estimate `$0.01430136` (rounded telemetry `$0.0143`). Two successful DeepSeek
+HTTP POST responses are observable. Three fresh Tavily cache entries support
+the three production query paths, but complete physical attempts, Tavily
+charges and provider invoicing are unverified. The `$0.10` application estimate
+guard is not a billing ceiling. The server was shut down after terminal
+evidence preservation; original and backup ordered checkpoint blobs match.
+
+Independent read-only terminal evidence review **PASS**: the reviewer checked
+the current inventory and both offsets, one-attempt routing, empty Call B
+journal, known usage, source identity and unreached stages. Runtime telemetry
+does not stamp a verified Git SHA; the external full-file snapshot manifest
+establishes the execution SHA. This result qualifies only the accepted
+ambiguity fail-fast behavior live. A complete E2E, material/citation
+acceptance, live Call B recovery and human gates remain unqualified.
+
+Next engineering action: separately scope an **offline, evidence-bound
+duplicate-anchor investigation** on this saved draft and Call A inventory.
+Test whether an occurrence can be identified uniquely without guessing or
+weakened binding, and propose a specific correction only if that evidence
+exists. No new paid run or source change is authorized by this decision.
+
+Status: **TERMINAL E2E FAILURE ACCEPTED; FAIL-FAST OBSERVED LIVE;
+PRODUCTION E2E QUALIFICATION OPEN**.
+
+
+---
+Decision ID: D-2026-11-05-05
+Date: 2026-11-05
+
+Decision: **Accept the bounded repeated-anchor RCA; recommend prospective
+context-complete unique verbatim extraction anchors (Alternative A), retaining
+existing exact binding and fail-fast behavior (D). PROPOSED ONLY: owner approval
+and a separate implementation mission are required. No saved-run repair.**
+
+Base: verified feature `6e10943e10f41b672275a15356deafd51a82152d`.
+Historical run `f6e866dd-2a2a-4c81-a3de-7415afbf5820`, executed at
+`5e88793996f2f38a3a62ee8c7a4ccf6870973166`, remains the accepted terminal
+failure in `D-2026-11-05-04` / `EXP-2026-11-05-04`. This additive investigation
+neither rewrites that result nor authorizes resumption. Exact reproduction,
+fixture data and custody are indexed in `EXP-2026-11-05-05`.
+
+**Proven identity and mechanism.** Read-only immutable checkpoint reconstruction
+reparses the saved Call A response: 73 raw rows produce all 73 canonical claims,
+and the entire rebuilt inventory equals the checkpoint. Target raw row 15,
+`clm-02ca1b85a26b65a9`, states `The gradient descent update rule is θ = θ - η *
+∇J(θ).`; its exact anchor is `θ = θ - η * ∇J(θ)`. Both literal spans are retained:
+`[1027,1044)` and `[4604,4621)` (zero-based, half-open Python string offsets,
+not UTF-8 byte offsets). Draft SHA-256 is
+`4fa07c0edb5dd15bae2e9f8ea6a70ef25fca08e66590bbb95fe43017a6e758b3`.
+The first context introduces gradient descent and says `The update rule is:`;
+the second says `The core update rule is` and explains gradient subtraction.
+Human inspection establishes that both fixed draft contexts affirm this same
+update-rule proposition. It does not establish the extractor row's intended
+one-versus-both occurrence set. Neither occurrence is uniquely defensible as
+its sole intended match; model `section=technical_dive` is not location authority.
+
+The row is factual, material=true, substantive, citation-required and eligible
+for Call B; these fields establish no offset or source support. One raw row
+exists for the target. Normalization and duplicate merge do not cause the
+ambiguity. Two matches plus unequal canonical proposition/anchor strings yield
+`ANCHOR_AMBIGUOUS` exactly under `_row_anchor_validity`. All claims and both
+candidates remain present. Call A receives no evidence sources. Retrieved
+update-rule passages are potential verification evidence, not occurrence
+selectors; Call B never evaluated this draft. Source resemblance cannot upgrade
+semantic status or provide a citation binding.
+
+**Alternatives and authority.**
+
+| Alternative | Evidence needed / observed | Decision and failure behavior |
+| --- | --- | --- |
+| A — longer unique verbatim anchor | Exact current-draft substring, one match, enough local assertion/subject context. `The update rule is:\n\nθ = θ - η * ∇J(θ)` occurs uniquely at `[1006,1044)`; the fuller antecedent paragraph `[924,1044)` is also unique. | Smallest prospective improvement, within existing Call A. Supplied uniqueness proves location only. Do not choose this anchor retroactively because it is first or in a named section. Missing/repeated output retains existing failure behavior. |
+| B — deterministic contextual selector | An independently authoritative, draft-bound selector would have to distinguish the intended set. No such selector is present. Expanding each candidate until each is unique does not choose between them. | Not qualified. Do not promote section labels, another claim's location, sources, nearest/first match or arbitrary context windows into authority. Remain blocked. No new contextual inference/retry is proposed. |
+| C — bind every genuinely same-proposition occurrence | Contextual assertion identity for every occurrence, complete inventory and valid downstream occurrence/citation representation. Human reading supports both formula passages here; generic inference is unproven. | Direct bind-all rejected as a correction: target `[4604,4621)` shares its end with existing takeaway claim `[4580,4621)`, which citation policy blocks. Keep both claims and their separate support obligations. No generic semantic binder is proposed. |
+| D — existing fail closed | Current exact matches, unequal claim/anchor and absent authoritative occurrence set. | Accepted current production result. Preserve all 73 claims, diagnostics, candidate spans and consumed attempt; no Call B, redraft, new model call or publication. |
+
+Raw row 62 is a separate retained material factual claim,
+`clm-1c550630ed8aefdd`, `The core update rule is θ = θ - η * ∇J(θ).`,
+anchored `[4580,4621)`. It contextualizes the takeaway but cannot authorize
+removing the target's second candidate. Semantic resemblance is not permission
+to delete, coalesce or reword either canonical claim. The saved bind-all
+candidate creates a concrete shared-endpoint citation conflict; this is an
+offline counterfactual, not a downstream event observed in the failed run.
+
+**Recurring pattern, bounded conclusion.** The prior November 5 case only
+(`D-2026-11-05-02`, run `34cc2a46-05d9-4f8a-8662-7d18e9ef158f`) reproduces
+all 36 claims exactly. `Momentum accelerates convergence.` was anchored by
+`and accelerates convergence`, at `[1463,1490)` and `[3271,3298)`. It requires
+antecedent/qualifier interpretation; modifier placement differs between the
+technical sentence and takeaway. The current case repeats a complete formula
+with explicit update-rule context in both places. Both pair a standalone
+semantic proposition with an insufficiently distinctive literal anchor.
+`prompts/claim_inventory_system.md` requires exact substrings but no uniqueness
+or context sufficiency, while forbidding model offsets/occurrence indices.
+The contract therefore permits this recurring ambiguity. Two runs establish a
+structural vulnerability, not a measured incidence or universal prompt cause.
+A addresses the shared extraction under-specification prospectively; it does
+not prove a deterministic resolution or guaranteed cure for either saved row.
+The already implemented fail-fast amendment addresses wasted redrafting only.
+No unrelated RCA or historical material obligation is reopened.
+
+**Proposed smallest correction and explicit limits.** A separate approved
+mission may amend extraction guidance/examples only: prefer/require enough
+verbatim local assertion context to identify a unique intended location when
+an anchor is repeated, preserve subject/conditions, and inventory every
+assertion/restatement. Formula/code/headings alone must not stand in for
+contextual identity. Preserve schema, canonical propositions, materiality,
+all claim rows, exact binder, current-inventory checks and fail-fast route.
+No new call, retry, source lookup or recovery of this saved run is proposed.
+If reliable unique text is unavailable or coverage cannot be represented,
+retain the current failure rather than guessing or deleting claims.
+
+Two independently reproduced limitations constrain this recommendation:
+
+- Existing `bound_multiple` uses canonical claim/anchor lexical equality.
+  Exact proposition text inside a quotation or prohibition can still match;
+  lexical equality alone is not proof that every surrounding statement asserts
+  it. Fixture 12b characterizes this existing limitation, not a qualified safe
+  semantic result. No broad bind-all rule is accepted.
+- Same canonical claim rows with different unique anchors are merged, unioning
+  spans but retaining the first `anchor_quote`. Gate-1 `material_review_bundle`
+  then rejects the differing slice as `stale material-claim anchor`. Do not
+  prescribe this as a working repeated-occurrence representation, omit a row,
+  invent distinct claim wording, or weaken signoff. Representation changes
+  require a separately scoped design/approval. A cannot promise generic
+  repeated-proposition completeness or downstream acceptance.
+
+**Offline design qualification.** The committed JSON fixture document contains
+13 concrete before/after extraction-data cases plus nine authority/identity
+controls. Existing production functions reproduced their declared location
+outcomes, the shared-endpoint rejection and different-anchor signoff failure.
+A hand-authored counterfactual changes only target anchor data, retaining all
+73 IDs, order and non-anchor metadata; it becomes uniquely bound. This is
+neither a candidate resolver implementation nor proof that a revised prompt
+will elicit that output. Negative controls include divergent formula contexts,
+near-identical qualifiers, true repetitions, irreducible ambiguity, code,
+Markdown/Unicode exactness, missing/stale identity, roster deletion, quotation
+and both downstream representation limits. Existing focused guard tests:
+171 PASS / 1 warning, zero provider, socket-denied. Acceptance concerns design
+and documentation only. No semantic/material/citation threshold or authority,
+evidence set, human authentication/signoff, HTML or publication gate changes.
+`FREEZE.md` and all production source/prompt/test files remain byte-preserved.
+
+Independent final design/evidence/documentation acceptance: **ACCEPTED** by
+two separate read-only reviewers. Both independently reproduced the full
+73-claim inventory and all 13 fixture cases; the forensic reviewer also reran
+the private runner including the full 36-claim prior inventory. They checked
+shared-endpoint rejection, different-quote signoff failure, quotation caveat,
+documentation/source scope, fixture hash and diff check. Both inspected the
+171-pass log without repeating that suite. Acceptance covers evidence/design/
+documentation only; implementation and prompt efficacy remain unqualified.
+Documentation-only feature fast-forward and exact-SHA CI are authorized next;
+no main merge/publication.
+
+Status: **RCA PROVEN WITH LIMITS; A + D PROPOSED ONLY; OWNER DECISION REQUIRED
+BEFORE CODING; COMPLETE E2E REMAINS UNQUALIFIED**.

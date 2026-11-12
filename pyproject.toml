@@ -36,4 +36,9 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 addopts = "-p no:playwright"
+markers = [
+    "live_network: opt-in tests that require external network access",
+    "provider_live: opt-in live provider qualification tests",
+]

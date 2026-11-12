@@ -1,0 +1,17 @@
+{
+  "contract_sha256": "b922b0ac33f71bbca02fa2448a1fc4be98727e2b016e5cf36f47db5f38d2ba29",
+  "external_network_calls": 0,
+  "input_file_sha256": {
+    "agent/drafter_packed_evidence.py": "2687ba026a4d89fdd1fb97c5513377f2434a0b7ddbb79cc73d991eb6a2546973",
+    "agent/nodes.py": "1ac26a965078bdc6f2a23627f485b5b7e8570bdde0cb34adde544c758078ba51",
+    "agent/qualified_rag.py": "e73a143ca6093e1f47c9e071d4630a5fb1697db6fbfbe7897a543c1932013dbd",
+    "agent/semantic_analyzer/contract.py": "9d0db7885f5bb2585d612eb2d28e2db5d985cd350f98fcc91b41b99873eec984",
+    "scripts/phase5b3_production_integration.py": "fdb7d55c4e07e142f72cf594a569155cd86643c9e8009c6c2162246a2eec155b"
+  },
+  "provider_calls": 0,
+  "qdrant_reads": 0,
+  "qdrant_writes": 0,
+  "required_parent": "912342ac0e735af152833d21cf1c8e821532a600",
+  "schema_version": "phase5b3_production_integration_v1",
+  "upstream_contract_sha256": "eec1744613bd3a9414d1a3f98a038093d78c3d9dcb916ef1a59b4e8a8e7fd6fe"
+}

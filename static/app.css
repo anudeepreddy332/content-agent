@@ -47,6 +47,15 @@ th{color:var(--muted);font-weight:600}
 .tag.weak{background:rgba(210,153,34,.16);color:var(--yellow)}
 .tag.unverified{background:rgba(248,81,73,.16);color:var(--red)}
 #g1meta{margin:10px 0 14px}
+#g1materialReview{margin-top:22px}
+.material-claim{border:1px solid var(--line);border-radius:8px;padding:14px;margin:12px 0;overflow-wrap:anywhere}
+.material-claim h4{margin:0 0 10px}
+.material-claim blockquote{border-left:3px solid var(--accent);padding-left:10px;margin:8px 0}
+.material-claim .draft-context,.material-claim blockquote,.material-claim .source-context{white-space:pre-wrap;overflow-wrap:anywhere}
+.evidence-source{background:var(--panel2);border-radius:6px;padding:10px;margin:10px 0}
+.material-claim select,.material-claim textarea{display:block;width:100%;margin:6px 0 10px}
+.evidence-attestation{padding:12px;border:1px solid var(--line);border-radius:8px;margin:14px 0}
+.evidence-attestation label{display:block;margin:8px 0}
 #g1grounding{margin-top:22px}
 #g1grounding h3{font-size:13px;color:var(--muted);font-weight:600;margin:0 0 6px;
       text-transform:uppercase;letter-spacing:.4px}

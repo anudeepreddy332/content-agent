@@ -15,14 +15,27 @@ import json
 import time
 import copy
 import hashlib
+import secrets
 import subprocess
 from pathlib import Path
 from openai import OpenAI, RateLimitError, APIConnectionError, APITimeoutError, InternalServerError
 from dotenv import load_dotenv
+from agent import workflow
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 load_dotenv()
 
 from agent.state import AgentState, DraftSections
+from agent.reviewer_identity import (
+    InvalidReviewerCredential,
+    ReviewerConfigurationError,
+    authenticate_reviewer,
+    current_reviewer_id,
+    current_reviewer_origin,
+    current_review_id,
+    approval_origin_valid,
+    reviewer_context,
+    test_auto_reviewer_id,
+)
 from agent.html_policy import (
     HTML_POLICY_VERSION,
     PolicyError,
@@ -32,18 +45,16 @@ from agent.html_policy import (
     reassemble_from_body,
     render_citations_html,
     render_markdown_review_html,
-    safe_grounding_rows,
+    render_publication_markdown,
     sanitize_fragment,
     sha256_utf8,
 )
 from tools.web_search import web_search
-from tools.query_kb import query_kb
 from config import (
     DEEPSEEK_MODEL,
     DEEPSEEK_BASE_URL,
     DRAFT_TEMPERATURE,
     MAX_ITERATIONS,
-    REFLECTION_THRESHOLD,
     UVR_THRESHOLD,
     COST_GATE_USD,
     DEEPSEEK_INPUT_COST_PER_M,
@@ -55,8 +66,11 @@ from observability.logger import get_logger
 from observability.tracing import is_tracing_enabled
 from agent.semantic_trace import (
     copy_trace,
+    finish_output_diagnostic,
+    new_output_diagnostic,
     record_draft,
     record_hitl_event,
+    record_output_diagnostic,
     record_semantic_analyzer,
     record_verify,
 )
@@ -64,6 +78,8 @@ from agent.semantic_analyzer.contract import (
     engine_compat_grounding_score,
 )
 from agent.semantic_analyzer.provider import analyze_semantic_evidence
+from agent.semantic_analyzer.contract import build_evidence_manifest
+from agent import call_b_journal
 from agent.claim_inventory import (
     build_claim_inventory,
     call_b_roster,
@@ -71,9 +87,18 @@ from agent.claim_inventory import (
     inventory_critical_failures,
     parse_claim_inventory_rows,
 )
+from agent.evidence_signoff import (  # noqa: E402 - load_dotenv precedes project imports
+    EvidenceSignoffError, material_review_bundle, receipt_valid, validate_submission,
+)
+from agent.initial_html_equivalence import (  # noqa: E402 - load_dotenv precedes project imports
+    assert_section_equivalent,
+    receipt_for_article as initial_equivalence_receipt,
+    receipt_valid as initial_equivalence_valid,
+    source_identity as initial_source_identity,
+    visible_key as initial_visible_key,
+    content_key as initial_content_key,
+)
 from agent.material_policy import (
-    MATERIAL_HITL,
-    MATERIAL_REVISION,
     MaterialPolicyResult,
     evaluate_material_policy,
     format_required_content_feedback,
@@ -82,13 +107,13 @@ from agent.material_policy import (
 )
 from agent.citation_policy import (
     CitationPolicyResult,
-    apply_inline_clusters_to_html,
     bibliography_items,
     build_evidence_registry,
     citation_policy_passed,
     evaluate_citation_policy,
     evidence_numbering,
-    insert_citation_markers,
+    occurrence_marked_markdown,
+    replace_rendered_occurrence_markers,
 )
 import html as html_module
 import re
@@ -98,6 +123,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 VERIFY_SYSTEM = Path("prompts/verify_system.md").read_text()  # historical; evals only
 CLAIM_INVENTORY_SYSTEM = Path("prompts/claim_inventory_system.md").read_text()
+CLAIM_INVENTORY_MAX_TOKENS = 12_000
 REFLECT_SYSTEM = Path("prompts/reflect_system.md").read_text()
 
 # DeepSeek client
@@ -251,6 +277,21 @@ def _cost(usage) -> float:
     )
 
 
+def _draft_total_tokens(usage) -> tuple[int, str]:
+    """Use the provider total, or the exact sum of two valid component counts."""
+    total = getattr(usage, "total_tokens", None)
+    if type(total) is int and total >= 0:
+        return total, "provider"
+    if total is not None:
+        raise ValueError("invalid draft total token count")
+    prompt = getattr(usage, "prompt_tokens", None)
+    completion = getattr(usage, "completion_tokens", None)
+    if (type(prompt) is int and prompt >= 0
+            and type(completion) is int and completion >= 0):
+        return prompt + completion, "component_sum"
+    raise ValueError("incomplete draft token usage")
+
+
 def _cost_from_usage(usage) -> float:
     """Compute cost from OpenAI usage object or analyzer transport dict."""
     if usage is None:
@@ -269,6 +310,66 @@ def _usage_total_tokens(usage) -> int:
     if isinstance(usage, dict):
         return int(usage.get("total_tokens") or 0)
     return int(getattr(usage, "total_tokens", 0) or 0)
+
+
+def _journal_usage(usage: dict | None) -> tuple[int | None, float | None]:
+    """Only complete provider usage is known; missing fields are never zero."""
+    if not isinstance(usage, dict):
+        return None, None
+    prompt = usage.get("prompt_tokens")
+    completion = usage.get("completion_tokens")
+    total = usage.get("total_tokens")
+    if type(prompt) is not int or prompt < 0 or type(completion) is not int or completion < 0:
+        return None, None
+    if total is None:
+        total = prompt + completion
+    if type(total) is not int or total < 0:
+        return None, None
+    cost = (prompt / 1_000_000 * DEEPSEEK_INPUT_COST_PER_M
+            + completion / 1_000_000 * DEEPSEEK_OUTPUT_COST_PER_M)
+    return total, cost
+
+
+def _journal_recovery_update(state: AgentState, verify_key: str) -> dict:
+    """Fail closed on replay; reconcile only journaled known usage once."""
+    rows = [call_b_journal.lookup(state["run_id"], "initial", verify_key)]
+    retry = call_b_journal.lookup(state["run_id"], "retry")
+    if retry is not None and retry["verify_key"] == verify_key:
+        rows.append(retry)
+    rows = [row for row in rows if row is not None]
+    accounted = set(state.get("call_b_accounted_requests") or [])
+    known_tokens = 0
+    known_cost = 0.0
+    unknown = state.get("provider_usage_status") == "unknown"
+    for row in rows:
+        if row["kind"] == "initial" and row["request_id"] + ":call_a" not in accounted:
+            if row["call_a_tokens"] is None or row["call_a_cost_usd"] is None:
+                unknown = True
+            else:
+                known_tokens += row["call_a_tokens"]
+                known_cost += row["call_a_cost_usd"]
+            accounted.add(row["request_id"] + ":call_a")
+        if row["request_id"] + ":" + row["kind"] not in accounted:
+            if (row["usage_status"] == "known" and row["total_tokens"] is not None
+                    and row["estimated_cost_usd"] is not None):
+                known_tokens += row["total_tokens"]
+                known_cost += row["estimated_cost_usd"]
+            else:
+                unknown = True
+            accounted.add(row["request_id"] + ":" + row["kind"])
+    return {
+        "grounding_report": [],
+        "grounding_score": 0.0,
+        "verification_status": "verification_error",
+        "provider_usage_status": "unknown" if unknown else "known",
+        "total_tokens": state.get("total_tokens", 0) + known_tokens,
+        "total_cost_usd": state.get("total_cost_usd", 0.0) + known_cost,
+        "call_b_accounted_requests": sorted(accounted),
+        "error_log": [*(state.get("error_log") or []),
+                      f"[verify] durable_call_b_replay_terminal run_id={state['run_id']} "
+                      f"provider_outcome=UNKNOWN usage={'UNKNOWN' if unknown else 'known'}"],
+        **workflow.terminal("execution_failed", "Call B outcome cannot be safely replayed."),
+    }
 
 def _assemble_markdown(topic: str, sections: DraftSections) -> str:
     """
@@ -308,13 +409,15 @@ def draft_node(state: AgentState) -> dict:
 
     Failure modes:
         - DeepSeek returns malformed JSON: fallback DraftSections with error message
-        - API timeout or rate limit: raises exception (caught in main.py retry loop)
-        - Cost gate exceeded: does NOT check here — checked in route_after_reflect
+        - API timeout or rate limit: existing transport retries, then execution failure
+        - Cost/episode allowance: enforced by the production graph draft wrapper
     """
     log = get_logger("draft_node")
     t_start = time.time()
+    workflow.mark_draft_failure_phase("client_prompt_initialization")
     client = _get_client()
     system_prompt = _load_system_prompt()
+    workflow.mark_draft_failure_phase("source_context_construction")
 
     # Build user message
     feedback_block = ""
@@ -364,7 +467,7 @@ def draft_node(state: AgentState) -> dict:
         grounding_feedback_block += blocker_block
         # Phase 4 Slice 2B: targeted material / required-content feedback. Only
         # repairable failures (revision_required) emit a block; UNKNOWN
-        # materiality and integrity failures route to HITL, not revision, so
+        # materiality and integrity failures terminate, rather than revising, so
         # they do NOT produce draft feedback (no stochastic retry-to-green).
         material_feedback = format_required_content_feedback(
             material_policy_result(state)
@@ -378,7 +481,17 @@ def draft_node(state: AgentState) -> dict:
         web_sources = state.get("web_sources", []) or []
         kb_results = state.get("kb_results", []) or []
         if web_sources or kb_results:
-            source_context = _build_source_context(web_sources[:6], kb_results[:3])
+            from agent.qualified_rag import build_drafter_kb_context, is_qualified_kb
+
+            web_context = _build_web_source_context(web_sources[:6])
+            if is_qualified_kb(kb_results):
+                kb_context = build_drafter_kb_context(kb_results)
+            else:
+                kb_context = _build_legacy_kb_source_context(kb_results[:3])
+            source_context = (
+                "\n\n".join(part for part in (web_context, kb_context) if part)
+                or "No sources available."
+            )
             source_block = (
                 "\n\nGROUNDING SOURCES (retrieved for this topic):\n"
                 f"{source_context}\n\n"
@@ -418,16 +531,30 @@ def draft_node(state: AgentState) -> dict:
                  block_chars=len(grounding_feedback_block),
                  in_user_message=grounding_feedback_block in user_message)
 
+    workflow.mark_draft_failure_phase("provider_request")
     response = _llm_call(
         client,
         model=DEEPSEEK_MODEL,
         messages=messages,
         temperature=DRAFT_TEMPERATURE,
         max_tokens=4000,
+        extra_body={"thinking": {"type": "disabled"}},
     )
+    workflow.mark_draft_failure_phase("provider_response_handling")
+    diagnostic = new_output_diagnostic(
+        stage="draft", iteration=state.get("iterations", 0) + 1,
+        quality_episode=state.get("quality_episode"),
+        quality_attempt=(state["quality_attempts"] + 1 if isinstance(state.get("quality_attempts"), int) else None),
+        requested_model=DEEPSEEK_MODEL, temperature=DRAFT_TEMPERATURE,
+        max_tokens=4000, response_format=None, response=response,
+    )
+    workflow.mark_draft_response_diagnostic(diagnostic)
 
     latency = int((time.time() - t_start) * 1000)
     run_cost = _cost(response.usage)
+    accounted_tokens, token_source = _draft_total_tokens(response.usage)
+    diagnostic["usage"]["accounted_total_tokens"] = accounted_tokens
+    diagnostic["usage"]["total_tokens_source"] = token_source
 
     # Parse JSON response
     raw = response.choices[0].message.content.strip()
@@ -439,8 +566,16 @@ def draft_node(state: AgentState) -> dict:
             raw = raw[4:]
         raw = raw.strip()
 
+    workflow.mark_draft_failure_phase("json_parsing_validation")
+    parse_error = None
     try:
         parsed = json.loads(raw)
+        if not isinstance(parsed, dict) or not all(
+            isinstance(parsed.get(k), str) and parsed[k].strip()
+            for k in ("problem_framing", "technical_dive", "code_snippets", "takeaways")
+        ):
+            raise ValueError("draft must contain four nonempty string sections")
+        draft_status = "valid"
         sections: DraftSections = {
             "problem_framing": parsed.get("problem_framing", ""),
             "technical_dive": parsed.get("technical_dive", ""),
@@ -448,21 +583,44 @@ def draft_node(state: AgentState) -> dict:
             "takeaways": parsed.get("takeaways", ""),
         }
 
-    except json.JSONDecodeError as e:
-        # Graceful degradation: don't crash the graph
-        # Log the raw output so you can debug what the model returned
-
-        log.error("draft.parse_failed", run_id=state["run_id"], error=str(e), raw_preview=raw[:300])
-
+    except (json.JSONDecodeError, ValueError) as e:
+        parse_error = e
+        draft_status = "invalid"
         sections: DraftSections = {
-            "problem_framing": f"[PARSE ERROR] {str(e)}",
-            "technical_dive": raw,  # preserve raw content for debugging
+            "problem_framing": "",
+            "technical_dive": "",
             "code_snippets": "",
             "takeaways": "",
         }
+    finish_output_diagnostic(diagnostic, raw, parse_error)
+    if diagnostic["response"]["finish_reason"] == "length":
+        draft_status = "invalid"
+    if draft_status == "invalid":
+        reason = "parse_failed" if parse_error is not None else "provider_length"
+        diagnostic["rejection"] = {
+            "reason": reason,
+            "failure_phase": "json_parsing_validation" if parse_error else "provider_response_handling",
+            "exception_class": type(parse_error).__name__ if parse_error else None,
+            "run_id": state["run_id"],
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+        content_identity = diagnostic["content"]["original"]
+        log.error(
+            "draft.parse_failed" if parse_error is not None else "draft.length_rejected",
+            run_id=state["run_id"], failure_phase=diagnostic["rejection"]["failure_phase"],
+            error_class=diagnostic["rejection"]["exception_class"],
+            response_length=content_identity["length"],
+            response_sha256=content_identity["sha256"],
+            finish_reason=diagnostic["response"]["finish_reason"],
+            usage=diagnostic["usage"],
+        )
+        sections = {key: "" for key in (
+            "problem_framing", "technical_dive", "code_snippets", "takeaways",
+        )}
 
-    # assemble full markdown for downstream nodes
-    draft_markdown = _assemble_markdown(state['topic'], sections)
+    workflow.mark_draft_failure_phase("post_response_accounting_telemetry")
+    # Rejected provider text is never a draft or a reconstructable trace body.
+    draft_markdown = _assemble_markdown(state['topic'], sections) if draft_status == "valid" else ""
 
     # Merge latency into existing latency dict
     existing_latency = state.get("latency_ms", {})
@@ -491,11 +649,12 @@ def draft_node(state: AgentState) -> dict:
         draft_markdown=draft_markdown,
         revision_linkage=revision_linkage,
     )
+    record_output_diagnostic(trace, iteration=iteration, diagnostic=diagnostic)
 
     log.info(
         "draft.complete",
         run_id=state["run_id"],
-        tokens=response.usage.total_tokens,
+        tokens=accounted_tokens,
         cost=round(run_cost, 5),
         latency_ms=latency,
         sections_count=len([v for v in sections.values() if v])
@@ -503,10 +662,11 @@ def draft_node(state: AgentState) -> dict:
 
     return {
         "draft_sections": sections,
+        "draft_status": draft_status,
         "draft_markdown": draft_markdown,
         "m4_feedback_claims": m4_feedback_claims,
         "iterations": iteration,
-        "total_tokens": state.get("total_tokens", 0) + response.usage.total_tokens,
+        "total_tokens": state.get("total_tokens", 0) + accounted_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
         "semantic_trace": trace,
@@ -637,7 +797,10 @@ def retrieve_node(state: AgentState) -> dict:
     # KB query — use topic + first 100 chars of problem_framing for richer context
     problem_framing_preview = state.get("draft_sections", {}).get("problem_framing", "")[:100]
     kb_query = f"{topic} {problem_framing_preview}".strip()
-    kb_results = query_kb(query=kb_query, n_results=5)
+    from agent.kb_backend import retrieve_kb
+
+    qualified = retrieve_kb(kb_query, n_seeds=5)
+    kb_results = qualified["kb_results"]
 
     latency = int((time.time() - t_start) * 1000)
     existing_latency = state.get("latency_ms", {})
@@ -650,7 +813,10 @@ def retrieve_node(state: AgentState) -> dict:
         run_id=state["run_id"],
         web_sources=len(web_sources),
         kb_results=len(kb_results),
-        latency_ms=latency
+        kb_backend=qualified.get("kb_backend"),
+        collection_name=qualified.get("collection_name"),
+        qdrant_reads=qualified.get("qdrant_reads", 0),
+        latency_ms=latency,
     )
 
 
@@ -662,31 +828,40 @@ def retrieve_node(state: AgentState) -> dict:
     }
 
 
-def _build_source_context(web_sources: list, kb_results: list) -> str:
-    """Format sources into a compact string for the verify prompt.
+def _build_web_source_context(web_sources: list) -> str:
+    """Format web sources for draft grounding (unchanged Tavily truncation)."""
 
-    Truncation limits — do not change without re-running benchmark:
-      WEB_CHARS: Tavily content median is ~1923 chars (305-result sample).
-                 1500 chars covers ~78% of a typical result and the full
-                 lower quartile. 98% of results were cut at the old 500-char
-                 limit, which is why obvious claims were marked unverified.
-      KB_CHARS:  Seed docs average ~5294 chars. 800 chars covered only 15%
-                 of a doc (intro paragraph only). 2000 chars covers ~38%,
-                 reaching algorithm-level detail in all seed docs.
-      Context budget at these limits (worst-case, 5+5 sources):
-        source tokens  ~4375  |  total input ~5695  |  headroom 54k / 64k
-        cost delta per verify call: +$0.00074 (+14.3%)
-    """
-    # PHASE-1 EXPERIMENT: raised from 500 → 1500 (web) and 800 → 2000 (kb)
     WEB_CHARS = 1500
-    KB_CHARS  = 2000
-
     parts = []
-    for s in web_sources[:5]:
-        parts.append(f"[WEB] {s['url']}\n{s['content'][:WEB_CHARS]}")
-    for k in kb_results[:5]:
-        parts.append(f"[KB] {k['source']}\n{k['text'][:KB_CHARS]}")
-    return "\n\n".join(parts) if parts else "No sources available."
+    for source in web_sources[:5]:
+        parts.append(f"[WEB] {source['url']}\n{source['content'][:WEB_CHARS]}")
+    return "\n\n".join(parts)
+
+
+def _build_legacy_kb_source_context(kb_results: list) -> str:
+    """Legacy KB clip path retained only for non-qualified fallback states."""
+
+    KB_CHARS = 2000
+    parts = []
+    for item in kb_results[:5]:
+        parts.append(f"[KB] {item['source']}\n{item['text'][:KB_CHARS]}")
+    return "\n\n".join(parts)
+
+
+def _build_source_context(web_sources: list, kb_results: list) -> str:
+    """Format sources into a compact string (verify / legacy paths)."""
+
+    from agent.qualified_rag import build_drafter_kb_context, is_qualified_kb
+
+    web_context = _build_web_source_context(web_sources)
+    if is_qualified_kb(kb_results):
+        kb_context = build_drafter_kb_context(kb_results)
+    else:
+        kb_context = _build_legacy_kb_source_context(kb_results)
+    return (
+        "\n\n".join(part for part in (web_context, kb_context) if part)
+        or "No sources available."
+    )
 
 def _build_citations(grounding_report: list, web_sources: list, kb_results: list | None = None) -> str:
     """Trusted citation HTML. Verifier strings are not URL authority."""
@@ -708,9 +883,9 @@ def _citations_html_for_state(state: AgentState) -> str:
             state.get("kb_results", []),
         )
     result = evaluate_citation_policy(state=state)
-    items = bibliography_items(result.attached_evidence_ids, build_evidence_registry(state))
+    items = bibliography_items(sorted(result.attached_evidence_ids), build_evidence_registry(state))
     if not items:
-        items = bibliography_items(result.required_evidence_ids, build_evidence_registry(state))
+        items = bibliography_items(sorted(result.required_evidence_ids), build_evidence_registry(state))
     return render_citations_html(items)
 
 
@@ -762,17 +937,6 @@ def _atomic_write_utf8(path: Path, text: str) -> None:
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_bytes(data)
     os.replace(tmp, path)
-
-
-_ALLOWED_CODE_LANG = {
-    "python": "language-python",
-    "text": "language-text",
-    "json": "language-json",
-    "bash": "language-bash",
-    "sh": "language-bash",
-    "sql": "language-sql",
-}
-
 
 
 def _deduplicate_grounding_report(
@@ -985,6 +1149,7 @@ def _make_semantic_llm_transport(client: OpenAI):
         }
         if response_format is not None:
             kwargs["response_format"] = response_format
+        kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
         return _llm_call(client, **kwargs)
 
     return transport
@@ -1070,6 +1235,16 @@ def verify_node(state: AgentState) -> dict:
     t_start = time.time()
     iteration = state.get("iterations", 0)
     request_id = _verify_request_id(state)
+    try:
+        if call_b_journal.lookup(state["run_id"], "initial", request_id) is not None:
+            return _journal_recovery_update(state, request_id)
+    except Exception as exc:
+        return {
+            "verification_status": "verification_error",
+            "error_log": [*(state.get("error_log") or []),
+                          f"[verify] call_b_journal_unavailable {type(exc).__name__}"],
+            **workflow.terminal("execution_failed"),
+        }
 
     if state.get("total_cost_usd", 0) >= COST_GATE_USD:
         log.warning("verify.cost_gate_hit", run_id=state["run_id"],
@@ -1116,7 +1291,8 @@ def verify_node(state: AgentState) -> dict:
                 {"role": "user", "content": user_message},
             ],
             temperature=0.1,
-            max_tokens=4000,
+            max_tokens=CLAIM_INVENTORY_MAX_TOKENS,
+            extra_body={"thinking": {"type": "disabled"}},
         )
     except (RateLimitError, APIConnectionError, APITimeoutError, InternalServerError) as exc:
         log.error("verify.inventory_transport_failed", run_id=state["run_id"], error=str(exc))
@@ -1157,6 +1333,14 @@ def verify_node(state: AgentState) -> dict:
             "semantic_trace": trace,
         }
 
+    diagnostic = new_output_diagnostic(
+        stage="claim_inventory", iteration=iteration,
+        quality_episode=state.get("quality_episode"),
+        quality_attempt=state.get("quality_attempts"),
+        requested_model=DEEPSEEK_MODEL, temperature=0.1,
+        max_tokens=CLAIM_INVENTORY_MAX_TOKENS, response_format=None, response=claim_response,
+    )
+    trace = copy_trace(state)
     run_cost += _cost(claim_response.usage)
     total_new_tokens += claim_response.usage.total_tokens
     raw = claim_response.choices[0].message.content.strip()
@@ -1165,13 +1349,14 @@ def verify_node(state: AgentState) -> dict:
         raw_claim_rows = parse_claim_inventory_rows(raw)
         parser_status = "ok"
     except (json.JSONDecodeError, ValueError, ValidationError) as exc:
+        finish_output_diagnostic(diagnostic, raw, exc)
+        record_output_diagnostic(trace, iteration=iteration, diagnostic=diagnostic)
         log.error("verify.inventory_parse_failed", run_id=state["run_id"], error=str(exc),
                   raw_preview=raw[:300])
         verification_status = "parse_failed"
         parser_status = "parse_failed"
         parse_error = str(exc)
         latency = int((time.time() - t_start) * 1000)
-        trace = copy_trace(state)
         record_verify(
             trace,
             iteration=iteration,
@@ -1209,6 +1394,50 @@ def verify_node(state: AgentState) -> dict:
             "semantic_trace": trace,
         }
 
+    finish_output_diagnostic(diagnostic, raw)
+    record_output_diagnostic(trace, iteration=iteration, diagnostic=diagnostic)
+    if diagnostic["response"]["finish_reason"] == "length":
+        # A parseable prefix is still incomplete when the provider reports
+        # length termination. Keep the true parser result; do not admit it to
+        # inventory construction or semantic Call B.
+        verification_status = "inventory_failed"
+        latency = int((time.time() - t_start) * 1000)
+        record_verify(
+            trace,
+            iteration=iteration,
+            consumed=True,
+            draft_markdown=draft_markdown,
+            source_context="",
+            user_message=user_message,
+            verify_system_text=CLAIM_INVENTORY_SYSTEM,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            raw_response=raw,
+            parser_status=parser_status,
+            parse_error=None,
+            pre_dedup_rows=copy.deepcopy(raw_claim_rows),
+            dropped_rows=[],
+            post_dedup_rows=[],
+            post_attribution_rows=[],
+        )
+        existing_latency = state.get("latency_ms", {})
+        existing_latency["verify"] = latency
+        return {
+            "grounding_report": [],
+            "grounding_score": 0.0,
+            "verification_status": verification_status,
+            "claim_inventory": None,
+            "iteration_metrics": _append_verify_iteration_metrics(
+                state,
+                grounding_report=[],
+                verification_status=verification_status,
+                grounding_score=0.0,
+            ),
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "latency_ms": existing_latency,
+            "semantic_trace": trace,
+        }
     # Deterministic inventory: exact anchoring, Python claim IDs, duplicate
     # merge, required⇒material override. Versioned by draft_sha256.
     claim_inventory = build_claim_inventory(
@@ -1227,7 +1456,6 @@ def verify_node(state: AgentState) -> dict:
     if not eligible_claims(claim_inventory) or critical_failures:
         verification_status = "inventory_failed"
         latency = int((time.time() - t_start) * 1000)
-        trace = copy_trace(state)
         record_verify(
             trace,
             iteration=iteration,
@@ -1275,24 +1503,159 @@ def verify_node(state: AgentState) -> dict:
 
     claim_roster = call_b_roster(claim_inventory)
     specificity_by_id = _specificity_by_claim_id_from_inventory(claim_inventory)
-
-    analyzer_result = analyze_semantic_evidence(
+    manifest = build_evidence_manifest(
         request_id=request_id,
-        draft_text=draft_markdown,
-        claims=claim_roster,
         web_sources=state.get("web_sources") or [],
         kb_results=state.get("kb_results") or [],
-        llm_call=_make_semantic_llm_transport(client),
-        model=DEEPSEEK_MODEL,
     )
-    run_cost += _cost_from_usage(analyzer_result.usage)
-    total_new_tokens += _usage_total_tokens(analyzer_result.usage)
+    roster_sha256 = call_b_journal.digest(claim_roster)
+    manifest_sha256 = call_b_journal.digest(manifest)
+
+    def _identities_current() -> bool:
+        return (
+            sha256_utf8(state.get("draft_markdown") or "") == draft_sha256
+            and claim_inventory.get("draft_sha256") == draft_sha256
+            and call_b_journal.digest(call_b_roster(claim_inventory)) == roster_sha256
+            and call_b_journal.digest(build_evidence_manifest(
+                request_id=request_id,
+                web_sources=state.get("web_sources") or [],
+                kb_results=state.get("kb_results") or [],
+            )) == manifest_sha256
+        )
+
+    def _response_record(kind: str):
+        def save(*, response_id, returned_model, finish_reason, usage):
+            tokens, cost = _journal_usage(usage)
+            call_b_journal.record_response(
+                run_id=state["run_id"], kind=kind, verify_key=request_id,
+                response_id=response_id, returned_model=returned_model,
+                finish_reason=finish_reason, usage=usage,
+                total_tokens=tokens, estimated_cost_usd=cost,
+            )
+        return save
+
+    def _analyze(kind: str):
+        return analyze_semantic_evidence(
+            request_id=request_id,
+            draft_text=draft_markdown,
+            claims=claim_roster,
+            web_sources=state.get("web_sources") or [],
+            kb_results=state.get("kb_results") or [],
+            llm_call=_make_semantic_llm_transport(client),
+            model=DEEPSEEK_MODEL,
+            on_response=_response_record(kind),
+        )
+
+    if not _identities_current():
+        return {"verification_status": "verification_error",
+                "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+                "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+                **workflow.terminal("execution_failed", "Call B identity changed.")}
+    try:
+        call_b_journal.reserve(
+            run_id=state["run_id"], kind="initial", verify_key=request_id,
+            request_id=request_id, draft_sha256=draft_sha256,
+            roster_sha256=roster_sha256, manifest_sha256=manifest_sha256,
+            call_a_tokens=total_new_tokens, call_a_cost_usd=run_cost,
+        )
+    except Exception as exc:
+        return {
+            "verification_status": "verification_error",
+            "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+            "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+            "error_log": [*(state.get("error_log") or []),
+                          f"[verify] call_b_reservation_failed {type(exc).__name__}"],
+            **workflow.terminal("execution_failed"),
+        }
+    retried_observation = False
+    try:
+        analyzer_result = _analyze("initial")
+        initial_row = call_b_journal.lookup(state["run_id"], "initial", request_id)
+        if initial_row is None or initial_row["usage_status"] != "known":
+            return _journal_recovery_update(state, request_id)
+        total_new_tokens += initial_row["total_tokens"]
+        run_cost += initial_row["estimated_cost_usd"]
+        observed_ids = [row["claim_id"] for row in analyzer_result.quote_observations]
+        expected_ids = [row["claim_id"] for row in claim_roster]
+        retry_roster_valid = (
+            len(observed_ids) == len(expected_ids)
+            and len(set(observed_ids)) == len(observed_ids)
+            and set(observed_ids) == set(expected_ids)
+        )
+        if (analyzer_result.failure_kind == "quote_binding"
+                and analyzer_result.quote_binding_reason == "quote_not_found"
+                and retry_roster_valid
+                and analyzer_result.quote_failure.get("claim_id") is not None
+                and analyzer_result.quote_failure.get("evidence_id") is not None):
+            trace.setdefault("call_b_observation_attempts", []).append({
+                "request_id": request_id, "attempt": "initial", "failure_kind": "quote_binding",
+                "failure_reason": "quote_not_found",
+                "quote_failure": analyzer_result.quote_failure,
+                "provider_response_id": analyzer_result.provider_response_id,
+                "usage": analyzer_result.usage,
+            })
+            if (not _identities_current()
+                    or analyzer_result.request_id != request_id
+                    or call_b_journal.digest(analyzer_result.evidence_manifest) != manifest_sha256):
+                return _journal_recovery_update(state, request_id)
+            if state.get("total_cost_usd", 0) + run_cost >= COST_GATE_USD:
+                return {
+                    "verification_status": "skipped_cost_gate",
+                    "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+                    "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+                    "provider_usage_status": "known",
+                    "call_b_accounted_requests": sorted({
+                        *(state.get("call_b_accounted_requests") or []),
+                        request_id + ":call_a", request_id + ":initial",
+                    }),
+                    **workflow.terminal("resource_exhausted"),
+                }
+            call_b_journal.reserve(
+                run_id=state["run_id"], kind="retry", verify_key=request_id,
+                request_id=request_id, draft_sha256=draft_sha256,
+                roster_sha256=roster_sha256, manifest_sha256=manifest_sha256,
+            )
+            retried_observation = True
+            analyzer_result = _analyze("retry")
+            retry_row = call_b_journal.lookup(state["run_id"], "retry")
+            if retry_row is None or retry_row["usage_status"] != "known":
+                return _journal_recovery_update(state, request_id)
+            total_new_tokens += retry_row["total_tokens"]
+            run_cost += retry_row["estimated_cost_usd"]
+            trace["call_b_observation_attempts"].append({
+                "request_id": request_id, "attempt": "retry",
+                "failure_kind": analyzer_result.failure_kind,
+                "failure_reason": analyzer_result.quote_binding_reason,
+                "quote_failure": analyzer_result.quote_failure,
+                "provider_response_id": analyzer_result.provider_response_id,
+                "usage": analyzer_result.usage,
+            })
+    except Exception as exc:
+        try:
+            recovered = _journal_recovery_update(state, request_id)
+        except Exception:
+            recovered = {
+                "grounding_report": [], "grounding_score": 0.0,
+                "verification_status": "verification_error",
+                "provider_usage_status": "unknown",
+                "total_tokens": state.get("total_tokens", 0) + total_new_tokens,
+                "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
+                "error_log": [*(state.get("error_log") or [])],
+                **workflow.terminal("execution_failed"),
+            }
+        recovered["error_log"].append(
+            f"[verify] call_b_dispatch_failed {type(exc).__name__}"
+        )
+        return recovered
 
     engine_status_by_claim = {}
+    accounted_requests = sorted({
+        *(state.get("call_b_accounted_requests") or []),
+        request_id + ":call_a", request_id + ":initial",
+        *([request_id + ":retry"] if retried_observation else []),
+    })
     if analyzer_result.adjudication is not None:
         engine_status_by_claim = dict(analyzer_result.adjudication.semantic_status_by_claim)
-
-    trace = copy_trace(state)
 
     if not analyzer_result.success:
         record_verify(
@@ -1324,14 +1687,22 @@ def verify_node(state: AgentState) -> dict:
             returned_model=analyzer_result.returned_model,
             provider_response_id=analyzer_result.provider_response_id,
             usage=analyzer_result.usage,
+            finish_reason=analyzer_result.finish_reason,
+            response_length=analyzer_result.response_length,
+            parser_status=analyzer_result.parser_status,
+            parser_error=analyzer_result.parser_error,
+            max_tokens=analyzer_result.max_tokens,
             evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
             engine_status_by_claim=engine_status_by_claim,
             raw_response=analyzer_result.raw_response,
+            quote_failure=analyzer_result.quote_failure,
         )
-        if analyzer_result.failure_kind == "provider":
+        if analyzer_result.failure_kind in ("provider", "quote_binding"):
             verification_status = "verification_error"
         else:
             verification_status = "parse_failed"
+        if retried_observation:
+            verification_status = "verification_error"
         grounding_report = list(analyzer_result.grounding_report or [])
         _attach_specificity(grounding_report, specificity_by_id)
         _attach_inventory_fields(grounding_report, claim_inventory)
@@ -1362,6 +1733,10 @@ def verify_node(state: AgentState) -> dict:
             "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
             "latency_ms": existing_latency,
             "semantic_trace": trace,
+            "provider_usage_status": "known",
+            "call_b_accounted_requests": accounted_requests,
+            **(workflow.terminal("execution_failed", "Call B observation was invalid.")
+               if retried_observation or analyzer_result.failure_kind == "quote_binding" else {}),
         }
 
     grounding_report = copy.deepcopy(analyzer_result.grounding_report)
@@ -1406,9 +1781,15 @@ def verify_node(state: AgentState) -> dict:
         returned_model=analyzer_result.returned_model,
         provider_response_id=analyzer_result.provider_response_id,
         usage=analyzer_result.usage,
+        finish_reason=analyzer_result.finish_reason,
+        response_length=analyzer_result.response_length,
+        parser_status=analyzer_result.parser_status,
+        parser_error=analyzer_result.parser_error,
+        max_tokens=analyzer_result.max_tokens,
         evidence_ids=[entry["evidence_id"] for entry in analyzer_result.evidence_manifest],
         engine_status_by_claim=engine_status_by_claim,
         raw_response=analyzer_result.raw_response,
+        quote_failure=analyzer_result.quote_failure,
     )
 
     grounding_score = engine_compat_grounding_score(grounding_report)
@@ -1460,6 +1841,8 @@ def verify_node(state: AgentState) -> dict:
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
         "semantic_trace": trace,
+        "provider_usage_status": "known",
+        "call_b_accounted_requests": accounted_requests,
     }
 
 
@@ -1514,6 +1897,8 @@ def reflect_node(state: AgentState) -> dict:
     """
     Self-evaluates draft on structure, depth, grounding. Scores 1-10.
     """
+    if not workflow.verification_eligible(state):
+        return workflow.terminal("execution_failed", "Reflection requires accepted current verification.")
     log = get_logger("reflect_node")
     t_start = time.time()
 
@@ -1566,6 +1951,13 @@ def reflect_node(state: AgentState) -> dict:
         temperature=0.1,
         max_tokens=500,
     )
+    diagnostic = new_output_diagnostic(
+        stage="reflection", iteration=state.get("iterations", 0),
+        quality_episode=state.get("quality_episode"),
+        quality_attempt=state.get("quality_attempts"),
+        requested_model=DEEPSEEK_MODEL, temperature=0.1,
+        max_tokens=500, response_format=None, response=response,
+    )
 
     latency = int((time.time() - t_start) * 1000)
     run_cost = _cost(response.usage)
@@ -1576,6 +1968,7 @@ def reflect_node(state: AgentState) -> dict:
         if raw.startswith("json"): raw = raw[4:]
         raw = raw.strip()
 
+    parse_error = None
     try:
         parsed = json.loads(raw)
         if not isinstance(parsed, dict):
@@ -1595,6 +1988,7 @@ def reflect_node(state: AgentState) -> dict:
             parse_status="ok",
         )
     except (json.JSONDecodeError, ValueError) as e:
+        parse_error = e
         log.error("reflect.parse_failed", run_id=state["run_id"], error=str(e))
         reflection_score = 7
         reflection_notes = f"Parse error: {e}"
@@ -1604,6 +1998,9 @@ def reflect_node(state: AgentState) -> dict:
             provider_called=True,
             parse_status="failed",
         )
+    finish_output_diagnostic(diagnostic, raw, parse_error)
+    trace = copy_trace(state)
+    record_output_diagnostic(trace, iteration=state.get("iterations", 0), diagnostic=diagnostic)
 
 
     existing_latency = state.get("latency_ms", {})
@@ -1619,10 +2016,22 @@ def reflect_node(state: AgentState) -> dict:
         "reflection_score": reflection_score,
         "reflection_notes": reflection_notes,
         "reflection_provenance": reflection_provenance,
+        "reflection_identity": workflow.identity(state),
         "total_tokens": state.get("total_tokens", 0) + response.usage.total_tokens,
         "total_cost_usd": state.get("total_cost_usd", 0) + run_cost,
         "latency_ms": existing_latency,
+        "semantic_trace": trace,
     }
+
+def _cli_reviewer_identity() -> str | None:
+    """Authenticate an interactive reviewer without persisting the secret."""
+    from getpass import getpass
+
+    try:
+        return authenticate_reviewer(getpass("Reviewer credential: "))
+    except (InvalidReviewerCredential, ReviewerConfigurationError, EOFError):
+        return None
+
 
 # NODE: hitl_node
 
@@ -1631,9 +2040,38 @@ def hitl_node(state: AgentState) -> dict:
     Interactive HITL gate. Displays draft + grounding report + reflection.
     User inputs: a (approve), r (reject), f (feedback -> types it).
     """
+    if not workflow.gate1_eligible(state):
+        return {"hitl_status": "rejected", **workflow.terminal("execution_failed", "Gate 1 eligibility failed.")}
+    try:
+        material_review = material_review_bundle(state)
+        review_error = None
+    except (EvidenceSignoffError, KeyError, TypeError) as exc:
+        material_review = None
+        review_error = str(exc)
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
-        # Auto-approve is a CI/CLI convenience, not a semantic pass.
-        return hitl_approve_update(state)
+        reviewer_id = test_auto_reviewer_id()
+        if reviewer_id is None:
+            return {"hitl_status": "rejected", **workflow.terminal(
+                "execution_failed", "Auto-approval requires isolated test identity and disabled publishing."
+            )}
+        if material_review is None:
+            return {"hitl_status": "rejected", **workflow.terminal(
+                "execution_failed", f"Gate 1 evidence review unavailable: {review_error}"
+            )}
+        # Test-only synthetic receipt remains visibly synthetic and cannot cross
+        # any production render/Git/publish boundary.
+        submission = {
+            "evidence_binding_sha256": material_review["evidence_binding_sha256"],
+            "decisions": [{"claim_id": claim_id, "decision": "SUPPORTED",
+                           "rationale": "Synthetic test-only evidence decision"}
+                          for claim_id in material_review["material_claim_ids"]],
+            "coverage_attestation": {"no_omitted_material_claims": True,
+                                     "materiality_classification_correct": True},
+        }
+        auto_review_id = secrets.token_urlsafe(32)
+        with reviewer_context(reviewer_id, state["run_id"], origin="synthetic",
+                              review_id=auto_review_id):
+            return hitl_approve_update(state, submission, submitted_review_id=auto_review_id)
 
     # B4: API mode — pause the graph via LangGraph interrupt(). The checkpointer
     # (set by the API server's build_graph) persists full state to SQLite, so the
@@ -1644,24 +2082,21 @@ def hitl_node(state: AgentState) -> dict:
 
     if os.environ.get("HITL_MODE") == "api":
         from langgraph.types import interrupt
-        review_rows = safe_grounding_rows(
-            state.get("grounding_report", []),
-            state.get("web_sources", []),
-        )
+        try:
+            review_html = render_markdown_review_html(state.get("draft_markdown") or "")
+        except PolicyError:
+            return workflow.terminal("rendering_failed")
         decision = interrupt({
             "type": "hitl_review",
             "run_id": state["run_id"],
+            "draft_sha256": workflow.identity(state)["draft_sha256"],
+            "material_review": material_review,
+            "material_review_error": review_error,
             "topic": state["topic"],
             "slug": state["slug"],
-            "draft_review_html": render_markdown_review_html(state.get("draft_markdown") or ""),
+            "draft_review_html": review_html,
             "html_policy_version": HTML_POLICY_VERSION,
-            "grounding_score": state.get("grounding_score", 0.0),
-            "reflection_score": state.get("reflection_score", 0),
-            "reflection_notes": state.get("reflection_notes", ""),
-            "reflection_provenance": state.get("reflection_provenance", {}),
-            "review_claims": review_rows,
-            "claim_summary": claim_review_summary(review_rows),
-            "unverified_rate": unverified_rate(state.get("grounding_report", [])),
+            # Favorable automated labels are withheld until evidence review.
             # Explicit unresolved semantic review obligations (Phase 4 Slice 1):
             # blocker-bearing rows are categorical; blocker-free unverified rows
             # are UVR-governed. Not hidden behind aggregate scores.
@@ -1683,160 +2118,166 @@ def hitl_node(state: AgentState) -> dict:
         }) or {}
         action = decision.get("action")
         if action == "approve":
-            return hitl_approve_update(state)
+            signoff = decision.get("signoff")
+            if (isinstance(signoff, dict) and isinstance(signoff.get("coverage_attestation"), dict)
+                    and signoff["coverage_attestation"].get("no_omitted_material_claims") is False
+                    and isinstance(signoff.get("feedback"), str) and signoff["feedback"].strip()):
+                return _hitl_traced(state, workflow.content_feedback(state, signoff["feedback"].strip()))
+            return hitl_approve_update(state, signoff, submitted_review_id=decision.get("review_id"))
         if action == "feedback":
             fb = (decision.get("feedback") or "").strip()
             if fb:
-                return _hitl_traced(state, {"hitl_status": "feedback", "hitl_feedback": fb})
-        return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None})
+                return _hitl_traced(state, workflow.content_feedback(state, fb))
+        return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None,
+                                      **workflow.terminal("terminal_rejected")})
 
 
     from rich.console import Console
     from rich.panel import Panel
-    from rich.table import Table
+    from rich.text import Text
 
     console = Console()
-    console.print(Panel(f"[bold]DRAFT REVIEW — {state['topic']}[/bold]", style="orange1"))
-    console.print(state["draft_markdown"])
-
-    # Grounding table
-    table = Table(title="Source Grounding Report")
-    table.add_column("Claim", max_width=60)
-    table.add_column("Status")
-    table.add_column("Confidence")
-    table.add_column("Source")
-    for r in state.get("grounding_report", []):
-        status_color = {"verified": "green", "weak": "yellow", "unverified": "red"}.get(
-            r.get("status", ""), "white")
-        table.add_row(
-            r.get("claim", "")[:60],
-            f"[{status_color}]{r.get('status', '')}[/{status_color}]",
-            f"{r.get('confidence', 0):.2f}",
-            r.get("source_url", "none") or "none",
-        )
-    console.print(table)
-
-    console.print(f"\n[bold]Reflection:[/bold] {state['reflection_score']}/10 — {state['reflection_notes']}")
-    console.print(f"[bold]Grounding score:[/bold] {state['grounding_score']:.2f}")
-    if state.get("error_log"):
-        console.print(f"[yellow]Warnings:[/yellow] {'; '.join(state['error_log'])}")
+    console.print(Panel(Text(f"DRAFT REVIEW — {state['topic']}"), style="orange1"))
+    console.print(Text(state["draft_markdown"]))
+    if review_error:
+        console.print(Text(f"Evidence review unavailable: {review_error}. Use feedback or reject."))
+    for claim in (material_review or {}).get("claims", []):
+        console.print(Text(f"\nMaterial claim {claim['claim_id']}: {claim['claim_text']}"))
+        for occurrence in claim["draft_contexts"]:
+            console.print(Text(f"Draft context: {occurrence['context']['text']}"))
+        for span in claim["support_spans"]:
+            console.print(Text(f"Evidence {span['evidence_id']} ({span['provenance']}): {span['quote']}"))
+            console.print(Text(f"Source context: {span['source_context']['text']}"))
+        for blocker in claim["blockers"]:
+            console.print(Text(f"Limitation: {blocker['kind']}: {blocker['explanation']}"))
 
     while True:
         choice = input("\n[a]pprove / [r]eject / [f]eedback: ").strip().lower()
         if choice == 'a':
-            return hitl_approve_update(state)
+            if material_review is None:
+                console.print(Text("Approval blocked: current evidence review is unavailable."))
+                continue
+            decisions = []
+            for claim in material_review["claims"]:
+                selected = input(f"{claim['claim_id']} [s]upported/[u]nsupported/[c]annot determine: ").strip().lower()
+                decision = {"s": "SUPPORTED", "u": "UNSUPPORTED", "c": "CANNOT_DETERMINE"}.get(selected)
+                rationale = input("Evidence rationale: ").strip()
+                decisions.append({"claim_id": claim["claim_id"], "decision": decision,
+                                  "rationale": rationale})
+            no_omissions = input("Full draft checked: no omitted material claims? [y/N]: ").strip().lower() == "y"
+            materiality_correct = input("Materiality classifications correct? [y/N]: ").strip().lower() == "y"
+            if not no_omissions:
+                feedback = input("Describe omitted claim or needed correction: ").strip()
+                if feedback:
+                    return _hitl_traced(state, workflow.content_feedback(state, feedback))
+            reviewer_id = _cli_reviewer_identity()
+            if reviewer_id is None:
+                return {"hitl_status": "rejected", **workflow.terminal(
+                    "execution_failed", "Reviewer authentication failed."
+                )}
+            submission = {"evidence_binding_sha256": material_review["evidence_binding_sha256"],
+                          "decisions": decisions,
+                          "coverage_attestation": {
+                              "no_omitted_material_claims": no_omissions,
+                              "materiality_classification_correct": materiality_correct}}
+            cli_review_id = secrets.token_urlsafe(32)
+            with reviewer_context(reviewer_id, state["run_id"], review_id=cli_review_id):
+                return hitl_approve_update(state, submission, submitted_review_id=cli_review_id)
         elif choice == 'r':
-            return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None})
+            return _hitl_traced(state, {"hitl_status": "rejected", "hitl_feedback": None,
+                                      **workflow.terminal("terminal_rejected")})
         elif choice == 'f':
             feedback = input("Feedback: ").strip()
             if feedback:
-                return _hitl_traced(state, {"hitl_status": "feedback", "hitl_feedback": feedback})
+                return _hitl_traced(state, workflow.content_feedback(state, feedback))
         else:
             print("Enter a, r, or f.")
 
 
 def _render_problem_framing(raw: str) -> str:
-    paragraphs = [p.strip() for p in raw.strip().split("\n\n") if p.strip()]
-    if not paragraphs:
-        return f"<p>{html_module.escape(raw.strip())}</p>"
-    return "\n".join(f"<p>{html_module.escape(p)}</p>" for p in paragraphs)
+    return render_publication_markdown(raw).html
 
 
 def _render_code_snippets(raw: str) -> str:
-    pattern = re.compile(r'```(\w*)\n(.*?)```', re.DOTALL)
-    matches = pattern.findall(raw)
-
-    if not matches:
-        escaped = html_module.escape(raw.strip())
-        return (
-            '<div class="sl-code-block">'
-            '<div class="sl-code-label">TEXT</div>'
-            f'<pre><code>{escaped}</code></pre>'
-            '</div>'
-        )
-
-    blocks = []
-    for lang, content in matches:
-        lang_key = (lang.strip() or "text").lower()
-        lang_class = _ALLOWED_CODE_LANG.get(lang_key, "language-text")
-        label = lang_key.upper() if lang_key in _ALLOWED_CODE_LANG else "TEXT"
-        escaped = html_module.escape(content.strip())
-        blocks.append(
-            f'<div class="sl-code-block">'
-            f'<div class="sl-code-label">{label}</div>'
-            f'<pre><code class="{lang_class}">{escaped}</code></pre>'
-            f'</div>'
-        )
-    return "\n\n".join(blocks)
-
+    if "```" in raw:
+        # Markdown owns fenced code and any surrounding prose. Dropping text
+        # outside fences would silently change the approved article.
+        return render_publication_markdown(raw).html
+    return f'<pre><code>{html_module.escape(raw)}</code></pre>'
 
 def _render_takeaways(raw: str) -> str:
-    lines = raw.strip().splitlines()
-    items = []
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        line = re.sub(r'^[\-\*\•]\s+', '', line)
-        line = re.sub(r'^\d+\.\s+', '', line)
-        if line:
-            items.append(f"<li>{html_module.escape(line)}</li>")
-    if not items:
-        return "<ul><li>No takeaways generated.</li></ul>"
-    return "<ul>\n" + "\n".join(items) + "\n</ul>"
+    return render_publication_markdown(raw).html
 
 
-def _render_technical_dive_via_llm(
-    topic: str,
-    technical_dive: str,
-    client=None,
-    run_id: str = "",
-) -> tuple[str, int, float]:
-    if client is None:
-        client = _get_client()
-    prompt = f"""Convert this technical section into clean HTML for an article about: {topic}
-
-RULES:
-- Use <h3> for subsections
-- Use <p> for paragraphs
-- Use <code> for inline code (never backticks in output)
-- Use <strong> for emphasis
-- Use <div class="callout callout-info"> for important notes/warnings (both classes required)
-- Use <ul><li> for lists
-- Do NOT wrap output in any container div
-- Do NOT include DOCTYPE, html, head, or body tags
-- Return ONLY the HTML. No preamble. No markdown fences.
-
-Content to convert:
-{technical_dive}"""
-
-    response = _llm_call(
-        client,
-        model=DEEPSEEK_MODEL,
-        messages=[
-            {"role": "system", "content": "You are an HTML conversion engine. Return only valid HTML elements, no markdown, no fences, no preamble."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.1,
-        max_tokens=3000,
+def _render_occurrence_bound_citations(state: AgentState, fragments: dict, cite) -> dict:
+    """Render each approved section with one marker per exact Markdown anchor."""
+    headings = (
+        ("problem_framing", "Problem Framing"),
+        ("technical_dive", "Technical Deep-Dive"),
+        ("code_snippets", "Code"),
+        ("takeaways", "Takeaways"),
     )
-
-    rendered = response.choices[0].message.content.strip()
-    if rendered.startswith("```"):
-        rendered = re.sub(r'^```\w*\n?', '', rendered)
-        rendered = re.sub(r'\n?```$', '', rendered)
-        rendered = rendered.strip()
-
-    return rendered, response.usage.total_tokens, _cost(response.usage)
-
+    draft_md = state["draft_markdown"]
+    sections = state["draft_sections"]
+    numbering = evidence_numbering(cite.attached_evidence_ids)
+    expected_groups = [g for g in cite.anchor_groups if g.get("attached_evidence_ids")]
+    if len(numbering) != len(set(cite.attached_evidence_ids)):
+        raise PolicyError("citation numbering is incomplete")
+    rendered = {}
+    placed = 0
+    cursor = 0
+    observed_citations = []
+    for section, title in headings:
+        header = f"## {title}\n"
+        header_at = draft_md.find(header, cursor)
+        if header_at < 0:
+            raise PolicyError("approved section heading is missing")
+        start = header_at + len(header)
+        raw = sections[section]
+        if draft_md[start:start + len(raw)] != raw:
+            raise PolicyError("citation section differs from approved draft")
+        annotated, markers = occurrence_marked_markdown(
+            raw, section_start=start, groups=cite.anchor_groups, numbering=numbering,
+        )
+        if section == "code_snippets" and "```" not in raw:
+            annotated_html = f"<pre><code>{html_module.escape(annotated)}</code></pre>"
+        else:
+            annotated_html = render_publication_markdown(annotated).html
+        marked_html = replace_rendered_occurrence_markers(annotated_html, markers)
+        fragment = sanitize_fragment(marked_html)
+        if initial_content_key(fragment.html) != initial_visible_key(fragments[section].html):
+            raise PolicyError("citation rendering changed approved section structure")
+        observed_citations.extend(value for kind, value in initial_visible_key(fragment.html)
+                                  if kind == "citation")
+        rendered[section] = fragment
+        placed += len(markers)
+        cursor = start + len(raw)
+    if placed != len(expected_groups):
+        raise PolicyError("citation anchor is outside approved article sections")
+    expected_citations = [",".join(str(numbering[eid]) for eid in g["attached_evidence_ids"])
+                          for g in sorted(expected_groups,
+                                          key=lambda g: (g["anchor_end"], g["anchor_start"]))]
+    if observed_citations != expected_citations:
+        raise PolicyError("citation markers do not match approved occurrence order")
+    return rendered
 
 
 def _approve_html_update(state: AgentState) -> dict:
     """Record Gate 2 approval and, only when enabled, its live remote parent."""
+    reviewer_id = current_reviewer_id(state.get("run_id"))
+    origin = current_reviewer_origin(state.get("run_id"))
+    if (reviewer_id is None or not approval_origin_valid(state, 1) or not receipt_valid(state)
+            or not initial_equivalence_valid(state) or
+            not ((origin == "authenticated" and not reviewer_id.startswith("test:")) or
+                 (origin == "synthetic" and reviewer_id.startswith("test:") and
+                  test_auto_reviewer_id() == reviewer_id))):
+        return {"html_review_status": "rejected", **workflow.terminal(
+            "execution_failed", "Gate 2 reviewer authentication or Gate 1 identity is missing."
+        )}
     html = state.get("html_output") or ""
     sha = state.get("html_sha256") or (sha256_utf8(html) if html else None)
     if not html or not sha or sha != sha256_utf8(html):
-        return {"html_review_status": "rejected"}
+        return {"html_review_status": "rejected", **workflow.terminal("terminal_rejected")}
 
     expected_remote = None
     errors = list(state.get("error_log") or [])
@@ -1854,6 +2295,8 @@ def _approve_html_update(state: AgentState) -> dict:
         "html_review_status": "approved",
         "approved_html_sha256": sha,
         "publish_expected_remote_sha": expected_remote,
+        "gate2_reviewer_id": reviewer_id,
+        "gate2_review_origin": current_reviewer_origin(state.get("run_id")),
     }
     if errors != list(state.get("error_log") or []):
         payload["error_log"] = errors
@@ -1866,16 +2309,33 @@ def hitl_html_node(state: AgentState) -> dict:
     P2 second HITL gate (post-render). The human reviews the GENERATED HTML before publish.
       approve         -> git (publish)
       reject          -> END (nothing published)
-      request_changes -> draft (revise): the note is stored in hitl_feedback (the SAME channel
-                         draft_node already consumes, lines 32-33), and the graph loops
-                         draft -> verify -> reflect -> draft gate -> html_gen -> here again.
+      request_changes -> html_revise -> this gate, with at most two layout attempts.
+    Content stays frozen; layout feedback cannot re-enter the content quality episode.
     No LLM calls, so interrupt() re-execution on resume is free. Fail-safe default is REJECT.
     """
+    if state.get("terminal_status"):
+        return {}
+    if workflow.resource_stopped(state):
+        return workflow.terminal("resource_exhausted")
     if not state.get("html_output"):
-        return {"html_review_status": "rejected"}
+        return {"html_review_status": "rejected", **workflow.terminal("rendering_failed")}
+    if not approval_origin_valid(state, 1):
+        return {"html_review_status": "rejected", **workflow.terminal(
+            "execution_failed", "Gate 1 approval origin is invalid for this runtime."
+        )}
+    if not initial_equivalence_valid(state):
+        return {"html_review_status": "rejected", **workflow.terminal(
+            "rendering_failed", "Initial HTML content differs from the approved draft."
+        )}
 
     if os.environ.get("HITL_AUTO_APPROVE") == "1":
-        return _approve_html_update(state)
+        reviewer_id = test_auto_reviewer_id()
+        if reviewer_id is None:
+            return {"html_review_status": "rejected", **workflow.terminal(
+                "execution_failed", "Auto-approval requires isolated test identity and disabled publishing."
+            )}
+        with reviewer_context(reviewer_id, state["run_id"], origin="synthetic"):
+            return _approve_html_update(state)
 
     if os.environ.get("HITL_MODE") == "api":
         from langgraph.types import interrupt
@@ -1899,7 +2359,8 @@ def hitl_html_node(state: AgentState) -> dict:
             note = (decision.get("feedback") or "").strip()
             if note:
                 # Layout/design/positioning only — content is frozen after the draft gate.
-                return {"html_review_status": "changes", "html_feedback": note}
+                return workflow.layout_feedback(state, note)
+        return {"html_review_status": "rejected", **workflow.terminal("terminal_rejected")}
 
     # CLI interactive
     from rich.console import Console
@@ -1917,19 +2378,27 @@ def hitl_html_node(state: AgentState) -> dict:
     while True:
         choice = input("\n[a]pprove (publish) / [c]hanges to LAYOUT (revise) / [r]eject (discard): ").strip().lower()
         if choice == "a":
-            return _approve_html_update(state)
+            reviewer_id = _cli_reviewer_identity()
+            if reviewer_id is None:
+                return {"html_review_status": "rejected", **workflow.terminal(
+                    "execution_failed", "Reviewer authentication failed."
+                )}
+            with reviewer_context(reviewer_id, state["run_id"]):
+                return _approve_html_update(state)
         if choice == "r":
-            return {"html_review_status": "rejected"}
+            return {"html_review_status": "rejected", **workflow.terminal("terminal_rejected")}
         if choice == "c":
             note = input("Design/layout/positioning change (NOT content): ").strip()
             if note:
-                return {"html_review_status": "changes", "html_feedback": note}
+                return workflow.layout_feedback(state, note)
 
 
 def route_after_html_review(state: AgentState) -> str:
-    """approved -> git; changes -> draft (revise loop); anything else -> END."""
+    """approved -> git; changes -> html_revise; anything else -> END."""
     from langgraph.graph import END
     log = get_logger("router")
+    if state.get("terminal_status") or workflow.resource_stopped(state):
+        return END
     status = state.get("html_review_status", "rejected")
     log.info("html_review.decision", run_id=state["run_id"], status=status)
     if status == "approved":
@@ -1961,6 +2430,8 @@ def _article_shell_fields(state: AgentState) -> dict:
 
 
 def html_gen_node(state: AgentState) -> dict:
+    if not approval_origin_valid(state, 1) or not receipt_valid(state):
+        return workflow.terminal("execution_failed", "Gate 1 approval origin is invalid for this runtime.")
     log = get_logger("html_gen_node")
     t_start = time.time()
     filename = f"{state['slug']}.html"
@@ -1973,15 +2444,15 @@ def html_gen_node(state: AgentState) -> dict:
         existing_latency["html_gen"] = 0
         return {"html_output": None, "html_filename": None, "article_body_html": None,
                 "html_sha256": None, "html_policy_version": HTML_POLICY_VERSION,
-                "approved_html_sha256": None,
+                "approved_html_sha256": None, "initial_html_equivalence": None,
                 "latency_ms": existing_latency}
 
     draft = state.get("draft_sections", {})
-    topic = state["topic"]
     run_id = state["run_id"]
     td_tokens, td_cost = 0, 0.0
 
     try:
+        initial_source_identity(state)
         if state.get("claim_inventory") is not None:
             cite_gate = evaluate_citation_policy(state=state)
             if not citation_policy_passed(cite_gate):
@@ -1993,7 +2464,7 @@ def html_gen_node(state: AgentState) -> dict:
                     "article_body_html": None,
                     "html_sha256": None,
                     "html_policy_version": HTML_POLICY_VERSION,
-                    "approved_html_sha256": None,
+                    "approved_html_sha256": None, "initial_html_equivalence": None,
                     "latency_ms": existing_latency,
                     "error_log": error_log,
                     "policy_diagnostics": policy_diagnostics + [cite_gate.to_dict()],
@@ -2005,46 +2476,24 @@ def html_gen_node(state: AgentState) -> dict:
         code = sanitize_fragment(_render_code_snippets(draft.get("code_snippets", "")))
         takeaways = sanitize_fragment(_render_takeaways(draft.get("takeaways", "")))
 
-        log.info("html_gen.technical_dive_start", run_id=run_id)
-        raw_td, td_tokens, td_cost = _render_technical_dive_via_llm(
-            topic=topic,
-            technical_dive=draft.get("technical_dive", ""),
-            run_id=run_id,
-        )
-        dive = sanitize_fragment(raw_td)
-        del raw_td
+        dive = render_publication_markdown(draft.get("technical_dive", ""))
+
+        for section, fragment in (
+            ("problem_framing", framing), ("technical_dive", dive),
+            ("code_snippets", code), ("takeaways", takeaways),
+        ):
+            assert_section_equivalent(section, draft[section], fragment.html)
 
         citations_html = _citations_html_for_state(state)
-        framing_html, dive_html, code_html, takeaways_html = framing.html, dive.html, code.html, takeaways.html
         if state.get("claim_inventory") is not None:
             cite = evaluate_citation_policy(state=state)
-            # Local annotated copy only — canonical draft_markdown is untouched.
-            _ = insert_citation_markers(
-                state.get("draft_markdown") or "",
-                cite.anchor_groups,
-            )
-            numbering = evidence_numbering(cite.attached_evidence_ids or cite.required_evidence_ids)
-            draft_md = state.get("draft_markdown") or ""
-            framing_html = apply_inline_clusters_to_html(
-                framing_html, draft_markdown=draft_md,
-                groups=cite.anchor_groups, numbering=numbering,
-            )
-            dive_html = apply_inline_clusters_to_html(
-                dive_html, draft_markdown=draft_md,
-                groups=cite.anchor_groups, numbering=numbering,
-            )
-            code_html = apply_inline_clusters_to_html(
-                code_html, draft_markdown=draft_md,
-                groups=cite.anchor_groups, numbering=numbering,
-            )
-            takeaways_html = apply_inline_clusters_to_html(
-                takeaways_html, draft_markdown=draft_md,
-                groups=cite.anchor_groups, numbering=numbering,
-            )
-            framing = sanitize_fragment(framing_html)
-            dive = sanitize_fragment(dive_html)
-            code = sanitize_fragment(code_html)
-            takeaways = sanitize_fragment(takeaways_html)
+            marked = _render_occurrence_bound_citations(state, {
+                "problem_framing": framing, "technical_dive": dive,
+                "code_snippets": code, "takeaways": takeaways,
+            }, cite)
+            framing, dive, code, takeaways = (marked[key] for key in (
+                "problem_framing", "technical_dive", "code_snippets", "takeaways"
+            ))
         article = assemble_trusted_article(
             **_article_shell_fields(state),
             problem_framing=framing,
@@ -2053,6 +2502,7 @@ def html_gen_node(state: AgentState) -> dict:
             takeaways=takeaways,
             citations_html=citations_html,
         )
+        equivalence_receipt = initial_equivalence_receipt(state, article.body_html)
     except PolicyError as exc:
         existing_latency["html_gen"] = int((time.time() - t_start) * 1000)
         error_log.append(f"[html_gen] policy failure: {exc}")
@@ -2065,7 +2515,7 @@ def html_gen_node(state: AgentState) -> dict:
             "article_body_html": None,
             "html_sha256": None,
             "html_policy_version": HTML_POLICY_VERSION,
-            "approved_html_sha256": None,
+            "approved_html_sha256": None, "initial_html_equivalence": None,
             "total_tokens": state.get("total_tokens", 0) + td_tokens,
             "total_cost_usd": state.get("total_cost_usd", 0) + td_cost,
             "latency_ms": existing_latency,
@@ -2085,6 +2535,7 @@ def html_gen_node(state: AgentState) -> dict:
         "html_sha256": article.sha256,
         "html_policy_version": article.policy_version,
         "approved_html_sha256": None,
+        "initial_html_equivalence": equivalence_receipt,
         # A local/tracking ref here can be stale by the time a human approves.
         # Gate 2 captures the remote parent instead.
         "publish_expected_remote_sha": None,
@@ -2096,100 +2547,12 @@ def html_gen_node(state: AgentState) -> dict:
     }
 
 
-def _nfc(text: str) -> str:
-    import unicodedata
-    return unicodedata.normalize("NFC", text or "")
-
-
-def _norm_visible_text(text: str) -> str:
-    """Unicode NFC plus HTML-equivalent whitespace collapsing. Order is preserved."""
-    return re.sub(r"\s+", " ", _nfc(text)).strip()
-
-
-def _norm_code_text(text: str) -> str:
-    """Unicode NFC only. Internal whitespace, newlines, and token order are significant."""
-    return _nfc(text).strip("\n")
-
-
-def _compact_revision_events(events: list[tuple[str, str]]) -> tuple[tuple[str, str], ...]:
-    """Merge adjacent TEXT events (NFC + whitespace collapse). Code events stay in place."""
-    out: list[tuple[str, str]] = []
-    text_acc: list[str] = []
-
-    def flush_text() -> None:
-        if not text_acc:
-            return
-        merged = _norm_visible_text(" ".join(text_acc))
-        text_acc.clear()
-        if merged:
-            out.append(("text", merged))
-
-    for kind, value in events:
-        if kind == "text":
-            text_acc.append(value)
-        else:
-            flush_text()
-            out.append((kind, value))
-    flush_text()
-    return tuple(out)
-
-
-def _revision_content_key(html_str: str) -> tuple[tuple[str, str], ...]:
-    """Ordered stream of visible prose and code. Layout/markup is ignored.
-
-    Events are ("text", ...), ("inline", ...), or ("block", ...) in document order.
-    Adjacent text events are merged after NFC/whitespace collapse so wrapping a
-    sentence in <strong> does not change the stream; moving code relative to
-    prose does.
-    """
-    from html.parser import HTMLParser
-
-    class _Canon(HTMLParser):
-        def __init__(self):
-            super().__init__(convert_charrefs=True)
-            self.events: list[tuple[str, str]] = []
-            self.pre = 0
-            self.code = 0
-            self.buf: list[str] = []
-
-        def handle_starttag(self, tag, attrs):
-            if tag == "pre":
-                self.pre += 1
-                if self.code == 0:
-                    self.buf = []
-            elif tag == "code":
-                self.code += 1
-                if self.code == 1:
-                    self.buf = []
-
-        def handle_endtag(self, tag):
-            if tag == "code" and self.code:
-                self.code -= 1
-                if self.code == 0:
-                    text = _norm_code_text("".join(self.buf))
-                    kind = "block" if self.pre else "inline"
-                    self.events.append((kind, text))
-                    self.buf = []
-            elif tag == "pre" and self.pre:
-                self.pre -= 1
-                if self.code == 0 and self.buf:
-                    self.events.append(("block", _norm_code_text("".join(self.buf))))
-                    self.buf = []
-
-        def handle_data(self, data):
-            if self.code or self.pre:
-                self.buf.append(data)
-            else:
-                self.events.append(("text", data))
-
-    parser = _Canon()
-    parser.feed(html_str or "")
-    parser.close()
-    return _compact_revision_events(parser.events)
-
-
 def html_revise_node(state: AgentState) -> dict:
     """Layout revision of the sanitized article-body fragment only. Trusted shell is immutable."""
+    if not approval_origin_valid(state, 1) or not receipt_valid(state):
+        return workflow.terminal("execution_failed", "Gate 1 approval origin is invalid for this runtime.")
+    if not initial_equivalence_valid(state):
+        return workflow.terminal("rendering_failed", "Initial HTML structure is stale or invalid.")
     t0 = time.time()
     log = get_logger("html_revise")
     original_body = state.get("article_body_html") or ""
@@ -2229,11 +2592,16 @@ def html_revise_node(state: AgentState) -> dict:
         "policy_diagnostics": policy_diagnostics,
     }
     try:
+        original_key = initial_visible_key(original_body)
+        if initial_visible_key(raw_revised) != original_key:
+            raise PolicyError("revision changes approved content or structure")
         revised_frag = sanitize_fragment(raw_revised)
+        if initial_visible_key(revised_frag.html) != original_key:
+            raise PolicyError("revision sanitization changes approved content or structure")
     except PolicyError as exc:
         del raw_revised
-        errors.append(f"html_revise: revision DISCARDED (sanitizer: {exc}); kept original")
-        log.warning("html_revise.discarded", run_id=state["run_id"], reason="sanitizer")
+        errors.append(f"html_revise: revision DISCARDED ({exc}); kept original")
+        log.warning("html_revise.discarded", run_id=state["run_id"], reason="structure_or_sanitizer")
         if exc.diagnostic is not None:
             policy_diagnostics.append({"stage": "html_revise", **exc.diagnostic})
         return {**base_out, "html_output": original_html, "article_body_html": original_body,
@@ -2248,19 +2616,14 @@ def html_revise_node(state: AgentState) -> dict:
         return {**base_out, "html_output": original_html, "article_body_html": original_body,
                 "html_sha256": state.get("html_sha256"),
                 "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
-    if _revision_content_key(original_body) != _revision_content_key(revised_frag.html):
-        errors.append("html_revise: revision DISCARDED (visible text/code changed); kept original")
-        log.warning("html_revise.discarded", run_id=state["run_id"], reason="content_changed")
-        return {**base_out, "html_output": original_html, "article_body_html": original_body,
-                "html_sha256": state.get("html_sha256"),
-                "html_policy_version": HTML_POLICY_VERSION, "error_log": errors}
-
     try:
         article = reassemble_from_body(
             **_article_shell_fields(state),
             body_html=revised_frag.html,
             citations_html=citations_html,
         )
+        if initial_visible_key(article.body_html) != original_key:
+            raise PolicyError("reassembled revision changed approved structure")
     except PolicyError as exc:
         errors.append(f"html_revise: revision DISCARDED (reassemble: {exc}); kept original")
         log.warning("html_revise.discarded", run_id=state["run_id"], reason="reassemble")
@@ -2397,6 +2760,7 @@ def git_node(state: AgentState) -> dict:
         return {
             "branch_name": branch,
             "git_status": "failed",
+            **workflow.terminal("execution_failed", "Local Git/archive action failed."),
             "git_commit_sha": None,
             "latency_ms": existing_latency,
             "error_log": error_log,
@@ -2412,6 +2776,10 @@ def git_node(state: AgentState) -> dict:
         except Exception as exc:
             return _fail(f"archive write failed: {exc}")
         return None
+
+    if (not approval_origin_valid(state, 1) or not approval_origin_valid(state, 2)
+            or not receipt_valid(state) or not initial_equivalence_valid(state)):
+        return _fail("missing authenticated Gate 1 or Gate 2 reviewer identity")
 
     if not html_content or not filename:
         return _fail("No HTML content or filename — nothing to push")
@@ -2452,6 +2820,7 @@ def git_node(state: AgentState) -> dict:
         return {
             "branch_name": branch,
             "git_status": "failed",
+            **workflow.terminal("execution_failed", "Local Git/archive action failed."),
             "git_commit_sha": None,
             "latency_ms": existing_latency,
             "error_log": error_log,
@@ -2564,10 +2933,12 @@ def git_node(state: AgentState) -> dict:
              new_files=len(new_files))
 
     except GitCommandError as e:
+        git_status = "failed"
         log.error("git.command_error", run_id=state["run_id"], error=str(e))
         error_log.append(f"[git_node] Git command failed: {e}")
 
     except Exception as e:
+        git_status = "failed"
         log.error("git.unexpected_error", run_id=state["run_id"], error=str(e))
         error_log.append(f"[git_node] Unexpected error: {e}")
 
@@ -2585,6 +2956,8 @@ def git_node(state: AgentState) -> dict:
     return {
         "branch_name": branch,
         "git_status": git_status,
+        **(workflow.terminal("execution_failed", "Local Git/archive action failed.")
+           if git_status == "failed" else {}),
         "git_commit_sha": git_commit_sha,
         "latency_ms": existing_latency,
         "error_log": error_log,
@@ -2604,7 +2977,8 @@ def material_policy_result(state: AgentState) -> MaterialPolicyResult:
     current state. Pure/deterministic; no provider calls. Recomputed on demand
     from the current claim inventory + grounding report + draft sha, so a stale
     material result can never certify a revised draft (spec §11, §12)."""
-    return evaluate_material_policy(state=state, max_iterations=MAX_ITERATIONS)
+    episode_state = {**state, "iterations": state.get("quality_attempts", 0)}
+    return evaluate_material_policy(state=episode_state, max_iterations=workflow.QUALITY_ATTEMPTS)
 
 
 def material_policy_accepted(state: AgentState) -> bool:
@@ -2881,170 +3255,71 @@ def _hitl_traced(state: AgentState, payload: dict) -> dict:
     return payload
 
 
-def hitl_approve_update(state: AgentState) -> dict:
-    """Ordinary approve grants HTML eligibility only if ALL hard gates pass:
-    semantic verification (Slice 1), material + required-content (Slice 2b),
-    and citation safety (Slice 2c).
+def hitl_approve_update(state: AgentState, signoff_submission: dict | None = None,
+                        *, submitted_review_id: str | None = None) -> dict:
+    reviewer_id = current_reviewer_id(state.get("run_id"))
+    origin = current_reviewer_origin(state.get("run_id"))
+    trusted_review_id = current_review_id(state.get("run_id"))
+    if reviewer_id is not None and workflow.gate1_eligible(state) and (
+        (origin == "authenticated" and not reviewer_id.startswith("test:"))
+        or (origin == "synthetic" and reviewer_id.startswith("test:") and test_auto_reviewer_id() == reviewer_id)
+    ) and trusted_review_id and submitted_review_id == trusted_review_id:
+        try:
+            receipt = validate_submission(
+                state, signoff_submission, reviewer_id=reviewer_id,
+                origin=origin, review_id=trusted_review_id,
+            )
+        except (EvidenceSignoffError, KeyError, TypeError):
+            receipt = None
+        if receipt is not None:
+            return _hitl_traced(state, {
+                "hitl_status": "approved", "hitl_feedback": None,
+                "approved_draft_identity": workflow.identity(state),
+                "gate1_reviewer_id": reviewer_id,
+                "gate1_review_origin": origin,
+                "gate1_evidence_signoff": receipt,
+            })
+    return _hitl_traced(state, {
+        "hitl_status": "rejected", "hitl_feedback": None,
+        **workflow.terminal("execution_failed", "Gate 1 approval lacks reviewer identity or current eligibility."),
+    })
 
-    Any failure uses the existing reject payload so route_after_hitl → END.
-    This is what prevents HITL_AUTO_APPROVE=1 and API approve from bypassing
-    unresolved material claims, UNKNOWN materiality, missing/unresolved
-    mandatory requirements, or citation correctness/completeness/placement
-    failures. Feedback and explicit reject unchanged.
-    """
-    material = material_policy_result(state)
-    citation = citation_policy_result(state)
-    if (
-        semantic_verification_accepted(state)
-        and material_policy_passed(material)
-        and citation_policy_passed(citation)
-    ):
-        payload = {"hitl_status": "approved", "hitl_feedback": None}
-    else:
-        payload = {"hitl_status": "rejected", "hitl_feedback": None}
-        payload["policy_diagnostics"] = {
-            "material_policy": material.to_dict(),
-            "citation_policy": citation.to_dict(),
-        }
-    return _hitl_traced(state, payload)
+
+def route_after_draft(state: AgentState) -> str:
+    from langgraph.graph import END
+    if state.get("terminal_status") or workflow.resource_stopped(state):
+        return END
+    if workflow.draft_valid(state):
+        return "verify"
+    return "draft" if state.get("quality_attempts", 0) < workflow.QUALITY_ATTEMPTS else END
+
+
+def route_after_verify(state: AgentState) -> str:
+    from langgraph.graph import END
+    if state.get("terminal_status") or workflow.resource_stopped(state):
+        return END
+    if workflow.verification_eligible(state):
+        return "reflect"
+    return END if workflow.verification_failure(state) else "draft"
 
 
 def route_after_reflect(state: AgentState) -> str:
-    """
-        Decide whether to revise the draft or proceed to HITL.
-
-        Routing authority (Phase 4 Slice 1, D-2026-09-14-05):
-            Force rewrite if:
-                - semantic verification is not accepted (completed status,
-                  nonempty verdicts, no applicable contradiction/limitation
-                  blocker on any valid row, computable UVR <= 0.15), when
-                  iteration capacity remains
-                - OR reflection_score < REFLECTION_THRESHOLD (quality gate;
-                  threshold unchanged)
-            Proceed if:
-                - max iterations reached (HITL; auto-approve cannot launder a
-                  semantic failure — see hitl_node)
-                - cost gate trips (same HITL / fail-closed auto-approve rule)
-                - semantic verification is accepted AND reflection gate passes
-
-        grounding_score is DEPRECATED as routing authority: it is
-        compatibility/observability only (state/API/telemetry/benchmark/UI)
-        and is logged here for observability, but it cannot determine semantic
-        acceptance or revision routing. The old GROUNDING_FLOOR hard floor and
-        the grounding<0.75 soft-gate conjunct were already unreachable whenever
-        the semantic gate passed (UVR<=0.15 implies score >= 0.6375) and are
-        removed, not retuned; no replacement composite is introduced.
-
-        Returns:
-            "draft" — loop back and revise
-            "hitl"  — proceed to human review
-    """
-    log = get_logger("router")
-    iterations = state.get("iterations", 0)
-    reflection_score = state.get("reflection_score", 8)
-    grounding_score = state.get("grounding_score", 0.75)  # observability only
-    uvr = unverified_rate(state.get("grounding_report"))
-    semantic_ok = semantic_verification_accepted(state)
-
-    # Hard ceiling: never loop more than MAX_ITERATIONS
-    if iterations >= MAX_ITERATIONS:
-        log.info("route.max_iterations", run_id=state["run_id"], iterations=iterations,
-                 semantic_ok=semantic_ok, uvr=uvr, claim_completeness=CLAIM_COMPLETENESS)
+    from langgraph.graph import END
+    if state.get("terminal_status") or workflow.resource_stopped(state):
+        return END
+    if workflow.gate1_eligible(state):
         return "hitl"
+    if not workflow.verification_eligible(state):
+        return route_after_verify(state)
+    return "draft" if state.get("quality_attempts", 0) < workflow.QUALITY_ATTEMPTS else END
 
-    # Cost gate check
-    if state.get("total_cost_usd", 0) >= COST_GATE_USD:
-        log.info("route.cost_gate", run_id=state["run_id"], cost=round(state.get("total_cost_usd", 0), 4),
-                 semantic_ok=semantic_ok, uvr=uvr, claim_completeness=CLAIM_COMPLETENESS)
-        return "hitl"
-
-    if not semantic_ok:
-        log.info("route.revise", run_id=state["run_id"], reason="semantic verification not accepted",
-                 verification_status=state.get("verification_status"),
-                 uvr=uvr, reflection=reflection_score, grounding=round(grounding_score, 2),
-                 claim_completeness=CLAIM_COMPLETENESS)
-        return "draft"
-
-    # Phase 4 Slice 2B: material + required-content policy (spec §14).
-    # Applied AFTER the semantic gate. A material factual claim that is only
-    # WEAK/UNVERIFIED/INVALID, or a missing/unresolved mandatory requirement,
-    # is repairable -> targeted revision while budget remains. UNKNOWN
-    # materiality and integrity/version failures go straight to HITL/HOLD
-    # (never a stochastic revision retry). material_policy_pass does NOT yet
-    # imply final publication eligibility (citation safety is Slice 2c).
-    material = material_policy_result(state)
-    if material.decision == MATERIAL_REVISION:
-        log.info("route.revise", run_id=state["run_id"], reason="material/required-content policy",
-                 material_safety_state=material.material_safety_state,
-                 unresolved_material=material.unresolved_material_claim_count,
-                 unknown_materiality=material.unknown_materiality_count,
-                 missing_reqs=len(material.missing_requirement_ids),
-                 unresolved_reqs=len(material.unresolved_requirement_ids),
-                 material_verified_rate=material.material_verified_rate)
-        return "draft"
-    if material.decision == MATERIAL_HITL:
-        log.info("route.material_hold", run_id=state["run_id"],
-                 material_safety_state=material.material_safety_state,
-                 reason_codes=material.reason_codes)
-        return "hitl"
-
-    # Phase 4 Slice 2C: citation safety AFTER semantic + material. Failures
-    # HOLD/HITL — citations are derived from already-qualified Call-B
-    # support, so we do not ask the drafter to hallucinate references.
-    # A high reflection score cannot override a citation failure.
-    citation = citation_policy_result(state)
-    if not citation_policy_passed(citation):
-        log.info("route.citation_hold", run_id=state["run_id"],
-                 citation_safety_state=citation.citation_safety_state,
-                 reason_codes=citation.reason_codes,
-                 missing=citation.missing_required_citation_count,
-                 invalid=citation.invalid_citation_count,
-                 placement=citation.citation_placement_failure_count)
-        return "hitl"
-
-    # Quality gate (reflection only; grounding_score is not consulted)
-    if reflection_score < REFLECTION_THRESHOLD:
-        log.info("route.revise", run_id=state["run_id"], reason="reflection below threshold",
-                 reflection=reflection_score, grounding=round(grounding_score, 2))
-        return "draft"
-
-    log.info("route.proceed", run_id=state["run_id"], reflection=reflection_score, grounding=round(grounding_score, 2),
-             uvr=uvr, claim_completeness=CLAIM_COMPLETENESS,
-             material_safety_state=material.material_safety_state)
-    return "hitl"
 
 def route_after_hitl(state: AgentState) -> str:
-    """
-    Route based on HITL decision.
-
-    Ordinary approve may proceed to HTML only when ALL hard gates pass:
-    semantic verification (Slice 1), material + required-content (Slice 2b),
-    and citation safety (Slice 2c). Existing destinations only:
-        "html_gen" — approved AND publication_safety_accepted
-        "draft"    — explicit feedback (existing remediation path)
-        END        — reject, unknown, or approve blocked by a gate failure
-    publication_safety_pass does not publish by itself.
-    """
     from langgraph.graph import END
-    log = get_logger("router")
-    status = state.get("hitl_status", "pending")
-    semantic_ok = semantic_verification_accepted(state)
-    material_ok = material_policy_accepted(state)
-    citation_ok = citation_policy_accepted(state)
-    safety_ok = semantic_ok and material_ok and citation_ok
-    log.info("hitl.decision", run_id=state["run_id"], status=status,
-             semantic_ok=semantic_ok, material_ok=material_ok, citation_ok=citation_ok)
-
-    if status == "feedback":
-        return "draft"
-    if status == "approved" and safety_ok:
-        return "html_gen"
-    if status == "approved":
-        log.info("hitl.approve_blocked_gate_failure",
-                 run_id=state["run_id"],
-                 verification_status=state.get("verification_status"),
-                 semantic_ok=semantic_ok, material_ok=material_ok,
-                 citation_ok=citation_ok,
-                 claim_completeness=CLAIM_COMPLETENESS)
+    if state.get("terminal_status") or workflow.resource_stopped(state):
         return END
+    if state.get("hitl_status") == "feedback":
+        return "draft"
+    if state.get("hitl_status") == "approved" and workflow.gate1_eligible(state):
+        return "html_gen"
     return END

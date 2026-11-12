@@ -1,0 +1,34 @@
+{
+  "advance": false,
+  "checkpoint_push": "a37b402227c8095cca2f3558c3cf60bbc52e2813 pushed before experiment; Git network is outside deterministic evaluation",
+  "control_files_changed": false,
+  "diff_check": "PASS",
+  "external_network_calls_during_evaluation": 0,
+  "focused_B_AB_packing_before_metrics": {
+    "note": "one initial new-test fingerprint assertion used ASCII JSON canonicalization instead of frozen B UTF-8 canonicalization; corrected before preregistration and retrieval",
+    "passed": 78
+  },
+  "full_builds_equal": true,
+  "full_offline_suite": {
+    "command": "LANGSMITH_TRACING=false LANGCHAIN_TRACING=false LANGCHAIN_TRACING_V2=false HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 .venv/bin/pytest tests/ -q --tb=short",
+    "external_network_guard": "tests/conftest.py; local loopback for browser tests only",
+    "passed": 1335,
+    "warnings": 3
+  },
+  "full_retrieval_runs_equal": true,
+  "initial_full_suite_attempt": {
+    "cause": "sandbox denied loopback bind and Chromium launch; rerun with local permissions passed",
+    "errors": 6,
+    "failed": 1,
+    "passed": 1324
+  },
+  "new_implementation_P0_P1_demonstrated": false,
+  "packing_and_artifact_tests": {
+    "passed": 34
+  },
+  "packing_rule_changed_after_retrieval": false,
+  "production_or_Qdrant_changes": false,
+  "provider_calls": 0,
+  "ruff_new_code": "PASS: default rules on scripts/phase5a2b_packed.py and tests/test_phase5a2b_packed.py",
+  "ruff_repository": "PASS: repository CI tier E9,F63,F7,F82"
+}

@@ -1,11 +1,16 @@
 const $ = s => document.querySelector(s);
 const STEP_ORDER = ["retrieve","draft","verify","reflect","html_gen","html_revise","git"];
 const SSE_RETRY_DELAYS_MS = [500, 1000, 2000];
-let RUN = null, TOKEN = "", streamAbort = null;
+let RUN = null, TOKEN = "", REVIEWER_TOKEN = "", REVIEW_ID = "", REVIEW_GATE = "", MATERIAL_REVIEW = null, streamAbort = null;
 
-function api(path, method, body){
+function api(path, method, body, reviewer){
+  const headers = {"Authorization":"Bearer "+TOKEN, "Content-Type":"application/json"};
+  if(reviewer){
+    headers["X-Reviewer-Token"] = REVIEWER_TOKEN;
+    headers["X-Review-Id"] = REVIEW_ID;
+  }
   return fetch(path, {method,
-    headers:{"Authorization":"Bearer "+TOKEN, "Content-Type":"application/json"},
+    headers,
     body: body ? JSON.stringify(body) : undefined});
 }
 function show(id){ $(id).classList.remove("hidden"); }
@@ -52,9 +57,11 @@ function finishNode(node, headline){
 }
 
 function authFailed(){
-  TOKEN = "";
+  TOKEN = ""; REVIEWER_TOKEN = ""; REVIEW_ID = ""; REVIEW_GATE = ""; MATERIAL_REVIEW = null;
   const field = $("#token");
   if(field) field.value = "";
+  const reviewerField = $("#reviewerToken");
+  if(reviewerField) reviewerField.value = "";
   show("#setup");
   onError("authentication failed");
 }
@@ -147,7 +154,7 @@ async function retryStream(attempt){
         onGate(body.review);
         return;
       }
-      if(body.status === "complete" || body.status === "rejected"){
+      if(body.status === "complete" || body.status === "rejected" || body.summary?.terminal_status){
         onDone({status: body.status, summary: body.summary || {}});
         return;
       }
@@ -161,27 +168,78 @@ function onGate(r){
   setRunning(false);
   $("#pipeSub").textContent = "waiting for your review";
   if(r.type==="hitl_review"){
-    const rows = r.review_claims || [];
-    const calculatedUvr = rows.length
-      ? rows.filter(row => String(row.status || "").toLowerCase()==="unverified").length / rows.length
-      : null;
-    const uvr = typeof r.unverified_rate === "number" ? r.unverified_rate : calculatedUvr;
-    const uvrText = typeof uvr === "number" ? `${(uvr * 100).toFixed(1)}%` : "not computable";
-    const provenance = r.reflection_provenance || {};
-    const reflection = provenance.origin === "judge" && provenance.parse_status === "ok"
-      ? `REAL JUDGE SCORE ${r.reflection_score}/10`
-      : `FALLBACK / UNAVAILABLE SCORE ${r.reflection_score}/10 (${provenance.reason || "unknown"})`;
-    $("#g1meta").textContent =
-      `Claim grounding ${(r.grounding_score??0).toFixed(2)} · UVR ${uvrText} of the extracted verdict set (not a completeness measure) · ${reflection} — ${r.reflection_notes||""}`;
+    REVIEW_ID = r.review_id || ""; REVIEW_GATE = "1";
+    MATERIAL_REVIEW = r.material_review || null;
+    $("#g1meta").textContent = "Review each material claim against its bound source passages before deciding.";
     $("#g1frame").srcdoc = r.draft_review_html || "";
-    renderGrounding(rows);
+    renderMaterialReview(MATERIAL_REVIEW);
+    $("#g1noOmissions").checked = false;
+    $("#g1materiality").checked = false;
     $("#g1fb").value=""; show("#gate1"); $("#gate1").scrollIntoView({behavior:"smooth"});
   } else if(r.type==="hitl_html_review"){
+    REVIEW_ID = r.review_id || ""; REVIEW_GATE = "2";
     $("#g2meta").textContent = `${r.html_filename||""} · grounding ${(r.grounding_score??0).toFixed(2)}`;
     $("#g2frame").srcdoc = r.html_output || "";
     const w = r.validation_warnings||[];
     if(w.length){ $("#g2warn").textContent = "warnings: "+w.join("; "); show("#g2warn"); } else hide("#g2warn");
     $("#g2fb").value=""; show("#gate2"); $("#gate2").scrollIntoView({behavior:"smooth"});
+  }
+}
+
+function renderMaterialReview(bundle){
+  const root = $("#g1materialReview");
+  clearChildren(root);
+  if(!bundle || !Array.isArray(bundle.claims)){
+    root.textContent = "Current material-claim evidence is unavailable. Approval is blocked.";
+    return;
+  }
+  const heading = document.createElement("h3"); heading.textContent = `Material claims (${bundle.claims.length})`;
+  root.appendChild(heading);
+  for(const claim of bundle.claims){
+    const card = document.createElement("section"); card.className = "material-claim";
+    card.dataset.claimId = claim.claim_id;
+    const title = document.createElement("h4"); title.textContent = `${claim.claim_id}: ${claim.claim_text}`;
+    card.appendChild(title);
+    for(const occurrence of claim.draft_contexts || []){
+      const p = document.createElement("p"); p.className = "draft-context";
+      p.textContent = `Draft position ${occurrence.start}–${occurrence.end}: ${occurrence.context?.text || ""}`;
+      card.appendChild(p);
+    }
+    for(const span of claim.support_spans || []){
+      const source = document.createElement("div"); source.className = "evidence-source";
+      const provenance = span.provenance || {};
+      const citation = document.createElement("strong");
+      citation.textContent = `${span.citation_identity} · ${provenance.title || provenance.source || provenance.kind || "source"}`;
+      source.appendChild(citation);
+      const quote = document.createElement("blockquote"); quote.textContent = span.quote || "";
+      source.appendChild(quote);
+      const context = document.createElement("p"); context.className = "source-context";
+      context.textContent = `Surrounding source: ${span.source_context?.text || ""}`;
+      source.appendChild(context);
+      if(typeof span.clickable_url === "string"){
+        const link = document.createElement("a"); link.href = span.clickable_url;
+        link.target = "_blank"; link.rel = "noopener noreferrer nofollow";
+        link.textContent = "Open source"; source.appendChild(link);
+      }
+      card.appendChild(source);
+    }
+    for(const blocker of claim.blockers || []){
+      const p = document.createElement("p"); p.className = "warn";
+      p.textContent = `Limitation: ${blocker.kind || "unknown"} — ${blocker.explanation || ""}`;
+      card.appendChild(p);
+    }
+    const label = document.createElement("label"); label.textContent = "Your evidence decision";
+    const select = document.createElement("select"); select.className = "material-decision";
+    for(const [value, title] of [["", "Select"], ["SUPPORTED", "SUPPORTED"],
+                                 ["UNSUPPORTED", "UNSUPPORTED"], ["CANNOT_DETERMINE", "CANNOT DETERMINE"]]){
+      const option = document.createElement("option"); option.value = value; option.textContent = title;
+      select.appendChild(option);
+    }
+    label.appendChild(select); card.appendChild(label);
+    const rationaleLabel = document.createElement("label"); rationaleLabel.textContent = "Evidence rationale";
+    const rationale = document.createElement("textarea"); rationale.className = "material-rationale";
+    rationale.maxLength = 500; rationaleLabel.appendChild(rationale); card.appendChild(rationaleLabel);
+    root.appendChild(card);
   }
 }
 
@@ -282,14 +340,39 @@ function renderGrounding(report){
 
 function setGateButtons(disabled){ document.querySelectorAll("[data-act]").forEach(b=>b.disabled=disabled); }
 async function gateAction(gate, act){
+  if(!REVIEW_ID || REVIEW_GATE !== gate){ onError("Review identity is missing or stale."); return; }
+  const reviewerField = $("#reviewerToken");
+  REVIEWER_TOKEN = reviewerField.value || REVIEWER_TOKEN;
+  reviewerField.value = "";
+  if(!REVIEWER_TOKEN){ alert("Reviewer credential is required."); return; }
   const fb = gate==="1" ? $("#g1fb").value.trim() : $("#g2fb").value.trim();
   if(act==="feedback" && !fb){ alert("Enter the change you want before requesting changes."); return; }
   setGateButtons(true);
   let path = `/ui/runs/${RUN}/${act}`, body = null;
   if(act==="feedback"){ body = {feedback: fb}; }
-  const res = await api(path, "POST", body);
+  if(gate==="1" && act==="approve"){
+    if(!MATERIAL_REVIEW){ onError("Material evidence review is unavailable."); setGateButtons(false); return; }
+    const decisions = [];
+    for(const card of $("#g1materialReview").querySelectorAll(".material-claim")){
+      decisions.push({claim_id: card.dataset.claimId,
+        decision: card.querySelector(".material-decision").value,
+        rationale: card.querySelector(".material-rationale").value.trim()});
+    }
+    body = {evidence_binding_sha256: MATERIAL_REVIEW.evidence_binding_sha256,
+      decisions,
+      coverage_attestation: {no_omitted_material_claims: $("#g1noOmissions").checked,
+        materiality_classification_correct: $("#g1materiality").checked}};
+    if(!body.coverage_attestation.no_omitted_material_claims ||
+       !body.coverage_attestation.materiality_classification_correct ||
+       decisions.some(d => d.decision !== "SUPPORTED" || d.rationale.length < 8)){
+      onError("Approval needs a supported decision and rationale for every material claim, plus both full-draft declarations. Request changes for omissions or uncertainty.");
+      setGateButtons(false); return;
+    }
+  }
+  const res = await api(path, "POST", body, true);
   if(res.status === 401 || res.status === 403){ authFailed(); setGateButtons(false); return; }
   if(!res.ok){ const t=await res.text(); onError(`${res.status} ${t}`); setGateButtons(false); return; }
+  REVIEW_ID = ""; REVIEW_GATE = ""; MATERIAL_REVIEW = null;
   hide("#gate1"); hide("#gate2"); setGateButtons(false);
   $("#pipeSub").textContent = act==="approve" ? "approved — continuing…"
       : act==="feedback" ? "revising…" : "rejecting…";
@@ -301,15 +384,20 @@ document.querySelectorAll("[data-act]").forEach(b=>{
 
 function onDone(d){
   if(streamAbort){ streamAbort.abort(); streamAbort=null; }
+  REVIEWER_TOKEN = "";
   hide("#gate1"); hide("#gate2");
   const s=d.summary||{}; const base=$("#siteBase").value.trim().replace(/\/+$/,"");
-  const publishable = d.status==="complete" && (s.git_status==="merged" || s.git_status==="tagged_and_merged");
+  const failed = s.terminal_status || (s.git_status==="failed" ? "execution_failed" : null);
+  const publishable = !failed && d.status==="complete" && (s.git_status==="merged" || s.git_status==="tagged_and_merged");
   const body = $("#doneBody");
   clearChildren(body);
   const p = document.createElement("p");
   if(publishable){
     p.className = "ok";
     p.textContent = "Merged locally (git_status: "+(s.git_status||"?")+"). Click Publish to push the approved commit.";
+  } else if(failed){
+    p.className = "bad";
+    p.textContent = failed + ": " + (s.terminal_message || "Run ended without successful publication.");
   } else if(d.status==="complete"){
     p.className = "ok";
     p.textContent = "Published locally (git_status: "+(s.git_status||"?")+", file "+(s.html_filename||"?")+").";
@@ -319,7 +407,7 @@ function onDone(d){
       const a = document.createElement("a"); a.href = url; a.target="_blank"; a.rel="noopener noreferrer"; a.textContent = url;
       extra.appendChild(a); body.appendChild(p); body.appendChild(extra);
     }
-  } else if(d.status==="rejected"){
+  } else if(d.status==="rejected" || d.status==="terminal_rejected"){
     p.className = "bad"; p.textContent = "Run ended: nothing was published.";
   }
   if(!body.contains(p)) body.appendChild(p);
@@ -392,7 +480,10 @@ $("#go").addEventListener("click", async ()=>{
   const field = $("#token");
   TOKEN = field.value || TOKEN;
   field.value = "";
-  if(!topic||!TOKEN){ alert("Topic and token are required."); return; }
+  const reviewerField = $("#reviewerToken");
+  REVIEWER_TOKEN = reviewerField.value || REVIEWER_TOKEN;
+  reviewerField.value = "";
+  if(!topic||!TOKEN){ alert("Topic and API token are required."); return; }
   $("#go").disabled=true; hide("#gate1"); hide("#gate2"); hide("#done");
   initSteps(); show("#pipeline"); $("#pipeSub").textContent="running…";
   const res=await api("/ui/runs","POST",{topic, series:$("#series").value.trim()||"Learning Log"});

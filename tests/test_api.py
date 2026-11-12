@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from tests.conftest import fake_response
+from tests.signoff_fixtures import approved_material_state
 
 os.environ["API_BEARER_TOKEN"] = "test-token"
 os.environ["API_SYNC"] = "1"
@@ -17,6 +18,8 @@ from types import SimpleNamespace
 @pytest.fixture
 def client(monkeypatch):
     import api.server as srv
+    monkeypatch.setenv("HITL_REVIEWER_ID", "api-reviewer")
+    monkeypatch.setenv("HITL_REVIEWER_TOKEN", "r" * 32)
 
     class FakeGraph:
         """Models both gates per thread_id. draft gate -> approve -> html gate;
@@ -61,7 +64,12 @@ def client(monkeypatch):
     return TestClient(srv.app)
 
 
-H = {"Authorization": "Bearer test-token"}
+H = {"Authorization": "Bearer test-token", "X-Reviewer-Token": "r" * 32}
+
+
+def review_headers(client, run_id):
+    review = client.get(f"/runs/{run_id}", headers=H).json()["review"]
+    return {**H, "X-Review-Id": review["review_id"]}
 
 
 def test_auth_required(client):
@@ -76,40 +84,40 @@ def test_empty_slug_rejected(client):
 def test_two_gate_approve_cycle(client):
     rid = client.post("/runs", json={"topic": "Gradient Descent"}, headers=H).json()["run_id"]
     assert client.get(f"/runs/{rid}", headers=H).json()["review"]["type"] == "hitl_review"
-    client.post(f"/runs/{rid}/approve", headers=H)                     # draft gate -> html gate
+    client.post(f"/runs/{rid}/approve", headers=review_headers(client, rid))  # draft gate -> html gate
     g = client.get(f"/runs/{rid}", headers=H).json()
     assert g["status"] == "awaiting_review"
     assert g["review"]["type"] == "hitl_html_review"
-    client.post(f"/runs/{rid}/approve", headers=H)                     # html gate -> publish
+    client.post(f"/runs/{rid}/approve", headers=review_headers(client, rid))  # html gate -> publish
     body = client.get(f"/runs/{rid}", headers=H).json()
     assert body["status"] == "complete"
     assert body["summary"]["html_review_status"] == "approved"
 
 def test_html_gate_request_changes_loops_to_html_gate(client):
     rid = client.post("/runs", json={"topic": "X"}, headers=H).json()["run_id"]
-    client.post(f"/runs/{rid}/approve", headers=H)                      # -> html gate
-    client.post(f"/runs/{rid}/feedback", json={"feedback": "move sources below takeaways"}, headers=H)
+    client.post(f"/runs/{rid}/approve", headers=review_headers(client, rid))  # -> html gate
+    client.post(f"/runs/{rid}/feedback", json={"feedback": "move sources below takeaways"}, headers=review_headers(client, rid))
     g = client.get(f"/runs/{rid}", headers=H).json()
     assert g["status"] == "awaiting_review"
     assert g["review"]["type"] == "hitl_html_review"                    # re-verify the REVISED render
 
 def test_html_gate_reject_does_not_publish(client):
     rid = client.post("/runs", json={"topic": "X"}, headers=H).json()["run_id"]
-    client.post(f"/runs/{rid}/approve", headers=H)                     # -> html gate
-    client.post(f"/runs/{rid}/reject", headers=H)                      # reject the render
+    client.post(f"/runs/{rid}/approve", headers=review_headers(client, rid))  # -> html gate
+    client.post(f"/runs/{rid}/reject", headers=review_headers(client, rid))  # reject the render
     body = client.get(f"/runs/{rid}", headers=H).json()
-    assert body["status"] == "rejected"
+    assert body["status"] == "terminal_rejected"
     assert body["summary"]["html_review_status"] == "rejected"
     assert body["summary"]["git_status"] is None                      # git never ran
 
 def test_reject_cycle(client):
     rid = client.post("/runs", json={"topic": "X"}, headers=H).json()["run_id"]
-    client.post(f"/runs/{rid}/reject", headers=H)
-    assert client.get(f"/runs/{rid}", headers=H).json()["status"] == "rejected"
+    client.post(f"/runs/{rid}/reject", headers=review_headers(client, rid))
+    assert client.get(f"/runs/{rid}", headers=H).json()["status"] == "terminal_rejected"
 
 def test_feedback_loops_back_to_review(client):
     rid = client.post("/runs", json={"topic": "X"}, headers=H).json()["run_id"]
-    client.post(f"/runs/{rid}/feedback", json={"feedback": "tighten section 2"}, headers=H)
+    client.post(f"/runs/{rid}/feedback", json={"feedback": "tighten section 2"}, headers=review_headers(client, rid))
     assert client.get(f"/runs/{rid}", headers=H).json()["status"] == "awaiting_review"
 
 def test_feedback_requires_nonempty(client):
@@ -121,9 +129,30 @@ def test_approve_unknown_run_404(client):
 
 def test_approve_after_terminal_409(client):
     rid = client.post("/runs", json={"topic": "X"}, headers=H).json()["run_id"]
-    client.post(f"/runs/{rid}/approve", headers=H)                     # draft -> html
-    client.post(f"/runs/{rid}/approve", headers=H)                     # html -> complete
+    client.post(f"/runs/{rid}/approve", headers=review_headers(client, rid))  # draft -> html
+    client.post(f"/runs/{rid}/approve", headers=review_headers(client, rid))  # html -> complete
     assert client.post(f"/runs/{rid}/approve", headers=H).status_code == 409
+
+
+def test_old_gate1_review_id_cannot_approve_gate2_across_surfaces(client):
+    rid = client.post("/runs", json={"topic": "X"}, headers=H).json()["run_id"]
+    gate1 = review_headers(client, rid)
+    assert client.post(f"/runs/{rid}/approve", headers=gate1).status_code == 200
+    gate2 = review_headers(client, rid)
+    assert gate1["X-Review-Id"] != gate2["X-Review-Id"]
+    assert client.post(f"/ui/runs/{rid}/approve", headers=gate1).status_code == 409
+    assert client.get(f"/runs/{rid}", headers=H).json()["status"] == "awaiting_review"
+    assert client.post(f"/runs/{rid}/approve", headers=gate2).status_code == 200
+    assert client.get(f"/runs/{rid}", headers=H).json()["status"] == "complete"
+
+
+def test_review_id_is_required_and_run_bound(client):
+    first = client.post("/runs", json={"topic": "First"}, headers=H).json()["run_id"]
+    second = client.post("/runs", json={"topic": "Second"}, headers=H).json()["run_id"]
+    first_id = review_headers(client, first)["X-Review-Id"]
+    assert client.post(f"/runs/{second}/approve", headers=H).status_code == 409
+    assert client.post(f"/runs/{second}/approve", headers={**H, "X-Review-Id": first_id}).status_code == 409
+    assert client.get(f"/runs/{second}", headers=H).json()["status"] == "awaiting_review"
 
 
 def test_poll_graph_crash_writes_upstream_failed_telemetry(tmp_path, monkeypatch):
@@ -144,7 +173,7 @@ def test_poll_graph_crash_writes_upstream_failed_telemetry(tmp_path, monkeypatch
     run_id = created.json()["run_id"]
 
     status = client.get(f"/runs/{run_id}", headers=H).json()
-    assert status["status"] == "error"
+    assert status["status"] == "execution_failed"
     assert status["error"] == "injected poll failure"
     telemetry = json.loads((Path("outputs/runs") / f"{run_id}.json").read_text())
     assert telemetry["verification_status"] == "upstream_failed"
@@ -153,6 +182,11 @@ def test_poll_graph_crash_writes_upstream_failed_telemetry(tmp_path, monkeypatch
 
 def test_html_revise_discards_content_change(base_state, monkeypatch):
     import agent.nodes as nodes
+    # Comparator unit fixture: real receipt/current-artifact checks are exercised
+    # by the two-gate and deterministic-render integration tests.
+    monkeypatch.setattr(nodes, "initial_equivalence_valid", lambda _state: True)
+    base_state.update(gate1_reviewer_id="api-reviewer", gate1_review_origin="authenticated")
+    base_state = approved_material_state(base_state)
     body = "<p>Gradient descent minimizes loss.</p>"
     base_state["article_body_html"] = body
     base_state["html_output"] = body
@@ -167,6 +201,9 @@ def test_html_revise_discards_content_change(base_state, monkeypatch):
 
 def test_html_revise_applies_layout_only(base_state, monkeypatch):
     import agent.nodes as nodes
+    monkeypatch.setattr(nodes, "initial_equivalence_valid", lambda _state: True)
+    base_state.update(gate1_reviewer_id="api-reviewer", gate1_review_origin="authenticated")
+    base_state = approved_material_state(base_state)
     body = "<p>Gradient descent minimizes loss.</p>"
     base_state["article_body_html"] = body
     base_state["html_output"] = body
@@ -184,6 +221,9 @@ def test_html_revise_applies_layout_only(base_state, monkeypatch):
 
 def _revise(base_state, monkeypatch, original, revised):
     import agent.nodes as nodes
+    monkeypatch.setattr(nodes, "initial_equivalence_valid", lambda _state: True)
+    base_state.update(gate1_reviewer_id="api-reviewer", gate1_review_origin="authenticated")
+    base_state = approved_material_state(base_state)
     base_state["article_body_html"] = original
     base_state["html_output"] = original
     base_state["html_sha256"] = "orig"

@@ -313,7 +313,7 @@ def test_provider_exception_surfaces_as_provider_failure() -> None:
     )
     assert result.success is False
     assert result.failure_kind == "provider"
-    assert "transport down" in (result.failure_detail or "")
+    assert result.failure_detail == "RuntimeError"
 
 
 def test_raw_offset_fields_rejected() -> None:

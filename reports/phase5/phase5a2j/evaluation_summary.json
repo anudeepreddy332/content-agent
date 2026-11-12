@@ -1,0 +1,78 @@
+{
+  "candidate_generation_misses": [
+    "Q19",
+    "Q30"
+  ],
+  "candidate_pool_fingerprint": "df00e312a0891fc65befa83b05f59e032809e78f6447f351aea16ca34e6db52c",
+  "comparison_arms": {
+    "A": "historical legacy baseline A",
+    "bge": "BAAI/bge-reranker-base@2cfc18c",
+    "control": "CSWP hybrid/RRF",
+    "msmarco": "cross-encoder/ms-marco-MiniLM-L-6-v2 (Phase 5A2H)"
+  },
+  "deterministic_rerun": true,
+  "exact_next_action": "Do not advance either reranker. BGE improves aggregate exact-evidence Recall@5 over CSWP and MS-MARCO and restores Q20, but Q13 and Q22 remain below A with no new control regressions. Return to architecture/evaluation review; treat Q19/Q30 as candidate-generation failures.",
+  "evidence_recall_at_5_gating_33": {
+    "A": 0.84848485,
+    "bge": 0.89393939,
+    "control": 0.78787879,
+    "msmarco": 0.86363636
+  },
+  "full_result_bytes_identical": true,
+  "latency_pooled_35_query_observations": {
+    "mean_ms": 2938.925545,
+    "p50_ms": 2925.359333,
+    "p95_ms": 3713.201708,
+    "total_ms": 102862.394082
+  },
+  "latency_repetitions": [
+    {
+      "mean_ms": 2938.925545,
+      "p50_ms": 2925.359333,
+      "p95_ms": 3713.201708,
+      "total_ms": 102862.394082
+    },
+    {
+      "mean_ms": 2982.710813,
+      "p50_ms": 2944.44125,
+      "p95_ms": 3792.357458,
+      "total_ms": 104394.87846
+    }
+  ],
+  "limitations": [
+    "35 development/diagnostic queries, 33 gating; no holdout",
+    "zero ABSENT queries; abstention/OOS unmeasurable",
+    "single pinned BGE model, one CPU machine, deterministic single-thread eager execution; no production latency SLO",
+    "Two runs establish exact repeatability in the recorded environment, not across hardware/libraries"
+  ],
+  "msmarco_vs_bge": {
+    "bge_beats_msmarco_evidence_recall_at_5": true,
+    "bge_mrr_at_10": 0.96969697,
+    "bge_ndcg_at_5": 0.95443376,
+    "msmarco_mrr_at_10": 1.0,
+    "msmarco_ndcg_at_5": 0.97774595,
+    "q20_restored_vs_msmarco": true
+  },
+  "new_critical_regressions_vs_control": [],
+  "quality_gate": {
+    "beats_msmarco_evidence_recall_at_5": true,
+    "critical_evidence_regressions": [
+      "Q13",
+      "Q22"
+    ],
+    "material_evidence_improvement": true,
+    "quality_pass": false,
+    "reranker_ready_to_advance": false
+  },
+  "raw_scores_fingerprint": "5e3f84dd9023f66215c9d47733e31e325cfad536106a8e3cfee66b82254e5c6f",
+  "remaining_critical_deficits_vs_A": [
+    "Q13",
+    "Q22"
+  ],
+  "result_fingerprints": [
+    "58ba30760ce733c8494a0a3844a4f9ff16dd335f246094430ebb50839a0caab9",
+    "58ba30760ce733c8494a0a3844a4f9ff16dd335f246094430ebb50839a0caab9"
+  ],
+  "status": "EVALUATION_COMPLETE_DO_NOT_ADVANCE",
+  "viable_reranker": false
+}

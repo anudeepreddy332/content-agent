@@ -13,13 +13,18 @@ os.environ.setdefault("API_SYNC", "1")
 from types import SimpleNamespace
 
 from agent.html_policy import (
+    ARTICLE_CSS,
     assemble_trusted_article,
     build_citation_items,
     normalize_citation_url,
     render_citations_html,
+    render_markdown_fragment,
+    render_publication_markdown,
     render_markdown_review_html,
     sanitize_fragment,
 )
+from agent.initial_html_equivalence import visible_key
+from agent.html_policy import PolicyError
 from tests.test_api_stream import FakeStreamGraph, _interrupt
 from tests.test_html_policy import LEGACY_LOOPBACK, WHATWG_IPV4_EDGE_CASES, _article
 
@@ -42,41 +47,21 @@ HOSTILE_MODEL_HTML = (
 def _gate1_review():
     return {
         "type": "hitl_review",
+        "draft_sha256": "a" * 64,
         "draft_review_html": render_markdown_review_html(HOSTILE_MARKDOWN),
         "html_policy_version": "p0-1-v2",
-        "grounding_score": 0.8,
-        "reflection_score": 8,
-        "reflection_notes": "ok",
-        "reflection_provenance": {
-            "origin": "judge", "reason": "json_score",
-            "provider_called": True, "parse_status": "ok",
+        "material_review": {
+            "evidence_binding_sha256": "b" * 64,
+            "material_claim_ids": ["C-001"],
+            "claims": [{
+                "claim_id": "C-001", "claim_text": "<script>alert(1)</script> material claim",
+                "draft_contexts": [{"start": 0, "end": 8, "context": {"text": "Draft context"}}],
+                "support_spans": [{"evidence_id": "WEB-001", "citation_identity": "WEB-001",
+                                   "quote": "Bound source passage", "source_context": {"text": "Bound source passage in context"},
+                                   "provenance": {"title": "Source", "url": "javascript:alert(1)"}}],
+                "blockers": [],
+            }],
         },
-        "review_claims": [
-            {
-                "claim": "<script>alert(1)</script> verified claim",
-                "status": "verified",
-                "confidence": 0.9,
-                "source_kind": "web",
-                "source_label": "Unresolved source",
-                "source_url": None,
-            },
-            {
-                "claim": "weak claim",
-                "status": "weak",
-                "confidence": 0.5,
-                "source_kind": "web",
-                "source_label": "Unresolved source",
-                "source_url": None,
-            },
-            {
-                "claim": "unverified claim",
-                "status": "unverified",
-                "confidence": 0.0,
-                "source_kind": "none",
-                "source_label": "none",
-                "source_url": None,
-            },
-        ],
     }
 
 
@@ -130,10 +115,13 @@ def _free_port():
 
 @pytest.fixture
 def live_server(monkeypatch):
+    monkeypatch.setenv("HITL_REVIEWER_ID", "pilot-reviewer")
+    monkeypatch.setenv("HITL_REVIEWER_TOKEN", "reviewer-browser-secret-0123456789abcdef")
     import tools.query_kb as kb
     monkeypatch.setattr(kb, "warmup", lambda: {"status": "skipped"})
     import api.server as srv
     srv.GRAPH = HostileReviewGraph()
+    monkeypatch.setattr(srv, "material_review_bundle", lambda _state: _gate1_review()["material_review"])
     port = _free_port()
     config = uvicorn.Config(srv.app, host="127.0.0.1", port=port, log_level="error", lifespan="on")
     server = uvicorn.Server(config)
@@ -163,6 +151,93 @@ def pw_page():
         browser.close()
 
 
+def test_code_equivalence_matches_chromium_display_contract(pw_page):
+    code = 'if ready:\n    step()'
+    block = f'<pre><code>{code}</code></pre>'
+    inline = f'<code>{code}</code>'
+    valid = sanitize_fragment(render_markdown_fragment(
+        'A **gradient descent** learning note.\n\n1. Use `fit()` on training data.'
+    ).html).html.replace('training data.', 'training data.<sup>1</sup>')
+    pw_page.set_content(
+        f'<style>{ARTICLE_CSS}</style><div class="sl-body">'
+        f'<div id="block">{block}</div><div id="inline">{inline}</div>'
+        f'<div id="break"><pre><code>if ready:<br>\n    step()</code></pre></div>'
+        f'<div id="case"><pre><code class="sl-code-label">print("a")</code></pre></div>'
+        '<div id="hidden" style="display:none">hidden claim</div>'
+        f'<div id="valid">{valid}</div>'
+        '</div>'
+    )
+    rendered = pw_page.evaluate("""() => Object.fromEntries(
+        ['block', 'inline', 'break', 'case', 'hidden'].map(id => {
+            const el = document.querySelector('#' + id);
+            const code = el.querySelector('code') || el;
+            const style = getComputedStyle(code);
+            return [id, {textContent: code.textContent, innerText: code.innerText,
+                         whiteSpace: style.whiteSpace, textTransform: style.textTransform,
+                         display: getComputedStyle(el).display}];
+        }))""")
+    assert rendered["block"]["textContent"] == rendered["inline"]["textContent"]
+    assert rendered["block"]["whiteSpace"] == "pre"
+    assert rendered["inline"]["whiteSpace"] == "normal"
+    assert "\n    step()" in rendered["block"]["innerText"]
+    assert "\n    step()" not in rendered["inline"]["innerText"]
+    assert rendered["break"]["innerText"].count("\n") > rendered["block"]["innerText"].count("\n")
+    assert rendered["case"]["textTransform"] == "uppercase"
+    assert rendered["hidden"]["display"] == "none"
+    assert visible_key(block) != visible_key(inline)
+    for unsafe in ('<pre><code>if ready:<br>    step()</code></pre>',
+                   '<pre><code class="sl-code-label">print("a")</code></pre>',
+                   '<div style="display:none">hidden claim</div>'):
+        with pytest.raises(PolicyError):
+            visible_key(unsafe)
+    assert pw_page.locator("#valid strong").inner_text() == "gradient descent"
+    assert pw_page.locator("#valid ol li code").inner_text() == "fit()"
+    assert pw_page.locator("#valid sup").inner_text() == "1"
+
+
+def test_publication_markdown_structure_in_chromium(pw_page):
+    markdown = (
+        "## Method\n\n3. Third\n4. Fourth\n   - Nested\n\n"
+        "```python\nif ready:\n    step()\n```\n\n"
+        "| Claim | Value |\n|---|---|\n| loss | 0.1 |\n\n"
+        "Inline $x+y$\n\n$$\nx + y\n$$"
+    )
+    article = render_publication_markdown(markdown).html.replace(
+        "Inline <span", "Inline <sup>1</sup> <span", 1)
+    pw_page.set_content(f'<style>{ARTICLE_CSS}</style><div class="sl-body">{article}</div>')
+    assert pw_page.locator(".sl-body h2").inner_text() == "Method"
+    ordered = pw_page.locator(".sl-body ol")
+    assert ordered.get_attribute("start") == "3"
+    assert ordered.evaluate("el => el.start") == 3
+    assert ordered.locator("li").first.evaluate(
+        "el => getComputedStyle(el).display") == "list-item"
+    assert ordered.locator("ul li").inner_text() == "Nested"
+    code = pw_page.locator(".sl-body pre code")
+    assert code.evaluate("el => getComputedStyle(el).whiteSpace") == "pre"
+    assert "\n    step()" in code.inner_text()
+    assert pw_page.locator(".sl-body table tr").count() == 2
+    assert pw_page.locator(".sl-body tbody td").all_inner_texts() == ["loss", "0.1"]
+    assert pw_page.locator(".sl-body .math-inline").inner_text() == "x+y"
+    assert pw_page.locator(".sl-body .math-block").evaluate(
+        "el => getComputedStyle(el).whiteSpace") == "pre-wrap"
+    assert pw_page.locator(".sl-body sup").inner_text() == "1"
+
+
+def test_numeric_subscript_changes_chromium_presentation_and_is_rejected(pw_page):
+    plain = "<p>The example multiplier is 10.</p>"
+    altered = "<p>The example multiplier is 1<sub>0</sub>.</p>"
+    pw_page.set_content(f'<div id="plain">{plain}</div><div id="altered">{altered}</div>')
+    assert pw_page.locator("#plain").inner_text() == pw_page.locator("#altered").inner_text()
+    assert pw_page.locator("#altered sub").evaluate(
+        "el => getComputedStyle(el).verticalAlign") == "sub"
+    assert pw_page.locator("#altered sub").evaluate(
+        "el => el.getBoundingClientRect().top") > pw_page.locator("#altered p").evaluate(
+            "el => el.getBoundingClientRect().top")
+    with pytest.raises(PolicyError):
+        visible_key(altered)
+    assert visible_key(plain)
+
+
 def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
     seen = []
     popups = []
@@ -170,6 +245,7 @@ def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
     pw_page.on("popup", lambda p: popups.append(p.url))
     pw_page.goto(live_server + "/", wait_until="domcontentloaded")
     pw_page.fill("#token", "test-token")
+    pw_page.fill("#reviewerToken", "reviewer-browser-secret-0123456789abcdef")
     pw_page.fill("#topic", "Gradient Descent")
     pw_page.click("#go")
 
@@ -182,6 +258,10 @@ def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
     assert "https://evil.example" not in g1_srcdoc
     assert pw_page.evaluate("() => window.hacked === true") is False
 
+    pw_page.locator(".material-decision").select_option("SUPPORTED")
+    pw_page.locator(".material-rationale").fill("The cited passage supports the exact claim.")
+    pw_page.check("#g1noOmissions")
+    pw_page.check("#g1materiality")
     pw_page.click('#gate1 button[data-act="approve"]')
     pw_page.wait_for_selector("#gate2:not(.hidden)", timeout=8000)
     g2 = pw_page.locator("#g2frame")
@@ -203,36 +283,89 @@ def test_reviewer_ui_gate1_and_gate2_hostile_path(live_server, pw_page):
     assert "marked" not in pw_page.content()
 
 
-def test_reviewer_ui_exposes_claim_counts_filters_and_real_score_provenance(live_server, pw_page):
+def test_reviewer_ui_exposes_evidence_without_favorable_model_labels(live_server, pw_page):
     pw_page.goto(live_server + "/", wait_until="domcontentloaded")
     pw_page.fill("#token", "test-token")
+    pw_page.fill("#reviewerToken", "reviewer-browser-secret-0123456789abcdef")
     pw_page.fill("#topic", "Gradient Descent")
     pw_page.click("#go")
 
     pw_page.wait_for_selector("#gate1:not(.hidden)", timeout=8000)
-    summary = pw_page.locator("#g1claimSummary")
-    assert "Total: 3" in summary.inner_text()
-    assert "Verified: 1" in summary.inner_text()
-    assert "Weak: 1" in summary.inner_text()
-    assert "Unverified: 1" in summary.inner_text()
-    assert "REAL JUDGE SCORE" in pw_page.locator("#g1meta").inner_text()
+    review = pw_page.locator("#g1materialReview")
+    assert "Material claims (1)" in review.inner_text()
+    assert "Bound source passage" in review.inner_text()
+    assert "Draft context" in review.inner_text()
+    assert "javascript:alert" not in pw_page.locator("#g1materialReview a").all_text_contents()
+    assert pw_page.locator("#g1materialReview a").count() == 0
+    assert "REAL JUDGE SCORE" not in pw_page.locator("#g1meta").inner_text()
+    assert "Verified:" not in pw_page.locator("#gate1").inner_text()
 
-    pw_page.get_by_role("button", name="WEAK", exact=True).click()
-    assert pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").count() == 1
-    assert "weak claim" in pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").inner_text()
 
-    pw_page.get_by_role("button", name="UNVERIFIED", exact=True).click()
-    assert pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").count() == 1
-    assert "unverified claim" in pw_page.locator("#g1grounding tr.claim-row:not(.hidden)").inner_text()
+def test_material_evidence_indentation_is_visibly_distinct_and_readable(live_server, pw_page):
+    pw_page.goto(live_server + "/", wait_until="domcontentloaded")
+    first = "if ready:\n    return allow()\nreturn deny()"
+    second = "if ready:\nreturn allow()\n    return deny()"
+    assert first.replace(" ", "") == second.replace(" ", "")
+    review = _gate1_review()
+    review["material_review"]["claims"] = [
+        {"claim_id": f"C-00{i}", "claim_text": "Indentation-sensitive Python",
+         "draft_contexts": [{"start": 0, "end": len(code),
+                             "context": {"text": code}}],
+         "support_spans": [{"evidence_id": f"WEB-00{i}", "citation_identity": f"WEB-00{i}",
+                            "quote": code, "source_context": {"text": code + "\n" + "x" * 500},
+                            "provenance": {"title": "Python source"}}],
+         "blockers": []}
+        for i, code in enumerate((first, second), start=1)
+    ]
+    pw_page.evaluate("payload => onGate(payload)", review)
+    quotes = pw_page.locator("#g1materialReview blockquote")
+    assert quotes.count() == 2
+    assert quotes.nth(0).screenshot() != quotes.nth(1).screenshot()
+    for selector in (".draft-context", "blockquote", ".source-context"):
+        for element in pw_page.locator(f"#g1materialReview {selector}").all():
+            assert element.evaluate("el => getComputedStyle(el).whiteSpace") == "pre-wrap"
+            assert element.evaluate("el => el.scrollWidth <= el.clientWidth + 1")
+
+
+def test_material_source_links_follow_server_canonical_policy(live_server, pw_page):
+    from agent.evidence_signoff import material_review_bundle
+    from tests.signoff_fixtures import approved_material_state
+
+    pw_page.goto(live_server + "/", wait_until="domcontentloaded")
+    requests = []
+    pw_page.on("request", lambda request: requests.append(request.url))
+    pw_page.route("https://**", lambda route: route.abort())
+    state = approved_material_state({"run_id": "canonical-link-probe",
+                                     "draft_markdown": "Gradient descent minimizes a loss function.",
+                                     "topic": "Gradient Descent", "slug": "gradient-descent"})
+    for url in ["https://127.1/admin", *LEGACY_LOOPBACK, *WHATWG_IPV4_EDGE_CASES]:
+        state["web_sources"][0]["url"] = url
+        bundle = material_review_bundle(state)
+        pw_page.evaluate("payload => onGate(payload)",
+                         {**_gate1_review(), "material_review": bundle})
+        assert pw_page.locator("#g1materialReview a").count() == 0, url
+    state["web_sources"][0]["url"] = "https://example.com/gd"
+    bundle = material_review_bundle(state)
+    pw_page.evaluate("payload => onGate(payload)",
+                     {**_gate1_review(), "material_review": bundle})
+    link = pw_page.locator("#g1materialReview a")
+    assert link.count() == 1
+    assert link.get_attribute("href") == "https://example.com/gd"
+    assert not any(url.startswith("https://") for url in requests)
 
 
 def test_gate2_preview_keeps_trusted_article_styles_under_reviewer_csp(live_server, pw_page):
     pw_page.set_viewport_size({"width": 540, "height": 820})
     pw_page.goto(live_server + "/", wait_until="domcontentloaded")
     pw_page.fill("#token", "test-token")
+    pw_page.fill("#reviewerToken", "reviewer-browser-secret-0123456789abcdef")
     pw_page.fill("#topic", "Gradient Descent")
     pw_page.click("#go")
     pw_page.wait_for_selector("#gate1:not(.hidden)", timeout=8000)
+    pw_page.locator(".material-decision").select_option("SUPPORTED")
+    pw_page.locator(".material-rationale").fill("The cited passage supports the exact claim.")
+    pw_page.check("#g1noOmissions")
+    pw_page.check("#g1materiality")
     pw_page.click('#gate1 button[data-act="approve"]')
     pw_page.wait_for_selector("#gate2:not(.hidden)", timeout=8000)
 
@@ -330,3 +463,48 @@ def test_chromium_rejects_legacy_ipv4_citation_hrefs(pw_page):
     pw_page.set_content("<!DOCTYPE html><html><body>ok</body></html>", wait_until="domcontentloaded")
     pw_page.wait_for_timeout(100)
     assert blocked == []
+
+
+@pytest.mark.parametrize('status', ['terminal_quality_exhausted', 'policy_blocked', 'execution_failed',
+    'resource_exhausted', 'content_revision_limit', 'layout_revision_limit', 'rendering_failed',
+    'terminal_rejected'])
+def test_workflow_terminal_ui_cannot_offer_publication(live_server, pw_page, status):
+    pw_page.goto(live_server + '/', wait_until='domcontentloaded')
+    message = 'Quality gates were not met within the allowed attempts. Please try again.'
+    pw_page.evaluate('(payload) => onDone(payload)', {'status': status, 'summary': {
+        'terminal_status': status, 'terminal_message': message,
+        'git_status': 'merged', 'html_filename': 'never-published.html'}})
+    assert pw_page.locator('#doneBody p.bad').inner_text() == status + ': ' + message
+    assert pw_page.locator('#publishBtns').is_hidden()
+    assert pw_page.locator('#gate1').is_hidden()
+    assert pw_page.locator('#gate2').is_hidden()
+
+
+@pytest.mark.parametrize('legacy', [False, True])
+def test_J_failed_archive_ui_is_never_success(live_server, pw_page, legacy, monkeypatch, base_state):
+    pw_page.goto(live_server + '/', wait_until='domcontentloaded')
+    import agent.nodes as nodes
+    from unittest.mock import Mock
+    monkeypatch.setenv('GIT_PUSH_ENABLED', 'false')
+    monkeypatch.setattr(nodes, '_atomic_write_utf8', Mock(side_effect=OSError('disk write denied')))
+    html = '<html><body>Approved article.</body></html>'
+    sha = nodes.sha256_utf8(html)
+    summary = nodes.git_node({**base_state, 'html_output': html, 'html_filename': 'article.html',
+                              'html_sha256': sha, 'approved_html_sha256': sha})
+    assert summary['git_status'] == 'failed'
+    if legacy:
+        summary.pop('terminal_status')
+    pw_page.evaluate('(payload) => onDone(payload)', {'status': 'complete' if legacy else 'execution_failed',
+                                                   'summary': summary})
+    text = pw_page.locator('#doneBody').inner_text()
+    assert 'execution_failed' in text and summary['terminal_message'] in text
+    assert 'Published locally' not in text
+    assert pw_page.locator('#doneBody p.ok').count() == 0
+    assert pw_page.locator('#publishBtns').is_hidden()
+
+
+def test_L_successful_local_publish_ui_is_preserved(live_server, pw_page):
+    pw_page.goto(live_server + '/', wait_until='domcontentloaded')
+    pw_page.evaluate('(payload) => onDone(payload)', {'status': 'complete', 'summary': {'git_status': 'merged'}})
+    assert 'Merged locally' in pw_page.locator('#doneBody p.ok').inner_text()
+    assert pw_page.locator('#publishBtns').is_visible()

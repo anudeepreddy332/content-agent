@@ -1,6 +1,8 @@
 # Content Agent — Accepted Architecture Contract
 
-_Accepted contract synchronized 2026-08-23._
+_Accepted contract synchronized 2026-11-05. Workflow contract ACCEPTED / FROZEN —
+IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH; MAIN MERGE PENDING
+(D-2026-10-05-04). Historical implementation anchors follow._
 
 - **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`
 - **Authorized P0-1 implementation base:** `7a606e895fe0a4bc9092659f130881bc7b52bd28`
@@ -11,8 +13,29 @@ _Accepted contract synchronized 2026-08-23._
 - **P0-2a implementation base (historical):** `ca29d32b4869269daa47142615d298580a577a77`
 - **Frozen P0-2a architecture:** `c8b75c3ab069df29e2201c0540b69bfca86e9cf1`
 - **P0-2a validated implementation:** `0b707e4e431ea7662eec86aec5d4ed18a3c060dd`
-- **Current canonical repository state:** the HEAD of `refs/heads/main`; direct remote main is
-  exact `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. It must contain the P0-2a integration commit,
+- **Pre-amendment application-bearing feature integration:** canonical Phase-5 runtime code is
+  `cf9cc23855a917c179fdea51d310cc0a9e3f74de`; exact-SHA CI
+  [41807379794](https://github.com/anudeepreddy332/content-agent/actions/runs/41807379794)
+  concluded SUCCESS (lint and tests PASS; push eval gate skipped). Previous
+  citation repair `753a27a4a55e548540708a1f8cbe5be1af4a55a8` passed
+  [41661283760](https://github.com/anudeepreddy332/content-agent/actions/runs/41661283760)
+  (2,006 tests).
+  Earlier draft-recovery application integration `21666700bf03abf5e6ec37de9705ab873fcaf215`
+  passed CI `41627868865` (1,994 tests).
+  Deterministic HTML was integrated at prior feature base `102983ef` with CI
+  `40077527862` SUCCESS. The earlier Call-A capacity ancestor `82284129` passed
+  CI `38373655918` (1,855 tests, 37 warnings). Main remains
+  `86712d200fd46382a876f2083f824f03a83341ab`. HOLDOUT-V2 qualified only
+  `e0cfe0b566134f848feb731a777f315eb1456dd2`; the current application-only
+  descendant is not holdout-tested. The frozen workflow re-audit remains anchored
+  at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` and CI `37599028135`.
+  Deterministic initial HTML and structural equivalence are feature integrated.
+  Subsequent supervised runs completed real drafting and Call A/Call B, but
+  verification did not pass material and citation policy on November 3, then
+  did not pass material policy after the permitted redraft on November 4.
+  Reflection, both human gates and full application E2E remain unqualified.
+- **Historical canonical P0-2b state:** exact
+  `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. It contains the P0-2a integration commit,
   the P0-2b slice-1 integration commit, the P0-2b slice-2A integration commit, and the P0-2b
   slice-2B integration commit below; documentation-only descendants do not alter those validated
   runtime/product implementation blobs
@@ -40,6 +63,24 @@ _Accepted contract synchronized 2026-08-23._
 This file contains accepted architecture only. Candidate ideas and experiment hypotheses do not
 belong here until independent review accepts them. Material decision history remains in
 `DECISIONS.md`; current implementation/release state remains in `PROJECT_STATUS.md`.
+
+The October-5 workflow contract in section 1 is accepted architecture implemented and
+independently audited on the feature branch at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`.
+The pre-repair feature base was `102983ef08109522421c1098d3effd99e26f3c0b`
+(CI `40077527862` SUCCESS); its deterministic HTML and structural-equivalence
+implementation does not amend the frozen workflow contract. Draft-recovery
+candidate `cef9e12eb18e46a92abaa85ce09128f23dc6ef1e` is contained in
+application-bearing feature commit `21666700bf03abf5e6ec37de9705ab873fcaf215`
+(CI `41627868865` SUCCESS).
+The security and earlier implementation records below retain their scoped validation; their old
+next-mission/status statements are historical, not current project authorization.
+
+A material milestone is not **CLOSED** until relevant canonical documents agree with validated
+evidence: architecture changes require `architecture.md` + `DECISIONS.md`; project-state milestones
+require `PROJECT_STATUS.md`; experiment/evaluation/E2E results require
+`docs/EXPERIMENT_LEDGER.md`; externally visible validated capability requires `README.md` when
+applicable. `FREEZE.md` remains historical. Chat and `/tmp` receipts are evidence inputs, not
+canonical project state. Accepted architecture may be frozen while implementation remains pending.
 
 The P0-1 architecture below is **APPROVED, frozen, implemented, validated, and integrated** at exact
 canonical main `d0be0a77f1f9a2c53fbe3743d852552f4fa6b0f3`. The contract is retained as the
@@ -85,28 +126,168 @@ documentation-only descendant of the audited runtime reference and does not chan
 product implementation. No other descendant is authorized by implication. A different Cursor base
 is `ARCHITECTURE-BLOCKED` unless independently reviewed.
 
-## 1. Current accepted system and serving baseline
+## 1. Astra-frozen workflow contract — implemented on feature branch
 
-The repository remains a supervised, single-operator system:
+**Status: ACCEPTED / FROZEN — IMPLEMENTED AND INDEPENDENTLY AUDITED ON FEATURE BRANCH;
+MAIN MERGE PENDING**, contract dated 2026-10-05, decision `D-2026-10-05-04`.
+Implementation evidence: `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`, exact-SHA
+push CI `37599028135`. The October-5 graph at `2a1d95f` remains historical.
+
+### 1.1 Topology and conditional quality transitions
 
 ```text
-retrieve -> draft -> verify -> reflect -> optional revise (maximum 2)
-         -> human gate 1 -> HTML generation -> human gate 2
-         -> local Git integration -> separate human-triggered publish
+retrieve -> start quality episode -> draft
+  valid structured draft -> verify
+    verify accepted -> reflect
+      reflect accepted -> Gate 1
+      reflect failed -> redraft if an episode attempt remains
+                        -> fresh verify -> reflect only after verify passes
+                        otherwise terminal quality failure
+    verify failed -> NEVER reflect
+                     repairable failure -> redraft if an episode attempt remains
+                     otherwise terminal quality/policy/execution outcome
+  invalid/recoverable draft -> consume current quality attempt
+                              retry draft only if an attempt remains
+                              otherwise terminal failure
+
+Gate 1 approve -> HTML generation -> Gate 2
+Gate 1 reject -> terminal_rejected
+Gate 1 accepted content feedback -> new quality episode
+Gate 1 third feedback request -> content_revision_limit
+
+Gate 2 approve -> existing guarded Git path
+Gate 2 reject -> terminal_rejected
+Gate 2 accepted layout feedback -> html_revise -> Gate 2 (no content back-edge)
 ```
 
-- Retrieval: Tavily web search plus Qdrant `all-MiniLM-L6-v2` dense search and BM25, fused with
-  RRF `k=60`.
-- Generation/verification/reflection: DeepSeek through the existing LangGraph nodes.
-- Review: two mandatory human gates. Gate 1 ordinary approve grants HTML eligibility only when
-  semantic verification is accepted (P0-2b slice 1, integrated at `230314f`). Explicit reject
-  or blocked approve → END; explicit feedback → draft.
-- Execution: FastAPI with SqliteSaver checkpoints and a volatile in-memory run registry.
-- Publication: Git integration into a website checkout plus a distinct publish endpoint.
+An invalid draft never proceeds to verification. Failed verification never proceeds to reflection.
+For a rejected draft response, the feature-integrated repair retains response length/hash,
+termination, usage and parse diagnostics but leaves draft sections and Markdown empty;
+the trace records an empty rejected-draft slot. Valid drafts retain exact content.
+This custody correction does not alter the frozen retry or eligibility contract.
+After every content redraft, verification is fresh; reflection runs only after verification passes.
+Non-repairable policy/execution failures terminate rather than entering editorial review.
+Remote publication remains a separate human-triggered action under existing publication guards.
 
-The serving retrieval baseline stays unchanged. The known MiniLM truncation defect remains open;
-the `224/32` tokenizer-safe candidate and the exact-73 alternative-model diagnostics have not earned
-cutover. Retrieval research is isolated from this security mission.
+**November 4 bounded verifier-observation amendment (`D-2026-11-04-03`):** A
+completed Call B result rejected for exact `quote_not_found` may receive one
+additional Call B observation on the unchanged draft, Call A roster and
+evidence manifest, provided identities and the existing cost gate pass. A
+separate SQLite journal commits both the initial Call B reservation and the
+run-global recovery reservation before dispatch; the latter is unique across
+episodes and workers. Response metadata and known usage are committed before
+validation. A replay of an existing reservation is terminal and cannot issue
+another Call B. Missing response usage is recorded as UNKNOWN while known
+prior usage remains accounted. The single verify-node checkpoint means a
+crashed observation cannot be reconstructed from metadata alone, so restart
+does not continue verification. This is at-most-once application dispatch,
+not exactly-once provider execution or billing; transport retries remain
+bounded separately. Valid adverse judgments never receive an observation
+reroll. The two-draft content limit and Gate-1 eligibility contract below
+are unchanged. This offline amendment has not qualified a live E2E.
+
+**November 5 ambiguous-anchor amendment (`D-2026-11-05-03`):** When
+`inventory_failed` carries a current inventory with an explicit
+`ANCHOR_AMBIGUOUS` claim, matching verification and inventory identities are
+required separately. The workflow terminates `execution_failed` with a fixed
+safe ambiguity reason, retaining every claim/occurrence, diagnostic, known
+usage and consumed attempt. It never spends the remaining content attempt on
+that uninformed redraft. It selects no occurrence and grants no binding
+authority to section or eligibility metadata. Other failure subtypes retain
+their established bounded routing; stale/malformed artifacts grant no semantic
+or human-gate acceptance. The two-draft allowance, material/citation/reflection
+and human/publication gates, and durable Call B recovery remain unchanged.
+After the terminal graph checkpoint is durable, restart stays terminal. A Call A
+response lost before that checkpoint retains its existing replay limitation.
+This offline correction does not resolve the ten historical material claims,
+qualify a complete E2E, or demonstrate live recovery.
+
+### 1.2 Separate frozen loop budgets
+
+| Loop | Frozen allowance | Accounting |
+| --- | --- | --- |
+| A — automated quality episode | **2 total draft attempts: initial + 1 automatic redraft** | Invalid/recoverable draft output consumes the current attempt. A repairable verification or reflection failure may use the remaining redraft. |
+| B — Gate-1 content feedback | **Maximum 2 accepted feedback events per run** | Each accepted event starts a fresh quality episode with its own 2-draft allowance. Third feedback request terminates. |
+| C — Gate-2 layout feedback | **Maximum 2 layout revision attempts after initial HTML** | Failed/discarded revisions consume attempts. Third changes request terminates. |
+
+These are separate counters. Previous automatic attempts do not consume a new human-feedback
+episode; Gate-2 revisions do not consume content attempts. Cumulative cost/resource limits never
+reset. Existing provider transport retries remain separate. Lifetime `iterations` is preserved
+only as a monotonic trace/draft ordinal, never as routing-budget authority.
+
+Historical P2.3 rejected `MAX_ITERATIONS > 2` to chase grounding. That rejection remains valid
+for the old global-ceiling experiment. The new accepted semantics are **2 total drafts per quality
+episode**, not one global run budget and not an increased automated episode allowance.
+
+### 1.3 Gate-1 eligibility
+
+Gate 1 is editorial review of an **AUTOMATED-QUALITY-ACCEPTED current draft**.
+`Gate1Eligible` requires all of:
+
+- structurally valid current draft;
+- current claim inventory and identity integrity;
+- successful semantic execution and `semantic_verification_accepted`;
+- material / required-content acceptance;
+- citation-policy acceptance;
+- valid current reflection bound to the same draft/attempt;
+- genuine/current reflection provenance and `reflection_score >= 7`;
+- no terminal/resource stop.
+
+Missing, malformed, skipped, fallback, or stale reflection never counts as accepted. Check this
+invariant before issuing the interrupt and again on approval. Neither human approval nor a numeric
+fallback score can turn failed/UNKNOWN automated quality into eligibility.
+
+### 1.4 Terminal contract
+
+| Outcome | Meaning |
+| --- | --- |
+| `terminal_rejected` | Explicit human rejection ends the run. |
+| `terminal_quality_exhausted` | Automated quality gates remain unmet after the allowed episode attempts. |
+| `policy_blocked` | Policy acceptance is blocked; failed/UNKNOWN policy is not escalated to Gate 1. |
+| `execution_failed` | Required execution or current artifact/inventory integrity failed. |
+| `resource_exhausted` | A cumulative resource/cost boundary stops the run. |
+| `content_revision_limit` | Third Gate-1 content-feedback request exceeds the frozen limit. |
+| `layout_revision_limit` | Third Gate-2 changes request exceeds the frozen limit. |
+| `rendering_failed` | Required trusted rendering fails. |
+
+These are terminal outcomes, not successful, complete, or human-reviewable results.
+Default quality-exhaustion message:
+
+> Quality gates were not met within the allowed attempts. Please try again.
+
+### 1.5 Gate-2 content freeze and rendering
+
+Gate 2 is content-frozen layout/design review. Layout feedback never re-enters draft, verify,
+or reflect. Maximum 2 revision attempts follow initial HTML; failed/discarded revisions consume
+an attempt. A trusted previous render may remain available for approval after a failed layout
+revision. A third changes request terminates. If actual article content must change, this run
+ends and a new content workflow must begin.
+
+**Implemented on the verified feature SHA `102983ef08109522421c1098d3effd99e26f3c0b`:**
+deterministic initial HTML rendering and structural equivalence bind
+Gate-1-approved visible content/code and citations to the rendered artifact.
+The October 23–24 qualification and CI `40077527862` closed the scoped
+implementation requirement; they do not establish a completed live E2E or
+production readiness. Layout-revision content preservation, artifact approval
+binding, and publication guards remain separate requirements.
+
+### 1.6 Explicit supersession and retained implementation baseline
+
+Superseded accepted workflow behavior: unconditional `verify -> reflect`; max-iterations
+escalation to HITL despite failed quality; failed/UNKNOWN quality states escalating to HITL;
+unbounded human revision loops; reflection fallback numeric scores counting as acceptance.
+Only conflicting destination/routing clauses in `D-2026-08-21-01`, `D-2026-09-14-05`,
+`D-2026-09-16-06`, `D-2026-09-16-07`, and `D-2026-09-16-08` are superseded.
+Their valid semantic/status/material/citation findings and evidence remain intact.
+Historical records below do not override this section.
+
+Retained application baseline: real DeepSeek nodes; FastAPI with SqliteSaver checkpoints and
+a volatile in-memory registry; two mandatory human gates; existing guarded Git path and separate
+publish action. Retrieval remains qualified CSWP with pinned `all-MiniLM-L6-v2`, BM25/RRF `k=60`,
+bounded expansion/packing and `DRAFTER_PACKED_EVIDENCE_V1`; `KB_BACKEND` defaults to `cswp_local`,
+with the existing validated `cswp_qdrant` serving option. No retrieval/corpus/model/index/threshold
+change is part of this workflow contract. Historical `224/32` and alternative-model diagnostics
+did not independently earn serving cutover.
 
 ## 2. P0-1 threat boundary
 
@@ -498,6 +679,10 @@ PASS. No AFTER paid benchmark has run after P0-2b slice 2B.
   or make the Content Agent production-ready.
 
 ## 10. P0-2b slice 1 validated and integrated boundary
+
+Historical integration record. Its exhausted-failure-to-HITL destination is superseded
+by section 1 / `D-2026-10-05-04`; semantic acceptance and approval safety findings
+remain valid. The superseding workflow is implemented on the feature branch.
 
 - Exact integration: `230314f7f774ed4b112c377269b190fa1279a004`.
 - Ancestry: `eea98c367b0f82fcc844dcca73b3935542adeef6` →

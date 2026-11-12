@@ -1,17 +1,377 @@
 # PROJECT STATUS
 
-_Canonical current-state snapshot. Last synchronized: 2026-09-16 (Phase 4 live-wiring seal)._
+_Canonical current-state snapshot. Last synchronized: 2026-11-05 (P3
+repeated-anchor RCA and prospective design; no implementation)._
 
 This file answers what is true now. It is not a history log. Material history remains in
 `DECISIONS.md`; experiment detail is indexed in `docs/EXPERIMENT_LEDGER.md`; the old v5 freeze
 remains preserved in `FREEZE.md`.
 
-## Authoritative SHA roles
+## Current status — 2026-11-05
 
-- **Current canonical repository state:** the HEAD of `refs/heads/main`. Before
-  client-demo-fixes integration, exact `e4b39caa37497c1743e33843c464ea4381f166d4`
-  (demo publish-target guard). Client-demo fixes closeout merges from
-  `feature/client-demo-rehearsal-fixes`.
+**P3 repeated-anchor investigation: RCA PROVEN WITH LIMITS; A + D PROPOSED
+ONLY / OWNER DECISION REQUIRED BEFORE CODING.** On verified feature base
+`6e10943e10f41b672275a15356deafd51a82152d`, immutable read-only reconstruction
+matches the entire saved 73-claim inventory exactly; the prior November 5
+ambiguous inventory also reproduces all 36 claims. Both formula contexts in
+the latest draft affirm the same update rule, but the saved row establishes
+neither one as its sole intended occurrence nor an authoritative complete
+occurrence set. Section labels and source resemblance cannot choose a match.
+A unique longer exact anchor is possible prospectively; no historical row was
+rebound, deleted or resumed. Binding both formula spans also creates a
+shared-endpoint conflict with the separate retained takeaway claim.
+Recommend only prospective context-complete unique verbatim extraction
+anchors, retaining current exact binder/fail-fast behavior. This is no generic
+semantic resolver or repeated-occurrence representation fix: lexical-equality
+`bound_multiple` can match quoted/prohibited text, and merging one canonical
+claim across different unique anchor texts fails existing Gate-1 quote checks.
+Both limits are explicit negative controls; no claim deletion or gate weakening
+is an acceptable workaround. Thirteen deterministic before/after data fixtures
+plus nine controls characterize existing behavior; 171 existing guard tests
+PASS / 1 warning, zero provider. These do not establish revised-prompt efficacy,
+semantic/material/citation acceptance or an E2E success. Two independent read-only reviewers accepted the design/evidence/canonical
+documentation and independently reproduced the 73-claim inventory and fixture
+outcomes; implementation and prompt efficacy remain unqualified. See `D-2026-11-05-05`,
+`EXP-2026-11-05-05` and `docs/design/P3_REPEATED_ANCHOR_FIXTURES_20261105.json`.
+All runtime, prompt, threshold, human/publication gates and `FREEZE.md` remain
+unchanged. No implementation or paid execution is authorized.
+
+**Latest supervised application run: TERMINAL `execution_failed`; fail-fast
+observed live; complete E2E qualification remains OPEN.** One explicitly
+authorized production `/runs` request created run
+`f6e866dd-2a2a-4c81-a3de-7415afbf5820` from fresh isolated snapshot of
+feature SHA `5e88793996f2f38a3a62ee8c7a4ccf6870973166` (427 tracked blobs
+verified; execution-head CI `41996912479` SUCCESS / 2,056 tests PASS).
+Retrieval returned 10 web and 11 local KB rows. One valid four-section draft
+used one quality attempt. Current Call A inventory retained 73 claims, 57
+material, with zero missing and one ambiguous anchor. Material factual claim
+`clm-02ca1b85a26b65a9` matched a repeated formula at both `[1027,1044)` and
+`[4604,4621)`; the draft SHA-256 is
+`4fa07c0edb5dd15bae2e9f8ea6a70ef25fca08e66590bbb95fe43017a6e758b3`.
+The accepted current-inventory guard ended `inventory_failed` →
+`execution_failed` with no content redraft or further provider dispatch.
+
+Call B was not reached: journal zero reservations, semantic classifications
+unavailable, bounded recovery **NOT EXERCISED**. Material/citation policy
+recorded unresolved-anchor integrity failure, not substantive acceptance;
+grounding score 0.0 is a non-evaluation sentinel. No targeted feedback,
+reflection, Gate 1/2, HTML or local archive occurred. No approval, Git push,
+website change or publication occurred in the application run. Two logical
+DeepSeek operations reported 18,274 tokens, known usage, checkpoint app
+estimate `$0.01430136`; complete physical attempts, Tavily charges and
+provider billing remain unverified. Independent read-only terminal evidence
+review PASS. The private checkpoint and verified read-only backup remain under
+`/private/tmp/content-agent-live-e2e-failfast-20261105` and
+`/private/tmp/content-agent-live-e2e-failfast-evidence-20261105`.
+This qualifies the fail-fast route for a new ambiguity only. The historical ten
+weak material obligations remain unresolved, this draft received no Call B
+material assessment, and live Call B recovery remains unqualified. See
+`D-2026-11-05-04` / `EXP-2026-11-05-04`. The separately scoped duplicate-anchor investigation is now recorded above;
+its prospective design remains owner-pending. No additional paid application
+run is authorized.
+
+**November 5 ambiguous-anchor fail-fast repair: OWNER APPROVED / IMPLEMENTED.**
+Alternative A from `D-2026-11-05-02` was explicitly authorized and implemented
+on base `10c27b4195034d7aa5a69db4cf1ca6fb602d9bc5`; production delta is
+`agent/workflow.py` only. Current ambiguous inventory after separate verification
+and inventory identity checks terminates `execution_failed` with a fixed safe
+reason. It preserves every claim/occurrence, usage/diagnostic and consumed
+attempt, preventing the uninformed redraft without another provider operation.
+Other failure routing, binder, prompts, thresholds, two-draft budget, Call B
+retry and genuine human/publication gates remain unchanged.
+Saved-artifact replay retains all 36 first-draft claims and both original
+matches, stops at attempt one, and resumes twice from a closed/reopened scratch
+SQLite checkpoint without dispatch or duplicate usage. Focused 198 tests PASS;
+full offline 2,056 tests PASS / 37 warnings; Ruff fatal tier and diff check PASS.
+Independent read-only implementation and documentation acceptance PASS;
+reviewer independently reran 198 focused tests and verified saved-state routing,
+source scope, restart proof and preserved evidence.
+See `D-2026-11-05-03` and `EXP-2026-11-05-03`.
+The ten historical weak material obligations remain unresolved. This prevents
+wasteful redrafts; it does NOT qualify a complete E2E or demonstrate live Call B
+recovery. The offline implementation milestone itself made no provider call,
+main merge, publication or holdout run. Any future paid run requires separate
+owner authorization.
+
+**Prior supervised application run: FAILED CLOSED; recovery NOT EXERCISED.**
+Run `34cc2a46-05d9-4f8a-8662-7d18e9ef158f` executed at exact feature SHA
+`085ea315652686d4578d962de3d00071254201a0` after explicit paid authorization.
+All 426 tracked snapshot blobs remained unchanged. Retrieval returned 10 web /
+11 local KB rows. First-draft Call A failed one ambiguous anchor (36 claims),
+and the permitted second draft received no claim-level repair feedback.
+Second-draft Call A found 57 anchored claims; Call B returned 39 verified,
+18 weak, zero unverified. Grounding 0.921 / UVR 0.0 did not override ten
+unresolved material claims (37/47 resolved). Citation policy passed, coverage
+1.0, 37 anchor groups, zero missing/invalid/placement failures. The graph ended
+`terminal_quality_exhausted` after two drafts. All blockers were limitations;
+no contradiction blocker was recorded. The journal has one known-usage initial
+response and zero retry rows: no eligible quote miss occurred. Targeted
+material-repair feedback was not exercised, since those obligations first
+appeared on the final attempt. Reflection, human gates, HTML and archive were
+not reached; no automatic approvals, publication, second run or source repair.
+Five logical DeepSeek calls reported 45,217 tokens; app estimate `$0.02999217`.
+Complete physical attempts, Tavily cost and provider billing remain unverified.
+Read-only independent evidence acceptance passed. See `D-2026-11-05-01` and
+`EXP-2026-11-05-01`; private terminal evidence is preserved. No implementation
+defect is established. Obtain an owner decision on a separately scoped next
+mission before further paid execution; do not repeat the run to seek a favorable
+outcome. Execution-head CI `41808866709` was verified SUCCESS; application
+repair CI remains `41807379794` SUCCESS. A documentation-only descendant may
+advance the feature ref without changing the executed application.
+
+**Prior application-bearing integration (before fail-fast amendment):**
+`cf9cc23855a917c179fdea51d310cc0a9e3f74de` was fast-forwarded to
+`feature/phase5-rag-hardening` from `d8ce8283694eed7112ab82bd43179898fb936d81`.
+Exact-SHA CI [41807379794](https://github.com/anudeepreddy332/content-agent/actions/runs/41807379794)
+completed SUCCESS: lint PASS, test PASS, push-only eval gate skipped.
+The previous citation repair `753a27a4a55e548540708a1f8cbe5be1af4a55a8`
+was fast-forwarded from `24bcce854585e1aac26a02ccfeffd59902f6cbf8`.
+Exact-SHA CI [41661283760](https://github.com/anudeepreddy332/content-agent/actions/runs/41661283760)
+completed SUCCESS: lint PASS, test PASS (2,006 passed, 37 warnings),
+push-only eval gate skipped. A documentation-only closeout descendant may
+advance the ref without changing application code.
+Exact-SHA CI [41627868865](https://github.com/anudeepreddy332/content-agent/actions/runs/41627868865)
+completed SUCCESS: lint PASS, 1,994 tests PASS, push-only eval gate skipped.
+Its pre-repair feature base `102983ef08109522421c1098d3effd99e26f3c0b`
+qualified deterministic HTML and structural equivalence; CI `40077527862`
+concluded SUCCESS at that earlier SHA.
+The unintegrated no-archive E2E candidate `a6dc1d8` was abandoned after two
+independent checkpoint trust-boundary P1s and is not in the feature branch.
+
+**First supervised provider-backed run failed before Gate 1.** Run
+`f9f6f92d-5dbd-4370-aca2-83af159968ae` at the integrated base retrieved
+10 web sources and 11 KB rows, then ended `execution_failed` in drafting.
+The checkpoint records 9,144 ms of draft latency, proving the response path
+reached post-call accounting; the exact exception and provider billing remain
+UNKNOWN. No verification, reflection, human approval, final HTML, archive or
+publication occurred. Original evidence remains in the disposable November 3
+checkout under `outputs/checkpoints.sqlite` and `outputs/runs/<run_id>.json`.
+
+**Feature-integrated draft recovery:** diagnostic `61e89a7`, accounting
+`46c14ea`, and rejected-output safety `cef9e12` are descendants of the
+pre-repair feature base. The installed SDK's missing/null total-token
+case is independently reproducible; valid 60+40 component counts now account
+for 100. A separate rejected-draft P1 was reproduced with a sensitive canary:
+malformed text leaked into structured logs, draft/trace, SQLite and exported
+telemetry. The integrated repair discards rejected text and retains bounded
+diagnostic metadata. Offline saved-state replay reaches verification; it is
+not a successful live application run. The documentation delta received
+independent read-only acceptance before the fast-forward feature push.
+
+**One bounded live draft diagnostic: PASS for drafting and verification routing.**
+New run `3ed18574-8e98-416a-8aeb-348416b6e15f` executed one production
+`workflow.draft_step` / `draft_node` invocation at feature head
+`3298e7bc3503408436923c515d052986e3074fa1`, with the failed run's exact
+10 web and 11 KB rows copied from its pre-draft checkpoint. DeepSeek returned
+four nonempty sections (`deepseek-flash`, `finish_reason=stop`); the draft and
+trace persisted in a separate private SQLite checkpoint and telemetry. Provider
+usage was 4,281 prompt + 1,184 completion = 5,465 reported total tokens;
+accounting source `provider`, application-estimated cost `$0.00245827`, draft
+latency 8,365 ms. `route_after_draft` returned `verify`; verification was NOT
+executed. One logical draft invocation was made; physical HTTP attempts and
+provider billing are not independently established. Tavily, claim inventory,
+reflection, human gates, archive and publication were not run. This success
+does not establish the original failed run's exception, which remains UNKNOWN.
+Evidence is in `/private/tmp/content-agent-live-draft-diagnostic-20261103/outputs/`;
+see `D-2026-11-03-05` and ledger `EXP-2026-11-03-02`.
+
+**Second supervised provider-backed application run: FAILED CLOSED before reflection
+and Gate 1.** Run `e3ea06a8-cf22-458a-af3b-dfdeeedd1f54` executed the production
+FastAPI graph at exact feature head `1978fa5fddbce9c077117b4fc4dd29b58cdb5568`
+in a private disposable checkout. Retrieval returned 10 web/11 KB rows; drafting
+was valid. `verify_node` completed Call A claim inventory (62 claims) and Call B
+semantic verification (43 verified, 17 weak, 2 unverified; grounding 0.899,
+UVR 0.032), but verification was **not accepted**. Seven material claims remained
+unresolved (`revision_required`). The citation policy found two overlapping,
+nonidentical material-claim anchors at draft offsets `[1265,1367)` and
+`[1311,1329)`, reported `placement_integrity_failure`, and the graph ended
+`policy_blocked` without a quality revision. This is the proven immediate block;
+an offline correction for strictly nested anchors is now validated locally (see
+below). Reflection, both human gates,
+HTML, archive, Git and publication were NOT REACHED. Three logical DeepSeek
+calls used 33,860 provider-reported tokens; Tavily ran three logical queries.
+Application-estimated cost was `$0.02228774`; physical provider attempts and
+billing are UNKNOWN. The first failed run's historical drafting exception
+remains UNKNOWN. Private checkpoint, telemetry and a safe summary are under
+`/private/tmp/content-agent-live-e2e-20261103/outputs/`. See
+`D-2026-11-03-06` and `EXP-2026-11-03-03`.
+
+**Nested citation-placement repair: feature integrated, exact-SHA CI PASS.**
+The saved checkpoint reproduces the old failure on base `24bcce854585e1aac26a02ccfeffd59902f6cbf8`.
+Outer claim `clm-d3b34d6449c1269e` `[1265,1367)` needs `KB-006`; strictly
+interior claim `clm-4c6ad60b809f5a34` `[1311,1329)` needs `KB-002`.
+The local repair places separate citations at distinct endpoints, retains both
+bindings, and rejects ambiguous overlaps and stale support plans. Saved-state
+replay now passes citation placement and renders four content-equivalent article
+sections. It does not resolve seven material claims: preterminal routing remains
+`draft`, not reflection. Focused 174 and full offline 2,006 tests passed;
+independent read-only acceptance passed; exact-SHA feature CI passed. See
+`D-2026-11-03-07` and `EXP-2026-11-03-04`.
+
+**November 4 supervised application run: TERMINAL QUALITY EXHAUSTION.** At
+exact approved feature SHA `4a6445121b90bdffb444b656668226031e7da700`,
+one new run `1d3f2b1b-9880-43ff-9533-4abd12fbc3ae` retrieved 10 web and 11
+local KB rows and produced two valid drafts. Attempt 1 Call A parsed; Call B
+parsed but failed exact quote binding (`quote_not_found:KB-008`), triggering the
+one allowed redraft. Attempt 2 Call B completed: 69 claims, 55 verified, 9 weak,
+5 unverified, grounding 0.895, UVR 0.072. Citation policy passed with 42
+anchor groups and zero placement failures; five of 59 material claims remained
+unresolved. The frozen two-attempt limit ended `terminal_quality_exhausted`.
+Reflection, Gate 1, HTML, Gate 2, archive and publication were NOT REACHED.
+Six logical DeepSeek calls accounted for 69,825 provider-reported tokens;
+Tavily made three logical queries. Application-estimated cost was `$0.04616224`;
+physical attempts and provider billing are UNKNOWN. The private checkpoint,
+telemetry and safe summary remain in `/private/tmp/content-agent-live-e2e-20261104/outputs/`.
+See `D-2026-11-04-01` and `EXP-2026-11-04-01`.
+
+**Saved-run root-cause investigation complete; no code repair claimed.**
+The KB-008 rejection is confirmed, but its original Call B quote and associated
+claim ID were not retained, so the precise mismatch subtype remains UNKNOWN.
+Exact binder controls pass. All five material failures retain valid evidence
+bindings; they require qualification or stronger direct evidence. The saved
+empty report yielded empty revision feedback, and offline production-request
+capture proves initial and redraft messages identical. The frozen two-draft
+policy spent its last slot on an uninformed reroll. This is a demonstrated
+reliability limitation in the accepted contract, not an off-by-one source bug.
+92 focused tests passed. See `D-2026-11-04-02`, `EXP-2026-11-04-02`, and the
+private five-claim matrix under `/private/tmp/content-agent-live-e2e-evidence-20261104/`.
+
+**November 4 bounded verifier-observation recovery: FEATURE INTEGRATED.**
+Decision `D-2026-11-04-03` approves one separately capped Call B recovery only
+for a completed, exact `quote_not_found` observation with current draft, Call A
+roster and evidence identities. The accepted application commit
+`cf9cc23855a917c179fdea51d310cc0a9e3f74de`, based on
+`d8ce8283694eed7112ab82bd43179898fb936d81`, uses a durable SQLite
+pre-dispatch journal for initial and recovery Call B requests. Its run-global
+unique recovery reservation survives restart and concurrent workers. Restart
+does not replay an existing request; it ends safely and records lost usage as
+UNKNOWN while retaining known journaled usage. A valid material failure keeps
+the normal targeted content-revision route. The original rejected KB-008 quote
+remains unavailable, and all five material obligations in the November 4 run
+remain unresolved. See `EXP-2026-11-04-03` for offline evidence and limits.
+Independent read-only acceptance passed after a reproduced UNKNOWN-usage
+carry-forward defect was corrected; 2,024 full offline tests passed. Remote
+feature readback matched `cf9cc238`; exact-SHA CI `41807379794` passed lint
+and tests. This is offline recovery qualification, not a successful live run.
+
+**Production readiness: NOT ACHIEVED.** No Gate 1/Gate 2 success or
+provider-backed complete E2E has been demonstrated. The November 5 separately
+authorized run ended at the material-quality limit;
+recovery and targeted material repair were not exercised. The fail-fast amendment is now owner-approved and implemented offline; a new
+supervised application E2E still requires separate paid-run authorization.
+The two-draft budget and
+all acceptance checks remain unchanged.
+
+## Historical status — 2026-10-13
+
+**Phase 5 authoritative retrieval qualification: CLOSED / HOLDOUT-V2 PASS.**
+`PHASE5-AUTH-PROTOCOL-1` closed; exactly one production V2 attempt qualified
+`e0cfe0b566134f848feb731a777f315eb1456dd2`. Evidence-bearing macro packed recall
+was `0.93333333`; ANSWERABLE `0.91666667`; PARTIAL, determinism, local/Qdrant
+parity, score truth, and independent completed verification passed. The 20 sealed
+artifacts remain immutable under `reports/phase5/phase5e1a/holdout-run-1`.
+No new holdout execution is authorized by this documentation reconciliation.
+
+**Canonical feature branch:** the latest integrated application commit is
+`82284129dcee8cc10f3d959e0994bacae6a5683b`, an application-only descendant
+of the qualified base, **not holdout-tested**. The HTML API rejection correction,
+frozen workflow implementation, output metadata, draft/inventory thinking and
+length-termination corrections, and Call-A capacity change are included. The frozen
+workflow correction at `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` retains its
+independent re-audit and exact-SHA CI evidence. Latest feature push CI
+[38373655918](https://github.com/anudeepreddy332/content-agent/actions/runs/38373655918)
+completed SUCCESS at exact `82284129`: lint PASS; **1,855 tests passed, 37 warnings**;
+PR-only eval-gate skipped by design. Main remains
+`86712d200fd46382a876f2083f824f03a83341ab`; there is no Phase-5 PR or main merge.
+
+**APPLICATION-E2E-RUN-1 = FAILED / REJECTED AT GATE 1.** The one real FastAPI
+run `50b11781-3513-46d6-92c6-ff1f3d1cd56a`, topic “Gradient Descent: A Beginner
+Learning Note,” used historical runtime `2a1d95f98b2b240750288924116f8a77b3492250`
+and `cswp_local`. Retrieval succeeded
+(10 web sources; 11 packed KB evidence items). The run made 6 DeepSeek requests
+and 3 Tavily searches, with approximately `$0.02308` reported model-cost estimate.
+Structured-output reliability failed: final draft JSON was truncated/malformed;
+both claim-inventory extractions were unusable; semantic analyzer Call B did not
+execute. Historical routing reflected despite failed verification and escalated
+failed quality to Gate 1 after two drafts (one automatic revision). Grounding was
+`0.0`, reflection `3`, verification `parse_failed`, publication safety **false**.
+No human approval, generated final article HTML, or publication occurred.
+
+During the October-5 reconciliation, the original process was still alive with that exact run
+awaiting article review. The operator-authorized real authenticated rejection
+completed: API status `rejected`, `hitl_status=rejected`, checkpoint next nodes
+empty. Rejection made **zero new DeepSeek/Tavily calls**, no final article HTML,
+and no publication. See `D-2026-10-05-03` and ledger `EXP-2026-10-05-01`.
+
+**Frozen workflow contract: IMPLEMENTED / INDEPENDENTLY RE-AUDITED PASS ON FEATURE.**
+`architecture.md` section 1 and `D-2026-10-05-04` remain the frozen authority.
+Current Verify must pass before Reflect; current accepted Verify and a genuine current
+Reflection score >=7 are required before Gate 1. Each quality episode allows two
+drafts; at most two accepted Gate-1 feedback events each start a fresh episode;
+Gate 2 allows at most two layout revisions without a content back-edge.
+Non-repairable execution/policy states terminate, and failure terminals are truthful
+across graph, API, SSE, browser UI, and CLI. Independent re-audit closed all three
+implementation P1s: reflection execution failure termination, non-repairable policy
+precedence, and truthful terminal presentation. It found no remaining P0/P1 against
+the frozen contract and confirmed the A–M workflow matrix. This is not a corrected
+application E2E PASS. Structured-output reliability remains **OPEN**; the initial
+HTML content-equivalence guard remains **PENDING**. External pilot is **NOT READY**.
+
+**Structured-output diagnostics and bounded corrections: INTEGRATED ON FEATURE /
+EXACT-SHA CI PASS; LIVE RELIABILITY OPEN.** The October-7 forensic audit
+supported reasoning/output-budget pressure but did not prove provider length
+termination. The October-8 candidate `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`
+added metadata-only diagnostics to draft, claim-inventory extraction, and reflection:
+request/response settings and identity, explicit finish reason, usage and reasoning
+counts, content and parser-input lengths/SHA-256, and sanitized parse status.
+`finish_reason` missing remains **unknown** even at the token ceiling. No new raw assistant/parser or
+reasoning text, prompt, credential, or header storage was added, and no new API/SSE
+diagnostic field was exposed. Independent Sol High audit **PASS** found no P0/P1
+against this instrumentation scope (180 focused tests; full ordinary suite
+**1,840 passed, 37 warnings**; Ruff PASS). Existing trace validation does not
+independently authenticate every new diagnostic field; this is a nonblocking
+limitation. Subsequent commits disabled thinking for draft and Call-A inventory
+requests and reject explicit `finish_reason=length` before downstream acceptance,
+while retaining parser truth and the frozen routing contract.
+
+The October-12 inventory failure produced two truncated, unusable Call-A outputs
+under the former 4,000-token budget. Independent forensics and offline replay
+kept them rejected; they did not establish complete extraction or a successful
+Call B/reflection path. Commit `82284129` raises only Call-A inventory capacity
+to **12,000 tokens**, with the same value in its request diagnostic. Independent
+Sol High audit **CONTENT-AGENT-CALL-A-CAPACITY-AUDIT-PASS** found no P0/P1 in that
+bounded offline scope (380 focused tests; 1,855 ordinary tests, 37 warnings).
+The correction and feature CI do **not** prove live reliability at 12,000 tokens,
+claim completeness, semantic Call B/reflection success, or application E2E PASS.
+
+## Next bounded technical work — reconciled 2026-11-03
+
+Current application blockers are: (1) bounded live inventory validation at 12,000 tokens
+and independent claim-completeness evidence; (2) successful semantic Call B and
+reflection validation; (3) a fresh successful supervised provider-backed E2E of
+the corrected application; and (4) Phase-5 PR, PR-only evaluation, final merge
+audit, and main merge. Initial deterministic HTML equivalence is implemented on
+the feature at `102983ef08109522421c1098d3effd99e26f3c0b` (CI `40077527862`
+SUCCESS), but has not been exercised in a completed live E2E. Work must be separately
+authorized at the applicable provider/release boundaries. Do not reopen qualified
+retrieval, alter sealed evidence, or rerun holdouts by implication. Phase 5 is not
+complete; external pilot remains **NOT READY**.
+
+## Authoritative SHA roles and retained historical anchors
+
+- **Current main:** `86712d200fd46382a876f2083f824f03a83341ab`.
+- **Verified application-bearing feature integration / exact-SHA CI:**
+  `21666700bf03abf5e6ec37de9705ab873fcaf215` / CI `41627868865`
+  SUCCESS; application-only descendant, not holdout-tested. Its repair ancestor
+  is `cef9e12eb18e46a92abaa85ce09128f23dc6ef1e`; the prior feature base
+  was `102983ef08109522421c1098d3effd99e26f3c0b` / CI `40077527862` SUCCESS.
+- **Historical instrumentation candidate:** `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`;
+  independently audited metadata-only milestone, now included in the feature branch.
+- **Historical frozen-workflow runtime / exact-SHA CI:**
+  `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb` / push CI `37599028135` PASS.
+- **HOLDOUT-V2 qualified base only:** `e0cfe0b566134f848feb731a777f315eb1456dd2`.
+- **Historical pre-client-demo main:** `e4b39caa37497c1743e33843c464ea4381f166d4`
+  (demo publish-target guard). The historical anchors below preserve scoped evidence.
 - **P0-2b slice 2B canonical integration commit:**
   `f6cc5a96e3e8fedec3bb4d2859c7e77183aa19d6`. Linear ancestry is exact
   `e82672936fbb61ee7b1bde7dd3a1ced34f094fa8` →
@@ -66,12 +426,12 @@ remains preserved in `FREEZE.md`.
   `74523ffcfa8906573a72415f1d868dc02996b561`. No later descendant is implicitly validated.
 - **Audited runtime reference:** `794851dded770ce87d111e73735d000e23597eb1`. This remains the
   historical snapshot against which the original P0-1 threat boundary was established.
-- System shape at current main: supervised single-operator LangGraph pipeline with Tavily plus
-  Qdrant/BM25/RRF retrieval, DeepSeek drafting/verification/reflection, two human review gates,
-  local Git integration, and a separate human-triggered publish endpoint.
-- Serving retrieval baseline: the existing `all-MiniLM-L6-v2` dense channel plus BM25, fused with
-  RRF `k=60`, over the current serving corpus/chunk contract. No replacement has passed every
-  required product-quality and integration gate.
+- Current feature system: supervised single-operator LangGraph/FastAPI with Tavily plus
+  qualified CSWP retrieval (`cswp_local` default; validated `cswp_qdrant` option), DeepSeek,
+  two human gates, existing guarded Git integration and separate human-triggered publication.
+- Qualified feature retrieval: pinned `all-MiniLM-L6-v2` dense channel, BM25/RRF `k=60`,
+  bounded expansion/packing and `DRAFTER_PACKED_EVIDENCE_V1`. V2 retrieval PASS is not
+  application E2E PASS. No retrieval change is made or authorized by this reconciliation.
 
 ## Enterprise-production decision
 
@@ -84,8 +444,12 @@ historical evidence, not a current enterprise-release decision.
 
 ## Accepted priority order
 
-The sequence below supersedes the earlier P0-1/P0-2/P0-3 milestone ordering for
-**current engineering work**. Historical P0-1/P0-2a/P0-2b slice boundaries
+The October-5 current mission above supersedes the next-work ordering below.
+The following sequence is retained as historical program context, not authorization
+to reopen qualified retrieval or implement enterprise infrastructure.
+
+The sequence below superseded the earlier P0-1/P0-2/P0-3 milestone ordering for
+**then-current engineering work**. Historical P0-1/P0-2a/P0-2b slice boundaries
 remain preserved below as evidence; they are not reopened here.
 
 ### High-impact engineering priority order
@@ -277,7 +641,11 @@ priority.
    - P0-1 exact artifact/commit/push binding is closed and must not be reopened as this later
      deployment-identity work.
 
-## Current status
+## Historical status snapshot — through 2026-09-19
+
+Preserved scoped milestone evidence follows. Old next-work, global-counter,
+failed/UNKNOWN-to-HITL and reflection-as-soft-only clauses are historical;
+the October-5 current status and frozen architecture supersede those destinations.
 
 - **Phase 4 — CLOSED / QUALIFIED / LIVE-WIRED** at HEAD
   `0139ef891c4e8bd7b5c96f1d94de9676b16e5553` (D-2026-09-16-10). Brief
@@ -329,12 +697,228 @@ priority.
 - **Reopen rule:** Semantic P0 Slice 1 must not be reopened without new material
   P0/P1 evidence.
 
-## Current authorized mission
+## Historical Phase-5 implementation and experiment record
 
-**Phase 5 — retrieval/chunking/evidence exposure** is the next authorized
-engineering direction. Phase 4 is CLOSED; do not reopen without new material
-P0/P1 evidence. A separate Sol architecture audit is in progress and will be
-reviewed before Phase-5 implementation. Do not define Phase-5 architecture here.
+The following records preserve the progression to the qualified Phase-5 runtime.
+Their old “local/not pushed/pending CI” labels describe their original checkpoints,
+not the current branch: those implementations are included in the qualified base
+and its CI-green application-only descendant. Phase 4 retains its bounded results;
+current application E2E findings and routing supersession are recorded above.
+
+**Phase 5A0 — RAG hardening baseline and contract COMPLETE.** Starting from
+required HEAD `f269ab760fc78f0b3a65618ae0c744649d1a0a2e`, the clean Baseline A was
+reconstructed from 20 exact Markdown sources and 73 legacy 400/50 chunks without
+an operational Qdrant dependency. Corpus fingerprint `724a8c3486cb…`; ordered
+chunk fingerprint `c3976d83cc47…`; local MiniLM revision `1110a243…`; effective
+content limit 254; silent truncation exposure 64/73 chunks; 24/35 queries have
+an adjudicated span intersecting at least one truncated legacy tail. The
+33-query gating hybrid result at K=5 is source recall `0.98484848`, Precision@5
+`0.56969697`, graded nDCG@5 `0.97094024`, and exact span recall `0.83333333`;
+source success therefore does not substitute for evidence coverage. Q25/Q26
+remain diagnostic/non-gating; no absence metric exists because v2 has zero
+ABSENT cases and no holdout.
+
+Canonical artifacts: measured manifest/report/truncation rows under
+`reports/phase5/phase5a0/`; architecture contract at
+`docs/PHASE5_RAG_ARCHITECTURE_CONTRACT.md`; machine A/B/C, provenance,
+identity, exposure, promotion, and rollback contract at
+`evals/fixtures/phase5a0_abc_contract.json`; source-only evaluator at
+`scripts/phase5a0_baseline.py`. Production retrieval behavior unchanged;
+production Qdrant reads/writes 0; provider calls 0.
+
+**Phase 5A1 — Candidate B shadow representation COMPLETE.** The frozen
+Markdown parser/provenance/identity pipeline produces 498 blocks and 510
+structure-aware children under serialization
+`title-breadcrumb-exact-child-v1`. All children fit the 254-content-WordPiece
+limit; overflows, provenance failures, structural-boundary violations, and
+duplicate logical IDs are zero. Representation fingerprint
+`a9402fea0c4f…`. This qualifies representation integrity, not retrieval
+quality.
+
+**Phase 5A2 — A-vs-B shadow retrieval evaluation COMPLETE; B NOT READY TO
+ADVANCE AS FROZEN.** Required clean parent `4a156754…` and ancestry were
+verified, and that exact checkpoint was pushed before experiment work. Both
+arms used identical local `all-MiniLM-L6-v2@1110a243`, embedding code, exact
+cosine, lowercase-whitespace BM25, raw golden-v2 queries, candidate K=20, RRF
+k=60, final K=10, and metric functions. Production retrieval was unchanged;
+production Qdrant reads/writes and provider/external-network calls were zero.
+
+On 33 gating queries, hybrid exact-span Recall@1/3/5/10 changed from
+`0.57575758 / 0.78787879 / 0.84848485 / 0.90909091` to
+`0.09090909 / 0.28787879 / 0.51515152 / 0.56060606`; MRR@10 changed
+`0.97979798 → 0.96969697`; nDCG@5 changed `0.97094024 → 0.95807764`.
+Source Recall@5 held at `0.98484848`, while exact evidence coverage materially
+regressed. Q30/Q31/Q34 improved; Q15 was same; Q19, Q21, corrected-gold Q22,
+Q07, Q23, and 14 other gating queries regressed under the conservative
+per-query rule. Two repetitions had identical deterministic result hash
+`70b4552f4cc3f908b44030df2fe3439e19486b1bb30d7f9b042fa8a5cbfcab56`.
+
+The 73→510 expansion is `6.98630137x`: +437 vectors, +671,232 raw float32
+vector bytes, effective content WordPieces `17,650 → 31,963`. Hybrid top-10
+unique-source diversity fell `5.60 → 2.74285714`; small-child crowding was
+observed on 26/35 queries. B's higher Precision@5 is repeated-source-slot
+inflation, not a promotion result. Exact evidence, per-query, failure, runtime,
+and immutable configuration artifacts are under `reports/phase5/phase5a2/`.
+
+**Phase 5A2B — same-parent packing evaluation COMPLETE; B-PACKED NOT READY
+TO ADVANCE.** Clean required parent `a37b402227c8095cca2f3558c3cf60bbc52e2813`
+was verified and pushed before the experiment. The preregistered, unchanged
+greedy paragraph/list packing rule reduced 510 B children to 459 retrieval
+units (28 merged groups; median 31, p95 209, max 254 content tokens).
+Provenance failures, duplicate IDs, boundary violations and overflow were zero.
+Both builds have fingerprint `017bcb283683943f30fb18849344ea3b0eac7f3327a22ff306cef5f8d0fd645f`.
+A, B, their parser/chunker behavior and golden-v2 labels remain unchanged.
+
+On the same 33 gating queries, hybrid exact evidence Recall@5 is
+`A=0.84848485 / B=0.51515152 / B-PACKED=0.50000000`. B-PACKED MRR@10 is
+`0.96969697`, nDCG@5 is `0.95537806`. Versus A: 4 improved, 10 same,
+19 regressed. Q15 improves; Q19/Q21/Q22 and Q07/Q23 remain regressions.
+Versus B: 2 improved, 28 same, 3 regressed (Q04/Q11/Q17). All 230 heading
+children remain singleton units. Packing did not resolve top-K crowding.
+
+Two accepted retrieval repetitions have identical full results and embedding
+hashes. An initial historical-control comparison stopped on sub-micro native
+score differences; the original runner/preregistration and a narrowly recorded
+control-check correction are preserved. Historical A/B rankings, metrics and
+diagnostics match exactly; packing/embedding/retrieval/metric functions were
+not tuned. Full offline suite: `1335 passed`; provider and external evaluation
+network calls: zero. Production serving and Qdrant remain unchanged.
+Full metrics, all query classifications, exact spans, costs, correction evidence
+and validation are in `reports/phase5/phase5a2b/README.md` and adjacent JSON.
+
+**Phase 5A2E — CSWP-v1 contiguous packing evaluation COMPLETE; CSWP-v1 NOT
+READY TO ADVANCE.** Clean required parent
+`fa7eefbc0eeb6eb8570577a8e19497bfbd2a21b8` was verified and pushed before
+the experiment. CSWP-v1 is a new shadow representation: lossless
+source-segment ledger, H2–H6 contiguous packing with labelled left overlap,
+H1/code/table/protected barriers, and 254/256 MiniLM serialization. Frozen
+A, B, and B-PACKED were not modified. Semantic chunking, Candidate C,
+reranker, query rewrite, and embedding changes were not used.
+
+The packer produced 159 retrieval units (median/p95/max 254 content tokens;
+85 left-overlap units; 20 H1 roots). Overflow, coverage gaps, unlabelled
+overlaps, and provenance failures were zero. Both builds share fingerprint
+`439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`. Two
+retrieval repetitions share result hash
+`ad8203ddbbd95fc6f46c0566eef5ab5f83e451350cb27f31704d894df866cfd7`.
+Historical A/B and B-PACKED controls reproduced.
+
+On the same 33 gating queries, hybrid exact evidence Recall@5 is
+`A=0.84848485 / B=0.51515152 / B-PACKED=0.50000000 / CSWP=0.78787879`.
+CSWP MRR@10 is `0.95707071`, nDCG@5 is `0.95478073`. Versus A: 4 improved
+(Q11/Q15/Q30/Q31), 23 same including Q07/Q14/Q23 recovered to 1.0, and 6
+regressed (Q09/Q13/Q16/Q17/Q22/Q34). Q09 is representable and split when
+>254, but hybrid top-5 still misses it. Q02/Q19/Q20/Q21 match A and are
+not representation wins versus A. Vector multiplier versus A is `2.178x`
+(159 vs 73). Hybrid top-5 unique sources are `1.939` versus A `2.970`.
+Descriptive dense latency is `1.37x` A. Provider and external evaluation
+network calls were zero. Production serving and Qdrant remain unchanged.
+
+**Phase 5D0 — CI/runtime reproducibility repair LANDED (GitHub CI pending).**
+Default CI now provisions and hash-verifies pinned production MiniLM
+`all-MiniLM-L6-v2@1110a243…` before offline smoke/tests; BGE pair-length
+tests use committed tokenizer fixtures instead of runner HF cache (experimental
+BGE weights not required on every push). `scripts/inference_smoke.py` proves
+warmup + one deterministic qualified KB retrieval with zero provider calls.
+
+**Phase 5D2 — Production CSWP ingest compiler READY (local; not pushed).**
+Parent `514a2bc5216cd5c744e9b3a80335b103fe3b0768`. Production-owned compiler
+at `agent/cswp/` rebuilds the frozen 20-document seed corpus into
+`kb/indexes/cswp_v1/units.jsonl` + `manifest.json` with same-document neighbor
+metadata. Current-corpus qualification reproduces 159 units and representation
+fingerprint `439ccdf81e2aff1bc0bf3448734cb71f774bc8d3e7619dd1e4b51b2685b79bb3`.
+`agent/qualified_rag.py` now loads the production index fail-closed on
+fingerprint mismatch. No Qdrant write; no serving ranking change. Rebuild:
+`uv run python -m agent.cswp --source kb/seed_docs/`.
+
+**Phase 5D4C — Qdrant serving contract hardening READY (local; pending CI).**
+Parent `e2a8fce61bc90016bfe45cc9060c0ea9e5422848`. Mandatory startup
+validation for `cswp_qdrant` (dim 384, cosine, payload schema, compiler
+version, MiniLM pin, fingerprint); alias-only `kb_cswp_serving` resolution;
+atomic alias swap; per-stage retrieve telemetry. Real Docker acceptance on
+`qdrant/qdrant:v1.9.2`: 33 gating queries packed recall 0.93939394 both
+backends, zero RRF/packed regressions. Supersedes 5D4B optional-fingerprint
+and physical-collection fallback gaps.
+
+**Phase 5D4B — Explicit CSWP serving backend READY (local; pending CI).**
+Parent `0f0b992ff66aa0cc5679b4f42a29536135fb411b`. Fail-closed
+`KB_BACKEND=cswp_local | cswp_qdrant` selector; unset defaults to
+`cswp_local` (no Qdrant required for local dev). Qdrant serving reads
+`QDRANT_URL` + code-pinned alias `kb_cswp_serving`; hydrates BM25,
+expansion, and packing from Qdrant payloads (alias rollback is not
+split-brain). Legacy `tools/query_kb` remains reachable only on its own
+import path — not used by production retrieve or API warmup.
+`docker-compose.prod.yml` sets `KB_BACKEND=cswp_qdrant`. 33 gating queries:
+local and Qdrant packed recall both `0.93939394`; zero regressions; alias
+swap/rollback verified in-memory. No holdout eval; no production alias
+activation outside isolated tests.
+
+**Phase 5D3 — Durable shadow Qdrant CSWP index READY (local; not pushed).**
+Parent `7024d522f2117688c5f10894dfea22f516e652ac`. Production retrieval
+primitives extracted to `agent/retrieval/`; shadow index builds versioned
+collection `ca_cswp_v1_5141e33453611e44` (159 points). Phase 5D4B supersedes
+the "serving remains in-memory only" conclusion with an explicit opt-in
+Qdrant backend while keeping `cswp_local` as developer default.
+
+**Phase 5B3 — Production qualified RAG integration COMPLETE.** Clean
+required parent `912342ac0e735af152833d21cf1c8e821532a600` (pushed).
+Production retrieve/draft/verifier now use local CSWP hybrid retrieval,
+±1 expansion, seed-first pack, and `DRAFTER_PACKED_EVIDENCE_V1`. Qdrant
+not used on KB path. Gating exposure recall: retrieved `0.78787879`,
+packed/drafter/verifier `0.93939394`. Two runs share
+`d0030d8e96dad388ee9c67144bc01e50f9c037a79e544fc628f06dacc9000548`.
+
+**Phase 5B2C — Seed-first packing + combined exposure requalification
+COMPLETE; COMBINED CONTRACT READY FOR LIVE-WIRING CONSIDERATION (not
+wired).** Clean required parent `41261a1a12ffba8a8051debc84b27055985c1b4f`
+(pushed). Only change: Candidate-C SEED_FIRST pack policy. CSWP
+representation, retrieval, ±1 expansion, and DRAFTER_PACKED_EVIDENCE_V1
+shadow contract preserved; production `draft_node` unchanged.
+
+Gating exposure recall: retrieved `0.78787879`, expanded `0.93939394`,
+seed-first packed `0.93939394`, packed-contract drafter `0.93939394`,
+verifier `0.93939394`. Q22 recovers at pack (0.5→1.0). Q19/Q21/Q30
+unchanged at 0.5. Median packed tokens 1578; max 1986. Mean seeds
+retained 3.18; mean neighbors 5.30. Two runs share
+`75ab169bd69408e984d788952ee8d7b699b8edb8ede037112effb85dcf32f4cf`.
+
+**Phase 5B2A — DRAFTER_PACKED_EVIDENCE_V1 shadow contract COMPLETE; READY
+FOR LIVE-WIRING CONSIDERATION (not wired).** Clean required parent
+`fe6d35970e9c2b4ed5e494a2cea07a0287fc3f4b`. Production `draft_node`,
+retrieval, Candidate-C pack, and verifier unchanged. Shadow contract
+consumes all Candidate-C PACKED groups with no secondary top-3 gate or
+2000-char clip.
+
+Gating exposure recall: packed `0.92424242`, legacy drafter
+`0.75757576`, packed-contract drafter `0.92424242`, verifier
+`0.92424242`. All six known legacy drafter losses recover (Q09, Q17, Q28,
+Q31, Q32, Q34). Q22 stays 0.5 (PACKED loss). Median packed-contract
+context 4 groups / 6842 chars / 1578 cl100k vs legacy 3 / 4000 / 1078.
+Two runs share
+`d71f5f8f49565ca05b4c239dbb4ca1b02058eb27ef70d54003eb227a713f6402`.
+Provider and evaluation network calls zero.
+
+**Phase 5B1 — Candidate C v1 bounded adjacent-neighbor expansion COMPLETE;
+C v1 NOT READY TO ADVANCE.** Clean required parent
+`f67b07054a8823ffbc6b3ebc23c3233f9e5e7496` was verified and pushed before
+the experiment. Retrieval ranks stayed frozen at 5A2E CSWP hybrid/RRF
+top-5. The only new variable was ±1 same-document neighbor expansion plus
+a standalone 2000 cl100k whole-unit pack. This is not parent-section
+retrieval and not a production change.
+
+Gating exact-span evidence recall: retrieved `0.78787879`, expanded
+`0.93939394`, packed `0.92424242`, drafter-exposed `0.75757576`,
+verifier-exposed `0.92424242`. Q13 recovers at every layer. Q09 recovers
+except drafter (K=3). Q22 recovers only before pack. Q19/Q21/Q30 remain
+unsolved. Packed max 1988 cl100k. Two runs share
+`74b2dac5179630690ecc12741613318ba9c5ec1384569e01425d35f8fe3b08c9`.
+Provider and evaluation network calls were zero. Production serving and
+Qdrant remain unchanged.
+
+**Next recommendation:** do not advance Candidate C v1. Keep frozen CSWP
+hybrid ranks. Inspect Q22 pack-order complementary-span loss and the Q09
+drafter K=3 miss before any parent dump, third reranker, or candidate-
+generation mix-in.
 
 Historical context on `experiment/hybrid-verifier-status-engine` (Phase 4
 implementation branch):
@@ -609,6 +1193,10 @@ redesign program (priority 3). No runtime change authorized by this record.
 
 ## Phase 4 Slice 2B material + required-content policy boundary
 
+Historical validated implementation boundary: conflicting UNKNOWN/failure-to-HITL
+destinations are superseded by `D-2026-10-05-04`; semantic/material authority and
+required-content findings remain valid. The superseding routing is implemented on the feature branch.
+
 - Isolated variable: deterministic material-claim + required-content
   acceptance policy only. No new LLM calls, no LangGraph topology change,
   no retrieval/chunking change, no new materiality model call.
@@ -662,6 +1250,10 @@ redesign program (priority 3). No runtime change authorized by this record.
 
 **Status:** CLOSED / QUALIFIED / LIVE-WIRED at HEAD `0139ef891c4e8bd7b5c96f1d94de9676b16e5553`.
 
+This is scoped historical Phase-4 qualification, not current application E2E
+acceptance. Its failed/UNKNOWN-to-HITL destination and reflection-as-soft-only
+workflow clauses are superseded by `D-2026-10-05-04` (implemented on the feature branch).
+
 | Slice | Status | Summary |
 |-------|--------|---------|
 | 2a | CLOSED | Authoritative claim inventory/materiality; real Call-A provider qualification PASS under provider oracle v2 |
@@ -700,24 +1292,44 @@ revision; drive material-policy denominator and publication-safety conjunction.
 | Call A | PASS (oracle v2) | `call_a_provider_eval_gold_v2` rescore |
 | Call B | PASS | run `semantic_analyzer_run_8f554fa3eb62`, digest `0ed38fc3…899c5` |
 
-**Next:** Phase 5 — retrieval/chunking/evidence exposure. Sol architecture audit
-in progress; review before implementation.
+**Historical next-work statement superseded:** Phase-5 integration and one-shot
+V2 qualification subsequently completed. October-5 E2E failed; workflow correction
+is now implemented and audited on the feature branch, while external pilot/publication
+readiness is not established.
 
 **Final qualification evidence:** `tests/test_brief_requirements_live_wiring.py`
 (7/7); full regression suite; provider calls zero; demonstrated P0/P1 none.
 
 ## Parallel retrieval research
 
-- Known MiniLM truncation risk remains **OPEN / PROVEN DEFECT**; replacement architecture remains
-  **UNKNOWN REQUIRING EXPERIMENT**.
+- Historical legacy MiniLM truncation was a **PROVEN DEFECT**. Qualified CSWP
+  representation/serving is now accepted within the Phase-5 frozen contract;
+  these older diagnostics do not reopen the current retrieval baseline.
 - Tokenizer-aligned `224/32` child chunking removed measured truncation but produced mixed/regressive
   product-quality results; it is not an accepted serving fix.
 - Exact-73 diagnostics at `b9f9d1d`, `4f6637e`, and `de60706` clarify channel behavior but authorize
   no production cutover.
-- Research remains isolated from serving. Evaluation acceptance integrity precedes further quality
-  conclusions. No model, chunking, fusion, threshold, corpus, or collection change is accepted.
+- Further research remains isolated from serving. No new model, chunking, fusion,
+  threshold, corpus, or collection change is accepted by this reconciliation.
 
 ## Latest accepted evidence
+
+- October-13 feature runtime `82284129dcee8cc10f3d959e0994bacae6a5683b`:
+  independent bounded Call-A capacity audit PASS; exact-SHA push CI `38373655918`
+  SUCCESS (lint PASS; 1,855 tests PASS / 37 warnings; PR-only eval skipped).
+  Live 12,000-token inventory reliability, claim completeness, Call B/reflection,
+  and application E2E remain open. See `D-2026-10-13-01` and ledger `VAL-2026-10-13-01`.
+- October-8 local instrumentation candidate `ae22b615e05dd9ed33eb0b4a9f6b8caeadc552dc`:
+  independent metadata-only audit PASS (180 focused; 1,840 ordinary offline tests,
+  37 warnings; Ruff PASS). Its local-only status at that checkpoint is historical;
+  it is now included in the feature branch. See `D-2026-10-08-01` and ledger `VAL-2026-10-08-01`.
+- October-7 feature runtime `4d36c7c0807ac6c209b2ddd89b804ecf79f958eb`:
+  independent frozen-workflow re-audit PASS; exact-SHA push CI `37599028135` SUCCESS
+  (lint PASS; 1,832 tests PASS / 37 warnings; PR-only eval skipped by design).
+  Main remains `86712d200fd46382a876f2083f824f03a83341ab`; no Phase-5 PR.
+- October-5 exact feature CI `37296752071` PASS at `2a1d95f`; V2 PASS only at
+  `e0cfe0b`; application E2E Run 1 **FAIL / rejected at Gate 1**. See ledger
+  `VAL-2026-10-05-01/02` and `EXP-2026-10-05-01`. Earlier evidence below remains scoped history.
 
 - Exact P0-1 implementation `20eb17f2737010dbf72eea0f0e271bf47d5af3de`: Ruff fatal tier,
   `215 passed` deterministic tests, and `4 passed` pinned-Chromium security tests.
@@ -781,3 +1393,9 @@ in progress; review before implementation.
 No threshold lowering after results, no retry-until-lucky, and no aggregate score may hide a
 critical individual regression. A pass at one gate is evidence for that gate only; it is not merge
 or cutover approval.
+
+A material milestone is not CLOSED until relevant canonical documents agree with
+validated evidence: architecture → `architecture.md` + `DECISIONS.md`; project
+state → this file; experiment/evaluation/E2E → `docs/EXPERIMENT_LEDGER.md`;
+externally visible validated capability → `README.md` if applicable. `FREEZE.md`
+is historical. Chat and `/tmp` receipts are evidence inputs, not canonical state.
