@@ -29,7 +29,7 @@ AnalyzerFailureKind = Literal[
     "adjudication_invalid",
 ]
 
-CALL_B_MAX_TOKENS = 8_000
+CALL_B_MAX_TOKENS = 32_000
 
 
 class LLMTransport(Protocol):
